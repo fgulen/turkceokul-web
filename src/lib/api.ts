@@ -10,7 +10,9 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const { accessToken } = useAuthStore.getState();
-  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  if (accessToken && !config.url?.startsWith('/api/auth/')) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
   return config;
 });
 
@@ -18,7 +20,7 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && !original._retry && !original.url?.startsWith('/api/auth/')) {
       original._retry = true;
       const { refreshToken, setTokens, logout } = useAuthStore.getState();
       if (refreshToken) {

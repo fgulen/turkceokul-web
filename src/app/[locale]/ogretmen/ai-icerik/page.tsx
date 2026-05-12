@@ -1,154 +1,886 @@
 'use client';
 
-import { useState } from 'react';
-import { Sparkles, FileText, Copy, Check } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  Sparkles, FileText, Copy, Check, Download,
+  ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
+  Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload,
+} from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const SEVIYELER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+const SORU_SAYILARI = [5, 8, 10, 15, 20];
 const KONULAR = [
   'Aile ve Ev', 'Yiyecek ve İçecek', 'Seyahat', 'İş Hayatı',
   'Eğitim', 'Sağlık', 'Alışveriş', 'Hava Durumu', 'Hobiler', 'Şehir Hayatı',
 ];
 
+type TabId = 'quiz' | 'eslestir' | 'bosluk_doldur' | 'worksheet' | 'konusma' | 'bulten' | 'resim_analiz';
+
+const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; aciklama: string }[] = [
+  { id: 'quiz',          label: 'Quiz',              icon: ListChecks,    aciklama: 'Çoktan seçmeli quiz soruları' },
+  { id: 'eslestir',      label: 'Eşleştirme',        icon: Shuffle,       aciklama: 'Kelime veya cümle eşleştirme aktivitesi' },
+  { id: 'bosluk_doldur', label: 'Boşluk Doldur',     icon: PenLine,       aciklama: 'Boşluk doldurma alıştırmaları' },
+  { id: 'worksheet',     label: 'Çalışma Kağıdı',    icon: FileText,      aciklama: 'Karma sorular — Word (.docx) export destekli' },
+  { id: 'konusma',       label: 'Konuşma Egzersizi', icon: MessageSquare, aciklama: 'Diyalog, kelimeler ve anlama soruları' },
+  { id: 'bulten',        label: 'Sınıf Bülteni',     icon: Newspaper,     aciklama: 'Sınıf istatistiklerine göre veli bülteni' },
+  { id: 'resim_analiz',  label: 'Resimli',            icon: ImageIcon,     aciklama: 'Resim yükleyin — AI her biri için Türkçe açıklama ve kelime üretsin' },
+];
+
+interface PromptSablon {
+  id: string;
+  label: string;
+  aciklama: string;
+  ekPrompt: string;
+  gizliTablar?: TabId[];
+}
+
+const PROMPT_SABLON: PromptSablon[] = [
+  {
+    id: 'ing_ceviri',
+    label: '🇬🇧 İngilizce',
+    aciklama: 'Her soruya parantez içinde İngilizce çeviri ekler',
+    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde İngilizce karşılığını ekle.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+  {
+    id: 'alm_ceviri',
+    label: '🇩🇪 Almanca',
+    aciklama: 'Her soruya parantez içinde Almanca çeviri ekler',
+    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Almanca karşılığını ekle.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+  {
+    id: 'fransizca',
+    label: '🇫🇷 Fransızca',
+    aciklama: 'Parantez içinde Fransızca çeviri ekler',
+    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Fransızca karşılığını ekle.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+  {
+    id: 'arapca',
+    label: '🇸🇦 Arapça',
+    aciklama: 'Parantez içinde Arapça çeviri ekler',
+    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Arapça karşılığını ekle.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+  {
+    id: 'gramer',
+    label: '📖 Gramer notu',
+    aciklama: 'Her sorunun altına kısa gramer açıklaması ekler',
+    ekPrompt: 'Her sorunun description alanının sonuna kısa bir gramer notu ekle (örn: "Not: -de/-da hal eki kullanılır").',
+    gizliTablar: ['bulten', 'eslestir', 'resim_analiz'],
+  },
+  {
+    id: 'kademeli',
+    label: '📈 Kolay→Zor',
+    aciklama: 'Sorular kolaydan zora doğru sıralanır',
+    ekPrompt: 'Soruları zorluk sırasına göre düzenle: ilk sorular çok basit, sonrakiler giderek zorlaşsın.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+  {
+    id: 'gunluk',
+    label: '🏠 Günlük hayat',
+    aciklama: 'Sorular gerçek hayat senaryolarına dayandırılır',
+    ekPrompt: 'Soruları günlük hayattan somut senaryolara dayandır (alışveriş, yemek, seyahat, iş hayatı vb.).',
+    gizliTablar: ['bulten'],
+  },
+  {
+    id: 'kultur',
+    label: '🇹🇷 Kültürel not',
+    aciklama: 'Türk kültürüne kısa referanslar ekler',
+    ekPrompt: 'Uygun sorularda Türk kültürüne, geleneklerine veya güncel yaşamına kısa bir referans ekle.',
+    gizliTablar: ['bulten', 'resim_analiz'],
+  },
+];
+
+interface Soru {
+  description: string;
+  kelime1: string;
+  kelime2?: string;
+  kelime3?: string;
+  kelime4?: string;
+}
+
+interface IcerikSonuc {
+  baslik?: string;
+  sorular: Soru[];
+}
+
+type TabSonuc = { icerik: IcerikSonuc | null; metin: string; resimUrls: string[] };
+
+interface Sinif    { id: number; name: string; }
+interface Kitap    { id: string; name: string; seviye?: string; }
+interface UniteDto { id: string; name: string; }
+
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AIIcerikPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
-  const [seviye, setSeviye] = useState('A1');
-  const [konu, setKonu] = useState('');
-  const [sonuc, setSonuc] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [kopyalandi, setKopyalandi] = useState(false);
+  const [aktifTab, setAktifTab] = useState<TabId>('quiz');
 
-  async function egzersizUret() {
-    if (!konu.trim()) return;
-    setLoading(true);
-    setSonuc('');
-    try {
-      const res = await api.post('/api/ai/konusma-egzersizi', { seviye, konu });
-      setSonuc(res.data.icerik ?? JSON.stringify(res.data, null, 2));
-    } catch (e: unknown) {
-      setSonuc('Hata: ' + (e instanceof Error ? e.message : 'Bilinmeyen hata'));
-    } finally {
-      setLoading(false);
-    }
+  // Form state
+  const [seviye, setSeviye] = useState('A1');
+  const [girdi, setGirdi] = useState('');
+  const [soruSayisi, setSoruSayisi] = useState(10);
+  const [konu, setKonu] = useState('');
+  const [seciliSinifId, setSeciliSinifId] = useState<number | ''>('');
+  const [seciliSablonlar, setSeciliSablonlar] = useState<Set<string>>(new Set());
+
+  // Kaynak ünite state
+  const [seciliKitapId, setSeciliKitapId] = useState('');
+  const [seciliUniteId, setSeciliUniteId] = useState('');
+  const [seciliUniteAdi, setSeciliUniteAdi] = useState('');
+
+  // Resim state
+  const [resimDosyalari, setResimDosyalari] = useState<File[]>([]);
+  const [resimOnizleme, setResimOnizleme] = useState<string[]>([]);
+  const capturedResimUrls = useRef<string[]>([]);
+
+  // Sonuçlar: sekme başına saklanır
+  const [sonuclar, setSonuclar] = useState<Partial<Record<TabId, TabSonuc>>>({});
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const [hata, setHata] = useState('');
+
+  const { data: siniflar = [] } = useQuery<Sinif[]>({
+    queryKey: ['siniflarim'],
+    queryFn: () => api.get('/api/ogretmen/siniflarim').then(r => r.data),
+    enabled: !!user,
+  });
+
+  const { data: kitaplar = [] } = useQuery<Kitap[]>({
+    queryKey: ['derskitaplari'],
+    queryFn: () => api.get('/api/derskitaplari').then(r => r.data),
+    enabled: !!user,
+  });
+
+  const { data: uniteler = [] } = useQuery<UniteDto[]>({
+    queryKey: ['uniteler', seciliKitapId],
+    queryFn: () => api.get(`/api/uniteler/${seciliKitapId}`).then(r => r.data),
+    enabled: !!seciliKitapId,
+  });
+
+  const ekYonlendirme = PROMPT_SABLON
+    .filter(s => seciliSablonlar.has(s.id))
+    .map(s => s.ekPrompt)
+    .join(' ');
+
+  const uretMutation = useMutation({
+    mutationFn: async () => {
+      if (aktifTab === 'resim_analiz') {
+        capturedResimUrls.current = [...resimOnizleme];
+        const base64ler = await Promise.all(resimDosyalari.map(toBase64));
+        const mediaTipleri = resimDosyalari.map(f => f.type || 'image/jpeg');
+        return api.post('/api/ai/resim-analiz', {
+          resimler: base64ler,
+          mediaTipleri,
+          duzey: seviye,
+        }).then(r => r.data);
+      }
+      if (aktifTab === 'bulten')
+        return api.post('/api/ai/sinif-bulteni', { sinifId: seciliSinifId }).then(r => r.data);
+      if (aktifTab === 'konusma')
+        return api.post('/api/ai/konusma-egzersizi', {
+          seviye, konu, uniteId: seciliUniteId || undefined,
+        }).then(r => r.data);
+      return api.post('/api/ai/icerik-uret', {
+        tip: aktifTab, girdi, soruSayisi, duzey: seviye,
+        ciktiFormati: 'etkinlik',
+        uniteId: seciliUniteId || undefined,
+        ekYonlendirme: ekYonlendirme || undefined,
+      }).then(r => r.data);
+    },
+    onSuccess: (data: unknown) => {
+      setHata('');
+      const tabId = aktifTab;
+      const resimUrls = tabId === 'resim_analiz' ? capturedResimUrls.current : [];
+
+      if (typeof data === 'object' && data !== null && 'icerik' in data) {
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: (data as { icerik: string }).icerik, resimUrls } }));
+      } else if (typeof data === 'object' && data !== null && 'sorular' in data) {
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: data as IcerikSonuc, metin: '', resimUrls } }));
+      } else {
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: JSON.stringify(data, null, 2), resimUrls } }));
+      }
+    },
+    onError: (err: Error) => setHata(err.message || 'Bilinmeyen hata'),
+  });
+
+  function tabDegistir(id: TabId) {
+    setAktifTab(id);
+    setHata('');
+    setSeciliSablonlar(new Set());
+  }
+
+  function kitapDegistir(kitapId: string) {
+    setSeciliKitapId(kitapId);
+    setSeciliUniteId('');
+    setSeciliUniteAdi('');
+  }
+
+  function uniteDegistir(uniteId: string) {
+    setSeciliUniteId(uniteId);
+    const unite = uniteler.find(u => u.id === uniteId);
+    setSeciliUniteAdi(unite?.name ?? '');
+  }
+
+  function uniteTemizle() {
+    setSeciliKitapId('');
+    setSeciliUniteId('');
+    setSeciliUniteAdi('');
+  }
+
+  function sablonToggle(id: string) {
+    setSeciliSablonlar(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function sonucuSil(tabId: TabId) {
+    setSonuclar(prev => { const next = { ...prev }; delete next[tabId]; return next; });
   }
 
   function kopyala() {
-    navigator.clipboard.writeText(sonuc);
-    setKopyalandi(true);
-    setTimeout(() => setKopyalandi(false), 2000);
+    const sonuc = sonuclar[aktifTab];
+    const metin = sonuc?.metin || JSON.stringify(sonuc?.icerik, null, 2);
+    if (metin) {
+      navigator.clipboard.writeText(metin);
+      setKopyalandi(true);
+      setTimeout(() => setKopyalandi(false), 2000);
+    }
   }
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  async function wordIndir() {
+    try {
+      const res = await api.post('/api/ai/icerik-uret', {
+        tip: aktifTab, girdi, soruSayisi, duzey: seviye, ciktiFormati: 'word',
+        uniteId: seciliUniteId || undefined,
+      }, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calisma-kagidi-${seviye}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setHata(e instanceof Error ? e.message : 'İndirme hatası');
+    }
+  }
+
+  const mevcutSonuc = sonuclar[aktifTab];
+  const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
+  const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
+  const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
+
+  const canUret = aktifTab === 'bulten'
+    ? !!seciliSinifId
+    : aktifTab === 'konusma'
+      ? konu.trim().length > 0 || !!seciliUniteId
+      : aktifTab === 'resim_analiz'
+        ? resimDosyalari.length > 0
+        : girdi.trim().length > 0 || !!seciliUniteId;
+
+  if (!ready) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
       <AppNav />
-      <main className="max-w-[800px] mx-auto px-4 py-8">
-        <div className="mb-8">
+      <main className="max-w-[1000px] mx-auto px-4 py-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Sparkles className="size-6 text-primary" />
-            AI İçerik Üretici
+            AI İçerik Stüdyosu
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Seviye ve konuya göre otomatik Türkçe konuşma egzersizi oluşturun
+            Claude AI ile saniyeler içinde Türkçe öğretim materyalleri üretin
           </p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
-          <h2 className="font-semibold text-slate-900 mb-4">Konuşma Egzersizi Üret</h2>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                CEFR Seviyesi
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                {SEVIYELER.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setSeviye(s)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
-                      seviye === s
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                Konu
-              </label>
-              <select
-                value={konu}
-                onChange={e => setKonu(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-              >
-                <option value="">Konu seçin...</option>
-                {KONULAR.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
-              <input
-                type="text"
-                value={konu}
-                onChange={e => setKonu(e.target.value)}
-                placeholder="veya kendi konunuzu yazın"
-                className="w-full mt-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={egzersizUret}
-            disabled={!konu.trim() || loading}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors"
-          >
-            <Sparkles className="size-4" />
-            {loading ? 'Üretiliyor...' : 'Egzersiz Üret'}
-          </button>
+        {/* Tab bar */}
+        <div className="flex gap-1 bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6 overflow-x-auto">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => tabDegistir(id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                aktifTab === id
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+              )}
+            >
+              <Icon className="size-4" />
+              {label}
+              {sonuclar[id] && aktifTab !== id && (
+                <span className="size-1.5 rounded-full bg-emerald-400 ml-0.5" />
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* Sonuç */}
-        {(loading || sonuc) && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <FileText className="size-4 text-slate-400" />
-                Üretilen İçerik
-              </h2>
-              {sonuc && (
-                <button
-                  onClick={kopyala}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/40 transition-colors"
-                >
-                  {kopyalandi ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-                  {kopyalandi ? 'Kopyalandı!' : 'Kopyala'}
-                </button>
-              )}
-            </div>
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-4 bg-slate-100 rounded animate-pulse" style={{ width: `${60 + i * 8}%` }} />
-                ))}
-              </div>
+        <div className="grid grid-cols-[300px_1fr] gap-6 items-start">
+          {/* Form panel */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+            <p className="text-xs font-medium text-slate-400">
+              {TABS.find(t => t.id === aktifTab)?.aciklama}
+            </p>
+
+            {/* Kaynak ünite seçici */}
+            {kaynakTabAktif && (
+              <UniteKaynakSecici
+                kitaplar={kitaplar}
+                uniteler={uniteler}
+                seciliKitapId={seciliKitapId}
+                seciliUniteId={seciliUniteId}
+                seciliUniteAdi={seciliUniteAdi}
+                onKitap={kitapDegistir}
+                onUnite={uniteDegistir}
+                onTemizle={uniteTemizle}
+              />
+            )}
+
+            {aktifTab === 'bulten' ? (
+              <BultenForm
+                siniflar={siniflar}
+                seciliSinifId={seciliSinifId}
+                onChange={setSeciliSinifId}
+              />
+            ) : aktifTab === 'konusma' ? (
+              <KonusmaForm
+                seviye={seviye}
+                konu={konu}
+                uniteSecili={!!seciliUniteId}
+                onSeviye={setSeviye}
+                onKonu={setKonu}
+              />
+            ) : aktifTab === 'resim_analiz' ? (
+              <ResimYuklemeFormu
+                seviye={seviye}
+                dosyalar={resimDosyalari}
+                onizlemeler={resimOnizleme}
+                onSeviye={setSeviye}
+                onDegisim={(d, o) => { setResimDosyalari(d); setResimOnizleme(o); }}
+              />
             ) : (
-              <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed font-sans">
-                {sonuc}
-              </pre>
+              <IcerikForm
+                seviye={seviye}
+                girdi={girdi}
+                soruSayisi={soruSayisi}
+                uniteSecili={!!seciliUniteId}
+                onSeviye={setSeviye}
+                onGirdi={setGirdi}
+                onSoruSayisi={setSoruSayisi}
+              />
+            )}
+
+            {/* Ek yönlendirme şablonları */}
+            <EkSecenekler
+              tabId={aktifTab}
+              secili={seciliSablonlar}
+              onToggle={sablonToggle}
+            />
+
+            <button
+              onClick={() => uretMutation.mutate()}
+              disabled={!canUret || uretMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors text-sm"
+            >
+              {uretMutation.isPending
+                ? <><Loader2 className="size-4 animate-spin" />Üretiliyor...</>
+                : <><Sparkles className="size-4" />Üret</>}
+            </button>
+          </div>
+
+          {/* Sonuç panel */}
+          <div>
+            {hata && (
+              <div className="mb-4 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+                {hata}
+              </div>
+            )}
+
+            {uretMutation.isPending && <SkeletonLoader />}
+
+            {!uretMutation.isPending && varSonuc && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h2 className="font-semibold text-slate-900">Üretilen İçerik</h2>
+                    {seciliUniteAdi && (
+                      <p className="text-xs text-primary mt-0.5">
+                        Kaynak: {seciliUniteAdi}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={kopyala}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      {kopyalandi
+                        ? <><Check className="size-3.5 text-emerald-500" />Kopyalandı!</>
+                        : <><Copy className="size-3.5" />Kopyala</>}
+                    </button>
+                    {jsonTabAktif && mevcutSonuc?.icerik && (
+                      <button
+                        onClick={wordIndir}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                      >
+                        <Download className="size-3.5" />
+                        Word İndir
+                      </button>
+                    )}
+                    <button
+                      onClick={() => sonucuSil(aktifTab)}
+                      title="Sonucu temizle"
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {mevcutSonuc?.metin ? (
+                  <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed font-sans">
+                    {mevcutSonuc.metin}
+                  </pre>
+                ) : mevcutSonuc?.icerik ? (
+                  <SonucKartlari sonuc={mevcutSonuc.icerik} resimUrls={mevcutSonuc.resimUrls} />
+                ) : null}
+              </div>
+            )}
+
+            {!uretMutation.isPending && !varSonuc && !hata && (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-300">
+                <Sparkles className="size-12 mb-3" />
+                <p className="text-sm">Üretilen içerik burada görünecek</p>
+              </div>
             )}
           </div>
-        )}
+        </div>
       </main>
+    </div>
+  );
+}
+
+// ── Alt bileşenler ────────────────────────────────────────────────────────────
+
+function UniteKaynakSecici({
+  kitaplar, uniteler, seciliKitapId, seciliUniteId, seciliUniteAdi,
+  onKitap, onUnite, onTemizle,
+}: {
+  kitaplar: Kitap[]; uniteler: UniteDto[];
+  seciliKitapId: string; seciliUniteId: string; seciliUniteAdi: string;
+  onKitap: (id: string) => void; onUnite: (id: string) => void; onTemizle: () => void;
+}) {
+  if (seciliUniteId) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-primary/8 border border-primary/20 rounded-lg">
+        <BookOpen className="size-3.5 text-primary shrink-0" />
+        <span className="text-xs text-primary font-medium flex-1 min-w-0 truncate">{seciliUniteAdi}</span>
+        <button onClick={onTemizle} className="text-primary/60 hover:text-primary transition-colors">
+          <X className="size-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Kaynak Ünite <span className="normal-case font-normal">(isteğe bağlı)</span>
+      </label>
+      <select
+        value={seciliKitapId}
+        onChange={e => onKitap(e.target.value)}
+        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+      >
+        <option value="">Kitap seçin...</option>
+        {kitaplar.map(k => (
+          <option key={k.id} value={k.id}>
+            {k.name}{k.seviye ? ` (${k.seviye})` : ''}
+          </option>
+        ))}
+      </select>
+      {seciliKitapId && (
+        <select
+          value={seciliUniteId}
+          onChange={e => onUnite(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+        >
+          <option value="">Ünite seçin...</option>
+          {uniteler.map(u => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
+function SeviyeSecici({ seviye, onSeviye }: { seviye: string; onSeviye: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+        CEFR Seviyesi
+      </label>
+      <div className="flex gap-1.5 flex-wrap">
+        {SEVIYELER.map(s => (
+          <button
+            key={s}
+            onClick={() => onSeviye(s)}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+              seviye === s
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IcerikForm({
+  seviye, girdi, soruSayisi, uniteSecili, onSeviye, onGirdi, onSoruSayisi,
+}: {
+  seviye: string; girdi: string; soruSayisi: number; uniteSecili: boolean;
+  onSeviye: (v: string) => void; onGirdi: (v: string) => void; onSoruSayisi: (v: number) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Konu veya Metin{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
+        </label>
+        <textarea
+          value={girdi}
+          onChange={e => onGirdi(e.target.value)}
+          placeholder={uniteSecili
+            ? 'Ek yönlendirme yazabilirsiniz...'
+            : 'Örn: Türk mutfağı, zaman ifadeleri...'}
+          rows={3}
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Soru Sayısı
+        </label>
+        <div className="flex gap-1.5">
+          {SORU_SAYILARI.map(n => (
+            <button
+              key={n}
+              onClick={() => onSoruSayisi(n)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+                soruSayisi === n
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KonusmaForm({
+  seviye, konu, uniteSecili, onSeviye, onKonu,
+}: {
+  seviye: string; konu: string; uniteSecili: boolean;
+  onSeviye: (v: string) => void; onKonu: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Konu{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
+        </label>
+        <select
+          value={KONULAR.includes(konu) ? konu : ''}
+          onChange={e => onKonu(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+        >
+          <option value="">Konu seçin...</option>
+          {KONULAR.map(k => <option key={k} value={k}>{k}</option>)}
+        </select>
+        <input
+          type="text"
+          value={konu}
+          onChange={e => onKonu(e.target.value)}
+          placeholder={uniteSecili ? 'veya kendi konunuzu yazın...' : 'veya kendi konunuzu yazın'}
+          className="w-full mt-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+    </div>
+  );
+}
+
+function BultenForm({
+  siniflar, seciliSinifId, onChange,
+}: {
+  siniflar: Sinif[]; seciliSinifId: number | '';
+  onChange: (v: number | '') => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Sınıf
+        </label>
+        {siniflar.length === 0 ? (
+          <p className="text-sm text-slate-400 italic">Henüz sınıf oluşturmadınız.</p>
+        ) : (
+          <select
+            value={seciliSinifId}
+            onChange={e => onChange(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+          >
+            <option value="">Sınıf seçin...</option>
+            {siniflar.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        )}
+      </div>
+      <p className="text-xs text-slate-400 leading-relaxed">
+        Seçili sınıfın aktivite verilerine göre velilere gönderilecek haftalık bülten oluşturulur.
+      </p>
+    </div>
+  );
+}
+
+function ResimYuklemeFormu({
+  seviye, dosyalar, onizlemeler, onSeviye, onDegisim,
+}: {
+  seviye: string;
+  dosyalar: File[];
+  onizlemeler: string[];
+  onSeviye: (v: string) => void;
+  onDegisim: (dosyalar: File[], onizlemeler: string[]) => void;
+}) {
+  const [surukleniyor, setSurukleniyor] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const MAX = 10;
+
+  function dosyaEkle(liste: FileList | null) {
+    if (!liste) return;
+    const kalan = MAX - dosyalar.length;
+    if (kalan <= 0) return;
+    const yeniDosyalar = Array.from(liste)
+      .filter(f => f.type.startsWith('image/'))
+      .slice(0, kalan);
+    const yeniOnizlemeler = yeniDosyalar.map(f => URL.createObjectURL(f));
+    onDegisim([...dosyalar, ...yeniDosyalar], [...onizlemeler, ...yeniOnizlemeler]);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  function resimSil(i: number) {
+    onDegisim(dosyalar.filter((_, j) => j !== i), onizlemeler.filter((_, j) => j !== i));
+  }
+
+  return (
+    <div className="space-y-4">
+      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
+
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Resimler{' '}
+          <span className="normal-case font-normal">({dosyalar.length}/{MAX})</span>
+        </label>
+
+        {dosyalar.length < MAX && (
+          <div
+            onDragOver={e => { e.preventDefault(); setSurukleniyor(true); }}
+            onDragLeave={() => setSurukleniyor(false)}
+            onDrop={e => { e.preventDefault(); setSurukleniyor(false); dosyaEkle(e.dataTransfer.files); }}
+            onClick={() => inputRef.current?.click()}
+            className={cn(
+              'border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors',
+              surukleniyor ? 'border-primary/60 bg-primary/5' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+            )}
+          >
+            <Upload className="size-5 mx-auto mb-1.5 text-slate-300" />
+            <p className="text-xs text-slate-400">Sürükle veya tıkla</p>
+            <p className="text-[10px] text-slate-300 mt-0.5">JPG, PNG, WEBP</p>
+          </div>
+        )}
+
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          className="hidden"
+          onChange={e => dosyaEkle(e.target.files)}
+        />
+
+        {onizlemeler.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {onizlemeler.map((url, i) => (
+              <div key={i} className="relative aspect-square rounded-lg overflow-hidden group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => resimSil(i)}
+                  className="absolute top-1 right-1 size-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="size-3" />
+                </button>
+                <span className="absolute bottom-1 left-1 text-[10px] bg-black/50 text-white rounded px-1">
+                  {i + 1}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {dosyalar.length === 0 && (
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+            AI her resim için ayrı bir Türkçe açıklama ve kelime üretir.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EkSecenekler({
+  tabId, secili, onToggle,
+}: {
+  tabId: TabId;
+  secili: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  const gorunur = PROMPT_SABLON.filter(s => !s.gizliTablar?.includes(tabId));
+  if (gorunur.length === 0) return null;
+
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+        Ek Yönlendirme
+      </label>
+      <div className="flex flex-wrap gap-1.5">
+        {gorunur.map(s => (
+          <button
+            key={s.id}
+            title={s.aciklama}
+            onClick={() => onToggle(s.id)}
+            className={cn(
+              'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors',
+              secili.has(s.id)
+                ? 'bg-primary/10 text-primary border-primary/30'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300',
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: string[] }) {
+  const harfler = ['A', 'B', 'C', 'D'];
+  const seçenekler = ['kelime1', 'kelime2', 'kelime3', 'kelime4'] as const;
+  const resimli = resimUrls && resimUrls.length > 0;
+
+  return (
+    <div className="space-y-4">
+      {sonuc.baslik && (
+        <h3 className="font-semibold text-slate-800 border-b border-slate-100 pb-3">
+          {sonuc.baslik}
+        </h3>
+      )}
+      {sonuc.sorular.map((soru, i) => (
+        <div key={i} className={cn('bg-slate-50 rounded-xl p-4', resimli && 'flex gap-3 items-start')}>
+          {resimUrls?.[i] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={resimUrls[i]}
+              alt=""
+              className="w-24 h-24 object-cover rounded-lg shrink-0"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-900 mb-3">
+              <span className="text-primary mr-1.5">{i + 1}.</span>
+              {soru.description}
+            </p>
+            {!resimli ? (
+              <div className="grid grid-cols-2 gap-1.5">
+                {seçenekler.map((k, j) =>
+                  soru[k] ? (
+                    <div
+                      key={k}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-xs border',
+                        k === 'kelime1'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
+                          : 'bg-white border-slate-200 text-slate-600',
+                      )}
+                    >
+                      <span className="font-semibold mr-1">{harfler[j]})</span>
+                      {soru[k]}
+                    </div>
+                  ) : null
+                )}
+              </div>
+            ) : (
+              <span className="inline-block px-3 py-1 rounded-lg text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium">
+                {soru.kelime1}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonLoader() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="h-5 w-40 rounded bg-slate-100 animate-pulse mb-5" />
+      <div className="space-y-3">
+        {[88, 72, 95, 65, 80, 60, 85, 70].map((w, i) => (
+          <div
+            key={i}
+            className="h-3.5 rounded bg-slate-100 animate-pulse"
+            style={{ width: `${w}%` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

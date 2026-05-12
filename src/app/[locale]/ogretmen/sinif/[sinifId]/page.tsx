@@ -5,9 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@/navigation';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
-  Trophy, Copy, Check, Trash2, Plus, Wifi,
+  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useAuthStore } from '@/stores/auth';
 import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,14 @@ interface OgrenciOzet {
   toplamPuan: number;
   tamamlananUnite: number;
   sonAktivite: string | null;
+}
+
+interface TopluEkleSonuc {
+  userId: number;
+  ad: string;
+  kullaniciAdi: string;
+  pin: string;
+  qrToken: string;
 }
 
 interface Odev {
@@ -59,6 +68,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const { sinifId } = use(params);
   const id = parseInt(sinifId);
   const { user, ready } = useAuthGuard('Ogretmen');
+  const accessToken = useAuthStore((s) => s.accessToken);
   const [tab, setTab] = useState<Tab>('genel');
   const [kodKopyalandi, setKodKopyalandi] = useState(false);
   const qc = useQueryClient();
@@ -90,6 +100,12 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const [yeniOdev, setYeniOdev] = useState({ baslik: '', aciklama: '', teslimTarihi: '' });
   const [yeniDuyuru, setYeniDuyuru] = useState('');
   const [ogrenciEmail, setOgrenciEmail] = useState('');
+
+  // Toplu öğrenci ekleme
+  const [topluModalAcik, setTopluModalAcik] = useState(false);
+  const [isimler, setIsimler] = useState('');
+  const [topluSonuclar, setTopluSonuclar] = useState<TopluEkleSonuc[]>([]);
+  const [kapasiteHatasi, setKapasiteHatasi] = useState<string | null>(null);
 
   const odevMutation = useMutation({
     mutationFn: () => api.post(`/api/ogretmen/sinif/${id}/odev`, {
@@ -124,6 +140,61 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     mutationFn: (odevId: number) => api.delete(`/api/ogretmen/odev/${odevId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sinif-odevler', id] }),
   });
+
+  const topluEkleMutation = useMutation({
+    mutationFn: (isimListesi: string[]) =>
+      api.post(`/api/ogretmen/sinif/${id}/ogrenci-toplu-ekle`, { isimler: isimListesi }),
+    onSuccess: (res) => {
+      setTopluSonuclar(res.data.eklenenler ?? []);
+      setIsimler('');
+      setKapasiteHatasi(null);
+      qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
+      qc.invalidateQueries({ queryKey: ['sinif', id] });
+    },
+    onError: (err: { response?: { data?: { mesaj?: string } } }) => {
+      const mesaj = err.response?.data?.mesaj;
+      setKapasiteHatasi(mesaj ?? 'Bir hata oluştu.');
+    },
+  });
+
+  const ogrenciSilMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.delete(`/api/ogretmen/sinif/${id}/ogrenci/${ogrenciId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
+      qc.invalidateQueries({ queryKey: ['sinif', id] });
+    },
+  });
+
+  async function badgePdfIndir() {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
+    try {
+      const res = await fetch(`${base}/api/ogretmen/sinif/${id}/badge-pdf`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buffer = await res.arrayBuffer();
+      const blob = new Blob([buffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sinif-${id}-badge.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      console.error('Badge PDF indirilemedi:', e);
+      alert('PDF indirilemedi. Lütfen tekrar deneyin.');
+    }
+  }
+
+  function topluEkleGonder() {
+    const liste = isimler.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!liste.length) return;
+    setKapasiteHatasi(null);
+    setTopluSonuclar([]);
+    topluEkleMutation.mutate(liste);
+  }
 
   function kopyala() {
     if (!sinif) return;
@@ -166,13 +237,13 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                 {kodKopyalandi ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
               </button>
             </div>
-            <a
+            <Link
               href={`/ogretmen/sinif/${id}/canli`}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 transition-colors"
             >
               <Wifi className="size-4" />
               Canlı Kahoot
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -224,19 +295,35 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Öğrenciler</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={badgePdfIndir}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    <Download className="size-3.5" /> Badge PDF
+                  </button>
+                  <button
+                    onClick={() => { setTopluModalAcik(true); setTopluSonuclar([]); setKapasiteHatasi(null); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <UserPlus className="size-3.5" /> Toplu Ekle
+                  </button>
+                </div>
               </div>
+
+              {/* E-posta ile tek öğrenci ekleme */}
               <div className="flex gap-2 mb-5">
                 <input
                   type="email"
                   value={ogrenciEmail}
                   onChange={e => setOgrenciEmail(e.target.value)}
-                  placeholder="öğrenci@email.com"
+                  placeholder="öğrenci@email.com (e-posta ile ekle)"
                   className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <button
                   onClick={() => ogrenciEmail && ogrenciEkleMutation.mutate(ogrenciEmail)}
                   disabled={!ogrenciEmail || ogrenciEkleMutation.isPending}
-                  className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-4 py-2 bg-slate-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
                 >
                   <Plus className="size-4" /> Ekle
                 </button>
@@ -244,12 +331,13 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
               {ogrenciEkleMutation.isError && (
                 <p className="text-red-500 text-sm mb-3">{(ogrenciEkleMutation.error as Error).message}</p>
               )}
+
               {!ogrenciler?.length ? (
                 <p className="text-slate-400 text-sm text-center py-10">Henüz öğrenci yok.</p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {ogrenciler.map(o => (
-                    <div key={o.userId} className="flex items-center justify-between py-3">
+                    <div key={o.userId} className="flex items-center justify-between py-3 group">
                       <div className="flex items-center gap-3">
                         <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                           {o.ad.charAt(0)}
@@ -261,8 +349,19 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                           </div>
                         </div>
                       </div>
-                      <div className="text-xs text-slate-400">
-                        {o.sonAktivite ? new Date(o.sonAktivite).toLocaleDateString('tr') : 'Hiç girmedi'}
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-slate-400">
+                          {o.sonAktivite ? new Date(o.sonAktivite).toLocaleDateString('tr') : 'Hiç girmedi'}
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (confirm('Öğrenciyi sınıftan çıkarmak istediğinizden emin misiniz?\n\nNot: Lisans kotası iade edilmez. Yanlış sildiyseniz yönetici ile iletişime geçin.'))
+                              ogrenciSilMutation.mutate(o.userId);
+                          }}
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-200 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -275,7 +374,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           {tab === 'raporlar' && (
             <div>
               <h2 className="font-semibold text-slate-900 mb-4">İlerleme Raporu</h2>
-              <a
+              <Link
                 href={`/ogretmen/sinif/${id}/raporlar`}
                 className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
               >
@@ -284,7 +383,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                   <div className="text-sm text-slate-500 mt-0.5">Her öğrencinin her ünitedeki ilerleme oranını görün</div>
                 </div>
                 <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
-              </a>
+              </Link>
             </div>
           )}
 
@@ -393,6 +492,124 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           )}
         </div>
       </main>
+
+      {/* Toplu Öğrenci Ekleme Modalı */}
+      {topluModalAcik && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col">
+            {/* Başlık */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div>
+                <h2 className="font-bold text-slate-900">Toplu Öğrenci Ekle</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Her satıra bir isim yazın</p>
+              </div>
+              <button
+                onClick={() => setTopluModalAcik(false)}
+                className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-5 space-y-4">
+              {/* Sonuçlar gelmediyse giriş ekranı */}
+              {!topluSonuclar.length && (
+                <>
+                  <textarea
+                    value={isimler}
+                    onChange={e => setIsimler(e.target.value)}
+                    placeholder={"Ali Yılmaz\nAyşe Kaya\nMehmet Demir"}
+                    rows={8}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none font-mono"
+                  />
+
+                  {kapasiteHatasi && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
+                      <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+                      <span>{kapasiteHatasi}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs">
+                    <AlertTriangle className="size-3.5 shrink-0" />
+                    <span>Her öğrenci için bir lisans koltuğu tüketilir. Öğrenciyi silerseniz koltuk iade edilmez.</span>
+                  </div>
+                </>
+              )}
+
+              {/* Sonuçlar tablosu */}
+              {topluSonuclar.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm">
+                    <Check className="size-4 shrink-0" />
+                    <span><strong>{topluSonuclar.length} öğrenci</strong> başarıyla eklendi. PIN'ler yalnızca şimdi görünür — Badge PDF ile yazdırın.</span>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                        <tr>
+                          <th className="text-left px-3 py-2">Ad</th>
+                          <th className="text-left px-3 py-2">Kullanıcı Adı</th>
+                          <th className="text-left px-3 py-2 font-bold text-slate-700">PIN</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {topluSonuclar.map(s => (
+                          <tr key={s.userId} className="hover:bg-slate-50">
+                            <td className="px-3 py-2 font-medium text-slate-800">{s.ad}</td>
+                            <td className="px-3 py-2 font-mono text-slate-600">{s.kullaniciAdi}</td>
+                            <td className="px-3 py-2 font-mono font-bold text-primary tracking-widest">{s.pin}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-slate-100 flex gap-2 justify-end">
+              {topluSonuclar.length > 0 ? (
+                <>
+                  <button
+                    onClick={() => { setTopluSonuclar([]); setIsimler(''); }}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Yeni Grup Ekle
+                  </button>
+                  <button
+                    onClick={() => { badgePdfIndir(); setTopluModalAcik(false); }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <Download className="size-4" /> Badge PDF İndir
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setTopluModalAcik(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={topluEkleGonder}
+                    disabled={!isimler.trim() || topluEkleMutation.isPending}
+                    className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {topluEkleMutation.isPending && (
+                      <div className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    )}
+                    Hesapları Oluştur
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

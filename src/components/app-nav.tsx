@@ -33,7 +33,19 @@ export function AppNav() {
         {/* Nav */}
         {mounted && hydrated && user && (
           <nav className="hidden md:flex items-center gap-1">
-            {user.role === 'Admin' ? (
+            {user.role === 'SuperAdmin' ? (
+              <Link
+                href="/super-admin"
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  pathname?.startsWith('/super-admin')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                Super Admin
+              </Link>
+            ) : user.role === 'Admin' ? (
               <Link
                 href="/admin"
                 className={cn(
@@ -45,7 +57,7 @@ export function AppNav() {
               >
                 Admin
               </Link>
-            ) : user.role === 'Ogretmen' ? (
+            ) : user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi' ? (
               <>
                 <Link
                   href="/ogretmen"

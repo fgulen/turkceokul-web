@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Admin';
+export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Admin' | 'KurumYoneticisi' | 'UlkeTemsilcisi' | 'SuperAdmin' | 'Editor';
 
 export interface AuthUser {
   id: number;
@@ -44,7 +44,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth',
-      // _hasHydrated is runtime-only, don't persist it
       partialize: (s) => ({
         user: s.user,
         accessToken: s.accessToken,
@@ -56,3 +55,21 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Impersonation helpers — use sessionStorage so they survive page refreshes but not new tabs
+export const impersonation = {
+  save(user: AuthUser, accessToken: string, refreshToken: string) {
+    sessionStorage.setItem('sa_backup', JSON.stringify({ user, accessToken, refreshToken }));
+  },
+  restore() {
+    const raw = sessionStorage.getItem('sa_backup');
+    if (!raw) return null;
+    return JSON.parse(raw) as { user: AuthUser; accessToken: string; refreshToken: string };
+  },
+  isActive() {
+    return !!sessionStorage.getItem('sa_backup');
+  },
+  clear() {
+    sessionStorage.removeItem('sa_backup');
+  },
+};
