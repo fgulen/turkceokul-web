@@ -99,11 +99,20 @@ const PROMPT_SABLON: PromptSablon[] = [
 ];
 
 interface Soru {
-  description: string;
-  kelime1: string;
+  // Yeni format
+  question?: string;
+  options?: string[];
+  answer?: string;
+  hint?: string;
+  explanation?: string;
+  image_id?: string | null;
+  // Eski format (backward compat)
+  description?: string;
+  kelime1?: string;
   kelime2?: string;
   kelime3?: string;
   kelime4?: string;
+  cevap?: string;
 }
 
 interface IcerikSonuc {
@@ -140,6 +149,10 @@ export default function AIIcerikPage() {
   const [konu, setKonu] = useState('');
   const [seciliSinifId, setSeciliSinifId] = useState<number | ''>('');
   const [seciliSablonlar, setSeciliSablonlar] = useState<Set<string>>(new Set());
+
+  // Pedagogy parametreleri
+  const [supportLanguage, setSupportLanguage] = useState(''); // 'EN'|'DE'|'FR'|'AR'|''
+  const [focusMode, setFocusMode] = useState('');             // 'Grammar'|'Culture'|'DailyLife'|'EasyToHard'|''
 
   // Kaynak ünite state
   const [seciliKitapId, setSeciliKitapId] = useState('');
@@ -202,6 +215,8 @@ export default function AIIcerikPage() {
         ciktiFormati: 'etkinlik',
         uniteId: seciliUniteId || undefined,
         ekYonlendirme: ekYonlendirme || undefined,
+        supportLanguage: supportLanguage || undefined,
+        focusMode: focusMode || undefined,
       }).then(r => r.data);
     },
     onSuccess: (data: unknown) => {
@@ -224,6 +239,8 @@ export default function AIIcerikPage() {
     setAktifTab(id);
     setHata('');
     setSeciliSablonlar(new Set());
+    setSupportLanguage('');
+    setFocusMode('');
   }
 
   function kitapDegistir(kitapId: string) {
@@ -271,6 +288,8 @@ export default function AIIcerikPage() {
       const res = await api.post('/api/ai/icerik-uret', {
         tip: aktifTab, girdi, soruSayisi, duzey: seviye, ciktiFormati: 'word',
         uniteId: seciliUniteId || undefined,
+        supportLanguage: supportLanguage || undefined,
+        focusMode: focusMode || undefined,
       }, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data as Blob);
       const a = document.createElement('a');
@@ -388,18 +407,24 @@ export default function AIIcerikPage() {
                 girdi={girdi}
                 soruSayisi={soruSayisi}
                 uniteSecili={!!seciliUniteId}
+                supportLanguage={supportLanguage}
+                focusMode={focusMode}
                 onSeviye={setSeviye}
                 onGirdi={setGirdi}
                 onSoruSayisi={setSoruSayisi}
+                onSupportLanguage={setSupportLanguage}
+                onFocusMode={setFocusMode}
               />
             )}
 
-            {/* Ek yönlendirme şablonları */}
-            <EkSecenekler
-              tabId={aktifTab}
-              secili={seciliSablonlar}
-              onToggle={sablonToggle}
-            />
+            {/* Ek yönlendirme şablonları — sadece metin tabları için */}
+            {(aktifTab === 'konusma') && (
+              <EkSecenekler
+                tabId={aktifTab}
+                secili={seciliSablonlar}
+                onToggle={sablonToggle}
+              />
+            )}
 
             <button
               onClick={() => uretMutation.mutate()}
@@ -566,28 +591,113 @@ function SeviyeSecici({ seviye, onSeviye }: { seviye: string; onSeviye: (v: stri
   );
 }
 
+const ORNEK_YONERGELER: { kategori: string; ornekler: string[] }[] = [
+  {
+    kategori: '🌐 Dil',
+    ornekler: [
+      'Instructions in English, explanations in Arabic.',
+      'Yönergeleri Almanca yaz, açıklamalar Türkçe olsun.',
+      'İpuçlarını yalnızca eş anlamlı kelimelerle sınırla.',
+    ],
+  },
+  {
+    kategori: '🖼 Görsel',
+    ornekler: [
+      'Soruların yarısını ünitedeki resimlerle ilişkilendir.',
+      'Her soru için öğrencinin hayal etmesini sağlayacak betimlemeler ekle.',
+      'Eşleştirmede resimdeki nesneler ile Türkçe karşılıklarını hedefle.',
+    ],
+  },
+  {
+    kategori: '🎭 Senaryo',
+    ornekler: [
+      "Tüm soruları bir 'İstanbul Turu' senaryosu içinde kurgula.",
+      'Soruları 10 yaşındaki bir çocuğun ilgi alanlarına (oyun, hayvanlar) göre özelleştir.',
+      'Karagöz ve Hacivat karakterlerini kullanan diyalog temelli sorular hazırla.',
+    ],
+  },
+  {
+    kategori: '🧠 Pedagoji',
+    ornekler: [
+      'Her yanlış şık için neden yanlış olduğunu İngilizce açıkla.',
+      "Soruları 'somuttan soyuta' doğru sırala, kolaydan zora değil.",
+      'Okuma metninden çıkarım (inference) gerektiren mantık soruları üret.',
+    ],
+  },
+];
+
+const SUPPORT_LANGS = [
+  { code: 'EN', label: '🇬🇧 EN' },
+  { code: 'DE', label: '🇩🇪 DE' },
+  { code: 'FR', label: '🇫🇷 FR' },
+  { code: 'AR', label: '🇸🇦 AR' },
+];
+
+const FOCUS_MODES = [
+  { code: 'Grammar',    label: '📖 Gramer' },
+  { code: 'Culture',    label: '🇹🇷 Kültür' },
+  { code: 'DailyLife',  label: '🏠 Günlük' },
+  { code: 'EasyToHard', label: '📈 Kolay→Zor' },
+];
+
 function IcerikForm({
-  seviye, girdi, soruSayisi, uniteSecili, onSeviye, onGirdi, onSoruSayisi,
+  seviye, girdi, soruSayisi, uniteSecili, supportLanguage, focusMode,
+  onSeviye, onGirdi, onSoruSayisi, onSupportLanguage, onFocusMode,
 }: {
   seviye: string; girdi: string; soruSayisi: number; uniteSecili: boolean;
+  supportLanguage: string; focusMode: string;
   onSeviye: (v: string) => void; onGirdi: (v: string) => void; onSoruSayisi: (v: number) => void;
+  onSupportLanguage: (v: string) => void; onFocusMode: (v: string) => void;
 }) {
+  const [ilhamAcik, setIlhamAcik] = useState(false);
+
   return (
     <div className="space-y-4">
       <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          Konu veya Metin{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
+          Yönetmen Talimatı{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
         </label>
         <textarea
           value={girdi}
           onChange={e => onGirdi(e.target.value)}
           placeholder={uniteSecili
-            ? 'Ek yönlendirme yazabilirsiniz...'
-            : 'Örn: Türk mutfağı, zaman ifadeleri...'}
+            ? 'Örn: Sadece fiil çekimlerine odaklan, yanlış şıklara neden yanlış olduklarını İngilizce ekle.'
+            : 'Örn: İstanbul turu senaryosu kur, ipuçlarını Almanca ver.'}
           rows={3}
           className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
         />
+        <button
+          type="button"
+          onClick={() => setIlhamAcik(v => !v)}
+          className="text-[11px] text-slate-400 hover:text-primary transition-colors mt-1"
+        >
+          {ilhamAcik ? 'Kapat' : '+ İlham Al'}
+        </button>
+        {ilhamAcik && (
+          <div className="mt-2 space-y-2.5 border border-slate-100 rounded-xl p-3 bg-slate-50">
+            {ORNEK_YONERGELER.map(grup => (
+              <div key={grup.kategori}>
+                <p className="text-[10px] font-semibold text-slate-400 mb-1.5">{grup.kategori}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {grup.ornekler.map(ornek => (
+                    <button
+                      key={ornek}
+                      type="button"
+                      onClick={() => {
+                        onGirdi(girdi.trim() ? girdi.trim() + '\n' + ornek : ornek);
+                        setIlhamAcik(false);
+                      }}
+                      className="px-2 py-1 rounded-md text-[11px] bg-white border border-slate-200 text-slate-600 hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-colors text-left leading-tight"
+                    >
+                      {ornek}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -606,6 +716,52 @@ function IcerikForm({
               )}
             >
               {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* İpucu Dili */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          İpucu Dili <span className="normal-case font-normal">(isteğe bağlı)</span>
+        </label>
+        <div className="flex gap-1.5 flex-wrap">
+          {SUPPORT_LANGS.map(l => (
+            <button
+              key={l.code}
+              onClick={() => onSupportLanguage(supportLanguage === l.code ? '' : l.code)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                supportLanguage === l.code
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Odak Modu */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Odak <span className="normal-case font-normal">(isteğe bağlı)</span>
+        </label>
+        <div className="flex gap-1.5 flex-wrap">
+          {FOCUS_MODES.map(f => (
+            <button
+              key={f.code}
+              onClick={() => onFocusMode(focusMode === f.code ? '' : f.code)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                focusMode === f.code
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-amber-300',
+              )}
+            >
+              {f.label}
             </button>
           ))}
         </div>
@@ -812,7 +968,6 @@ function EkSecenekler({
 
 function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: string[] }) {
   const harfler = ['A', 'B', 'C', 'D'];
-  const seçenekler = ['kelime1', 'kelime2', 'kelime3', 'kelime4'] as const;
   const resimli = resimUrls && resimUrls.length > 0;
 
   return (
@@ -822,48 +977,71 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
           {sonuc.baslik}
         </h3>
       )}
-      {sonuc.sorular.map((soru, i) => (
-        <div key={i} className={cn('bg-slate-50 rounded-xl p-4', resimli && 'flex gap-3 items-start')}>
-          {resimUrls?.[i] && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={resimUrls[i]}
-              alt=""
-              className="w-24 h-24 object-cover rounded-lg shrink-0"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 mb-3">
-              <span className="text-primary mr-1.5">{i + 1}.</span>
-              {soru.description}
-            </p>
-            {!resimli ? (
-              <div className="grid grid-cols-2 gap-1.5">
-                {seçenekler.map((k, j) =>
-                  soru[k] ? (
+      {sonuc.sorular.map((soru, i) => {
+        // Yeni format öncelikli, eski format fallback
+        const soruMetni = soru.question ?? soru.description ?? '';
+        const dogruCevap = soru.answer ?? soru.kelime1 ?? '';
+        const seçenekler: string[] = soru.options?.length
+          ? soru.options
+          : [soru.kelime1, soru.kelime2, soru.kelime3, soru.kelime4].filter(Boolean) as string[];
+
+        return (
+          <div key={i} className={cn('bg-slate-50 rounded-xl p-4', resimli && 'flex gap-3 items-start')}>
+            {resimUrls?.[i] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={resimUrls[i]} alt="" className="w-24 h-24 object-cover rounded-lg shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-900 mb-3">
+                <span className="text-primary mr-1.5">{i + 1}.</span>
+                {soruMetni}
+              </p>
+
+              {/* Seçenekler */}
+              {!resimli && seçenekler.length > 0 && (
+                <div className="grid grid-cols-2 gap-1.5 mb-3">
+                  {seçenekler.map((opt, j) => (
                     <div
-                      key={k}
+                      key={j}
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-xs border',
-                        k === 'kelime1'
+                        opt === dogruCevap || j === 0
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
                           : 'bg-white border-slate-200 text-slate-600',
                       )}
                     >
                       <span className="font-semibold mr-1">{harfler[j]})</span>
-                      {soru[k]}
+                      {opt}
                     </div>
-                  ) : null
-                )}
-              </div>
-            ) : (
-              <span className="inline-block px-3 py-1 rounded-lg text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium">
-                {soru.kelime1}
-              </span>
-            )}
+                  ))}
+                </div>
+              )}
+
+              {resimli && (
+                <span className="inline-block px-3 py-1 rounded-lg text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium mb-3">
+                  {dogruCevap}
+                </span>
+              )}
+
+              {/* İpucu */}
+              {soru.hint && (
+                <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 mb-2">
+                  <span className="shrink-0">💡</span>
+                  <span>{soru.hint}</span>
+                </div>
+              )}
+
+              {/* Açıklama */}
+              {soru.explanation && (
+                <div className="flex items-start gap-1.5 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+                  <span className="shrink-0">📖</span>
+                  <span>{soru.explanation}</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
