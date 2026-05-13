@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
 import { BookOpen, Flame, Heart, LogOut, Trophy, Zap } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
@@ -13,8 +14,21 @@ export function AppNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [xpPulse, setXpPulse] = useState(false);
+  const prevPuan = useRef<number | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (prevPuan.current !== null && user.puan > prevPuan.current) {
+      setXpPulse(true);
+      const t = setTimeout(() => setXpPulse(false), 600);
+      prevPuan.current = user.puan;
+      return () => clearTimeout(t);
+    }
+    prevPuan.current = user.puan;
+  }, [user?.puan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleLogout() {
     logout();
@@ -130,7 +144,14 @@ export function AppNav() {
                     </span>
                     <span className="flex items-center gap-1 text-primary">
                       <Zap className="size-4 sm:size-5 fill-current" />
-                      <span className="text-xs sm:text-sm">{user.puan.toLocaleString('tr', { maximumFractionDigits: 0 })}</span>
+                      <motion.span
+                        id="nav-xp-counter"
+                        className="text-xs sm:text-sm tabular-nums"
+                        animate={xpPulse ? { scale: [1, 1.65, 1.2, 1] } : {}}
+                        transition={{ duration: 0.45, type: 'spring', stiffness: 300, damping: 15 }}
+                      >
+                        {user.puan.toLocaleString('tr', { maximumFractionDigits: 0 })}
+                      </motion.span>
                     </span>
                   </div>
                   <PlusBanner variant="compact" className="hidden sm:flex" />

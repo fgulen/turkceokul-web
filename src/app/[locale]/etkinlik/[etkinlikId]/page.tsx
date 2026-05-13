@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState, useEffect } from 'react'; // useState buraya eklendi
-import { useSearchParams } from 'next/navigation'; // <-- Bu satırı ekle
+import { use, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useSearchParams } from 'next/navigation';
 import { useRouter, Link } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -72,6 +73,72 @@ function AnimatedScore({ puan }: { puan: number }) {
   return <span>{display}</span>;
 }
 
+const PARTICLE_COUNT = 7;
+// Yıldızlar ve kart ~950ms'de görünüyor; parçacıklar ondan sonra başlasın
+const FLY_START_DELAY = 1150;
+
+function XpFly() {
+  const [pos, setPos] = useState<{
+    start: { x: number; y: number };
+    nav: { x: number; y: number };
+  } | null>(null);
+  const [done, setDone] = useState(false);
+
+  const offsets = useRef(
+    Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+      dx: Math.cos((i / PARTICLE_COUNT) * Math.PI * 2) * 36 + (Math.random() - 0.5) * 14,
+      dy: Math.sin((i / PARTICLE_COUNT) * Math.PI * 2) * 16 + (Math.random() - 0.5) * 8,
+    }))
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const badge = document.getElementById('result-xp-badge');
+      const nav   = document.getElementById('nav-xp-counter');
+      const br = badge?.getBoundingClientRect();
+      const nr = nav?.getBoundingClientRect();
+      setPos({
+        start: {
+          x: br ? br.left + br.width  / 2 : window.innerWidth  / 2,
+          y: br ? br.top  + br.height / 2 : window.innerHeight * 0.52,
+        },
+        nav: {
+          x: nr ? nr.left + nr.width  / 2 : window.innerWidth  - 80,
+          y: nr ? nr.top  + nr.height / 2 : 28,
+        },
+      });
+    }, FLY_START_DELAY);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!pos || done) return null;
+  const { start, nav } = pos;
+
+  return createPortal(
+    <>
+      {offsets.current.map((off, i) => (
+        <motion.div
+          key={i}
+          className="fixed pointer-events-none z-[150]"
+          style={{ left: start.x + off.dx, top: start.y + off.dy }}
+          initial={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+          animate={{
+            opacity: [1, 1, 0.8, 0],
+            scale: [1, 1.2, 0.7],
+            x: nav.x - (start.x + off.dx),
+            y: nav.y - (start.y + off.dy),
+          }}
+          transition={{ duration: 0.72, delay: i * 0.055, ease: [0.4, 0, 0.6, 1] }}
+          onAnimationComplete={i === PARTICLE_COUNT - 1 ? () => setDone(true) : undefined}
+        >
+          <Zap className="size-4 fill-current drop-shadow-sm" style={{ color: 'var(--correct)' }} />
+        </motion.div>
+      ))}
+    </>,
+    document.body
+  );
+}
+
 function ResultScreen({
   sonuc,
   onRetry,
@@ -86,6 +153,7 @@ function ResultScreen({
   const { play } = useGameSound();
 
   useEffect(() => {
+    // Puan + kalp anında güncelle — Tekrar Dene erken basılsa bile veri kaybolmaz
     updateUser({ puan: sonuc.yeniToplam, kalp: sonuc.kalanKalp });
     play(sonuc.basarili ? 'complete' : 'wrong');
   }, [sonuc, updateUser, play]);
@@ -97,6 +165,8 @@ function ResultScreen({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
     >
+      {sonuc.kazanilanXp > 0 && <XpFly />}
+
       {/* Dekoratif floating elementler */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[12%] left-[14%] w-3 h-3 bg-primary/30 rounded-full" />
@@ -143,7 +213,7 @@ function ResultScreen({
           transition={{ delay: 0.95 }}
         >
           {sonuc.kazanilanXp > 0 && (
-            <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+            <div id="result-xp-badge" className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               <Zap className="size-3.5 fill-current" />
               +{sonuc.kazanilanXp} XP
             </div>
