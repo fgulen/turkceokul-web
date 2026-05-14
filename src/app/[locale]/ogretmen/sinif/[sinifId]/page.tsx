@@ -542,7 +542,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                 <>
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm">
                     <Check className="size-4 shrink-0" />
-                    <span><strong>{topluSonuclar.length} öğrenci</strong> başarıyla eklendi. PIN'ler yalnızca şimdi görünür — Badge PDF ile yazdırın.</span>
+                    <span><strong>{topluSonuclar.length} öğrenci</strong> başarıyla eklendi. PIN&apos;ler yalnızca şimdi görünür — Badge PDF ile yazdırın.</span>
                   </div>
 
                   <div className="rounded-xl border border-slate-200 overflow-hidden">

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Play, Users, Trophy, Wifi } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -38,7 +38,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     enabled: !!user,
   });
 
-  const { data: durum, refetch: refetchDurum } = useQuery<KahootDurum>({
+  const { data: durum } = useQuery<KahootDurum>({
     queryKey: ['kahoot-durum', oyunKodu],
     queryFn: () => api.get(`/api/kahoot/${oyunKodu}`).then(r => r.data),
     enabled: !!oyunKodu,

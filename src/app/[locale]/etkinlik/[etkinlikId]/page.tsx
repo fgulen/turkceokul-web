@@ -22,6 +22,7 @@ import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
 import { BoslukDoldurmaPlayer } from '@/components/players/bosluk-doldurma';
 import { ResmeTiklaDinlePlayer } from '@/components/players/resme-tikla-dinle';
 import { YaziyaTiklaDinlePlayer } from '@/components/players/yaziya-tikla-dinle';
+import { ResimMetinEslestirmePlayer } from '@/components/players/resim-metin-eslestirme';
 
 interface CevapSonuc {
   puan: number;
@@ -234,6 +235,7 @@ export default function EtkinlikPage({
       case 'BoslukDoldurma': return <BoslukDoldurmaPlayer key={key} {...props} />;
       case 'ResmeTiklaDinle': return <ResmeTiklaDinlePlayer key={key} {...props} />;
       case 'YaziyaTiklaDinle': return <YaziyaTiklaDinlePlayer key={key} {...props} />;
+      case 'ResimMetinEslestirme': return <ResimMetinEslestirmePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">

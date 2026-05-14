@@ -108,11 +108,6 @@ export default function OgretmenDashboard() {
     setSeciliOgretmenId(null);
   }
 
-  // Hangi öğretmen listesi kullanılacak
-  const ogretmenListesi: OgretmenItem[] =
-    formData?.rol === 'KurumYoneticisi'
-      ? (formData.ogretmenler ?? [])
-      : (cascadeOgretmenler ?? []);
 
   // "Oluştur" butonu ne zaman aktif?
   const rol = formData?.rol ?? '';

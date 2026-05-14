@@ -5,10 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { Link } from '@/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft, CheckCircle2,
+  CheckCircle2,
   Circle, Lock, Play, RotateCcw,
   BookOpen, BookMarked, Headphones, PenLine, Languages, Trophy,
-  ListChecks, Book, List,
+  Book, List,
 } from 'lucide-react';
 import { AppNav } from '@/components/app-nav';
 import { PlusBanner } from '@/components/plus-banner';
@@ -222,7 +222,6 @@ function AdventurePath({
         {filtered.map((e, idx) => {
           const isLocked = lockStates[idx];
           const isLast = idx === filtered.length - 1;
-          const nextLocked = idx < filtered.length - 1 ? lockStates[idx + 1] : false;
 
           return (
             <div key={e.id} className="flex flex-col items-center w-full">
@@ -409,7 +408,7 @@ export default function DersPage({
       uniteler.find(u => !u.kilitli) ??
       uniteler[0];
     if (first) setSelectedUniteId(first.id);
-  }, [uniteler]);
+  }, [uniteler, selectedUniteId]);
 
   const selectedUnite = uniteler?.find(u => u.id === selectedUniteId) ?? null;
 
