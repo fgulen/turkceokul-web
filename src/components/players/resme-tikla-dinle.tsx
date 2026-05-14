@@ -89,57 +89,63 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="mb-5"
         >
-          <div className="rounded-3xl overflow-hidden border border-border/50 bg-card shadow-sm">
-            {/* Resim — sığmayan durumda contain kullan */}
-            <div className="relative w-full bg-muted flex items-center justify-center" style={{ minHeight: 200 }}>
-              {imgUrl && !imgError ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imgUrl}
-                  alt={label}
-                  className="w-full max-h-72 object-contain block"
-                  draggable={false}
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground py-12">
-                  <ImageOff className="size-10 opacity-30" />
-                  {label && <p className="text-sm font-medium px-4 text-center">{label}</p>}
-                </div>
-              )}
+          <div className="rounded-3xl border border-border/50 bg-card shadow-sm">
+            {/* Resim — padding ile köşelerden uzak, radius kesmez */}
+            <div className="p-3">
+              <div className="relative rounded-[1.4rem] overflow-hidden bg-muted">
+                {imgUrl && !imgError ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imgUrl}
+                    alt={label}
+                    className="w-full h-auto block"
+                    draggable={false}
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground py-16">
+                    <ImageOff className="size-10 opacity-30" />
+                    {label && <p className="text-sm font-medium px-4 text-center">{label}</p>}
+                  </div>
+                )}
 
-              {/* Ses butonu — ortada */}
-              {sesUrl && (
-                <button
-                  onClick={playAudio}
-                  aria-label="Sesi çal"
-                  className={cn(
-                    'absolute size-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95',
-                    playing
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-white/90 text-primary hover:bg-white',
-                  )}
-                >
-                  {playing ? (
-                    <span className="flex items-end gap-[3px] h-5">
-                      {[0, 0.15, 0.3].map((delay, i) => (
-                        <motion.span
-                          key={i}
-                          className="w-[3px] rounded-full bg-current"
-                          animate={{ height: ['6px', '16px', '6px'] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay, ease: 'easeInOut' }}
-                        />
-                      ))}
+                {/* Ses butonu — resim üstünde ortada */}
+                {sesUrl && (
+                  <button
+                    onClick={playAudio}
+                    aria-label="Sesi çal"
+                    className={cn(
+                      'absolute inset-0 w-full h-full flex items-center justify-center',
+                    )}
+                  >
+                    <span className={cn(
+                      'size-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95',
+                      playing
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-white/90 text-primary hover:bg-white',
+                    )}>
+                      {playing ? (
+                        <span className="flex items-end gap-[3px] h-5">
+                          {[0, 0.15, 0.3].map((delay, i) => (
+                            <motion.span
+                              key={i}
+                              className="w-[3px] rounded-full bg-current"
+                              animate={{ height: ['6px', '16px', '6px'] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay, ease: 'easeInOut' }}
+                            />
+                          ))}
+                        </span>
+                      ) : (
+                        <Volume2 className="size-6" />
+                      )}
                     </span>
-                  ) : (
-                    <Volume2 className="size-6" />
-                  )}
-                </button>
-              )}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Kelime/etiket */}
-            <div className="px-5 py-4">
+            <div className="px-5 pb-5">
               <p className="text-2xl font-bold text-foreground leading-snug">{label}</p>
               {current.description && current.kelime1 && current.description !== current.kelime1 && (
                 <p className="text-sm text-muted-foreground mt-1">{current.kelime1}</p>
