@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ImageOff } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { useGameSound } from '@/hooks/use-game-sound';
 
 export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -17,6 +18,8 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  const { play } = useGameSound();
 
   const [selectedId, setSelectedId] = useState<string | null>(null); // seçili metin detayId'si
   const [matched, setMatched] = useState<Record<string, string>>({}); // imgDetayId → labelDetayId
@@ -35,6 +38,7 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
 
     if (selectedId === detayId) {
       // Doğru eşleşme
+      play('correct');
       const next = { ...matched, [detayId]: selectedId };
       setMatched(next);
       setSelectedId(null);
@@ -42,12 +46,13 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
       if (Object.keys(next).length === detaylar.length) {
         const cevaplar: Cevap[] = detaylar.map((d) => ({
           id: d.id,
-          cevap: next[d.id] ?? '',
+          cevap: d.description ?? '',  // backend d.Description ile karşılaştırıyor
         }));
         setTimeout(() => onComplete(cevaplar), 400);
       }
     } else {
       // Yanlış eşleşme
+      play('wrong');
       setWrongImgId(detayId);
       setTimeout(() => {
         setWrongImgId(null);
@@ -89,9 +94,9 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
         })}
       </div>
 
-      {/* Resim ızgarası — altta, dikdörtgen, crop yok */}
+      {/* Resim ızgarası — altta, doğal oran, crop/blank yok */}
       <div
-        className="grid gap-3"
+        className="grid gap-3 items-start"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {detaylar.map((d) => {
@@ -106,7 +111,7 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
               onClick={() => handleResim(d.id)}
               disabled={!isClickable && !isMatched}
               className={cn(
-                'relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-muted',
+                'relative rounded-2xl overflow-hidden border-2 transition-all duration-200',
                 isMatched && 'cursor-default opacity-60',
                 isWrong && 'border-destructive animate-shake',
                 !isMatched && !isWrong && isClickable && 'border-primary hover:ring-2 hover:ring-primary/30 cursor-pointer',
@@ -119,12 +124,11 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
                 <img
                   src={imgUrl}
                   alt={d.description ?? ''}
-                  className="w-full object-contain block"
-                  style={{ maxHeight: 160 }}
+                  className="w-full h-auto block"
                   draggable={false}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground p-4 text-center" style={{ minHeight: 100 }}>
+                <div className="flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground p-4 text-center" style={{ minHeight: 100 }}>
                   <ImageOff className="size-6 opacity-40" />
                   <span className="text-xs font-medium">{d.description}</span>
                 </div>
