@@ -116,7 +116,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
               style={isUsed ? { borderColor: 'var(--correct)' } : undefined}
             >
               <Volume2 className="size-4" />
-              {i + 1}. Ses
+              {i + 1}
             </button>
           );
         })}

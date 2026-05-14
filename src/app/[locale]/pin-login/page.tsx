@@ -41,7 +41,7 @@ export default function PinLoginPage() {
 
         <div className="bg-card border border-border rounded-2xl p-8">
           <h1 className="text-2xl font-bold mb-1">Giriş Yap</h1>
-          <p className="text-muted-foreground text-sm mb-6">Kullanıcı adı ve PIN'ini gir</p>
+          <p className="text-muted-foreground text-sm mb-6">Kullanıcı adı ve PIN&apos;ini gir</p>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
