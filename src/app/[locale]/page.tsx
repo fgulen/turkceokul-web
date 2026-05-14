@@ -1,6 +1,7 @@
 import { Link } from '@/navigation';
-import { BookOpen, Flame, Heart, Zap, Trophy, ArrowRight, Star } from "lucide-react";
+import { Flame, Heart, Zap, Trophy, ArrowRight, Star } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const features = [
@@ -58,9 +59,8 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
-            <BookOpen className="size-5" />
-            TürkçeOkulu
+          <Link href="/">
+            <Logo size="md" />
           </Link>
           <div className="flex items-center gap-2">
             <Link href="/giris" className={cn(buttonVariants({ variant: "ghost" }))}>
@@ -198,9 +198,8 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-8 border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-            <BookOpen className="size-4 text-primary" />
-            TürkçeOkulu
+          <Link href="/">
+            <Logo size="sm" />
           </Link>
           <span>&copy; 2026 TürkçeOkulu. Tüm hakları saklıdır.</span>
         </div>

@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { Volume2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { PlayingBars, ActivityHint } from './ui';
 
 export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -73,9 +73,7 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
 
   return (
     <div className="max-w-lg mx-auto">
-      <p className="text-sm text-muted-foreground text-center mb-6">
-        Bir ses seç, sonra eşleşen metne tıkla.
-      </p>
+      <ActivityHint>Bir ses seç, sonra eşleşen metne tıkla.</ActivityHint>
 
       {/* Ses butonları — üstte */}
       <div className="flex flex-wrap gap-2 justify-center mb-8">
@@ -98,20 +96,10 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
               )}
               style={isUsed ? { borderColor: 'var(--correct)', color: 'var(--correct)' } : undefined}
             >
-              {isPlaying ? (
-                <span className="flex items-end gap-[2px] h-4">
-                  {[0, 0.15, 0.3].map((delay, j) => (
-                    <motion.span
-                      key={j}
-                      className="w-[3px] rounded-full bg-current"
-                      animate={{ height: ['4px', '12px', '4px'] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay, ease: 'easeInOut' }}
-                    />
-                  ))}
-                </span>
-              ) : (
-                <Volume2 className="size-5" />
-              )}
+              {isPlaying
+                ? <PlayingBars size="md" />
+                : <Volume2 className="size-5" />
+              }
               <span>{isPlaying ? '…' : 'Dinle'}</span>
             </button>
           );

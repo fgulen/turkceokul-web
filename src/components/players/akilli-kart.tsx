@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Volume2, Zap } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { GameHUD } from '@/components/game/game-hud';
+import { ProgressDots, PlayingBars, ActivityHint } from './ui';
 
 const XP_BASE = 8;
 
@@ -33,20 +36,8 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [biliyorumAnim, setBiliyorumAnim] = useState(false);
   const burstId = useRef(0);
   const flipDisabled = useRef(false);
-  const wordAudioRef = useRef<HTMLAudioElement | null>(null);
   const { play } = useGameSound();
-
-  function playWordAudio(url: string) {
-    if (wordAudioRef.current) {
-      wordAudioRef.current.pause();
-      wordAudioRef.current.currentTime = 0;
-    }
-    const audio = new Audio(url);
-    wordAudioRef.current = audio;
-    audio.play().catch(() => {});
-  }
-
-  useEffect(() => () => { wordAudioRef.current?.pause(); }, []);
+  const { playing: wordPlaying, play: playWordAudio } = usePlayerAudio();
 
   const current = detaylar[index];
   const imgUrl = toMediaUrl(current.resimLink);
@@ -109,7 +100,11 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Akıllı Kart"
         birim="Kart"
         hideCounter
+        hideProgress
       />
+
+      <ProgressDots total={detaylar.length} activeIndex={index} />
+      <ActivityHint>Kartı çevir, bilip bilmediğini işaretle.</ActivityHint>
 
       {/* XP burst — CSS animasyonu (Framer Motion initial opacity:0 sorunu yok) */}
       <div className="relative h-0 overflow-visible">
@@ -199,7 +194,10 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
                   className="size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
                   aria-label="Sesi çal"
                 >
-                  <Volume2 className="size-4 text-primary" />
+                  {wordPlaying
+                    ? <PlayingBars size="sm" color="bg-primary" />
+                    : <Volume2 className="size-4 text-primary" />
+                  }
                 </button>
               )}
             </div>
@@ -229,20 +227,6 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         </div>
       )}
 
-      {/* İlerleme noktaları — altta */}
-      <div className="flex justify-center gap-1.5 mt-5">
-        {detaylar.map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'h-1.5 rounded-full transition-all duration-300',
-              i < index  && 'bg-primary/40 w-3',
-              i === index && 'bg-primary w-6',
-              i > index  && 'bg-muted w-3',
-            )}
-          />
-        ))}
-      </div>
     </div>
   );
 }

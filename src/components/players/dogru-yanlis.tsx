@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { ActivityHint } from './ui';
 
 export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -43,7 +44,7 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
       </div>
 
       {etkinlik.soruYonergesi && (
-        <p className="text-sm text-muted-foreground mb-4 text-center">{etkinlik.soruYonergesi}</p>
+        <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
       )}
 
       <motion.div

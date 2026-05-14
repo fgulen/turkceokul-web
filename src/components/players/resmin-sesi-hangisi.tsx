@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Volume2, CheckCircle2, XCircle } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { ProgressDots, PlayingBars, NextButton, NavCounter, ActivityHint } from './ui';
 
 interface Answer { detayId: string; secilen: string; dogru: string; sonuc: boolean }
 
@@ -138,20 +139,8 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm mx-auto">
-      {/* İlerleme noktaları */}
-      <div className="flex justify-center gap-1.5 mb-6">
-        {detaylar.map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'h-1.5 rounded-full transition-all duration-300',
-              i < index  && 'bg-primary/40 w-3',
-              i === index && 'bg-primary w-6',
-              i > index  && 'bg-muted w-3',
-            )}
-          />
-        ))}
-      </div>
+      <ProgressDots total={detaylar.length} activeIndex={index} />
+      <ActivityHint>Resmin sesini bul.</ActivityHint>
 
       {/* Resim */}
       <AnimatePresence mode="wait" initial={false}>
@@ -193,20 +182,10 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
               )}
             >
               <span className="shrink-0 size-9 rounded-lg bg-muted flex items-center justify-center">
-                {isPlaying ? (
-                  <span className="flex items-end gap-[2px] h-4">
-                    {[0, 0.15, 0.3].map((delay, j) => (
-                      <motion.span
-                        key={j}
-                        className="w-[2px] rounded-full bg-primary"
-                        animate={{ height: ['3px', '12px', '3px'] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay, ease: 'easeInOut' }}
-                      />
-                    ))}
-                  </span>
-                ) : (
-                  <Volume2 className="size-4" />
-                )}
+                {isPlaying
+                  ? <PlayingBars size="sm" color="bg-primary" />
+                  : <Volume2 className="size-4" />
+                }
               </span>
               <span className={cn('font-semibold', isSelected ? 'text-primary' : 'text-foreground')}>
                 {isPlaying ? 'Dinleniyor…' : 'Dinle'}
@@ -216,19 +195,8 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
         })}
       </div>
 
-      {/* İleri */}
-      <button
-        onClick={handleIleri}
-        disabled={!secilen}
-        className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
-      >
-        {isLast ? 'Sonuçları Gör' : 'İleri'}
-        <ChevronRight className="size-4" />
-      </button>
-
-      <p className="text-center text-xs text-muted-foreground mt-3">
-        {index + 1} / {detaylar.length}
-      </p>
+      <NextButton isLast={isLast} onClick={handleIleri} disabled={!secilen} />
+      <NavCounter index={index} total={detaylar.length} />
     </div>
   );
 }

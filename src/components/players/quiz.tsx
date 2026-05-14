@@ -8,6 +8,7 @@ import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { useAuthStore } from '@/stores/auth';
 import { GameHUD } from '@/components/game/game-hud';
+import { ActivityHint } from './ui';
 
 const XP_BASE = 10;
 
@@ -85,7 +86,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       />
 
       {etkinlik.soruYonergesi && (
-        <p className="text-sm text-muted-foreground mb-4 text-center">{etkinlik.soruYonergesi}</p>
+        <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
       )}
 
       {/* Soru kartı — her soru değişiminde fade+slide */}

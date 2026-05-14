@@ -24,9 +24,10 @@ interface GameHUDProps {
   etiket?: string;
   birim?: string;       // "Soru" (default) veya "Kart" vb.
   hideCounter?: boolean; // "Kart X/Y" metnini gizle (noktalar kullanılıyorsa)
+  hideProgress?: boolean;
 }
 
-export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru', hideCounter = false }: GameHUDProps) {
+export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru', hideCounter = false, hideProgress = false }: GameHUDProps) {
   const progress = (soruNo / toplamSoru) * 100;
   const tier = getTier(combo);
   const prevKalp = useRef(kalp);
@@ -89,15 +90,17 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
       </div>
 
       {/* Progress bar */}
-      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: 'var(--correct)' }}
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
+      {!hideProgress && (
+        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: 'var(--correct)' }}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+      )}
 
       {!hideCounter && (
         <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 
 export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) {
@@ -54,9 +55,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
 
   return (
     <div className="max-w-lg mx-auto">
-      <p className="text-sm text-muted-foreground text-center mb-8">
-        Sol taraftan bir kelime seç, sağ taraftan eşleştir.
-      </p>
+      <ActivityHint>Sol taraftan bir kelime seç, sağ taraftan eşleştir.</ActivityHint>
 
       <div className="grid grid-cols-2 gap-3">
         {/* Left column */}

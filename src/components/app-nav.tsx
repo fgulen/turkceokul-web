@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { BookOpen, Flame, Heart, LogOut, Trophy, Zap } from 'lucide-react';
+import { Flame, Heart, LogOut, Trophy, Zap } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
+import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 
 export function AppNav() {
@@ -39,9 +40,8 @@ export function AppNav() {
     <header className="bg-white sticky top-0 z-[70] border-b border-slate-100 shadow-sm w-full">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo */}
-        <Link href="/pano" className="flex items-center gap-2 shrink-0">
-          <BookOpen className="size-5 text-primary shrink-0" />
-          <span className="text-lg sm:text-xl font-bold text-primary truncate">TürkçeOkulu</span>
+        <Link href="/pano" className="shrink-0">
+          <Logo size="md" />
         </Link>
 
         {/* Nav */}

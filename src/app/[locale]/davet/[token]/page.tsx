@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect } from 'react';
 import { useRouter, useLocale } from '@/navigation';
-import { BookOpen, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Logo } from '@/components/logo';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
@@ -82,9 +83,8 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 font-bold text-xl text-primary mb-8">
-          <BookOpen className="size-5" />
-          TürkçeOkulu
+        <div className="flex justify-center mb-8">
+          <Logo size="md" />
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8">

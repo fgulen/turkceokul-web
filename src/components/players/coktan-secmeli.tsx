@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
+import { ActivityHint } from './ui';
 
 export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -51,7 +52,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       </div>
 
       {etkinlik.soruYonergesi && (
-        <p className="text-sm text-muted-foreground mb-4 text-center">{etkinlik.soruYonergesi}</p>
+        <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
       )}
 
       {/* Etkinlik resmi */}

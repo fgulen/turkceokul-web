@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
+import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 
 function playAudio(url: string) {
@@ -59,9 +60,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
 
   return (
     <div className="max-w-lg mx-auto">
-      <p className="text-sm text-muted-foreground text-center mb-8">
-        Bir ses seç, sonra eşleşen resme tıkla.
-      </p>
+      <ActivityHint>Bir ses seç, sonra eşleşen resme tıkla.</ActivityHint>
 
       {/* Images */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">

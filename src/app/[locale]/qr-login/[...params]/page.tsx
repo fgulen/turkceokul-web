@@ -2,7 +2,8 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter, useLocale } from '@/navigation';
-import { BookOpen, Loader2, XCircle } from 'lucide-react';
+import { Loader2, XCircle } from 'lucide-react';
+import { Logo } from '@/components/logo';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
@@ -33,9 +34,8 @@ export default function QrLoginPage({ params }: { params: Promise<{ params: stri
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-xs text-center">
-        <div className="flex items-center justify-center gap-2 font-bold text-xl text-primary mb-10">
-          <BookOpen className="size-5" />
-          TürkçeOkulu
+        <div className="flex justify-center mb-10">
+          <Logo size="md" />
         </div>
 
         {!hata ? (

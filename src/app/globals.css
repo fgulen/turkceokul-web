@@ -46,74 +46,96 @@
   --color-combo: var(--combo);
   --color-correct: var(--correct);
   --color-wrong: var(--wrong);
+
+  /* Feedback banner renkleri */
+  --color-primary-dark: var(--primary-dark);
+  --color-feedback-correct: var(--feedback-correct);
+  --color-feedback-correct-bg: var(--feedback-correct-bg);
+  --color-feedback-wrong: var(--feedback-wrong);
+  --color-feedback-wrong-bg: var(--feedback-wrong-bg);
+  --color-feedback-hint: var(--feedback-hint);
+  --color-feedback-hint-bg: var(--feedback-hint-bg);
+  --color-feedback-timeout: var(--feedback-timeout);
+  --color-feedback-timeout-bg: var(--feedback-timeout-bg);
 }
 
 :root {
-  /* Ana renkler — koyu yeşil (Stitch #006b2c) */
+  /* Ana renkler — logo mavisi (#1b75bc) */
   --background: oklch(0.98 0.008 255);     /* #f8f9ff — hafif mavi-beyaz */
   --foreground: oklch(0.14 0.03 240);      /* #0b1c30 — koyu lacivert */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.14 0.03 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.14 0.03 240);
-  --primary: oklch(0.40 0.14 142);         /* #006b2c — koyu yeşil */
+  --primary: oklch(0.51 0.14 241);         /* #1b75bc — logo köşeli parantez mavisi */
+  --primary-dark: oklch(0.42 0.14 241);    /* #005c99 — hover / gradient başlangıcı */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.78 0.14 88);        /* #fed01b amber/gold */
+  --secondary: oklch(0.78 0.14 88);        /* #fed01b amber/gold — coin, XP */
   --secondary-foreground: oklch(0.22 0.08 88);
   --muted: oklch(0.95 0.02 255);           /* #eff4ff — yüzey kapsayıcı */
-  --muted-foreground: oklch(0.42 0.02 145); /* #3e4a3d */
+  --muted-foreground: oklch(0.45 0.02 241); /* #3e4a5a — mavi-gri */
   --accent: oklch(0.72 0.18 45);           /* turuncu — streak/combo */
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.57 0.22 27);      /* #ba1a1a */
-  --border: oklch(0.80 0.02 145);          /* #bdcaba — yeşil tonlu gri */
+  --border: oklch(0.87 0.02 241);          /* mavi tonlu gri kenarlık */
   --input: oklch(0.88 0.01 255);
-  --ring: oklch(0.40 0.14 142);
-  --radius: 0.5rem;                         /* 8px — Stitch ROUND_EIGHT */
-  --sidebar: oklch(0.97 0.01 145);
+  --ring: oklch(0.51 0.14 241);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.97 0.01 241);
   --sidebar-foreground: oklch(0.14 0.03 240);
-  --sidebar-primary: oklch(0.40 0.14 142);
+  --sidebar-primary: oklch(0.51 0.14 241);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.93 0.02 145);
-  --sidebar-accent-foreground: oklch(0.25 0.06 142);
-  --sidebar-border: oklch(0.85 0.02 145);
-  --sidebar-ring: oklch(0.40 0.14 142);
+  --sidebar-accent: oklch(0.93 0.02 241);
+  --sidebar-accent-foreground: oklch(0.25 0.06 241);
+  --sidebar-border: oklch(0.85 0.02 241);
+  --sidebar-ring: oklch(0.51 0.14 241);
 
   /* Oyun renkleri */
-  --heart: oklch(0.62 0.22 15);            /* kırmızı */
-  --streak: oklch(0.72 0.18 45);           /* turuncu */
-  --xp: oklch(0.40 0.14 142);             /* yeşil = primary */
-  --combo: oklch(0.68 0.20 290);           /* mor */
-  --correct: oklch(0.55 0.18 145);         /* yeşil */
-  --wrong: oklch(0.62 0.22 15);            /* kırmızı */
+  --heart: oklch(0.62 0.22 15);            /* #ef4444 kırmızı */
+  --streak: oklch(0.72 0.18 45);           /* #f97316 turuncu */
+  --xp: oklch(0.51 0.14 241);             /* mavi = primary */
+  --combo: oklch(0.68 0.20 290);           /* #7c3aed mor */
+  --correct: oklch(0.55 0.18 145);         /* #16a34a yeşil */
+  --wrong: oklch(0.53 0.22 22);            /* #dc2626 kırmızı */
+
+  /* Feedback banner renkleri */
+  --feedback-correct: oklch(0.55 0.18 145);   /* #16a34a */
+  --feedback-correct-bg: oklch(0.97 0.06 145); /* #dcfce7 */
+  --feedback-wrong: oklch(0.53 0.22 22);       /* #dc2626 */
+  --feedback-wrong-bg: oklch(0.97 0.04 22);    /* #fee2e2 */
+  --feedback-hint: oklch(0.52 0.22 298);       /* #7c3aed */
+  --feedback-hint-bg: oklch(0.97 0.04 298);    /* #f5f3ff */
+  --feedback-timeout: oklch(0.63 0.16 66);     /* #d97706 */
+  --feedback-timeout-bg: oklch(0.98 0.04 80);  /* #fef3c7 */
 }
 
 .dark {
-  --background: oklch(0.13 0.02 145);
+  --background: oklch(0.13 0.02 241);
   --foreground: oklch(0.97 0 0);
-  --card: oklch(0.17 0.02 145);
+  --card: oklch(0.17 0.02 241);
   --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.17 0.02 145);
+  --popover: oklch(0.17 0.02 241);
   --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.55 0.16 142);
+  --primary: oklch(0.66 0.14 241);
   --primary-foreground: oklch(0.10 0 0);
-  --secondary: oklch(0.25 0.04 145);
+  --secondary: oklch(0.25 0.04 241);
   --secondary-foreground: oklch(0.90 0 0);
-  --muted: oklch(0.23 0.02 145);
+  --muted: oklch(0.23 0.02 241);
   --muted-foreground: oklch(0.65 0 0);
   --accent: oklch(0.72 0.18 45);
   --accent-foreground: oklch(0.10 0 0);
   --destructive: oklch(0.70 0.19 22);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.55 0.16 142);
-  --sidebar: oklch(0.17 0.02 145);
+  --ring: oklch(0.66 0.14 241);
+  --sidebar: oklch(0.17 0.02 241);
   --sidebar-foreground: oklch(0.97 0 0);
-  --sidebar-primary: oklch(0.55 0.16 142);
+  --sidebar-primary: oklch(0.66 0.14 241);
   --sidebar-primary-foreground: oklch(0.10 0 0);
-  --sidebar-accent: oklch(0.23 0.02 145);
+  --sidebar-accent: oklch(0.23 0.02 241);
   --sidebar-accent-foreground: oklch(0.90 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.55 0.16 142);
+  --sidebar-ring: oklch(0.66 0.14 241);
 }
 
 @layer base {
@@ -125,16 +147,16 @@
   }
 }
 
-/* Sonuç ekranı — Stitch gradient + glass */
+/* Sonuç ekranı — mavi gradient + glass */
 .gradient-result-bg {
-  background: linear-gradient(145deg, #f0fff4 0%, #f5f3ff 100%);
+  background: linear-gradient(145deg, #eff6ff 0%, #f5f3ff 100%);
 }
 .glass-card {
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 40px 100px -20px rgba(0, 107, 44, 0.08), 0 10px 40px -15px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 40px 100px -20px rgba(27, 117, 188, 0.08), 0 10px 40px -15px rgba(0, 0, 0, 0.04);
 }
 .star-glow {
   filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.45));
@@ -230,9 +252,9 @@
 
 /* Adventure map node animasyonu */
 @keyframes pulse-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(0,107,44,0.4), 0 4px 0 #005320; }
-  70%  { box-shadow: 0 0 0 12px rgba(0,107,44,0), 0 4px 0 #005320; }
-  100% { box-shadow: 0 0 0 0 rgba(0,107,44,0), 0 4px 0 #005320; }
+  0%   { box-shadow: 0 0 0 0 rgba(27,117,188,0.4), 0 4px 0 #1565a8; }
+  70%  { box-shadow: 0 0 0 12px rgba(27,117,188,0), 0 4px 0 #1565a8; }
+  100% { box-shadow: 0 0 0 0 rgba(27,117,188,0), 0 4px 0 #1565a8; }
 }
 .node-pulse { animation: pulse-glow 2s infinite; }
 
@@ -255,7 +277,7 @@
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
   .path-zigzag {
-    background-image: radial-gradient(circle, oklch(0.90 0.01 145 / 0.6) 1px, transparent 1px);
+    background-image: radial-gradient(circle, oklch(0.90 0.01 241 / 0.6) 1px, transparent 1px);
     background-size: 20px 20px;
   }
 }

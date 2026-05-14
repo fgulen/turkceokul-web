@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, ChevronRight } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
+import { ProgressDots, PlayingBars, NavCounter, ActivityHint } from './ui';
 
 export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const { playing, play, reset } = usePlayerAudio();
 
   const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const cooldownRef = useRef(false);
 
   const current = detaylar[index];
   const sesUrl = toMediaUrl(current.sesLink);
@@ -21,34 +21,13 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
     ? current.description
     : '';
 
-  function playAudio() {
-    if (cooldownRef.current) return;
-    if (!sesUrl) return;
-
-    cooldownRef.current = true;
-    setTimeout(() => { cooldownRef.current = false; }, 600);
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    const audio = new Audio(sesUrl);
-    audioRef.current = audio;
-    setPlaying(true);
-    audio.onended = () => setPlaying(false);
-    audio.onerror = () => setPlaying(false);
-    audio.play().catch(() => setPlaying(false));
-  }
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    setPlaying(false);
-    cooldownRef.current = false;
-    const t = setTimeout(() => playAudio(), 300);
-    return () => {
-      clearTimeout(t);
-      audioRef.current?.pause();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    reset();
+    const url = toMediaUrl(detaylar[index]?.sesLink);
+    if (!url) return;
+    const t = setTimeout(() => play(url), 300);
+    return () => { clearTimeout(t); reset(); };
   }, [index]);
 
   function handleNext() {
@@ -56,7 +35,7 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
       const cevaplar: Cevap[] = detaylar.map((d) => ({ id: d.id, cevap: '1' }));
       onComplete(cevaplar);
     } else {
-      setIndex(index + 1);
+      setIndex((prev) => prev + 1);
     }
   }
 
@@ -64,20 +43,8 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm mx-auto">
-      {/* İlerleme noktaları */}
-      <div className="flex justify-center gap-1.5 mb-6">
-        {detaylar.map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'h-1.5 rounded-full transition-all duration-300',
-              i < index  && 'bg-primary/40 w-3',
-              i === index && 'bg-primary w-6',
-              i > index  && 'bg-muted w-3',
-            )}
-          />
-        ))}
-      </div>
+      <ProgressDots total={detaylar.length} activeIndex={index} />
+      <ActivityHint>Metne dokun, sesi dinle.</ActivityHint>
 
       {/* Kart */}
       <AnimatePresence mode="wait" initial={false}>
@@ -89,30 +56,27 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="mb-5"
         >
-          {/* Tıklanabilir metin kartı */}
           <button
-            onClick={playAudio}
+            onClick={() => sesUrl && play(sesUrl)}
             disabled={!sesUrl}
             aria-label="Sesi çal"
             className={cn(
-              'w-full rounded-3xl border bg-card shadow-sm transition-all duration-200',
-              'active:scale-[0.97]',
-              sesUrl
-                ? 'cursor-pointer hover:border-primary/40 hover:shadow-md'
-                : 'cursor-default',
+              'w-full rounded-3xl border bg-card shadow-sm transition-all duration-200 active:scale-[0.97]',
+              sesUrl ? 'cursor-pointer hover:border-primary/40 hover:shadow-md' : 'cursor-default',
               playing && 'border-primary/50 shadow-primary/10 shadow-lg',
             )}
           >
-            {/* Ses dalgası / ikon göstergesi */}
+            {/* 5 bar ses dalgası — bu player'a özel */}
             <div className="flex justify-center pt-7 pb-3">
               <div className={cn(
                 'flex items-end gap-[4px] h-8 transition-opacity',
                 playing ? 'opacity-100' : 'opacity-30',
               )}>
                 {[0, 0.12, 0.24, 0.12, 0].map((delay, i) => (
-                  <motion.span
+                  <motion.div
                     key={i}
                     className="w-[4px] rounded-full bg-primary"
+                    style={{ height: '8px' }}
                     animate={playing
                       ? { height: ['8px', i === 2 ? '28px' : '18px', '8px'] }
                       : { height: '8px' }
@@ -139,7 +103,10 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
                   'inline-flex items-center gap-1.5 mt-5 text-xs font-medium transition-colors',
                   playing ? 'text-primary' : 'text-muted-foreground',
                 )}>
-                  <Volume2 className="size-3.5" />
+                  {playing
+                    ? <PlayingBars size="sm" />
+                    : <Volume2 className="size-3.5" />
+                  }
                   {playing ? 'Dinleniyor…' : 'Dinlemek için dokun'}
                 </div>
               )}
@@ -157,9 +124,7 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
         <ChevronRight className="size-4" />
       </button>
 
-      <p className="text-center text-xs text-muted-foreground mt-3">
-        {index + 1} / {detaylar.length}
-      </p>
+      <NavCounter index={index} total={detaylar.length} />
     </div>
   );
 }

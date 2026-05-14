@@ -30,8 +30,8 @@ export function PlusBanner({ className, variant = 'inline' }: PlusBannerProps) {
   return (
     <div className={cn(
       'relative rounded-2xl overflow-hidden px-5 py-4',
-      'bg-gradient-to-r from-[#005320] to-[#00873a]',
-      'text-white shadow-lg shadow-green-900/20',
+      'bg-gradient-to-r from-primary-dark to-primary',
+      'text-white shadow-lg shadow-primary/20',
       className
     )}>
       {/* Shine overlay */}

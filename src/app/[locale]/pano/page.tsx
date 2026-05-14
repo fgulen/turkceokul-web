@@ -95,19 +95,16 @@ export default function PanoPage() {
             icon={<Flame className="size-5 fill-current" style={{ color: 'var(--streak)' }} />}
             label="Streak"
             value={`${user.streakCount} gün`}
-            bg="bg-orange-100/80"
           />
           <StatCard
             icon={<Heart className="size-5 fill-current" style={{ color: 'var(--heart)' }} />}
             label="Kalp"
             value={`${user.kalp} / 5`}
-            bg="bg-red-100/80"
           />
           <StatCard
             icon={<Zap className="size-5 fill-current" style={{ color: 'var(--xp)' }} />}
             label="Toplam XP"
             value={user.puan.toLocaleString('tr')}
-            bg="bg-primary/15"
           />
         </div>
 
@@ -229,22 +226,10 @@ export default function PanoPage() {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  bg,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  bg: string;
-}) {
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-      <div className={cn('size-10 rounded-xl flex items-center justify-center shrink-0', bg)}>
-        {icon}
-      </div>
+      {icon}
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="font-semibold truncate">{value}</div>

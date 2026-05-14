@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Link, useLocale, useRouter } from '@/navigation';
-import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth';
@@ -39,12 +40,8 @@ export default function GirisPage() {
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Link
-          href="/"
-          className="flex items-center justify-center gap-2 font-bold text-xl text-primary mb-8"
-        >
-          <BookOpen className="size-5" />
-          TürkçeOkulu
+        <Link href="/" className="flex justify-center mb-8">
+          <Logo size="md" />
         </Link>
 
         <div className="bg-card border border-border rounded-2xl p-8">
