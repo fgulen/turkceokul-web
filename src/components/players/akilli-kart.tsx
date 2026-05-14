@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Zap } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
@@ -37,7 +36,6 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
   const wordAudioRef = useRef<HTMLAudioElement | null>(null);
   const { play } = useGameSound();
 
-  // Kelime sesi — öncekini durdur, yenisini başlat
   function playWordAudio(url: string) {
     if (wordAudioRef.current) {
       wordAudioRef.current.pause();
@@ -48,7 +46,6 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
     audio.play().catch(() => {});
   }
 
-  // Unmount'ta sesi durdur
   useEffect(() => () => { wordAudioRef.current?.pause(); }, []);
 
   const current = detaylar[index];
@@ -66,6 +63,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   function answer(bildi: boolean) {
+    if (flipDisabled.current) return;
     flipDisabled.current = true;
 
     if (bildi) {
@@ -75,8 +73,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
       burstId.current += 1;
       const bid = burstId.current;
       setBurst({ id: bid, amount: XP_BASE * mult, mult });
-      // onAnimationComplete tetiklenmezse 1.5s sonra temizle
-      setTimeout(() => setBurst((b) => (b?.id === bid ? null : b)), 1500);
+      setTimeout(() => setBurst((b) => (b?.id === bid ? null : b)), 1200);
       setBiliyorumAnim(true);
       setTimeout(() => setBiliyorumAnim(false), 400);
       play([2, 3, 5, 10].includes(newCombo) ? 'combo' : 'correct');
@@ -96,8 +93,8 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
       } else {
         setIndex(index + 1);
         setFlipped(false);
-        // Kart exit + enter animasyonu bitince flip'e izin ver (~200ms slide + buffer)
-        setTimeout(() => { flipDisabled.current = false; }, 500);
+        // kart geçiş animasyonu (CSS, 200ms) bitince unlock
+        setTimeout(() => { flipDisabled.current = false; }, 220);
       }
     }, delay);
   }
@@ -113,147 +110,123 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         birim="Kart"
       />
 
-      {/* XP burst */}
+      {/* XP burst — CSS animasyonu (Framer Motion initial opacity:0 sorunu yok) */}
       <div className="relative h-0 overflow-visible">
-        <AnimatePresence>
-          {burst && (
-            <motion.div
-              key={burst.id}
-              className="absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none z-50 flex flex-col items-center gap-0.5"
-              initial={{ opacity: 1, y: 0, scale: 0.75 }}
-              animate={{ opacity: 0, y: -68, scale: 1.05 }}
-              transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
-              onAnimationComplete={() => setBurst(null)}
+        {burst && (
+          <div
+            key={burst.id}
+            className="ak-burst absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none z-50 flex flex-col items-center gap-0.5"
+            onAnimationEnd={() => setBurst(null)}
+          >
+            <span
+              className="flex items-center gap-1 text-2xl font-black drop-shadow-sm"
+              style={{ color: 'var(--correct)' }}
             >
-              <span
-                className="flex items-center gap-1 text-2xl font-black drop-shadow-sm"
-                style={{ color: 'var(--correct)' }}
-              >
-                <Zap className="size-5 fill-current" />
-                +{burst.amount} XP
-              </span>
-              {burst.mult > 1 && (
-                <span className="text-sm font-bold text-orange-500">{burst.mult}x Combo!</span>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <Zap className="size-5 fill-current" />
+              +{burst.amount} XP
+            </span>
+            {burst.mult > 1 && (
+              <span className="text-sm font-bold text-orange-500">{burst.mult}x Combo!</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Kart — 3D flip + soru geçiş slide */}
-      {/* initial={false}: ilk mount'ta (ve retry'da) kart animasyonsuz çıkar, geçişler animasyonlu */}
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ duration: 0.2 }}
-          className="mb-4"
-          style={{ perspective: 1400 }}
+      {/* Kart — CSS slide-in (key değişince yeni animasyon tetiklenir) */}
+      <div key={index} className="ak-card-in mb-4" style={{ perspective: '1400px' }}>
+        <div
+          className={cn('ak-flip-inner', flipped && 'ak-flipped')}
+          style={{ transformStyle: 'preserve-3d', position: 'relative' }}
         >
-          <motion.div
-            animate={{ rotateY: flipped ? 180 : 0 }}
-            transition={{ duration: 0.5, type: 'spring', stiffness: 180, damping: 22 }}
-            style={{ transformStyle: 'preserve-3d', position: 'relative' }}
+          {/* SIZER */}
+          <div style={{ visibility: 'hidden' }} aria-hidden="true" className="w-full rounded-2xl overflow-hidden">
+            {imageMode && <img src={imgUrl!} alt="" className="w-full h-auto block" />}
+            <div className={cn('flex flex-col items-center gap-3 px-6 py-5', !imageMode && 'min-h-44 justify-center')}>
+              <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
+              {sesUrl && <div className="size-10 rounded-full" />}
+            </div>
+          </div>
+
+          {/* ÖN YÜZ */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleFlip}
+            onKeyDown={(e) => e.key === 'Enter' && handleFlip()}
+            style={{ backfaceVisibility: 'hidden' }}
+            className={cn(
+              'absolute inset-0 rounded-2xl border overflow-hidden bg-card select-none',
+              'flex flex-col cursor-pointer border-border/60 hover:border-primary/30 transition-colors',
+            )}
           >
-            {/* SIZER — görünmez, arka yüz boyutunu temel alarak container yüksekliğini belirler */}
-            <div style={{ visibility: 'hidden' }} aria-hidden="true" className="w-full rounded-2xl overflow-hidden">
-              {imageMode && <img src={imgUrl!} alt="" className="w-full h-auto block" />}
-              <div className={cn('flex flex-col items-center gap-3 px-6 py-5', !imageMode && 'min-h-44 justify-center')}>
-                <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
-                {sesUrl && <div className="size-10 rounded-full" />}
-              </div>
-            </div>
-
-            {/* ÖN YÜZ */}
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={handleFlip}
-              onKeyDown={(e) => e.key === 'Enter' && handleFlip()}
-              style={{ backfaceVisibility: 'hidden' }}
-              className={cn(
-                'absolute inset-0 rounded-2xl border overflow-hidden bg-card select-none',
-                'flex flex-col cursor-pointer border-border/60 hover:border-primary/30 transition-colors',
+            {imageMode && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imgUrl!} alt={word} className="w-full h-auto block" draggable={false} />
+            )}
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
+              {!imageMode && (
+                <p className="text-2xl font-bold text-center leading-snug">{word}</p>
               )}
-            >
-              {imageMode && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imgUrl!} alt={word} className="w-full h-auto block" draggable={false} />
-              )}
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
-                {!imageMode && (
-                  <p className="text-2xl font-bold text-center leading-snug">{word}</p>
-                )}
-                {imageMode ? (
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Bil bakalım — bu hangi kelime?
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-widest">
-                    Çevirmek için tıkla
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* ARKA YÜZ */}
-            <div
-              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-              className="absolute inset-0 rounded-2xl border border-primary/25 overflow-hidden bg-card select-none flex flex-col"
-            >
-              {imageMode && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imgUrl!} alt={back} className="w-full h-auto block" draggable={false} />
-              )}
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
-                <p className="text-3xl font-bold text-primary text-center leading-tight">
-                  {imageMode ? word : back}
+              {imageMode ? (
+                <p className="text-sm font-medium text-muted-foreground">
+                  Bil bakalım — bu hangi kelime?
                 </p>
-                {sesUrl && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); playWordAudio(sesUrl); }}
-                    className="size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                    aria-label="Sesi çal"
-                  >
-                    <Volume2 className="size-4 text-primary" />
-                  </button>
-                )}
-              </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground uppercase tracking-widest">
+                  Çevirmek için tıkla
+                </p>
+              )}
             </div>
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
+          </div>
 
-      {/* Bilmiyorum / Biliyorum — sadece arka yüzde */}
-      <AnimatePresence>
-        {flipped && (
-          <motion.div
-            className="flex gap-4"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.18 }}
+          {/* ARKA YÜZ */}
+          <div
+            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            className="absolute inset-0 rounded-2xl border border-primary/25 overflow-hidden bg-card select-none flex flex-col"
           >
-            <button
-              onClick={() => answer(false)}
-              className="flex-1 py-3 rounded-xl border-2 border-destructive text-destructive font-semibold hover:bg-destructive/10 transition-colors"
-            >
-              Bilmiyorum
-            </button>
-            <motion.button
-              onClick={() => answer(true)}
-              animate={biliyorumAnim ? { scale: [1, 1.09, 0.95, 1] } : {}}
-              transition={{ duration: 0.35 }}
-              className="flex-1 py-3 rounded-xl border-2 font-semibold transition-colors"
-              style={{ borderColor: 'var(--correct)', color: 'var(--correct)' }}
-            >
-              Biliyorum ✓
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {imageMode && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imgUrl!} alt={back} className="w-full h-auto block" draggable={false} />
+            )}
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
+              <p className="text-3xl font-bold text-primary text-center leading-tight">
+                {imageMode ? word : back}
+              </p>
+              {sesUrl && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); playWordAudio(sesUrl); }}
+                  className="size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+                  aria-label="Sesi çal"
+                >
+                  <Volume2 className="size-4 text-primary" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bilmiyorum / Biliyorum — sadece arka yüzde, CSS ile göster/gizle */}
+      {flipped && (
+        <div className="ak-btns-in flex gap-4">
+          <button
+            onClick={() => answer(false)}
+            className="flex-1 py-3 rounded-xl border-2 border-destructive text-destructive font-semibold hover:bg-destructive/10 transition-colors"
+          >
+            Bilmiyorum
+          </button>
+          <button
+            onClick={() => answer(true)}
+            className={cn(
+              'flex-1 py-3 rounded-xl border-2 font-semibold transition-colors',
+              biliyorumAnim && 'ak-correct-pulse',
+            )}
+            style={{ borderColor: 'var(--correct)', color: 'var(--correct)' }}
+          >
+            Biliyorum ✓
+          </button>
+        </div>
+      )}
     </div>
   );
 }

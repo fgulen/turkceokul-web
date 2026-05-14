@@ -36,7 +36,7 @@ export function AppNav() {
   }
 
   return (
-    <header className="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
+    <header className="bg-white sticky top-0 z-[70] border-b border-slate-100 shadow-sm w-full">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo */}
         <Link href="/pano" className="flex items-center gap-2 shrink-0">

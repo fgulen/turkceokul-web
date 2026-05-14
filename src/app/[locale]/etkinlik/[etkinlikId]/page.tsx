@@ -1,11 +1,9 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { use, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter, Link } from '@/navigation';
+import { useRouter } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Star, Zap, Heart } from 'lucide-react';
 import { AppNav } from '@/components/app-nav';
 import { useAuthStore } from '@/stores/auth';
@@ -22,6 +20,7 @@ import { ResimSesEslestirmePlayer } from '@/components/players/resim-ses-eslesti
 import { OkuGecPlayer } from '@/components/players/oku-gec';
 import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
 import { BoslukDoldurmaPlayer } from '@/components/players/bosluk-doldurma';
+import { ResmeTiklaDinlePlayer } from '@/components/players/resme-tikla-dinle';
 
 interface CevapSonuc {
   puan: number;
@@ -38,11 +37,10 @@ function StarRating({ puan }: { puan: number }) {
   return (
     <div className="flex gap-1 justify-center mb-5">
       {[1, 2, 3].map((i) => (
-        <motion.div
+        <div
           key={i}
-          initial={{ scale: 0, rotate: -30 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.3 + i * 0.15, type: 'spring', stiffness: 260, damping: 14 }}
+          className="star-pop"
+          style={{ animationDelay: `${0.3 + i * 0.12}s` }}
         >
           <Star
             className={cn(
@@ -50,7 +48,7 @@ function StarRating({ puan }: { puan: number }) {
               i <= stars ? 'fill-yellow-400 text-yellow-400 star-glow' : 'text-muted-foreground/20'
             )}
           />
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -73,71 +71,6 @@ function AnimatedScore({ puan }: { puan: number }) {
   return <span>{display}</span>;
 }
 
-const PARTICLE_COUNT = 7;
-// Yıldızlar ve kart ~950ms'de görünüyor; parçacıklar ondan sonra başlasın
-const FLY_START_DELAY = 1150;
-
-function XpFly() {
-  const [pos, setPos] = useState<{
-    start: { x: number; y: number };
-    nav: { x: number; y: number };
-  } | null>(null);
-  const [done, setDone] = useState(false);
-
-  const offsets = useRef(
-    Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-      dx: Math.cos((i / PARTICLE_COUNT) * Math.PI * 2) * 36 + (Math.random() - 0.5) * 14,
-      dy: Math.sin((i / PARTICLE_COUNT) * Math.PI * 2) * 16 + (Math.random() - 0.5) * 8,
-    }))
-  );
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const badge = document.getElementById('result-xp-badge');
-      const nav   = document.getElementById('nav-xp-counter');
-      const br = badge?.getBoundingClientRect();
-      const nr = nav?.getBoundingClientRect();
-      setPos({
-        start: {
-          x: br ? br.left + br.width  / 2 : window.innerWidth  / 2,
-          y: br ? br.top  + br.height / 2 : window.innerHeight * 0.52,
-        },
-        nav: {
-          x: nr ? nr.left + nr.width  / 2 : window.innerWidth  - 80,
-          y: nr ? nr.top  + nr.height / 2 : 28,
-        },
-      });
-    }, FLY_START_DELAY);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!pos || done) return null;
-  const { start, nav } = pos;
-
-  return createPortal(
-    <>
-      {offsets.current.map((off, i) => (
-        <motion.div
-          key={i}
-          className="fixed pointer-events-none z-[150]"
-          style={{ left: start.x + off.dx, top: start.y + off.dy }}
-          initial={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-          animate={{
-            opacity: [1, 1, 0.8, 0],
-            scale: [1, 1.2, 0.7],
-            x: nav.x - (start.x + off.dx),
-            y: nav.y - (start.y + off.dy),
-          }}
-          transition={{ duration: 0.72, delay: i * 0.055, ease: [0.4, 0, 0.6, 1] }}
-          onAnimationComplete={i === PARTICLE_COUNT - 1 ? () => setDone(true) : undefined}
-        >
-          <Zap className="size-4 fill-current drop-shadow-sm" style={{ color: 'var(--correct)' }} />
-        </motion.div>
-      ))}
-    </>,
-    document.body
-  );
-}
 
 function ResultScreen({
   sonuc,
@@ -159,14 +92,7 @@ function ResultScreen({
   }, [sonuc, updateUser, play]);
 
   return (
-    <motion.div
-      className="fixed inset-0 gradient-result-bg flex flex-col items-center justify-center p-6 z-10"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-    >
-      {sonuc.kazanilanXp > 0 && <XpFly />}
-
+    <div className="result-screen-in fixed inset-0 gradient-result-bg flex flex-col items-center justify-center p-6 z-[60]">
       {/* Dekoratif floating elementler */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[12%] left-[14%] w-3 h-3 bg-primary/30 rounded-full" />
@@ -177,43 +103,24 @@ function ResultScreen({
       </div>
 
       {/* Glass kart */}
-      <motion.div
-        className="glass-card relative w-full max-w-sm rounded-[2rem] overflow-hidden flex flex-col items-center py-10 px-8 text-center"
-        initial={{ scale: 0.92, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
-      >
+      <div className="result-card-in glass-card relative w-full max-w-sm rounded-[2rem] overflow-hidden flex flex-col items-center py-10 px-8 text-center">
         <StarRating puan={sonuc.puan} />
 
         {/* Puan */}
-        <motion.div
-          className={cn('text-7xl font-extrabold mb-1 tabular-nums tracking-tight',
-            sonuc.basarili ? 'text-primary' : 'text-muted-foreground')}
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.55, type: 'spring', stiffness: 200 }}
+        <div className={cn('result-a1 text-7xl font-extrabold mb-1 tabular-nums tracking-tight',
+          sonuc.basarili ? 'text-primary' : 'text-muted-foreground')}
         >
           <AnimatedScore puan={sonuc.puan} />
-        </motion.div>
+        </div>
 
-        <motion.p
-          className="text-muted-foreground text-sm mb-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
+        <p className="result-a2 text-muted-foreground text-sm mb-5">
           {sonuc.basarili ? 'Harika iş! Etkinliği tamamladın.' : 'Geçemedin. Tekrar dene!'}
-        </motion.p>
+        </p>
 
         {/* XP + Combo + Kalp badges */}
-        <motion.div
-          className="flex gap-2 flex-wrap justify-center mb-6"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.95 }}
-        >
+        <div className="result-a3 flex gap-2 flex-wrap justify-center mb-6">
           {sonuc.kazanilanXp > 0 && (
-            <div id="result-xp-badge" className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+            <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               <Zap className="size-3.5 fill-current" />
               +{sonuc.kazanilanXp} XP
             </div>
@@ -229,15 +136,10 @@ function ResultScreen({
               -{1} Kalp
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Stats grid */}
-        <motion.div
-          className="grid grid-cols-2 gap-2 w-full mb-7"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.0 }}
-        >
+        <div className="result-a4 grid grid-cols-2 gap-2 w-full mb-7">
           <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Doğruluk</p>
             <p className="font-bold text-foreground tabular-nums">{sonuc.puan}%</p>
@@ -246,15 +148,10 @@ function ResultScreen({
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Kalan Kalp</p>
             <p className="font-bold text-foreground">{sonuc.kalanKalp} / 5</p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Butonlar */}
-        <motion.div
-          className="flex flex-col gap-2 w-full"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1 }}
-        >
+        <div className="result-a5 flex flex-col gap-2 w-full">
           <button
             onClick={() => returnUrl ? router.push(returnUrl) : router.back()}
             className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors"
@@ -267,9 +164,9 @@ function ResultScreen({
           >
             Tekrar Dene
           </button>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -334,6 +231,7 @@ export default function EtkinlikPage({
       case 'MetinCheckBox':
       case 'ResimMetinEslestirmeDogruYanlis': return <DogruYanlisPlayer key={key} {...props} />;
       case 'BoslukDoldurma': return <BoslukDoldurmaPlayer key={key} {...props} />;
+      case 'ResmeTiklaDinle': return <ResmeTiklaDinlePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">
