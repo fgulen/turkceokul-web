@@ -108,6 +108,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         combo={combo}
         etiket="Akıllı Kart"
         birim="Kart"
+        hideCounter
       />
 
       {/* XP burst — CSS animasyonu (Framer Motion initial opacity:0 sorunu yok) */}
@@ -227,6 +228,21 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           </button>
         </div>
       )}
+
+      {/* İlerleme noktaları — altta */}
+      <div className="flex justify-center gap-1.5 mt-5">
+        {detaylar.map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              'h-1.5 rounded-full transition-all duration-300',
+              i < index  && 'bg-primary/40 w-3',
+              i === index && 'bg-primary w-6',
+              i > index  && 'bg-muted w-3',
+            )}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { OkuGecPlayer } from '@/components/players/oku-gec';
 import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
 import { BoslukDoldurmaPlayer } from '@/components/players/bosluk-doldurma';
 import { ResmeTiklaDinlePlayer } from '@/components/players/resme-tikla-dinle';
+import { YaziyaTiklaDinlePlayer } from '@/components/players/yaziya-tikla-dinle';
 
 interface CevapSonuc {
   puan: number;
@@ -232,6 +233,7 @@ export default function EtkinlikPage({
       case 'ResimMetinEslestirmeDogruYanlis': return <DogruYanlisPlayer key={key} {...props} />;
       case 'BoslukDoldurma': return <BoslukDoldurmaPlayer key={key} {...props} />;
       case 'ResmeTiklaDinle': return <ResmeTiklaDinlePlayer key={key} {...props} />;
+      case 'YaziyaTiklaDinle': return <YaziyaTiklaDinlePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">

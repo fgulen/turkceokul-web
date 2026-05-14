@@ -2,23 +2,24 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, ImageOff, ChevronRight } from 'lucide-react';
+import { Volume2, ChevronRight } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 
-export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
+export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
 
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cooldownRef = useRef(false);
 
   const current = detaylar[index];
-  const imgUrl = toMediaUrl(current.resimLink);
   const sesUrl = toMediaUrl(current.sesLink);
-  const label = current.description || current.kelime1 || '';
+  const anaYazi = current.kelime1 || current.description || '';
+  const altYazi = current.kelime1 && current.description && current.description !== current.kelime1
+    ? current.description
+    : '';
 
   function playAudio() {
     if (cooldownRef.current) return;
@@ -40,7 +41,6 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   useEffect(() => {
-    setImgError(false);
     setPlaying(false);
     cooldownRef.current = false;
     const t = setTimeout(() => playAudio(), 300);
@@ -64,7 +64,7 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm mx-auto">
-      {/* İlerleme noktaları — üstte */}
+      {/* İlerleme noktaları */}
       <div className="flex justify-center gap-1.5 mb-6">
         {detaylar.map((_, i) => (
           <div
@@ -89,63 +89,62 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="mb-5"
         >
-          <div className="rounded-3xl overflow-hidden border border-border/50 bg-card shadow-sm">
-            {/* Resim — sığmayan durumda contain kullan */}
-            <div className="relative w-full bg-muted flex items-center justify-center" style={{ minHeight: 200 }}>
-              {imgUrl && !imgError ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imgUrl}
-                  alt={label}
-                  className="w-full max-h-72 object-contain block"
-                  draggable={false}
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground py-12">
-                  <ImageOff className="size-10 opacity-30" />
-                  {label && <p className="text-sm font-medium px-4 text-center">{label}</p>}
+          {/* Tıklanabilir metin kartı */}
+          <button
+            onClick={playAudio}
+            disabled={!sesUrl}
+            aria-label="Sesi çal"
+            className={cn(
+              'w-full rounded-3xl border bg-card shadow-sm transition-all duration-200',
+              'active:scale-[0.97]',
+              sesUrl
+                ? 'cursor-pointer hover:border-primary/40 hover:shadow-md'
+                : 'cursor-default',
+              playing && 'border-primary/50 shadow-primary/10 shadow-lg',
+            )}
+          >
+            {/* Ses dalgası / ikon göstergesi */}
+            <div className="flex justify-center pt-7 pb-3">
+              <div className={cn(
+                'flex items-end gap-[4px] h-8 transition-opacity',
+                playing ? 'opacity-100' : 'opacity-30',
+              )}>
+                {[0, 0.12, 0.24, 0.12, 0].map((delay, i) => (
+                  <motion.span
+                    key={i}
+                    className="w-[4px] rounded-full bg-primary"
+                    animate={playing
+                      ? { height: ['8px', i === 2 ? '28px' : '18px', '8px'] }
+                      : { height: '8px' }
+                    }
+                    transition={playing
+                      ? { duration: 0.65, repeat: Infinity, delay, ease: 'easeInOut' }
+                      : { duration: 0.2 }
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Ana metin */}
+            <div className="px-6 pb-8 text-center">
+              <p className="text-4xl font-bold text-foreground leading-snug tracking-tight">
+                {anaYazi}
+              </p>
+              {altYazi && (
+                <p className="text-base text-muted-foreground mt-3">{altYazi}</p>
+              )}
+              {sesUrl && (
+                <div className={cn(
+                  'inline-flex items-center gap-1.5 mt-5 text-xs font-medium transition-colors',
+                  playing ? 'text-primary' : 'text-muted-foreground',
+                )}>
+                  <Volume2 className="size-3.5" />
+                  {playing ? 'Dinleniyor…' : 'Dinlemek için dokun'}
                 </div>
               )}
-
-              {/* Ses butonu — ortada */}
-              {sesUrl && (
-                <button
-                  onClick={playAudio}
-                  aria-label="Sesi çal"
-                  className={cn(
-                    'absolute size-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95',
-                    playing
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-white/90 text-primary hover:bg-white',
-                  )}
-                >
-                  {playing ? (
-                    <span className="flex items-end gap-[3px] h-5">
-                      {[0, 0.15, 0.3].map((delay, i) => (
-                        <motion.span
-                          key={i}
-                          className="w-[3px] rounded-full bg-current"
-                          animate={{ height: ['6px', '16px', '6px'] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay, ease: 'easeInOut' }}
-                        />
-                      ))}
-                    </span>
-                  ) : (
-                    <Volume2 className="size-6" />
-                  )}
-                </button>
-              )}
             </div>
-
-            {/* Kelime/etiket */}
-            <div className="px-5 py-4">
-              <p className="text-2xl font-bold text-foreground leading-snug">{label}</p>
-              {current.description && current.kelime1 && current.description !== current.kelime1 && (
-                <p className="text-sm text-muted-foreground mt-1">{current.kelime1}</p>
-              )}
-            </div>
-          </div>
+          </button>
         </motion.div>
       </AnimatePresence>
 

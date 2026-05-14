@@ -23,9 +23,10 @@ interface GameHUDProps {
   combo: number;
   etiket?: string;
   birim?: string;       // "Soru" (default) veya "Kart" vb.
+  hideCounter?: boolean; // "Kart X/Y" metnini gizle (noktalar kullanılıyorsa)
 }
 
-export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru' }: GameHUDProps) {
+export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru', hideCounter = false }: GameHUDProps) {
   const progress = (soruNo / toplamSoru) * 100;
   const tier = getTier(combo);
   const prevKalp = useRef(kalp);
@@ -98,14 +99,16 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
         />
       </div>
 
-      <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground">
-        <span>{birim} {soruNo + 1} / {toplamSoru}</span>
-        {progress > 0 && (
-          <span className="font-semibold" style={{ color: 'var(--correct)' }}>
-            %{Math.round(progress)}
-          </span>
-        )}
-      </div>
+      {!hideCounter && (
+        <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground">
+          <span>{birim} {soruNo + 1} / {toplamSoru}</span>
+          {progress > 0 && (
+            <span className="font-semibold" style={{ color: 'var(--correct)' }}>
+              %{Math.round(progress)}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
