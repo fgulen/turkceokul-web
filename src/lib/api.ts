@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
+const BASE_URL = typeof window === 'undefined'
+  ? (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221')
+  : '';
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -25,7 +27,7 @@ api.interceptors.response.use(
       const { refreshToken, setTokens, logout } = useAuthStore.getState();
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
+          const { data } = await axios.post(`/api/auth/refresh`, { refreshToken });
           setTokens(data.accessToken, data.refreshToken);
           original.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(original);

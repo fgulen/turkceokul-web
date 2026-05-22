@@ -83,11 +83,9 @@ function ZigzagNode({
 
   const nodeStyle = isLocked
     ? 'bg-slate-100 border-slate-200 text-slate-300'
-    : state === 'great'   ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200' :
-      state === 'partial' ? 'bg-amber-400   border-amber-400   text-white shadow-lg shadow-amber-200' :
-      state === 'tried'   ? 'bg-orange-400  border-orange-400  text-white shadow-lg shadow-orange-200' :
-      isSiradaki          ? `${colors.active} border-transparent text-white ring-4 ${colors.ring} shadow-lg ${colors.shadow} animate-pulse` :
-      'bg-white border-border text-muted-foreground';
+    : (state !== 'none' || isSiradaki)
+      ? `${colors.active} border-transparent text-white shadow-lg ${colors.shadow}${isSiradaki ? ` ring-4 ${colors.ring} animate-pulse` : ''}`
+      : 'bg-white border-border text-muted-foreground';
 
   function NodeIcon() {
     if (isLocked) return <Lock className="size-3.5" />;
@@ -530,6 +528,7 @@ export default function DersPage({
                         <nav className="flex gap-1 overflow-x-auto scrollbar-none snap-x snap-mandatory -mx-2 px-2">
                           {availableTabs.map(tab => {
                             const Icon = BOLUM_ICONS[tab];
+                            const tabColors = getBolumZigzagColor(tab);
                             return (
                               <button
                                 key={tab}
@@ -537,15 +536,11 @@ export default function DersPage({
                                 className={cn(
                                   'flex-1 min-w-[100px] snap-start flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm transition-all shrink-0',
                                   activeTab === tab
-                                    ? 'bg-white shadow-sm border border-border text-primary font-semibold'
+                                    ? cn(tabColors.label, 'shadow-sm font-semibold')
                                     : 'text-muted-foreground hover:bg-white/50 font-medium',
                                 )}
                               >
-                                {activeTab === tab ? (
-                                  <span className="text-primary">{Icon}</span>
-                                ) : (
-                                  <span className="text-muted-foreground">{Icon}</span>
-                                )}
+                                <span>{Icon}</span>
                                 <span>{tab}</span>
                               </button>
                             );

@@ -1,8 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
@@ -35,6 +35,22 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
   const { sinifId } = use(params);
   const id = parseInt(sinifId);
   const { user, ready } = useAuthGuard('Ogretmen');
+  const [excelYukleniyor, setExcelYukleniyor] = useState(false);
+
+  async function excelIndir() {
+    setExcelYukleniyor(true);
+    try {
+      const res = await api.get(`/api/ogretmen/sinif/${id}/rapor/excel`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sinif-${id}-rapor.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExcelYukleniyor(false);
+    }
+  }
 
   const { data: rapor, isLoading } = useQuery<SinifRapor>({
     queryKey: ['sinif-rapor', id],
@@ -57,9 +73,19 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
           Sınıfa dön
         </a>
 
-        <h1 className="text-xl font-bold text-slate-900 mb-6">
-          {rapor?.sinifAdi ?? '...'} — İlerleme Raporu
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold text-slate-900">
+            {rapor?.sinifAdi ?? '...'} — İlerleme Raporu
+          </h1>
+          <button
+            onClick={excelIndir}
+            disabled={excelYukleniyor || !rapor?.ogrenciler?.length}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50"
+          >
+            <Download className="size-4" />
+            {excelYukleniyor ? 'İndiriliyor...' : 'Excel İndir'}
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="h-64 rounded-2xl bg-white animate-pulse" />

@@ -1,28 +1,13 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Play, Users, Trophy, Wifi } from 'lucide-react';
+import { ArrowLeft, Play, Users, Trophy, Wifi, ChevronRight, Square } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
+import { useKahoot } from '@/hooks/use-kahoot';
 import { cn } from '@/lib/utils';
-
-interface LeaderboardSatir {
-  sira: number;
-  userId: number;
-  ad: string;
-  toplamPuan: number;
-}
-
-interface KahootDurum {
-  oyunKodu: string;
-  sinifId: number;
-  mevcutSoruIdx: number;
-  aktif: boolean;
-  oyuncuSayisi: number;
-  soruSayisi: number;
-}
 
 export default function CanliKahootPage({ params }: { params: Promise<{ sinifId: string }> }) {
   const { sinifId } = use(params);
@@ -30,7 +15,8 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
   const { user, ready } = useAuthGuard('Ogretmen');
   const [oyunKodu, setOyunKodu] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardSatir[]>([]);
+  const [oyunBaslatildi, setOyunBaslatildi] = useState(false);
+  const kahoot = useKahoot();
 
   const { data: sinif } = useQuery({
     queryKey: ['sinif', id],
@@ -38,33 +24,38 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     enabled: !!user,
   });
 
-  const { data: durum } = useQuery<KahootDurum>({
-    queryKey: ['kahoot-durum', oyunKodu],
-    queryFn: () => api.get(`/api/kahoot/${oyunKodu}`).then(r => r.data),
-    enabled: !!oyunKodu,
-    refetchInterval: oyunKodu ? 3000 : false,
-  });
+  // Oyun oluşturulunca hub'a bağlan
+  useEffect(() => {
+    if (!oyunKodu) return;
+    kahoot.connect();
+  }, [oyunKodu]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function oyunBaslat() {
+  async function oyunOlustur() {
     setLoading(true);
     try {
-      const res = await api.post('/api/kahoot/olustur', {
-        sinifId: id,
-        etkinlikIdleri: [], // TODO: etkinlik seçici eklenince doldurulacak
-      });
+      const res = await api.post('/api/kahoot/olustur', { sinifId: id, etkinlikIdleri: [] });
       setOyunKodu(res.data.oyunKodu);
     } finally {
       setLoading(false);
     }
   }
 
-  async function leaderboardGetir() {
+  async function oyunuBaslat() {
     if (!oyunKodu) return;
-    const res = await api.get(`/api/kahoot/${oyunKodu}/leaderboard`);
-    setLeaderboard(res.data);
+    await kahoot.startGame(oyunKodu);
+    setOyunBaslatildi(true);
   }
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  async function sonrakiSoru() {
+    if (!oyunKodu) return;
+    await kahoot.nextQuestion(oyunKodu);
+  }
+
+  if (!ready) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
   if (!user) return null;
 
   return (
@@ -85,7 +76,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
 
           {!oyunKodu ? (
             <button
-              onClick={oyunBaslat}
+              onClick={oyunOlustur}
               disabled={loading}
               className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50"
             >
@@ -101,35 +92,71 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                   {oyunKodu}
                 </div>
                 <p className="text-xs text-emerald-600 mt-3">
-                  Öğrenciler bu kodu kullanarak oyuna katılır
+                  Öğrenciler <strong>turkceokulu.com/kahoot/katil</strong> adresinden bu kodu girer
                 </p>
               </div>
 
-              {/* Oyun durumu */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Oyun durumu — SignalR ile canlı */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="bg-slate-50 rounded-xl p-4 text-center">
                   <Users className="size-5 text-slate-400 mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-slate-700">{durum?.oyuncuSayisi ?? 0}</div>
+                  <div className="text-2xl font-bold text-slate-700">{kahoot.oyuncuSayisi}</div>
                   <div className="text-xs text-slate-500">Katılan</div>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-4 text-center">
                   <Trophy className="size-5 text-slate-400 mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-slate-700">{durum?.soruSayisi ?? 0}</div>
+                  <div className="text-2xl font-bold text-slate-700">
+                    {kahoot.soruBilgisi ? `${kahoot.soruBilgisi.soruNo}/${kahoot.soruBilgisi.toplamSoru}` : '—'}
+                  </div>
                   <div className="text-xs text-slate-500">Soru</div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <div className={cn(
+                    'size-3 rounded-full mx-auto mb-2',
+                    kahoot.connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'
+                  )} />
+                  <div className="text-xs text-slate-500">{kahoot.connected ? 'Bağlı' : 'Bağlantı yok'}</div>
                 </div>
               </div>
 
-              {/* Leaderboard */}
-              <button
-                onClick={leaderboardGetir}
-                className="w-full px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"
-              >
-                Leaderboard&apos;u Güncelle
-              </button>
+              {/* Kontroller */}
+              <div className="flex gap-3 justify-center">
+                {!oyunBaslatildi ? (
+                  <button
+                    onClick={oyunuBaslat}
+                    disabled={!kahoot.connected || kahoot.oyuncuSayisi === 0}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                  >
+                    <Play className="size-4 fill-current" />
+                    Oyunu Başlat
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={sonrakiSoru}
+                      disabled={!kahoot.connected}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      <ChevronRight className="size-4" />
+                      Sonraki Soru
+                    </button>
+                    <button
+                      onClick={sonrakiSoru}
+                      disabled={!kahoot.connected}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300 transition-colors disabled:opacity-50"
+                    >
+                      <Square className="size-4" />
+                      Oyunu Bitir
+                    </button>
+                  </>
+                )}
+              </div>
 
-              {leaderboard.length > 0 && (
+              {/* Leaderboard — SignalR ile otomatik güncellenir */}
+              {kahoot.leaderboard.length > 0 && (
                 <div className="text-left space-y-2">
-                  {leaderboard.slice(0, 10).map(s => (
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Anlık Sıralama</p>
+                  {kahoot.leaderboard.slice(0, 10).map(s => (
                     <div key={s.userId} className={cn(
                       'flex items-center justify-between px-4 py-3 rounded-xl',
                       s.sira === 1 ? 'bg-amber-50 border border-amber-200' :

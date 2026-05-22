@@ -65,7 +65,7 @@ export default function PanoPage() {
   const { data: lig } = useQuery<LigTablosu | null>({
     queryKey: ['lig'],
     queryFn: () =>
-      api.get('/api/lig').then((r) => r.data).catch(() => null),
+      api.get('/api/lig').then((r) => r.data || null).catch(() => null),
     enabled: !!user,
   });
 
@@ -147,7 +147,9 @@ export default function PanoPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Lig verisi bulunamadı.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  İlk etkinliği tamamlayınca lig grubuna otomatik katılırsın.
+                </p>
               )
             ) : (
               <div className="space-y-0.5">

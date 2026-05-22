@@ -27,7 +27,9 @@ export function useAuthGuard(requiredRole?: 'Ogretmen' | 'Admin' | 'SuperAdmin')
     if (!requiredRole) {
       if (user.role === 'SuperAdmin') {
         router.replace('/super-admin');
-      } else if (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') {
+      } else if (user.role === 'KurumYoneticisi') {
+        router.replace('/kurum-yoneticisi');
+      } else if (user.role === 'Ogretmen' || user.role === 'UlkeTemsilcisi') {
         router.replace('/ogretmen');
       } else if (user.role === 'Admin') {
         router.replace('/admin');
