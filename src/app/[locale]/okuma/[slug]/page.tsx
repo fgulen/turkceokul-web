@@ -11,6 +11,8 @@ import { Logo } from '@/components/logo';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { cn } from '@/lib/utils';
+import { useWordTranslation } from '@/hooks/use-word-translation';
+import { TranslationPopup } from '@/components/okuma/translation-popup';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactReader = dynamic<any>(
@@ -207,6 +209,8 @@ export default function OkumaPage({
   const [fontSize, setFontSize]           = useState<number>(100);
   const [showSettings, setShowSettings]   = useState(false);
 
+  const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation('guliverin-seyahatleri');
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renditionRef = useRef<any>(null);
 
@@ -217,8 +221,16 @@ export default function OkumaPage({
     rendition.on('rendered', () => {
       applyEpubStyles(renditionRef.current, theme, fontFamily, fontSize);
     });
+    rendition.on('selected', (cfiRange: string, contents: { window: Window }) => {
+      const selection = contents.window.getSelection();
+      const word = selection?.toString().trim();
+      if (word && word.split(/\s+/).length === 1) {
+        translate(word);
+        selection?.removeAllRanges();
+      }
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [translate]);
 
   // Ayar değişince yeniden uygula
   useEffect(() => {
@@ -316,6 +328,17 @@ export default function OkumaPage({
             headerBg={t.headerBg}   headerFg={t.headerFg}
           />
         </>
+      )}
+
+      {/* ── Kelime Çeviri Popup ── */}
+      {(translating || translationResult) && activeWord && (
+        <TranslationPopup
+          word={activeWord}
+          result={translationResult}
+          loading={translating}
+          onClose={closeTranslation}
+          theme={theme}
+        />
       )}
 
       {/* ── Footer nav ── */}
