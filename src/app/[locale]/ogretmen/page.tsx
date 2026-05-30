@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, GraduationCap, Plus, Users, ClipboardList, ArrowRight,
-  Building2, Globe, UserCheck, AlertCircle,
+  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
@@ -38,6 +38,9 @@ export default function OgretmenDashboard() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const qc = useQueryClient();
   const [formAcik, setFormAcik] = useState(false);
+  const [duzenleFormAcik, setDuzenleFormAcik] = useState(false);
+  const [duzenleSinifId, setDuzenleSinifId] = useState<number | null>(null);
+  const [duzenleSinifAdi, setDuzenleSinifAdi] = useState('');
 
   // Form state
   const [sinifAdi, setSinifAdi] = useState('');
@@ -71,6 +74,20 @@ export default function OgretmenDashboard() {
     enabled: !!seciliKurumId && (formData?.rol === 'SuperAdmin' || formData?.rol === 'UlkeTemsilcisi'),
   });
 
+  const sinifSilMutation = useMutation({
+    mutationFn: (sinifId: number) => api.delete(`/api/ogretmen/sinif/${sinifId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['siniflarim'] }),
+  });
+
+  const sinifGuncellemeMutation = useMutation({
+    mutationFn: () => api.put(`/api/ogretmen/sinif/${duzenleSinifId}`, { name: duzenleSinifAdi }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['siniflarim'] });
+      setDuzenleFormAcik(false);
+      setDuzenleSinifId(null);
+    },
+  });
+
   const olusturMutation = useMutation({
     mutationFn: () => {
       const rol = formData?.rol;
@@ -88,6 +105,18 @@ export default function OgretmenDashboard() {
       resetForm();
     },
   });
+
+  function startDuzenle(sinif: Sinif) {
+    setDuzenleSinifId(sinif.id);
+    setDuzenleSinifAdi(sinif.name);
+    setDuzenleFormAcik(true);
+    setFormAcik(false);
+  }
+
+  function handleSilSinif(sinifId: number, name: string) {
+    if (confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`))
+      sinifSilMutation.mutate(sinifId);
+  }
 
   function resetForm() {
     setSinifAdi('');
@@ -276,6 +305,41 @@ export default function OgretmenDashboard() {
           </div>
         )}
 
+        {/* Sınıf düzenleme formu */}
+        {duzenleFormAcik && (
+          <div className="mb-6 p-5 bg-white rounded-2xl border border-primary/20 shadow-sm">
+            <h3 className="font-semibold mb-4">Sınıfı Düzenle</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={duzenleSinifAdi}
+                onChange={e => setDuzenleSinifAdi(e.target.value)}
+                placeholder="Sınıf adı"
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                onKeyDown={e => e.key === 'Enter' && duzenleSinifAdi.trim() && sinifGuncellemeMutation.mutate()}
+              />
+              {sinifGuncellemeMutation.isError && (
+                <p className="text-red-500 text-sm">{(sinifGuncellemeMutation.error as Error).message}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => sinifGuncellemeMutation.mutate()}
+                  disabled={!duzenleSinifAdi.trim() || sinifGuncellemeMutation.isPending}
+                  className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-opacity"
+                >
+                  {sinifGuncellemeMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                </button>
+                <button
+                  onClick={() => setDuzenleFormAcik(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm hover:bg-slate-200 transition-colors"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sınıf kartları */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -316,8 +380,26 @@ export default function OgretmenDashboard() {
                     {sinif.odevSayisi} ödev
                   </span>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs text-primary font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                  Sınıfa git <ArrowRight className="size-3.5" />
+                <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 text-xs text-primary font-semibold">
+                    Sınıfa git <ArrowRight className="size-3.5" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); startDuzenle(sinif); }}
+                      className="size-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                      title="Düzenle"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSilSinif(sinif.id, sinif.name); }}
+                      className="size-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Sil"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 </div>
               </Link>
             ))}

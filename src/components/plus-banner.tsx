@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, X } from 'lucide-react';
+import { Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -11,8 +11,7 @@ interface PlusBannerProps {
 }
 
 export function PlusBanner({ className, variant = 'inline' }: PlusBannerProps) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
+  const [open, setOpen] = useState(false);
 
   if (variant === 'compact') {
     return (
@@ -28,38 +27,35 @@ export function PlusBanner({ className, variant = 'inline' }: PlusBannerProps) {
   }
 
   return (
-    <div className={cn(
-      'relative rounded-2xl overflow-hidden px-5 py-4',
-      'bg-gradient-to-r from-primary-dark to-primary',
-      'text-white shadow-lg shadow-primary/20',
-      className
-    )}>
-      {/* Shine overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-
+    <div
+      className={cn('rounded-2xl text-white', className)}
+      style={{ background: 'linear-gradient(135deg,#1e3a5f 0%,#1b75bc 60%,#0ea5e9 100%)' }}
+    >
       <button
-        onClick={() => setDismissed(true)}
-        className="absolute top-3 right-3 size-6 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
-        aria-label="Kapat"
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-3"
       >
-        <X className="size-3.5" />
+        <Zap className="size-4 fill-white shrink-0" />
+        <span className="flex-1 text-left text-sm font-bold">TürkçeOkulu Plus</span>
+        <span className="text-xs text-white/70 mr-1">{open ? 'Kapat' : 'Detaylar'}</span>
+        {open ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}
       </button>
 
-      <div className="flex items-center gap-3">
-        <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-          <Zap className="size-5 fill-white text-white" />
+      {open && (
+        <div className="flex items-center gap-4 px-5 pb-4 border-t border-white/15">
+          <p className="flex-1 text-white/75 text-xs pt-3">
+            Sınırsız kalp, tüm üniteler, reklamsız deneyim
+          </p>
+          <Link
+            href="/plus"
+            className="shrink-0 mt-3 px-4 py-2 rounded-xl bg-white font-bold text-xs"
+            style={{ color: '#1b75bc' }}
+          >
+            Dene
+          </Link>
         </div>
-        <div className="min-w-0 pr-6">
-          <p className="font-bold text-sm leading-tight">TürkçeOkulu Plus</p>
-          <p className="text-white/80 text-xs mt-0.5">Sınırsız kalp, tüm üniteler, reklamsız</p>
-        </div>
-        <Link
-          href="/plus"
-          className="shrink-0 px-4 py-2 rounded-xl bg-white text-primary font-bold text-xs hover:bg-white/90 transition-colors"
-        >
-          Dene
-        </Link>
-      </div>
+      )}
     </div>
   );
 }

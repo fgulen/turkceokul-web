@@ -3,11 +3,96 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LogOut, Trophy, Zap } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth';
+import { Flame, Heart, LogOut, Trophy, User, Zap } from 'lucide-react';
+import { useAuthStore, AuthUser } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
+
+const AVATAR_COLORS: Record<string, string> = {
+  SuperAdmin: 'bg-purple-600',
+  Admin: 'bg-red-500',
+  Editor: 'bg-indigo-500',
+  KurumYoneticisi: 'bg-blue-600',
+  UlkeTemsilcisi: 'bg-orange-500',
+  Ogretmen: 'bg-green-600',
+  Ogrenci: 'bg-primary',
+};
+
+const ROL_BADGE: Record<string, string> = {
+  SuperAdmin: 'bg-purple-100 text-purple-700',
+  Admin: 'bg-red-100 text-red-700',
+  Editor: 'bg-indigo-100 text-indigo-700',
+  KurumYoneticisi: 'bg-blue-100 text-blue-700',
+  UlkeTemsilcisi: 'bg-orange-100 text-orange-700',
+  Ogretmen: 'bg-green-100 text-green-700',
+  Ogrenci: 'bg-slate-100 text-slate-600',
+};
+
+function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const initials = `${user.name?.[0] ?? ''}${user.surname?.[0] ?? ''}`.toUpperCase() || '?';
+  const avatarColor = AVATAR_COLORS[user.role] ?? 'bg-slate-500';
+  const badgeColor = ROL_BADGE[user.role] ?? 'bg-slate-100 text-slate-600';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={cn('size-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 transition-opacity hover:opacity-85', avatarColor)}
+        title={`${user.name} ${user.surname}`}
+      >
+        {initials}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-10 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-slate-100">
+            <div className="font-semibold text-sm text-slate-900 truncate">{user.name} {user.surname}</div>
+            <div className="text-xs text-slate-500 truncate">{user.email}</div>
+            <span className={cn('inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full', badgeColor)}>
+              {user.role}
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="p-1.5 space-y-0.5">
+            <Link
+              href="/profil"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <User className="size-3.5 text-slate-400" />
+              Profili Düzenle
+            </Link>
+          </div>
+
+          <div className="border-t border-slate-100 p-1.5">
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="size-3.5" />
+              Çıkış Yap
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppNav() {
   const { user, logout } = useAuthStore();
@@ -158,14 +243,7 @@ export function AppNav() {
                 </>
               )}
 
-              {/* Logout button only */}
-              <button
-                onClick={handleLogout}
-                className="size-8 sm:size-7 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
-                title="Çıkış yap"
-              >
-                <LogOut className="size-4 sm:size-3.5" />
-              </button>
+              <UserMenu user={user} onLogout={handleLogout} />
             </>
           )}
         </div>

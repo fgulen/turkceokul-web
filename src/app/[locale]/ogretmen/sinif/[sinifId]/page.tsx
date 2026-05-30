@@ -5,8 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@/navigation';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
-  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle,
+  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
 import { AppNav } from '@/components/app-nav';
@@ -100,6 +101,9 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const [yeniOdev, setYeniOdev] = useState({ baslik: '', aciklama: '', teslimTarihi: '' });
   const [yeniDuyuru, setYeniDuyuru] = useState('');
   const [ogrenciEmail, setOgrenciEmail] = useState('');
+  const [qrModalAcik, setQrModalAcik] = useState(false);
+  const [duzenleOdevId, setDuzenleOdevId] = useState<number | null>(null);
+  const [duzenleOdevForm, setDuzenleOdevForm] = useState({ baslik: '', aciklama: '', teslimTarihi: '' });
 
   // Toplu öğrenci ekleme
   const [topluModalAcik, setTopluModalAcik] = useState(false);
@@ -139,6 +143,23 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const odevSilMutation = useMutation({
     mutationFn: (odevId: number) => api.delete(`/api/ogretmen/odev/${odevId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sinif-odevler', id] }),
+  });
+
+  const odevGuncellemeMutation = useMutation({
+    mutationFn: (odevId: number) => api.put(`/api/ogretmen/odev/${odevId}`, {
+      baslik: duzenleOdevForm.baslik,
+      aciklama: duzenleOdevForm.aciklama || null,
+      teslimTarihi: duzenleOdevForm.teslimTarihi || null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sinif-odevler', id] });
+      setDuzenleOdevId(null);
+    },
+  });
+
+  const duyuruSilMutation = useMutation({
+    mutationFn: (duyuruId: number) => api.delete(`/api/ogretmen/duyuru/${duyuruId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sinif-duyurular', id] }),
   });
 
   const topluEkleMutation = useMutation({
@@ -186,6 +207,15 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       console.error('Badge PDF indirilemedi:', e);
       alert('PDF indirilemedi. Lütfen tekrar deneyin.');
     }
+  }
+
+  function startOdevDuzenle(odev: Odev) {
+    setDuzenleOdevId(odev.id);
+    setDuzenleOdevForm({
+      baslik: odev.baslik,
+      aciklama: odev.aciklama ?? '',
+      teslimTarihi: odev.teslimTarihi ? odev.teslimTarihi.slice(0, 10) : '',
+    });
   }
 
   function topluEkleGonder() {
@@ -296,6 +326,12 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Öğrenciler</h2>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => setQrModalAcik(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    <QrCode className="size-3.5" /> QR ile Katıl
+                  </button>
                   <button
                     onClick={badgePdfIndir}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
@@ -428,22 +464,72 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
               ) : (
                 <div className="space-y-2">
                   {odevler.map(o => (
-                    <div key={o.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100">
-                      <div>
-                        <div className="font-medium text-sm text-slate-800">{o.baslik}</div>
-                        {o.teslimTarihi && (
-                          <div className="text-xs text-slate-400 mt-0.5">
-                            Son teslim: {new Date(o.teslimTarihi).toLocaleDateString('tr')}
-                          </div>
-                        )}
+                    duzenleOdevId === o.id ? (
+                      <div key={o.id} className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+                        <input
+                          type="text"
+                          value={duzenleOdevForm.baslik}
+                          onChange={e => setDuzenleOdevForm(p => ({ ...p, baslik: e.target.value }))}
+                          placeholder="Ödev başlığı *"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                        />
+                        <textarea
+                          value={duzenleOdevForm.aciklama}
+                          onChange={e => setDuzenleOdevForm(p => ({ ...p, aciklama: e.target.value }))}
+                          placeholder="Açıklama (opsiyonel)"
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none bg-white"
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            value={duzenleOdevForm.teslimTarihi}
+                            onChange={e => setDuzenleOdevForm(p => ({ ...p, teslimTarihi: e.target.value }))}
+                            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                          />
+                          <button
+                            onClick={() => odevGuncellemeMutation.mutate(o.id)}
+                            disabled={!duzenleOdevForm.baslik || odevGuncellemeMutation.isPending}
+                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            onClick={() => setDuzenleOdevId(null)}
+                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition-colors"
+                          >
+                            İptal
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => odevSilMutation.mutate(o.id)}
-                        className="size-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
+                    ) : (
+                      <div key={o.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100">
+                        <div>
+                          <div className="font-medium text-sm text-slate-800">{o.baslik}</div>
+                          {o.teslimTarihi && (
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Son teslim: {new Date(o.teslimTarihi).toLocaleDateString('tr')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startOdevDuzenle(o)}
+                            className="size-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-colors"
+                            title="Düzenle"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => odevSilMutation.mutate(o.id)}
+                            className="size-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Sil"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )
                   ))}
                 </div>
               )}
@@ -478,11 +564,23 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
               ) : (
                 <div className="space-y-3">
                   {duyurular.map(d => (
-                    <div key={d.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50">
+                    <div key={d.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 group">
                       <p className="text-sm text-slate-700 leading-relaxed">{d.icerik}</p>
-                      <div className="flex items-center gap-3 mt-3 text-xs text-slate-400">
-                        <span>{new Date(d.olusturmaTarihi).toLocaleDateString('tr')}</span>
-                        <span>{d.yorumSayisi} yorum</span>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                          <span>{new Date(d.olusturmaTarihi).toLocaleDateString('tr')}</span>
+                          <span>{d.yorumSayisi} yorum</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (confirm('Bu duyuruyu silmek istediğinizden emin misiniz?'))
+                              duyuruSilMutation.mutate(d.id);
+                          }}
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Duyuruyu Sil"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -492,6 +590,41 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           )}
         </div>
       </main>
+
+      {/* QR Kod Modalı */}
+      {qrModalAcik && sinif && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h2 className="font-bold text-slate-900">QR ile Sınıfa Katıl</h2>
+              <button
+                onClick={() => setQrModalAcik(false)}
+                className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center gap-5">
+              <QRCodeSVG
+                value={sinif.katilimKodu}
+                size={200}
+                bgColor="#ffffff"
+                fgColor="#1a1a2e"
+                level="M"
+              />
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Katılım Kodu</p>
+                <span className="font-mono font-bold text-3xl tracking-widest text-slate-800">
+                  {sinif.katilimKodu}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 text-center">
+                Öğrenciler bu QR kodu tarayarak veya kodu girerek sınıfa katılabilir.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toplu Öğrenci Ekleme Modalı */}
       {topluModalAcik && (

@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, CheckCircle2, Circle, Flame, Heart, Zap } from 'lucide-react';
+import { BookMarked, BookOpen, CheckCircle2, Circle, Flame, Heart, Zap, Lock } from 'lucide-react';
+import { bookCoverUrl } from '@/lib/book-covers';
+import { useEffect, useState } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { AppNav } from '@/components/app-nav';
@@ -55,6 +57,11 @@ function odulLabel(tipi: string, miktar: number) {
 
 export default function PanoPage() {
   const { user, ready } = useAuthGuard();
+  const [cefrLevel, setCefrLevel] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCefrLevel(localStorage.getItem("cefrLevel"));
+  }, []);
 
   const { data: gorevler, isLoading: gorevLoading } = useQuery<Gorev[]>({
     queryKey: ['gorevler'],
@@ -185,9 +192,55 @@ export default function PanoPage() {
           </div>
         </div>
 
+        {/* Okuma Kitapları */}
+        <div className="mb-10">
+          <h2 className="font-semibold text-lg mb-4">Okuma Kitapları</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/okuma/guliverin-seyahatleri"
+              className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
+            >
+              <div className="size-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
+                <BookMarked className="size-6 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">B1</span>
+                </div>
+                <div className="font-semibold text-sm group-hover:text-primary transition-colors">
+                  Güliver&apos;in Seyahatleri
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Jonathan Swift</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
         {/* Ders Kitapları */}
         <div>
-          <h2 className="font-semibold text-lg mb-4">Ders Kitapları</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-lg">Ders Kitapları</h2>
+            {cefrLevel && (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                Seviyeniz: {cefrLevel}
+              </span>
+            )}
+          </div>
+
+          {!cefrLevel && (
+            <div className="mb-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-4">
+              <p className="text-sm text-amber-800">
+                Seviye testini tamamlayarak size uygun kitaplara erişin.
+              </p>
+              <Link
+                href="/seviye-testi"
+                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+              >
+                Testi Başlat →
+              </Link>
+            </div>
+          )}
+
           {kitapLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -196,31 +249,64 @@ export default function PanoPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(kitaplar ?? []).map((k) => (
-                <Link
-                  key={k.id}
-                  href={`/ders/${k.id}`}
-                  className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group"
-                >
-                   <div className="flex items-start justify-between gap-2">
-                     <div className="min-w-0 flex-1">
-                       <div className="flex items-center gap-2 mb-1.5">
-                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                           {k.seviye}
-                         </span>
-                       </div>
-                       <div className="font-semibold group-hover:text-primary transition-colors truncate">
-                         {k.name}
-                       </div>
-                       <div className="text-xs text-muted-foreground mt-1">{k.kitapSeti}</div>
-                     </div>
-                     <div className="size-10 rounded-xl bg-primary/8 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                       <BookOpen className="size-5 text-primary/50 group-hover:text-primary/70 transition-colors" />
-                     </div>
-                   </div>
-                 </Link>
-               ))}
-             </div>
+              {(kitaplar ?? []).map((k, idx, arr) => {
+                // Seri içi sırayı hesapla (1-tabanlı)
+                const seriesIdx = arr.filter((x, i) => i < idx && x.kitapSeti === k.kitapSeti).length + 1;
+                const coverUrl = bookCoverUrl(k.kitapSeti, seriesIdx);
+                const active = !cefrLevel || k.seviye === cefrLevel;
+                if (active) {
+                  return (
+                    <Link
+                      key={k.id}
+                      href={`/ders/${k.id}`}
+                      className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                              {k.seviye}
+                            </span>
+                          </div>
+                          <div className="font-semibold group-hover:text-primary transition-colors truncate">{k.name}</div>
+                          <div className="text-xs text-muted-foreground mt-1">{k.kitapSeti}</div>
+                        </div>
+                        <BookCoverThumb src={coverUrl} alt={k.name} />
+                      </div>
+                    </Link>
+                  );
+                }
+                return (
+                  <Link
+                    key={k.id}
+                    href="/kayit?tip=bireysel"
+                    className="p-5 bg-card border border-border rounded-2xl opacity-50 hover:opacity-70 transition-opacity relative group"
+                    title="Bu seviyeye erişmek için Premium'a geç"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {k.seviye}
+                          </span>
+                          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                            Premium
+                          </span>
+                        </div>
+                        <div className="font-semibold text-muted-foreground truncate">{k.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{k.kitapSeti}</div>
+                      </div>
+                      <div className="relative">
+                        <BookCoverThumb src={coverUrl} alt={k.name} />
+                        <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+                          <Lock className="size-3.5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           )}
         </div>
       </main>
@@ -236,6 +322,28 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="font-semibold truncate">{value}</div>
       </div>
+    </div>
+  );
+}
+
+function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
+  const [err, setErr] = useState(false);
+  if (!src || err) {
+    return (
+      <div className="w-10 h-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <BookOpen className="size-5 text-primary/50" />
+      </div>
+    );
+  }
+  return (
+    <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 shadow-sm">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-cover"
+        onError={() => setErr(true)}
+      />
     </div>
   );
 }

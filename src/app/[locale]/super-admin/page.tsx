@@ -7,10 +7,10 @@ import {
   Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
   RefreshCw, ExternalLink, LogIn, Package, AlertCircle
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { AppNav } from '@/components/app-nav';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
@@ -37,47 +37,50 @@ export default function SuperAdminPage() {
   if (!ready || !user) return null;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-8">
-      <ImpersonationBanner />
+    <div className="min-h-screen bg-slate-50">
+      <AppNav />
+      <main className="max-w-[1400px] mx-auto px-4 py-8">
+        <ImpersonationBanner />
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="size-9 rounded-xl bg-purple-100 flex items-center justify-center">
-          <Shield className="size-5 text-purple-600" />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="size-9 rounded-xl bg-purple-100 flex items-center justify-center">
+            <Shield className="size-5 text-purple-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Super Admin Paneli</h1>
+            <p className="text-xs text-slate-500">Sistem yönetimi — {user.name} {user.surname}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Super Admin Paneli</h1>
-          <p className="text-xs text-slate-500">Sistem yönetimi — {user.name}</p>
+
+        <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
+          {([
+            ['genel', BarChart3, 'Genel Bakış'],
+            ['kitaplar', BookOpen, 'Kitaplar'],
+            ['kullanicilar', Users, 'Kullanıcılar'],
+            ['ulkeler', Globe, 'Ülkeler & Okullar'],
+            ['raporlar', BarChart3, 'Raporlar'],
+          ] as [Tab, typeof BarChart3, string][]).map(([id, Icon, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                tab === id
+                  ? 'border-purple-600 text-purple-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Icon className="size-4" />
+              {label}
+            </button>
+          ))}
         </div>
-      </div>
 
-      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-        {([
-          ['genel', BarChart3, 'Genel Bakış'],
-          ['kitaplar', BookOpen, 'Kitaplar'],
-          ['kullanicilar', Users, 'Kullanıcılar'],
-          ['ulkeler', Globe, 'Ülkeler & Okullar'],
-          ['raporlar', BarChart3, 'Raporlar'],
-        ] as [Tab, typeof BarChart3, string][]).map(([id, Icon, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              tab === id
-                ? 'border-purple-600 text-purple-700'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Icon className="size-4" />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'genel' && <GenelBakis />}
-      {tab === 'kitaplar' && <KitaplarTab />}
-      {tab === 'kullanicilar' && <KullanicilarTab />}
-      {tab === 'ulkeler' && <UlkelerTab />}
-      {tab === 'raporlar' && <RaporlarTab />}
+        {tab === 'genel' && <GenelBakis />}
+        {tab === 'kitaplar' && <KitaplarTab />}
+        {tab === 'kullanicilar' && <KullanicilarTab />}
+        {tab === 'ulkeler' && <UlkelerTab />}
+        {tab === 'raporlar' && <RaporlarTab />}
+      </main>
     </div>
   );
 }
@@ -297,7 +300,12 @@ function KitaplarTab() {
                   <input type="checkbox" checked={secili.has(k.id)} onChange={() => toggleSecili(k.id)} />
                 </td>
                 <td className="px-4 py-2">
-                  <div className="font-medium text-slate-900">{k.name}</div>
+                  <Link
+                    href={`/super-admin/icerik-studyosu/${k.id}`}
+                    className="font-medium text-slate-900 hover:text-indigo-700 hover:underline underline-offset-2 transition-colors"
+                  >
+                    {k.name}
+                  </Link>
                   <div className="text-xs text-slate-400">{k.id}</div>
                 </td>
                 <td className="px-4 py-2 text-slate-600 text-xs">{k.seviye ?? '—'}</td>
@@ -943,7 +951,7 @@ function UlkelerTab() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {ulkeTab === 'temsilciler' && <TemsilcilerPanel ulkeId={selectedUlkeId!} ulkeler={[]} kurumlar={[]} />}
+              {ulkeTab === 'temsilciler' && <TemsilcilerPanel ulkeId={selectedUlkeId!} />}
               {ulkeTab === 'kurumlar' && (
                 <KurumlarPanel
                   ulkeId={selectedUlkeId!}
@@ -1088,7 +1096,7 @@ function UlkelerTab() {
   );
 }
 
-function TemsilcilerPanel({ ulkeId, ulkeler, kurumlar }: { ulkeId: number; ulkeler: any[]; kurumlar: any[] }) {
+function TemsilcilerPanel({ ulkeId }: { ulkeId: number }) {
   const { data } = useQuery({
     queryKey: ['sa-kullanicilar', 'UlkeTemsilcisi', '', 1, ulkeId],
     queryFn: () => api.get('/api/super-admin/kullanicilar', {
@@ -1151,6 +1159,22 @@ function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Okul Ekle formu — her zaman görünür, tablonun üstünde */}
+      <div className="border-b border-slate-100 px-5 py-3 flex gap-2 bg-slate-50/50 shrink-0">
+        <input value={yeniKurum.name} onChange={e => setYeniKurum(f => ({ ...f, name: e.target.value }))}
+          onKeyDown={e => e.key === 'Enter' && yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
+          placeholder="Okul adı..." className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+        <input value={yeniKurum.sehir} onChange={e => setYeniKurum(f => ({ ...f, sehir: e.target.value }))}
+          onKeyDown={e => e.key === 'Enter' && yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
+          placeholder="Şehir..." className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+        <button
+          onClick={() => yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
+          disabled={!yeniKurum.name || kurumOlusturMutation.isPending}
+          className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg hover:bg-slate-700 disabled:opacity-50">
+          <Plus className="size-3" /> Okul Ekle
+        </button>
+      </div>
+
       <table className="w-full text-sm flex-1">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -1183,20 +1207,6 @@ function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
           )}
         </tbody>
       </table>
-
-      {/* Inline add form */}
-      <div className="border-t border-slate-100 px-5 py-3 flex gap-2 bg-slate-50/50 shrink-0">
-        <input value={yeniKurum.name} onChange={e => setYeniKurum(f => ({ ...f, name: e.target.value }))}
-          placeholder="Okul adı..." className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        <input value={yeniKurum.sehir} onChange={e => setYeniKurum(f => ({ ...f, sehir: e.target.value }))}
-          placeholder="Şehir..." className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        <button
-          onClick={() => yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
-          disabled={!yeniKurum.name || kurumOlusturMutation.isPending}
-          className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg hover:bg-slate-700 disabled:opacity-50">
-          <Plus className="size-3" /> Okul Ekle
-        </button>
-      </div>
     </div>
   );
 }
