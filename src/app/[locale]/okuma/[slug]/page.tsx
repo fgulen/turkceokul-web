@@ -209,7 +209,7 @@ export default function OkumaPage({
   const [fontSize, setFontSize]           = useState<number>(100);
   const [showSettings, setShowSettings]   = useState(false);
 
-  const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation('guliverin-seyahatleri');
+  const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(slug);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renditionRef = useRef<any>(null);
