@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@/navigation';
 import {
@@ -64,6 +64,62 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'odevler', label: 'Ödevler', icon: ClipboardList },
   { key: 'duyurular', label: 'Duyurular', icon: Megaphone },
 ];
+
+interface WordIntensityDto {
+  word: string;
+  totalLookups: number;
+  uniqueStudents: number;
+  classPercentage: number;
+  difficulty: 'high' | 'medium' | 'low';
+}
+
+function WordIntensityTable({ sinifId, bookId }: { sinifId: number; bookId: string }) {
+  const [words, setWords] = useState<WordIntensityDto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/api/okuma/kitap/${bookId}/word-intensity?classId=${sinifId}`)
+      .then(r => setWords(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [sinifId, bookId]);
+
+  if (loading) return <p className="text-sm text-muted-foreground">Yükleniyor...</p>;
+  if (words.length === 0) return <p className="text-sm text-muted-foreground">Henüz kelime verisi yok.</p>;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-2 pr-4">Kelime</th>
+            <th className="text-left py-2 pr-4">Toplam Bakış</th>
+            <th className="text-left py-2 pr-4">Sınıf %</th>
+            <th className="text-left py-2">Zorluk</th>
+          </tr>
+        </thead>
+        <tbody>
+          {words.map(w => (
+            <tr key={w.word} className="border-b hover:bg-muted/40">
+              <td className="py-2 pr-4 font-medium">{w.word}</td>
+              <td className="py-2 pr-4">{w.totalLookups}</td>
+              <td className="py-2 pr-4">{w.classPercentage}%</td>
+              <td className="py-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  w.difficulty === 'high' ? 'bg-red-100 text-red-700' :
+                  w.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {w.difficulty === 'high' ? 'Zor' : w.difficulty === 'medium' ? 'Orta' : 'Kolay'}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: string }> }) {
   const { sinifId } = use(params);
@@ -589,6 +645,15 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             </div>
           )}
         </div>
+
+        {/* Kelime Yoğunluğu — OkuGec */}
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold mb-3">Okuma: Kelime Zorlukları</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Öğrencilerin en çok çeviri baktığı kelimeler — quiz oluşturmak için kullanabilirsiniz.
+          </p>
+          <WordIntensityTable sinifId={id} bookId="guliverin-seyahatleri" />
+        </section>
       </main>
 
       {/* QR Kod Modalı */}
