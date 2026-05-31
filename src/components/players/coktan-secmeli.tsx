@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { ActivityHint } from './ui';
 
@@ -71,7 +72,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
           className="text-xl font-semibold leading-relaxed"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
-            __html: sentence.replace(
+            __html: sanitizeHtml(sentence).replace(
               /\[___\]|_{3,}/g,
               `<span class="inline-block min-w-[80px] border-b-2 border-primary mx-1 text-primary font-bold">${selected ?? '&nbsp;&nbsp;&nbsp;&nbsp;'}</span>`
             ),

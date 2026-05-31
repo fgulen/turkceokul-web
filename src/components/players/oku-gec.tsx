@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PlayerProps } from '@/types/etkinlik';
 import { toMediaUrl } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -60,7 +61,7 @@ export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
               <div
                 className="text-lg leading-relaxed [&_br]:block [&_.sozluk]:text-primary [&_.sozluk]:cursor-help"
                 // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: current.description }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description ?? '') }}
               />
             ) : (
               <p className="text-muted-foreground text-sm">İçerik yükleniyor…</p>
