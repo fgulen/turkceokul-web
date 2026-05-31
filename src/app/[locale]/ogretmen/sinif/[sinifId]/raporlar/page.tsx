@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Download } from 'lucide-react';
+import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
@@ -68,10 +69,10 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
     <div className="min-h-screen bg-[#F3F4F6]">
       <AppNav />
       <main className="max-w-[1000px] mx-auto px-4 py-8">
-        <a href={`/ogretmen/sinif/${id}`} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
+        <Link href={`/ogretmen/sinif/${id}`} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="size-4" />
           Sınıfa dön
-        </a>
+        </Link>
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-slate-900">

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LogOut, Trophy, User, Zap } from 'lucide-react';
+import { Flame, Heart, LogOut, Trophy, User, Wifi, Zap } from 'lucide-react';
 import { useAuthStore, AuthUser } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
 import { Logo } from '@/components/logo';
@@ -205,6 +205,18 @@ export function AppNav() {
                 >
                   <Trophy className="size-3.5" />
                   Lig
+                </Link>
+                <Link
+                  href="/kahoot/katil"
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/kahoot')
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  <Wifi className="size-3.5" />
+                  Kahoot
                 </Link>
               </>
             )}

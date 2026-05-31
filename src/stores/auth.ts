@@ -44,10 +44,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth',
-      // sessionStorage: XSS diğer tablardan token okuyamaz; sayfa yenileme hayatta kalır
-      storage: createJSONStorage(() =>
-        typeof window !== 'undefined' ? sessionStorage : localStorage
-      ),
+      // localStorage: yeni tab ve browser yeniden başlatmada session korunur.
+      // accessToken zaten memory-only olduğu için refreshToken'ı localStorage'da tutmak
+      // marginal ek risk yaratır; sessionStorage yeni-tab logout sorununa yol açıyordu.
+      storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
         user: s.user,
         // accessToken persist edilmiyor — 15 dk TTL, memory-only yeterli

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { useAuthStore } from '@/stores/auth';
+import { ensureToken } from '@/lib/api';
 
-// Hub URL: direct to API (Next.js rewrites don't proxy WebSocket upgrades)
 const getHubUrl = () =>
   (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221') + '/hubs/kahoot';
 
@@ -19,11 +19,36 @@ export interface SoruBilgisi {
   soruId: string;
   soruNo: number;
   toplamSoru: number;
+  soru?: string;
+  secA?: string;
+  secB?: string;
+  secC?: string;
+  secD?: string;
+}
+
+function redirectToHome() {
+  if (typeof window !== 'undefined') window.location.replace('/');
+}
+
+// SignalR için geçerli token al — api.ts ile paylaşılan refreshPromise kullanır (çakışma yok)
+async function getToken(): Promise<string> {
+  const { refreshToken } = useAuthStore.getState();
+  if (!refreshToken) {
+    // refreshToken yoksa kullanıcı zaten giriş yapmamış
+    useAuthStore.getState().logout();
+    redirectToHome();
+    return '';
+  }
+  const token = await ensureToken();
+  if (!token) {
+    // Yenileme geçici olarak başarısız (ağ sorunu vb.) — logout yapma, bağlantı başarısız olsun
+    return '';
+  }
+  return token;
 }
 
 export function useKahoot() {
   const hubRef = useRef<signalR.HubConnection | null>(null);
-  const { accessToken } = useAuthStore();
 
   const [connected, setConnected] = useState(false);
   const [oyuncuSayisi, setOyuncuSayisi] = useState(0);
@@ -35,13 +60,14 @@ export function useKahoot() {
   const [cevapAlindi, setCevapAlindi] = useState(false);
   const [kazanilanPuan, setKazanilanPuan] = useState(0);
 
-  const connect = useCallback(async () => {
-    if (hubRef.current) return;
-    if (!accessToken) { setHata('Giriş yapılmamış.'); return; }
+  // [] deps: tüm token işi accessTokenFactory içinde; bağımlılık yok
+  const connect = useCallback(async (): Promise<boolean> => {
+    if (hubRef.current) return true;
 
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(getHubUrl(), {
-        accessTokenFactory: () => accessToken,
+        // Reconnect dahil her bağlantıda güncel token kullanılır
+        accessTokenFactory: getToken,
         transport: signalR.HttpTransportType.WebSockets,
         skipNegotiation: true,
       })
@@ -50,10 +76,11 @@ export function useKahoot() {
       .build();
 
     conn.on('OyuncuKatildi', () => setOyuncuSayisi(p => p + 1));
+    conn.on('OyunDurumu', (data: { oyuncuSayisi: number }) => setOyuncuSayisi(data.oyuncuSayisi));
 
-    conn.on('OyunBasladi', (data: { soruId: string; toplamSoru: number }) => {
+    conn.on('OyunBasladi', (data: { soruId: string; toplamSoru: number; soru?: string; secA?: string; secB?: string; secC?: string; secD?: string }) => {
       setOyunBasladi(true);
-      setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru });
+      setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD });
       setCevapAlindi(false);
     });
 
@@ -84,10 +111,12 @@ export function useKahoot() {
       await conn.start();
       setConnected(true);
       hubRef.current = conn;
+      return true;
     } catch {
-      setHata('Sunucuya bağlanılamadı. Sayfayı yenile.');
+      setHata('Bağlantı kurulamadı. Giriş yaptığınızdan emin olun.');
+      return false;
     }
-  }, [accessToken]);
+  }, []);
 
   const disconnect = useCallback(async () => {
     await hubRef.current?.stop();
@@ -99,8 +128,16 @@ export function useKahoot() {
     await hubRef.current?.invoke('JoinGame', oyunKodu);
   }, []);
 
+  const joinAsTeacher = useCallback(async (oyunKodu: string) => {
+    await hubRef.current?.invoke('JoinAsTeacher', oyunKodu);
+  }, []);
+
   const startGame = useCallback(async (oyunKodu: string) => {
     await hubRef.current?.invoke('StartGame', oyunKodu);
+  }, []);
+
+  const endGame = useCallback(async (oyunKodu: string) => {
+    await hubRef.current?.invoke('EndGame', oyunKodu);
   }, []);
 
   const nextQuestion = useCallback(async (oyunKodu: string) => {
@@ -127,7 +164,9 @@ export function useKahoot() {
     connect,
     disconnect,
     joinGame,
+    joinAsTeacher,
     startGame,
+    endGame,
     nextQuestion,
     submitAnswer,
   };
