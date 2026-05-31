@@ -221,12 +221,18 @@ export default function OkumaPage({
     rendition.on('rendered', () => {
       applyEpubStyles(renditionRef.current, theme, fontFamily, fontSize);
     });
-    rendition.on('selected', (cfiRange: string, contents: { window: Window }) => {
-      const selection = contents.window.getSelection();
-      const word = selection?.toString().trim();
-      if (word && word.split(/\s+/).length === 1) {
+    rendition.on('click', (e: MouseEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const doc = (e.target as any)?.ownerDocument as Document | undefined;
+      if (!doc) return;
+      // caretRangeFromPoint: kelime altındaki range'i bul
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const range = (doc as any).caretRangeFromPoint?.(e.clientX, e.clientY) as Range | undefined;
+      if (!range) return;
+      range.expand('word');
+      const word = range.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
+      if (word && word.split(/\s+/).length === 1 && word.length > 1) {
         translate(word);
-        selection?.removeAllRanges();
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

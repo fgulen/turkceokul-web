@@ -18,18 +18,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Paylaşılan refresh in-flight promise — eşzamanlı 401'lerin hepsi aynı isteği bekler,
+// rotating token'da ikinci refresh çağrısının geçersiz token göndermesi önlenir.
+let refreshPromise: Promise<string> | null = null;
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
     if (error.response?.status === 401 && !original._retry && !original.url?.startsWith('/api/auth/')) {
       original._retry = true;
-      const { refreshToken, setTokens, logout } = useAuthStore.getState();
+      const { refreshToken, logout } = useAuthStore.getState();
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`/api/auth/refresh`, { refreshToken });
-          setTokens(data.accessToken, data.refreshToken);
-          original.headers.Authorization = `Bearer ${data.accessToken}`;
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post<{ accessToken: string; refreshToken: string }>('/api/auth/refresh', { refreshToken })
+              .then(({ data }) => {
+                useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
+                return data.accessToken;
+              })
+              .finally(() => { refreshPromise = null; });
+          }
+          const newToken = await refreshPromise;
+          original.headers.Authorization = `Bearer ${newToken}`;
           return api(original);
         } catch {
           logout();

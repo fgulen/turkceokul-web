@@ -43,7 +43,7 @@ export function useWordTranslation(bookId: string) {
         word: clean,
         bookId,
         sourceLang: 'tr',
-        targetLang: 'en',
+        targetLang: 'EN-US',
       });
       setState({ loading: false, result: data, activeWord: clean });
     } catch {

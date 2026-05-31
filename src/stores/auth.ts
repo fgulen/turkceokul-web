@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Admin' | 'KurumYoneticisi' | 'UlkeTemsilcisi' | 'SuperAdmin' | 'Editor';
 
@@ -44,9 +44,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth',
+      // sessionStorage: XSS diğer tablardan token okuyamaz; sayfa yenileme hayatta kalır
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' ? sessionStorage : localStorage
+      ),
       partialize: (s) => ({
         user: s.user,
-        accessToken: s.accessToken,
+        // accessToken persist edilmiyor — 15 dk TTL, memory-only yeterli
         refreshToken: s.refreshToken,
       }),
       onRehydrateStorage: () => (state) => {

@@ -76,16 +76,18 @@ interface WordIntensityDto {
 function WordIntensityTable({ sinifId, bookId }: { sinifId: number; bookId: string }) {
   const [words, setWords] = useState<WordIntensityDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.get(`/api/okuma/kitap/${bookId}/word-intensity?classId=${sinifId}`)
       .then(r => setWords(r.data))
-      .catch(() => {})
+      .catch((e) => setError(e?.response?.status === 403 ? 'Yetki hatası (403)' : `Hata: ${e?.message}`))
       .finally(() => setLoading(false));
   }, [sinifId, bookId]);
 
   if (loading) return <p className="text-sm text-muted-foreground">Yükleniyor...</p>;
-  if (words.length === 0) return <p className="text-sm text-muted-foreground">Henüz kelime verisi yok.</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
+  if (words.length === 0) return <p className="text-sm text-muted-foreground">Henüz kelime verisi yok. Öğrenciler okuma sayfasında kelimeye tıkladığında burada görünür.</p>;
 
   return (
     <div className="overflow-x-auto">
