@@ -16,14 +16,13 @@
 
 import { test, expect, APIRequestContext } from '@playwright/test';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = process.env.API_BASE_URL ?? 'http://localhost:5221';
 
 // ─── Yardımcı: API bağlamı oluştur ───────────────────────────────────────────
 
-async function makeApiContext(request: APIRequestContext): Promise<APIRequestContext> {
-  // Playwright'ın yerleşik request fixture'ı kullanılır;
-  // baseURL'i override etmek için newContext ile yeni bağlam açılır.
-  return request.newContext?.() ?? request; // fallback: aynı context
+// request fixture doğrudan kullanılır — ayrı context açmaya gerek yok.
+function makeApiContext(request: APIRequestContext): APIRequestContext {
+  return request;
 }
 
 // ─── Yardımcı: Auth token al ──────────────────────────────────────────────────
