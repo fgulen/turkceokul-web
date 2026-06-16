@@ -2,13 +2,21 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImageOff, Zap } from 'lucide-react';
+import { Volume2, Zap } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
-import { GameHUD } from '@/components/game/game-hud';
-import { ActivityHint } from './ui';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
+import { GameHUD, } from '@/components/game/game-hud';
+import { PlayingBars, ActivityHint } from './ui';
+
+// Veri yapısı:
+//   description = soru metni ("Günaydın")
+//   sesLink     = kelimenin sesi (opsiyonel)
+//   kelime1     = DOĞRU resim yolu
+//   kelime2..4  = YANLIŞ seçenekler (resim yolları)
+// Backend: d.Kelime1 == cevap kontrolü
 
 const XP_BASE = 10;
 
@@ -22,50 +30,36 @@ function comboMult(combo: number) {
 
 interface BurstData { id: number; amount: number; mult: number }
 
-// Her resim seçeneği: hangi detaya ait, resim URL'si, doğru cevap değeri
-interface ImageOption {
-  detayId: string;
-  imgUrl: string | null;
-  label: string;      // resim yoksa fallback metin
-  kelime1: string;    // backend'e submit edilecek değer
-}
-
 export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
   const { play } = useGameSound();
-
-  // Resim seçenekleri: tüm detaylardan, aktivite boyunca aynı sırayla
-  const imageOptions: ImageOption[] = useMemo(
-    () =>
-      detaylar
-        .map((d) => ({
-          detayId: d.id,
-          imgUrl: toMediaUrl(d.resimLink),
-          label: d.kelime1 ?? d.description ?? '',
-          kelime1: d.kelime1 ?? '',
-        }))
-        .sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  const { playing: audioPlaying, play: playWord } = usePlayerAudio();
 
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
-  const [selected, setSelected] = useState<string | null>(null); // seçilen detayId
+  const [selected, setSelected] = useState<string | null>(null); // seçilen image path
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
   const burstId = useRef(0);
 
   const current = detaylar[index];
-  const correctKelime1 = current.kelime1 ?? '';
+  const correct = current.kelime1 ?? '';
+  const sesUrl = toMediaUrl(current.sesLink);
 
-  function handleSelect(opt: ImageOption) {
+  // Seçenekler: kelime1..kelimeN = resim yolları, karıştırılmış
+  const options = useMemo(() => {
+    return getKelimeler(current).sort(() => Math.random() - 0.5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  const cols = options.length <= 2 ? 2 : options.length <= 4 ? 2 : 3;
+
+  function handleSelect(imgPath: string) {
     if (selected !== null) return;
-    setSelected(opt.detayId);
-
-    const isCorrect = opt.kelime1 === correctKelime1;
+    setSelected(imgPath);
+    const isCorrect = imgPath === correct;
     play(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
@@ -81,7 +75,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
     }
 
     setTimeout(() => {
-      const yeni = [...cevaplar, { id: current.id, cevap: opt.kelime1 }];
+      const yeni = [...cevaplar, { id: current.id, cevap: imgPath }];
       setCevaplar(yeni);
       if (index + 1 >= detaylar.length) {
         onComplete(yeni);
@@ -92,8 +86,6 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       }
     }, 900);
   }
-
-  const cols = imageOptions.length <= 4 ? 2 : 3;
 
   return (
     <div className="max-w-sm mx-auto">
@@ -109,7 +101,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
         <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
       )}
 
-      {/* Soru */}
+      {/* Soru kartı */}
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
@@ -117,9 +109,21 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.22 }}
-          className="bg-card border border-border rounded-2xl p-6 mb-5 text-center min-h-[80px] flex items-center justify-center"
+          className="bg-card border border-border rounded-2xl p-5 mb-5 flex items-center justify-center gap-4 min-h-[72px]"
         >
-          <p className="text-2xl font-bold">{current.description ?? current.kelime1}</p>
+          <p className="text-2xl font-bold flex-1 text-center">{current.description}</p>
+          {sesUrl && (
+            <button
+              onClick={() => playWord(sesUrl)}
+              className="shrink-0 size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+              aria-label="Sesi çal"
+            >
+              {audioPlaying
+                ? <PlayingBars size="sm" color="bg-primary" />
+                : <Volume2 className="size-4 text-primary" />
+              }
+            </button>
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -147,20 +151,21 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
         </AnimatePresence>
       </div>
 
-      {/* Resim ızgarası */}
+      {/* Resim seçenekleri */}
       <div
         className="grid gap-3"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
-        {imageOptions.map((opt) => {
-          const isSelected = selected === opt.detayId;
-          const isCorrect = opt.kelime1 === correctKelime1;
+        {options.map((imgPath) => {
+          const url = toMediaUrl(imgPath);
+          const isCorrect = imgPath === correct;
+          const isSelected = selected === imgPath;
           const revealed = selected !== null;
 
           return (
             <motion.button
-              key={opt.detayId}
-              onClick={() => handleSelect(opt)}
+              key={imgPath}
+              onClick={() => handleSelect(imgPath)}
               disabled={revealed}
               animate={
                 isSelected && isCorrect
@@ -171,7 +176,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
               }
               transition={{ duration: 0.38 }}
               className={cn(
-                'relative rounded-2xl overflow-hidden border-2 transition-all duration-200',
+                'relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-muted',
                 !revealed && 'border-border hover:border-primary hover:shadow-md cursor-pointer',
                 isSelected && isCorrect && 'border-[--correct]',
                 isSelected && !isCorrect && 'border-destructive',
@@ -179,22 +184,20 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                 !isSelected && revealed && !isCorrect && 'opacity-40 border-border',
               )}
             >
-              {opt.imgUrl ? (
+              {url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={opt.imgUrl}
-                  alt={opt.label}
+                  src={url}
+                  alt=""
                   className="w-full h-auto block"
                   draggable={false}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground p-4 text-center min-h-[80px]">
-                  <ImageOff className="size-5 opacity-40" />
-                  <span className="text-xs font-medium">{opt.label}</span>
+                <div className="w-full aspect-square flex items-center justify-center text-muted-foreground text-xs p-2">
+                  ?
                 </div>
               )}
 
-              {/* Doğru rozeti */}
               {revealed && isCorrect && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="size-9 rounded-full bg-white flex items-center justify-center shadow">
@@ -202,7 +205,6 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                   </div>
                 </div>
               )}
-              {/* Yanlış rozeti (sadece seçilen yanlış resimde) */}
               {isSelected && !isCorrect && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="size-9 rounded-full bg-white flex items-center justify-center shadow">
