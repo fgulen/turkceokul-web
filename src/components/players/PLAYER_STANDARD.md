@@ -123,13 +123,20 @@ src={toMediaUrl(x) ?? ''}
 
 ---
 
-## 8. ActivityHint
+## 8. Hint Sistemi
 
+**ActivityHint** — statik, her zaman görünür talimat (oyun mekaniğini açıklar):
 ```tsx
 import { ActivityHint } from './ui';
-
 <ActivityHint>Sol taraftan bir kelime seç, sağ taraftan eşleştir.</ActivityHint>
 ```
+
+**HintCurtain** — `soruYonergesi` (öğretmen ipucu) için; butona basınca perde gibi açılır:
+```tsx
+import { HintCurtain } from './ui';
+{etkinlik.soruYonergesi && <HintCurtain hint={etkinlik.soruYonergesi} />}
+```
+→ `soruYonergesi` varsa HintCurtain, yoksa hiçbir şey render etme. ActivityHint ile karıştırma.
 
 ---
 
@@ -151,7 +158,7 @@ import { NextButton, NavCounter } from './ui';
 - [ ] Doğru/yanlış varsa `useGameSound` kullanılıyor
 - [ ] `onComplete` doğru pattern (adım-adım / toplu / pasif)
 - [ ] `toMediaUrl()` null kontrolü yapıldı
-- [ ] `ActivityHint` ile kullanım talimatı yazıldı
+- [ ] Statik talimat varsa `ActivityHint`, `soruYonergesi` varsa `HintCurtain` kullanıldı
 - [ ] Kalp eksilme ve combo artışı GameHUD'a yansıtılıyor
 
 ---
@@ -164,7 +171,8 @@ import { NextButton, NavCounter } from './ui';
 | akilli-kart | sm ✅ | GameHUD ✅ | ✅ | Referans implementasyon |
 | coktan-secmeli | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-16 |
 | dogru-yanlis | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-16 |
-| bosluk-doldurma | sm ✅ | raw bar | ❌ | Backend değerlendiriyor — lokal ses yok |
+| bosluk-doldurma | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-17; çok boşluk desteği |
+| coktan-secmeli-bosluk-doldurma | sm ✅ | GameHUD ✅ | ✅ | Yeni 2026-06-17; kelime bankası, HintCurtain |
 | kelimeleri-eslestir | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16 |
 | resim-ses-eslestirme | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16; usePlayerAudio |
 | resim-metin-eslestirme | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16 |

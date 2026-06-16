@@ -16,6 +16,7 @@ import { AkilliKartPlayer } from '@/components/players/akilli-kart';
 import { QuizPlayer } from '@/components/players/quiz';
 import { KelimeleriEslestirPlayer } from '@/components/players/kelimeleri-eslestir';
 import { CoktanSecmeliPlayer } from '@/components/players/coktan-secmeli';
+import { CoktanSecmeliBoslukDoldurmaPlayer } from '@/components/players/coktan-secmeli-bosluk-doldurma';
 import { ResimSesEslestirmePlayer } from '@/components/players/resim-ses-eslestirme';
 import { OkuGecPlayer } from '@/components/players/oku-gec';
 import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
@@ -229,7 +230,7 @@ export default function EtkinlikPage({
       case 'AkilliKart': return <AkilliKartPlayer key={key} {...props} />;
       case 'Quiz': return <QuizPlayer key={key} {...props} />;
       case 'KelimeleriEslestir': return <KelimeleriEslestirPlayer key={key} {...props} />;
-      case 'CoktanSecmeliBoslukDoldurma': return <CoktanSecmeliPlayer key={key} {...props} />;
+      case 'CoktanSecmeliBoslukDoldurma': return <CoktanSecmeliBoslukDoldurmaPlayer key={key} {...props} />;
       case 'ResimSesEslestirme': return <ResimSesEslestirmePlayer key={key} {...props} />;
       case 'OkuGec': return <OkuGecPlayer key={key} {...props} />;
       case 'MetinDogruYanlis':

@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { GameHUD, } from '@/components/game/game-hud';
-import { PlayingBars, ActivityHint } from './ui';
+import { PlayingBars, HintCurtain } from './ui';
 
 // Veri yapısı:
 //   description = soru metni ("Günaydın")
@@ -98,7 +98,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       />
 
       {etkinlik.soruYonergesi && (
-        <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
+        <HintCurtain hint={etkinlik.soruYonergesi} />
       )}
 
       {/* Soru kartı */}

@@ -7,7 +7,7 @@ import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { ActivityHint } from './ui';
+import { HintCurtain } from './ui';
 
 function comboMult(combo: number) {
   if (combo >= 10) return 10;
@@ -77,7 +77,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       />
 
       {etkinlik.soruYonergesi && (
-        <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
+        <HintCurtain hint={etkinlik.soruYonergesi} />
       )}
 
       {etkinlik.resimLink && (
