@@ -4,16 +4,32 @@ import { useState, useMemo } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
+import { useAuthStore } from '@/stores/auth';
+import { useGameSound } from '@/hooks/use-game-sound';
+import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
+
+function comboMult(combo: number) {
+  if (combo >= 10) return 10;
+  if (combo >= 5) return 5;
+  if (combo >= 3) return 3;
+  if (combo >= 2) return 2;
+  return 1;
+}
 
 export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
+  const { play } = useGameSound();
+
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [combo, setCombo] = useState(0);
+  const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const progress = (index / detaylar.length) * 100;
+  const correct = current.kelime1 ?? '';
 
   const options = useMemo(() => {
     const list = getKelimeler(current);
@@ -24,6 +40,18 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   function handleSelect(opt: string) {
     if (selected !== null) return;
     setSelected(opt);
+    const isCorrect = opt === correct;
+    play(isCorrect ? 'correct' : 'wrong');
+
+    if (isCorrect) {
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      if ([2, 3, 5, 10].includes(newCombo)) play('combo');
+    } else {
+      setCombo(0);
+      setLocalKalp((k) => Math.max(0, k - 1));
+    }
+
     setTimeout(() => {
       const yeni = [...cevaplar, { id: current.id, cevap: opt }];
       setCevaplar(yeni);
@@ -36,27 +64,22 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
     }, 700);
   }
 
-  // Parse description — replace [___] or ___ with a styled blank indicator
   const sentence = current.description ?? '';
 
   return (
     <div className="max-w-sm mx-auto">
-      <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-        <span>{index + 1} / {detaylar.length}</span>
-        <span>Boşluk Doldurma</span>
-      </div>
-      <div className="h-1.5 bg-muted rounded-full mb-5">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <GameHUD
+        soruNo={index}
+        toplamSoru={detaylar.length}
+        kalp={localKalp}
+        combo={combo}
+        etiket="Boşluk Doldurma"
+      />
 
       {etkinlik.soruYonergesi && (
         <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
       )}
 
-      {/* Etkinlik resmi */}
       {etkinlik.resimLink && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -66,7 +89,6 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
         />
       )}
 
-      {/* Cümle — [___] boşluğunu seçilen kelimeyle göster, HTML entity'lerini çöz */}
       <div className="bg-card border border-border rounded-2xl p-8 mb-6 text-center min-h-[100px] flex items-center justify-center">
         <p
           className="text-xl font-semibold leading-relaxed"
@@ -80,23 +102,28 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
         />
       </div>
 
-      {/* Options */}
       <div className="flex flex-wrap gap-3 justify-center">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => handleSelect(opt)}
-            disabled={selected !== null}
-            className={cn(
-              'px-5 py-2.5 rounded-xl border-2 font-medium text-sm transition-all',
-              selected === null && 'border-border hover:border-primary hover:bg-primary/5',
-              selected === opt && 'border-primary bg-primary/10 text-primary',
-              selected !== null && selected !== opt && 'opacity-40'
-            )}
-          >
-            {opt}
-          </button>
-        ))}
+        {options.map((opt) => {
+          const isCorrect = opt === correct;
+          const isSelected = opt === selected;
+          return (
+            <button
+              key={opt}
+              onClick={() => handleSelect(opt)}
+              disabled={selected !== null}
+              className={cn(
+                'px-5 py-2.5 rounded-xl border-2 font-medium text-sm transition-all',
+                selected === null && 'border-border hover:border-primary hover:bg-primary/5',
+                isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
+                !isSelected && selected !== null && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                !isSelected && selected !== null && !isCorrect && 'opacity-40',
+              )}
+            >
+              {opt}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

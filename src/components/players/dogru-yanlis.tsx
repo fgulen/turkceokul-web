@@ -4,20 +4,48 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { useAuthStore } from '@/stores/auth';
+import { useGameSound } from '@/hooks/use-game-sound';
+import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
+
+function comboMult(combo: number) {
+  if (combo >= 10) return 10;
+  if (combo >= 5) return 5;
+  if (combo >= 3) return 3;
+  if (combo >= 2) return 2;
+  return 1;
+}
 
 export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
+  const { play } = useGameSound();
+
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [combo, setCombo] = useState(0);
+  const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const progress = (index / detaylar.length) * 100;
+  const correct = current.kelime1 ?? '';
 
   function handleSelect(val: 'Doğru' | 'Yanlış') {
     if (selected !== null) return;
     setSelected(val);
+    const isCorrect = val === correct;
+    play(isCorrect ? 'correct' : 'wrong');
+
+    if (isCorrect) {
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      if ([2, 3, 5, 10].includes(newCombo)) play('combo');
+    } else {
+      setCombo(0);
+      setLocalKalp((k) => Math.max(0, k - 1));
+    }
+
     setTimeout(() => {
       const yeni = [...cevaplar, { id: current.id, cevap: val }];
       setCevaplar(yeni);
@@ -32,16 +60,13 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm mx-auto">
-      <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-        <span>{index + 1} / {detaylar.length}</span>
-        <span>Doğru / Yanlış</span>
-      </div>
-      <div className="h-1.5 bg-muted rounded-full mb-5">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <GameHUD
+        soruNo={index}
+        toplamSoru={detaylar.length}
+        kalp={localKalp}
+        combo={combo}
+        etiket="Doğru / Yanlış"
+      />
 
       {etkinlik.soruYonergesi && (
         <ActivityHint>{etkinlik.soruYonergesi}</ActivityHint>
@@ -59,23 +84,28 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
       </motion.div>
 
       <div className="grid grid-cols-2 gap-4">
-        {(['Doğru', 'Yanlış'] as const).map((val) => (
-          <button
-            key={val}
-            onClick={() => handleSelect(val)}
-            disabled={selected !== null}
-            className={cn(
-              'py-5 rounded-2xl border-2 text-lg font-bold transition-all',
-              selected === null && val === 'Doğru' && 'border-border hover:border-[--correct] hover:bg-[--correct]/10 hover:text-[--correct]',
-              selected === null && val === 'Yanlış' && 'border-border hover:border-destructive hover:bg-destructive/10 hover:text-destructive',
-              selected === val && val === 'Doğru' && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-              selected === val && val === 'Yanlış' && 'border-destructive bg-destructive/10 text-destructive',
-              selected !== null && selected !== val && 'opacity-30'
-            )}
-          >
-            {val === 'Doğru' ? '✓ Doğru' : '✗ Yanlış'}
-          </button>
-        ))}
+        {(['Doğru', 'Yanlış'] as const).map((val) => {
+          const isCorrect = val === correct;
+          const isSelected = val === selected;
+          return (
+            <button
+              key={val}
+              onClick={() => handleSelect(val)}
+              disabled={selected !== null}
+              className={cn(
+                'py-5 rounded-2xl border-2 text-lg font-bold transition-all',
+                selected === null && val === 'Doğru' && 'border-border hover:border-[--correct] hover:bg-[--correct]/10 hover:text-[--correct]',
+                selected === null && val === 'Yanlış' && 'border-border hover:border-destructive hover:bg-destructive/10 hover:text-destructive',
+                isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
+                !isSelected && selected !== null && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                !isSelected && selected !== null && !isCorrect && 'opacity-30',
+              )}
+            >
+              {val === 'Doğru' ? '✓ Doğru' : '✗ Yanlış'}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

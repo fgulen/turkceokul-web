@@ -4,9 +4,11 @@ import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { useGameSound } from '@/hooks/use-game-sound';
 
 export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const { play } = useGameSound();
 
   // Right column: shuffled kelime1 values
   const rightOptions = useMemo(
@@ -31,6 +33,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
     const correctKelime = detaylar.find((d) => d.id === selectedLeft)?.kelime1;
 
     if (value === correctKelime) {
+      play('correct');
       const next = new Map(matched).set(selectedLeft, value);
       setMatched(next);
       setSelectedLeft(null);
@@ -43,6 +46,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
         setTimeout(() => onComplete(cevaplar), 400);
       }
     } else {
+      play('wrong');
       setWrongLeft(selectedLeft);
       setTimeout(() => {
         setWrongLeft(null);
@@ -52,9 +56,19 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
   }
 
   const usedValues = new Set(matched.values());
+  const progressPct = (matched.size / detaylar.length) * 100;
 
   return (
     <div className="max-w-lg mx-auto">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>{matched.size} / {detaylar.length} eşleşti</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full mb-5">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
       <ActivityHint>Sol taraftan bir kelime seç, sağ taraftan eşleştir.</ActivityHint>
 
       <div className="grid grid-cols-2 gap-3">

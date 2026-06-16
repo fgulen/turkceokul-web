@@ -5,14 +5,13 @@ import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
-
-function playAudio(url: string) {
-  const a = new Audio(url);
-  a.play().catch(() => {});
-}
+import { useGameSound } from '@/hooks/use-game-sound';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
 
 export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const { play: playFx } = useGameSound();
+  const { play: playAudio } = usePlayerAudio();
 
   // Shuffled audio list (sesLink strings)
   const shuffledAudios = useMemo(
@@ -38,6 +37,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
     const correctSes = detaylar.find((d) => d.id === detayId)?.sesLink ?? '';
 
     if (selectedAudio === correctSes) {
+      playFx('correct');
       const next = { ...assignments, [detayId]: selectedAudio };
       setAssignments(next);
       setSelectedAudio(null);
@@ -50,6 +50,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
         setTimeout(() => onComplete(cevaplar), 400);
       }
     } else {
+      playFx('wrong');
       setWrongId(detayId);
       setTimeout(() => {
         setWrongId(null);
@@ -58,8 +59,20 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
     }
   }
 
+  const matchedCount = Object.keys(assignments).length;
+  const progressPct = (matchedCount / detaylar.length) * 100;
+
   return (
     <div className="max-w-lg mx-auto">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>{matchedCount} / {detaylar.length} eşleşti</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full mb-5">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
       <ActivityHint>Bir ses seç, sonra eşleşen resme tıkla.</ActivityHint>
 
       {/* Images */}

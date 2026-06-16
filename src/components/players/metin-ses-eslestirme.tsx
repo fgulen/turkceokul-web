@@ -71,8 +71,20 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
     }
   }
 
+  const matchedCount = Object.keys(matched).length;
+  const progressPct = (matchedCount / detaylar.length) * 100;
+
   return (
     <div className="max-w-lg mx-auto">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>{matchedCount} / {detaylar.length} eşleşti</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full mb-5">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
       <ActivityHint>Bir ses seç, sonra eşleşen metne tıkla.</ActivityHint>
 
       {/* Ses butonları — üstte */}
