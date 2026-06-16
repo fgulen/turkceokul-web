@@ -173,3 +173,4 @@ import { NextButton, NavCounter } from './ui';
 | resme-tikla-dinle | sm ✅ | ProgressDots ✅ | N/A | ✅ OK |
 | yaziya-tikla-dinle | sm ✅ | ProgressDots ✅ | N/A | ✅ OK |
 | resmin-sesi-hangisi | sm ✅ | ProgressDots ✅ | ✅ | ✅ OK |
+| resimlerden-birini-secme | sm ✅ | GameHUD ✅ | ✅ | Eklendi 2026-06-16 |

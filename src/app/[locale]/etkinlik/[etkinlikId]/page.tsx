@@ -25,6 +25,7 @@ import { YaziyaTiklaDinlePlayer } from '@/components/players/yaziya-tikla-dinle'
 import { ResimMetinEslestirmePlayer } from '@/components/players/resim-metin-eslestirme';
 import { MetinSesEslestirmePlayer } from '@/components/players/metin-ses-eslestirme';
 import { ResminSesiHangisiPlayer } from '@/components/players/resmin-sesi-hangisi';
+import { ResimlerdenBiriniSecmePlayer } from '@/components/players/resimlerden-birini-secme';
 
 interface CevapSonuc {
   puan: number;
@@ -240,6 +241,7 @@ export default function EtkinlikPage({
       case 'ResimMetinEslestirme': return <ResimMetinEslestirmePlayer key={key} {...props} />;
       case 'MetinSesEslestirme': return <MetinSesEslestirmePlayer key={key} {...props} />;
       case 'ResminSesiHangisi': return <ResminSesiHangisiPlayer key={key} {...props} />;
+      case 'ResimlerdenBiriniSecme': return <ResimlerdenBiriniSecmePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">
