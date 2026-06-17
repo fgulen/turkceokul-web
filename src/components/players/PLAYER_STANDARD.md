@@ -156,32 +156,76 @@ import { NextButton, NavCounter } from './ui';
 
 ## Checklist — Yeni Player Yazarken
 
-- [ ] Wrapper: `max-w-sm` veya `max-w-lg` seçildi
+- [ ] Wrapper: kart için `max-w-sm md:max-w-lg`, grid için `max-w-lg md:max-w-2xl`
 - [ ] `GameHUD` veya `ProgressDots` var (ikisi birden değil)
 - [ ] Doğru/yanlış varsa `useGameSound` kullanılıyor
 - [ ] `onComplete` doğru pattern (adım-adım / toplu / pasif)
 - [ ] `toMediaUrl()` null kontrolü yapıldı
 - [ ] Statik talimat varsa `ActivityHint`, `soruYonergesi` varsa `HintCurtain` kullanıldı
 - [ ] Kalp eksilme ve combo artışı GameHUD'a yansıtılıyor
+- [ ] **[Tablet]** Dokunma hedefleri ≥44px (mobil), ≥48px (tablet md:)
+- [ ] **[Tablet]** Input focus anında `scrollIntoView({ block: 'nearest' })` çağrısı var
+- [ ] **[Tablet]** Yazı tipi sınıf projeksiyonunda okunabilir (`text-lg` min, okuma tiplerinde `md:text-xl`)
 
 ---
 
-## Audit Durumu (2026-06-16)
+## 10. Tablet Kriterleri (≥768px — sınıf cihazı)
 
-| Player | Wrapper | Progress | Ses | Notlar |
-|--------|---------|----------|-----|--------|
-| quiz | sm ✅ | GameHUD ✅ | ✅ | Referans implementasyon |
-| akilli-kart | sm ✅ | GameHUD ✅ | ✅ | Referans implementasyon |
-| coktan-secmeli | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-16 |
-| dogru-yanlis | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-16 |
-| bosluk-doldurma | sm ✅ | GameHUD ✅ | ✅ | Düzeltildi 2026-06-17; çok boşluk desteği |
-| coktan-secmeli-bosluk-doldurma | sm ✅ | GameHUD ✅ | ✅ | Yeni 2026-06-17; kelime bankası, HintCurtain |
-| kelimeleri-eslestir | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16 |
-| resim-ses-eslestirme | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16; usePlayerAudio |
-| resim-metin-eslestirme | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16 |
-| metin-ses-eslestirme | lg ✅ | X/Y bar ✅ | ✅ | Düzeltildi 2026-06-16 |
-| oku-gec | lg ✅ | raw bar | N/A | Pasif geçiş, ses yok — OK |
-| resme-tikla-dinle | sm ✅ | ProgressDots ✅ | N/A | ✅ OK |
-| yaziya-tikla-dinle | sm ✅ | ProgressDots ✅ | N/A | ✅ OK |
-| resmin-sesi-hangisi | sm ✅ | ProgressDots ✅ | ✅ | ✅ OK |
-| resimlerden-birini-secme | sm ✅ | GameHUD ✅ | ✅ | Eklendi 2026-06-16 |
+Tablet traffic **%54.6** — birincil sınıf cihazı. Her yeni player bu kriterleri karşılamalı.
+
+### 10.1 Wrapper genişliği
+- Kart tipler: `max-w-sm md:max-w-lg` → 512px (ekran 768px → %67 doluluk)
+- Grid tipler: `max-w-lg md:max-w-2xl` → 672px (ekran 768px → %88 doluluk)
+
+### 10.2 Dokunma hedefleri
+| Eleman | Mobil minimum | Tablet hedef |
+|--------|---------------|--------------|
+| Cevap butonu | `h-14` (56px) | `h-14 md:h-16` |
+| Ikon butonu (Dinle, vb.) | `w-16 h-14` | `w-16 md:w-20 h-14 md:h-16` |
+| Özel karakter klavyesi | `min-w-[44px] h-11` | `md:min-w-[52px] md:h-12` |
+| İleri / Tamamla | `py-3.5 w-full` | değişmez (zaten yeterli) |
+
+### 10.3 Input ve klavye çakışması
+Sanal klavye açıldığında input'u görünür tut:
+```tsx
+setTimeout(() => {
+  inputRef.current?.focus();
+  inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}, 150);
+```
+`block: 'nearest'` — progress bar/HUD'u viewport dışına çıkarmaz; sadece input görünür olur.
+
+### 10.4 Yazı boyutu (sınıf projeksiyonu)
+- Okuma metinleri (`OkuGec`, metin kartlar): `text-lg md:text-xl md:leading-loose`
+- Soru metni: `text-lg` minimum — küçültme
+- Buton etiketleri: `text-sm md:text-base`
+
+### 10.5 Grid düzeni
+Eşleştirme/grid tipler için `grid-cols-2` → `md:grid-cols-3` veya `md:grid-cols-4`
+olmaz — çünkü fazla kolon satır yüksekliğini azaltır, dokunma zorlaşır.
+**Kural:** Grid kolonları artırma, genişlik artır (wrapper responsive).
+
+---
+
+## Audit Durumu (2026-06-18)
+
+| Player | Wrapper | Progress | Ses | Tablet | Notlar |
+|--------|---------|----------|-----|--------|--------|
+| quiz | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | Referans implementasyon |
+| akilli-kart | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| coktan-secmeli | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| dogru-yanlis | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | scrollIntoView eklendi |
+| coktan-secmeli-bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| kelimeleri-eslestir | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |
+| kelimeleri-sirala | lg→2xl ✅ | GameHUD ✅ | ✅ | ✅ | |
+| resim-ses-eslestirme | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |
+| resim-metin-eslestirme | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |
+| metin-ses-eslestirme | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | Dinle btn md:w-20 md:h-16 |
+| oku-gec | lg→2xl ✅ | raw bar | N/A | ✅ | md:text-xl projeksiyon için |
+| resme-tikla-dinle | sm→lg ✅ | ProgressDots ✅ | N/A | ✅ | |
+| yaziya-tikla-dinle | sm→lg ✅ | ProgressDots ✅ | N/A | ✅ | |
+| resmin-sesi-hangisi | sm→lg ✅ | ProgressDots ✅ | ✅ | ✅ | |
+| resimlerden-birini-secme | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| resme-kelime-yaz | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | klavye md:min-w-[52px], scrollIntoView |
+| sesi-dinle-ve-kelime-yaz | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
