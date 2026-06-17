@@ -1,6 +1,57 @@
+import type { Metadata } from 'next';
 import { Link } from "@/navigation";
 import { Logo } from "@/components/logo";
 import { HeroSection } from "@/components/hero-section";
+
+const BASE = 'https://turkceokulu.com';
+
+export const metadata: Metadata = {
+  title: 'Türkçe Okulu | Online Türkçe Öğrenme Platformu — CEFR A1–C1',
+  description:
+    'Türkçeyi online öğrenin. CEFR A1–C1 müfredatı, Nevai Yayınları kitap serisi, gamification. 53.000+ öğrenci, 30+ ülke. Ücretsiz başlayın.',
+  metadataBase: new URL(BASE),
+  alternates: {
+    canonical: `${BASE}/tr`,
+    languages: { tr: `${BASE}/tr`, en: `${BASE}/en` },
+  },
+  openGraph: {
+    title: 'Türkçe Okulu | Online Türkçe Öğrenme Platformu',
+    description: 'CEFR A1–C1 online Türkçe kursu. Gamification + gerçek müfredat. 53.000+ öğrenci.',
+    url: `${BASE}/tr`,
+    type: 'website',
+    locale: 'tr_TR',
+    alternateLocale: ['en_GB'],
+  },
+};
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'EducationalOrganization',
+  name: 'Türkçe Okulu',
+  url: BASE,
+  description: 'Yabancılara Türkçe öğretimi için CEFR A1–C1 online platform. Nevai Yayınları kitap serisi ile entegre.',
+  foundingDate: '2013',
+  numberOfEmployees: { '@type': 'QuantitativeValue', value: 10 },
+  areaServed: { '@type': 'Place', name: 'Dünya' },
+  sameAs: [],
+  offers: [
+    { '@type': 'Offer', name: 'Bireysel Ücretsiz', price: '0', priceCurrency: 'GBP' },
+    { '@type': 'Offer', name: 'Premium Bireysel', price: '9.99', priceCurrency: 'GBP', billingIncrement: 'monthly' },
+    { '@type': 'Offer', name: 'Kurumsal Pro', price: '20', priceCurrency: 'EUR', billingIncrement: 'monthly' },
+  ],
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Türkçe Okulu',
+  url: BASE,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: { '@type': 'EntryPoint', urlTemplate: `${BASE}/tr/turkce-ogren` },
+    'query-input': 'required name=search_term_string',
+  },
+};
 import {
   Heart, Flame, Zap, Trophy, ListChecks, Layers,
   Image as ImageIcon, PencilLine, MessageCircle, Mic, Brain, Bot,
@@ -50,6 +101,9 @@ const shadowBlue = "0 8px 40px rgba(27,117,188,0.28)";
 
 export default function LandingPage() {
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
     <div style={{ background: "#f9fafb", color: "#1e1b1c" }}>
 
       {/* Nav */}
@@ -495,5 +549,6 @@ export default function LandingPage() {
       </footer>
 
     </div>
+    </>
   );
 }

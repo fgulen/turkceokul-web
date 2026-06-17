@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
   async redirects(): Promise<RedirectEntry[]> {
     return [
       // ----------------------------------------------------------------
+      // 0. SEO HUB KISA URL'LER — locale prefix olmadan erişim
+      // /turkce-ogren         → /tr/turkce-ogren
+      // /learn-turkish-online → /en/learn-turkish-online
+      // /ogretmenler          → /tr/ogretmenler
+      // /for-teachers         → /en/for-teachers
+      // ----------------------------------------------------------------
+      { source: '/turkce-ogren',         destination: '/tr/turkce-ogren',         permanent: true },
+      { source: '/learn-turkish-online', destination: '/en/learn-turkish-online', permanent: true },
+      { source: '/ogretmenler',          destination: '/tr/ogretmenler',          permanent: true },
+      { source: '/for-teachers',         destination: '/en/for-teachers',         permanent: true },
+
+      // ----------------------------------------------------------------
       // 1. ÖĞRENCI PANELİ
       // Social.aspx = öğrenci puan tablosu + öğretmen mesajı sayfasıydı
       // (auth-required — Google'da 48K gösterim/yıl vardı, noindex edilmeli)
