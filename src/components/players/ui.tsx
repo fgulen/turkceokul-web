@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Lightbulb } from 'lucide-react';
+import { ChevronRight, Lightbulb, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─── Progress Dots ─────────────────────────────────────────────────────────────
@@ -99,16 +99,51 @@ export function ActivityHint({ children }: { children: ReactNode }) {
 
 // ─── Hint Curtain ──────────────────────────────────────────────────────────────
 // • imageUrl varsa → tam ekran modal (konuşma balonları okunabilsin; soru arkada kalır)
-// • sadece hint varsa → inline aşağı açılan perde (quiz/dogru-yanlis gibi oyunlar)
-// • ikisi birlikte olabilir: modal içinde hint metni resmin altında gösterilir
+// • audioUrl varsa → inline perde açılır, ses otomatik çalar; kapanınca durur
+// • sadece hint varsa → inline aşağı açılan metin perdesi
+// • kombinasyonlar: imageUrl + hint, audioUrl + hint hepsi çalışır
 interface HintCurtainProps {
   hint?: string;
   imageUrl?: string | null;
+  audioUrl?: string | null;
 }
 
-export function HintCurtain({ hint, imageUrl }: HintCurtainProps) {
+export function HintCurtain({ hint, imageUrl, audioUrl }: HintCurtainProps) {
   const [open, setOpen] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasImage = Boolean(imageUrl);
+  const hasAudio = Boolean(audioUrl);
+
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setAudioPlaying(false);
+  }, []);
+
+  const startAudio = useCallback(() => {
+    if (!audioUrl) return;
+    stopAudio();
+    const a = new Audio(audioUrl);
+    audioRef.current = a;
+    setAudioPlaying(true);
+    a.onended = () => setAudioPlaying(false);
+    a.onerror = () => setAudioPlaying(false);
+    a.play().catch(() => setAudioPlaying(false));
+  }, [audioUrl, stopAudio]);
+
+  useEffect(() => () => stopAudio(), [stopAudio]);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (hasAudio && !hasImage) {
+      if (next) startAudio();
+      else stopAudio();
+    }
+  }
 
   // Tam ekran modaldayken body scroll kilitle
   useEffect(() => {
@@ -121,19 +156,21 @@ export function HintCurtain({ hint, imageUrl }: HintCurtainProps) {
   // Esc ile kapat
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setOpen(false); stopAudio(); }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [open]);
+  }, [open, stopAudio]);
 
-  if (!hint && !imageUrl) return null;
+  if (!hint && !imageUrl && !audioUrl) return null;
 
   return (
     <>
       <div className="mb-4">
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={toggle}
           className={cn(
             'flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors',
             open && !hasImage
@@ -141,12 +178,12 @@ export function HintCurtain({ hint, imageUrl }: HintCurtainProps) {
               : 'text-amber-600 border-amber-200/70 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
           )}
         >
-          <Lightbulb className="size-3.5" />
-          İpucu
+          {hasAudio && !hasImage ? <Volume2 className="size-3.5" /> : <Lightbulb className="size-3.5" />}
+          {hasAudio && !hasImage ? 'Dinle' : 'İpucu'}
         </button>
 
-        {/* Metin-only: inline perde */}
-        {!hasImage && hint && (
+        {/* Ses / metin — inline perde */}
+        {!hasImage && (hasAudio || hint) && (
           <AnimatePresence>
             {open && (
               <motion.div
@@ -156,9 +193,44 @@ export function HintCurtain({ hint, imageUrl }: HintCurtainProps) {
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="overflow-hidden"
               >
-                <p className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 leading-relaxed">
-                  {hint}
-                </p>
+                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  {hasAudio && (
+                    <div className="flex items-center gap-2 text-sm text-amber-800">
+                      {audioPlaying ? (
+                        <>
+                          <PlayingBars size="sm" color="bg-amber-500" />
+                          <span>Dinleniyor…</span>
+                          <button
+                            type="button"
+                            onClick={stopAudio}
+                            className="ml-auto text-xs underline opacity-60 hover:opacity-100"
+                          >
+                            Durdur
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="size-3.5" />
+                          <button
+                            type="button"
+                            onClick={startAudio}
+                            className="underline hover:text-amber-900"
+                          >
+                            Tekrar dinle
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {hint && (
+                    <p className={cn(
+                      'text-sm text-amber-900 leading-relaxed',
+                      hasAudio && 'mt-2',
+                    )}>
+                      {hint}
+                    </p>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -175,13 +247,12 @@ export function HintCurtain({ hint, imageUrl }: HintCurtainProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); stopAudio(); }}
             >
-              {/* Kapat butonu — 44px min hedef */}
               <button
                 type="button"
                 aria-label="Kapat"
-                onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+                onClick={(e) => { e.stopPropagation(); setOpen(false); stopAudio(); }}
                 className="absolute top-4 right-4 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full bg-white/15 text-white hover:bg-white/30 active:scale-95 transition-all text-2xl font-bold leading-none"
               >
                 ✕

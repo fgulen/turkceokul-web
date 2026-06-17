@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ImageOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PlayerProps } from '@/types/etkinlik';
 import { toMediaUrl } from '@/lib/utils';
@@ -11,16 +11,20 @@ import { sanitizeHtml } from '@/lib/sanitize';
 export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const [index, setIndex] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
   const current = detaylar[index];
   const progress = ((index + 1) / detaylar.length) * 100;
   const imgUrl = toMediaUrl(current.resimLink);
+  const hasText = !!current.description?.trim();
+  const hasImg = !!imgUrl && !imgError;
 
   function next() {
     if (index + 1 >= detaylar.length) {
       onComplete(detaylar.map((d) => ({ id: d.id, cevap: '1' })));
     } else {
       setIndex(index + 1);
+      setImgError(false);
     }
   }
 
@@ -47,26 +51,37 @@ export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
           transition={{ duration: 0.25 }}
           className="bg-card border border-border rounded-2xl overflow-hidden mb-6"
         >
+          {/* Resim */}
           {imgUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imgUrl}
-              alt={current.description ?? ''}
-              className="w-full max-h-64 object-contain bg-muted"
-            />
+            imgError ? null : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imgUrl}
+                alt=""
+                className="w-full max-h-72 object-contain bg-muted"
+                onError={() => setImgError(true)}
+              />
+            )
           )}
-          <div className="p-8">
-              {current.description ? (
-              // DB'den gelen içerik HTML işaretleme içerebilir (span.sozluk, br vs.)
+
+          {/* Metin içeriği */}
+          {hasText && (
+            <div className="p-6">
               <div
                 className="text-lg leading-relaxed [&_br]:block [&_.sozluk]:text-primary [&_.sozluk]:cursor-help"
                 // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description ?? '') }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description!) }}
               />
-            ) : (
-              <p className="text-muted-foreground text-sm">İçerik yükleniyor…</p>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* İkisi de yok veya ikisi de yüklenemedi */}
+          {!hasImg && !hasText && (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+              <ImageOff className="size-10 opacity-30" />
+              <p className="text-sm">İçerik bulunamadı.</p>
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 

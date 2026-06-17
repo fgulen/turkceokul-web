@@ -10,8 +10,9 @@ import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { HintCurtain } from './ui';
 
-// "...", "…", "[___]", "___" hepsini blank olarak tanı
-const BLANK_RE = /\.{3}|…|\[___\]|_{3,}/g;
+// "......", "…", "[___]", "___" hepsini tek boşluk olarak tanı
+// \.{3,} greedy — kaç nokta olursa olsun (......., ...........) tek blank sayılır
+const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
 
 function splitByBlanks(text: string): string[] {
   return text.split(BLANK_RE);

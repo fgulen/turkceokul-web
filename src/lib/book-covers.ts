@@ -8,7 +8,8 @@ export const BOOK_COVERS = {
 
 export type BookSeries = keyof typeof BOOK_COVERS;
 
-function normalizeSeriesName(kitapSeti: string): BookSeries | null {
+function normalizeSeriesName(kitapSeti: string | null | undefined): BookSeries | null {
+  if (!kitapSeti) return null;
   const s = kitapSeti
     .toLocaleUpperCase('tr')
     .replace(/[ĞĞ]/g, 'G')
@@ -25,7 +26,7 @@ function normalizeSeriesName(kitapSeti: string): BookSeries | null {
 }
 
 /** kitapSeti: "Can", "Yağmur", "Harmoni" (veya uzun hali), no: 1-tabanlı kitap sırası */
-export function bookCoverUrl(kitapSeti: string, no = 1): string {
+export function bookCoverUrl(kitapSeti: string | null | undefined, no = 1): string {
   const key = normalizeSeriesName(kitapSeti);
   if (!key) return '';
   const list = BOOK_COVERS[key];

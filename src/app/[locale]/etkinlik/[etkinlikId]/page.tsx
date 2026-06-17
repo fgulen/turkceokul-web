@@ -27,6 +27,9 @@ import { ResimMetinEslestirmePlayer } from '@/components/players/resim-metin-esl
 import { MetinSesEslestirmePlayer } from '@/components/players/metin-ses-eslestirme';
 import { ResminSesiHangisiPlayer } from '@/components/players/resmin-sesi-hangisi';
 import { ResimlerdenBiriniSecmePlayer } from '@/components/players/resimlerden-birini-secme';
+import { KelimeleriSiralaPlayer } from '@/components/players/kelimeleri-sirala';
+import { ResmeKelimeYazPlayer } from '@/components/players/resme-kelime-yaz';
+import { SesiDinleveKelimeYazPlayer } from '@/components/players/sesi-dinle-ve-kelime-yaz';
 
 interface CevapSonuc {
   puan: number;
@@ -188,7 +191,10 @@ export default function EtkinlikPage({
 
   const uniteId = searchParams.get('uniteId');
   const kitapId = searchParams.get('kitapId');
-  const returnUrl = uniteId && kitapId ? `/ders/${kitapId}?uniteId=${uniteId}` : null;
+  const bolum = searchParams.get('bolum');
+  const returnUrl = uniteId && kitapId
+    ? `/ders/${kitapId}?uniteId=${uniteId}${bolum ? `&bolum=${encodeURIComponent(bolum)}` : ''}`
+    : null;
 
   const queryClient = useQueryClient();
   const [sonuc, setSonuc] = useState<CevapSonuc | null>(null);
@@ -243,6 +249,9 @@ export default function EtkinlikPage({
       case 'MetinSesEslestirme': return <MetinSesEslestirmePlayer key={key} {...props} />;
       case 'ResminSesiHangisi': return <ResminSesiHangisiPlayer key={key} {...props} />;
       case 'ResimlerdenBiriniSecme': return <ResimlerdenBiriniSecmePlayer key={key} {...props} />;
+      case 'KelimeleriSirala': return <KelimeleriSiralaPlayer key={key} {...props} />;
+      case 'ResmeKelimeYaz': return <ResmeKelimeYazPlayer key={key} {...props} />;
+      case 'SesiDinleveKelimeYaz': return <SesiDinleveKelimeYazPlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">

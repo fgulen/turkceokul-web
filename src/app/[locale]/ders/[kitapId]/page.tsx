@@ -113,7 +113,7 @@ function ZigzagNode({
           </div>
         ) : (
           <Link
-            href={`/etkinlik/${etkinlik.id}?uniteId=${uniteId}&kitapId=${kitapId}`}
+            href={`/etkinlik/${etkinlik.id}?uniteId=${uniteId}&kitapId=${kitapId}&bolum=${encodeURIComponent(etkinlik.bolum)}`}
             className={cn(
               'w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border-4 transition-all shrink-0 relative z-10',
               nodeStyle,
@@ -380,7 +380,9 @@ export default function DersPage({
   const [selectedUniteId, setSelectedUniteId] = useState<string | null>(
     searchParams.get('uniteId'),
   );
-  const [activeTab, setActiveTab] = useState<string>('Kelime');
+  const [activeTab, setActiveTab] = useState<string>(
+    searchParams.get('bolum') ?? 'Kelime',
+  );
 
   const { data: kitap } = useQuery<Kitap>({
     queryKey: ['kitap', kitapId],

@@ -11,7 +11,7 @@ import { GameHUD } from '@/components/game/game-hud';
 import { HintCurtain } from './ui';
 
 // "...", "…", "[___]", "___" hepsini blank olarak tanı
-const BLANK_RE = /\.{3}|…|\[___\]|_{3,}/g;
+const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
 
 function splitByBlanks(text: string): string[] {
   return text.split(BLANK_RE);
