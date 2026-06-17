@@ -9,11 +9,14 @@
 
 ```tsx
 // Kart/soru tipi (CoktanSecmeli, Quiz, DogruYanlis, BoslukDoldurma, AkilliKart):
-<div className="max-w-sm mx-auto">   // 384px max, ortalı
+<div className="max-w-sm md:max-w-lg mx-auto">   // 384px mobil → 512px tablet, ortalı
 
 // Eşleştirme/grid tipi (KelimeleriEslestir, ResimSesEslestirme, OkuGec):
-<div className="max-w-lg mx-auto">   // 512px max, ortalı
+<div className="max-w-lg md:max-w-2xl mx-auto">   // 512px mobil → 672px tablet, ortalı
 ```
+
+> **Tablet notu:** Traffic'in %54.6'sı tablet. Sabit `max-w-sm` verildiğinde 768px ekranın
+> %50'si boş kalır. `md:` breakpoint (≥768px) ile içerik yeterli alana yayılır.
 
 ---
 

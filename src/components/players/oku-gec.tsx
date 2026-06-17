@@ -29,7 +29,7 @@ export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg md:max-w-2xl mx-auto">
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
         <span>{index + 1} / {detaylar.length}</span>
         <span>Oku &amp; Geç</span>
@@ -68,7 +68,7 @@ export function OkuGecPlayer({ etkinlik, onComplete }: PlayerProps) {
           {hasText && (
             <div className="p-6">
               <div
-                className="text-lg leading-relaxed [&_br]:block [&_.sozluk]:text-primary [&_.sozluk]:cursor-help"
+                className="text-lg md:text-xl leading-relaxed md:leading-loose [&_br]:block [&_.sozluk]:text-primary [&_.sozluk]:cursor-help"
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description!) }}
               />

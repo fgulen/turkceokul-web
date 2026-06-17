@@ -59,7 +59,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
   const progressPct = (matched.size / detaylar.length) * 100;
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg md:max-w-2xl mx-auto">
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
         <span>{matched.size} / {detaylar.length} eşleşti</span>
       </div>

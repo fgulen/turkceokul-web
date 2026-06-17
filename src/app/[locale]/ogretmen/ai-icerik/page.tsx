@@ -6,7 +6,7 @@ import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
   Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
-  Trash2, Plus, History, Clock,
+  Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
@@ -129,6 +129,14 @@ interface UniteDto    { id: string; name: string; }
 interface GecmisItem  {
   id: string; name: string; tip: string; unite: string;
   soruSayisi: number; insertDate: string; zorluk: number;
+  onaylandi: boolean;
+}
+
+interface GecmisDetay {
+  id: string; description: string | null;
+  kelime1: string | null; kelime2: string | null;
+  kelime3: string | null; kelime4: string | null;
+  onaylandi: boolean;
 }
 
 function toBase64(file: File): Promise<string> {
@@ -205,6 +213,11 @@ export default function AIIcerikPage() {
 
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
+    onSuccess: () => gecmisYenile(),
+  });
+
+  const onaylaMutation = useMutation({
+    mutationFn: (id: string) => api.put(`/api/ai/gecmis/${id}/onayla`),
     onSuccess: () => gecmisYenile(),
   });
 
@@ -362,6 +375,7 @@ export default function AIIcerikPage() {
       return api.post('/api/ai/sinifa-kaydet', {
         tip: aktifTab,
         uniteId: seciliUniteId,
+        sinifId: seciliSinifId || undefined,
         duzey: seviye,
         baslik: sonuc.icerik.baslik ?? undefined,
         sorular,
@@ -379,7 +393,7 @@ export default function AIIcerikPage() {
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
   const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
   const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
-  const canKaydet = jsonTabAktif && !!seciliUniteId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
+  const canKaydet = jsonTabAktif && !!seciliUniteId && !!seciliSinifId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
 
   const canUret = aktifTab === 'bulten'
     ? !!seciliSinifId
@@ -451,6 +465,29 @@ export default function AIIcerikPage() {
                 onUnite={uniteDegistir}
                 onTemizle={uniteTemizle}
               />
+            )}
+
+            {/* Hedef sınıf seçici — sadece kaydedilebilir sekmelerde */}
+            {jsonTabAktif && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Hedef Sınıf <span className="normal-case font-normal text-red-400">*</span>
+                </label>
+                {siniflar.length === 0 ? (
+                  <p className="text-xs text-slate-400">Henüz sınıf oluşturmadınız.</p>
+                ) : (
+                  <select
+                    value={seciliSinifId}
+                    onChange={e => setSeciliSinifId(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                  >
+                    <option value="">Sınıf seçin...</option>
+                    {siniflar.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
             )}
 
             {aktifTab === 'bulten' ? (
@@ -566,16 +603,20 @@ export default function AIIcerikPage() {
                         Word İndir
                       </button>
                     )}
-                    {canKaydet && (
+                    {jsonTabAktif && mevcutSonuc?.icerik?.sorular?.length && !kaydedildi && (
                       <button
                         onClick={() => kaydetMutation.mutate()}
-                        disabled={kaydetMutation.isPending}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
-                        title={`"${seciliUniteAdi}" ünitesine kaydet`}
+                        disabled={kaydetMutation.isPending || !seciliUniteId || !seciliSinifId}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-40"
+                        title={
+                          !seciliUniteId ? 'Önce ünite seçin' :
+                          !seciliSinifId ? 'Önce sınıf seçin' :
+                          `"${siniflar.find(s => s.id === seciliSinifId)?.name}" sınıfına kaydet`
+                        }
                       >
                         {kaydetMutation.isPending
                           ? <><Loader2 className="size-3.5 animate-spin" />Kaydediliyor...</>
-                          : <><Save className="size-3.5" />Üniteye Kaydet</>}
+                          : <><Save className="size-3.5" />Sınıfa Kaydet</>}
                       </button>
                     )}
                     <button
@@ -598,7 +639,7 @@ export default function AIIcerikPage() {
                 {kaydedildi && (
                   <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 mb-4">
                     <Check className="size-3.5 text-emerald-600 shrink-0" />
-                    <span>İçerik üniteye kaydedildi! Öğrenci akışında görünecek.</span>
+                    <span>İçerik sınıfa kaydedildi! Öğrenciler onaylandıktan sonra görecek.</span>
                   </div>
                 )}
                 {kaydetHata && (
@@ -651,7 +692,9 @@ export default function AIIcerikPage() {
                   key={item.id}
                   item={item}
                   onSil={() => silMutation.mutate(item.id)}
+                  onOnayla={() => onaylaMutation.mutate(item.id)}
                   silIsPending={silMutation.isPending}
+                  onaylaIsPending={onaylaMutation.isPending}
                 />
               ))}
             </div>
@@ -1338,12 +1381,21 @@ const TIP_ETIKETLER: Record<string, { label: string; renk: string }> = {
 };
 
 function GecmisKart({
-  item, onSil, silIsPending,
+  item, onSil, onOnayla, silIsPending, onaylaIsPending,
 }: {
   item: GecmisItem;
   onSil: () => void;
+  onOnayla: () => void;
   silIsPending: boolean;
+  onaylaIsPending: boolean;
 }) {
+  const [acik, setAcik] = useState(false);
+  const { data: detaylar, isLoading: detayYukleniyor } = useQuery<GecmisDetay[]>({
+    queryKey: ['ai-detay', item.id],
+    queryFn: () => api.get(`/api/ai/gecmis/${item.id}/detaylar`).then(r => r.data),
+    enabled: acik,
+  });
+
   const etiket = TIP_ETIKETLER[item.tip] ?? { label: item.tip, renk: 'bg-slate-50 text-slate-600 border-slate-200' };
   const tarih = new Date(item.insertDate).toLocaleDateString('tr-TR', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -1351,30 +1403,113 @@ function GecmisKart({
   const seviyeMetin = item.zorluk === 1 ? 'A1–A2' : item.zorluk === 2 ? 'B1–B2' : 'C1–C2';
 
   return (
-    <div className="flex items-center gap-4 bg-white border border-slate-100 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow group">
-      <div className={cn('shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border', etiket.renk)}>
-        {etiket.label}
+    <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
+      {/* Kart başlığı */}
+      <div className="flex items-center gap-4 px-4 py-3 group">
+        <div className={cn('shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border', etiket.renk)}>
+          {etiket.label}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+          <p className="text-xs text-slate-400 mt-0.5 truncate">{item.unite}</p>
+        </div>
+        <div className="shrink-0 flex items-center gap-2 text-xs text-slate-400">
+          <span className="hidden sm:inline">{item.soruSayisi} soru</span>
+          <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">{seviyeMetin}</span>
+          <span className="flex items-center gap-1">
+            <Clock className="size-3" />
+            {tarih}
+          </span>
+          {item.onaylandi ? (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium">
+              <ShieldCheck className="size-3" />
+              Onaylı
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-medium">
+              Onay bekliyor
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setAcik(v => !v)}
+          className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+          title={acik ? 'Kapat' : 'Soruları gör'}
+        >
+          {acik ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+        </button>
+        <button
+          onClick={onSil}
+          disabled={silIsPending}
+          title="Sil"
+          className="shrink-0 p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
+        >
+          <Trash2 className="size-4" />
+        </button>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
-        <p className="text-xs text-slate-400 mt-0.5 truncate">{item.unite}</p>
-      </div>
-      <div className="shrink-0 flex items-center gap-3 text-xs text-slate-400">
-        <span className="hidden sm:inline">{item.soruSayisi} soru</span>
-        <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">{seviyeMetin}</span>
-        <span className="flex items-center gap-1">
-          <Clock className="size-3" />
-          {tarih}
-        </span>
-      </div>
-      <button
-        onClick={onSil}
-        disabled={silIsPending}
-        title="Sil"
-        className="shrink-0 p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
-      >
-        <Trash2 className="size-4" />
-      </button>
+
+      {/* Açılır detay paneli */}
+      {acik && (
+        <div className="border-t border-slate-100 px-4 py-4 bg-slate-50">
+          {detayYukleniyor ? (
+            <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+              <Loader2 className="size-4 animate-spin" />
+              Sorular yükleniyor...
+            </div>
+          ) : detaylar && detaylar.length > 0 ? (
+            <>
+              <div className="space-y-2 mb-4">
+                {detaylar.map((d, i) => (
+                  <div key={d.id} className={cn(
+                    'flex items-start gap-3 px-3 py-2.5 rounded-lg border text-sm',
+                    d.onaylandi
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-white border-slate-200',
+                  )}>
+                    <span className="shrink-0 text-slate-400 font-medium w-5">{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-800">{d.description}</p>
+                      {d.kelime1 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {[d.kelime1, d.kelime2, d.kelime3, d.kelime4]
+                            .filter(Boolean)
+                            .map((k, j) => (
+                              <span
+                                key={j}
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-xs border font-medium',
+                                  j === 0
+                                    ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                                    : 'bg-slate-100 border-slate-200 text-slate-600',
+                                )}
+                              >
+                                {k}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                    {d.onaylandi && <Check className="size-4 text-emerald-500 shrink-0 mt-0.5" />}
+                  </div>
+                ))}
+              </div>
+              {!item.onaylandi && (
+                <button
+                  onClick={onOnayla}
+                  disabled={onaylaIsPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                >
+                  {onaylaIsPending
+                    ? <><Loader2 className="size-4 animate-spin" />Onaylanıyor...</>
+                    : <><ShieldCheck className="size-4" />Tümünü Onayla</>}
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-slate-400 py-2">Soru bulunamadı.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

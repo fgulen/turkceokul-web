@@ -88,7 +88,7 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
   // Özet ekranı
   if (showSummary) {
     return (
-      <div className="max-w-sm mx-auto">
+      <div className="max-w-sm md:max-w-lg mx-auto">
         <p className="text-center font-bold text-lg mb-6">Sonuçlar</p>
         <div className="space-y-3 mb-8">
           {answers.map((a) => {
@@ -138,7 +138,7 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <ProgressDots total={detaylar.length} activeIndex={index} />
       <ActivityHint>Resmin sesini bul.</ActivityHint>
 

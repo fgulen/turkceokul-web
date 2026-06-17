@@ -39,7 +39,7 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <ProgressDots total={detaylar.length} activeIndex={index} />
       <ActivityHint>Resme tıkla, sesi dinle.</ActivityHint>
 

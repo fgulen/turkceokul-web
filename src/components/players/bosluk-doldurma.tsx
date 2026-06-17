@@ -52,7 +52,10 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
   useEffect(() => {
     setValues(Array(blankCount).fill(''));
     setSubmitted(false);
-    setTimeout(() => firstInputRef.current?.focus(), 80);
+    setTimeout(() => {
+      firstInputRef.current?.focus();
+      firstInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 150);
   }, [index, blankCount]);
 
   const safe = values.length === blankCount ? values : Array(blankCount).fill('');
@@ -95,7 +98,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <GameHUD
         soruNo={index}
         toplamSoru={detaylar.length}

@@ -42,7 +42,7 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const isLast = index === detaylar.length - 1;
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <ProgressDots total={detaylar.length} activeIndex={index} />
       <ActivityHint>Metne dokun, sesi dinle.</ActivityHint>
 

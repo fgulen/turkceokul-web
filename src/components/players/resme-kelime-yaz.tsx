@@ -40,7 +40,7 @@ function TurkceKlavye({
           type="button"
           disabled={disabled}
           onClick={() => onChar(ch)}
-          className="min-w-[44px] h-11 px-3 rounded-xl border border-input bg-muted text-base font-semibold hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-40 select-none"
+          className="min-w-[44px] md:min-w-[52px] h-11 md:h-12 px-3 md:px-4 rounded-xl border border-input bg-muted text-base font-semibold hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-40 select-none"
         >
           {ch}
         </button>
@@ -78,7 +78,10 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
     setIsPerfect(false);
     setIsYakin(false);
     setImgError(false);
-    setTimeout(() => inputRef.current?.focus(), 80);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 150);
   }, [index]);
 
   function insertChar(ch: string) {
@@ -136,7 +139,7 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <GameHUD
         soruNo={index}
         toplamSoru={detaylar.length}

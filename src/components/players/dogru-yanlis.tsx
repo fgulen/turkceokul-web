@@ -59,7 +59,7 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm md:max-w-lg mx-auto">
       <GameHUD
         soruNo={index}
         toplamSoru={detaylar.length}

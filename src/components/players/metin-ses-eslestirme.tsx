@@ -75,7 +75,7 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
   const progressPct = (matchedCount / detaylar.length) * 100;
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg md:max-w-2xl mx-auto">
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
         <span>{matchedCount} / {detaylar.length} eşleşti</span>
       </div>
@@ -101,7 +101,7 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
               disabled={isUsed}
               aria-label={`${i + 1}. sesi çal`}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl border-2 text-xs font-semibold transition-all duration-200',
+                'flex flex-col items-center justify-center gap-1 w-16 md:w-20 h-14 md:h-16 rounded-2xl border-2 text-xs font-semibold transition-all duration-200',
                 isSelected && 'border-primary bg-primary/10 text-primary',
                 isUsed && 'opacity-40 cursor-default',
                 !isSelected && !isUsed && 'border-border hover:border-primary/50',

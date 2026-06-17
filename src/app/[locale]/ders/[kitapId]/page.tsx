@@ -414,18 +414,19 @@ export default function DersPage({
   const { data: kitap } = useQuery<Kitap>({
     queryKey: ['kitap', kitapId],
     queryFn: () => api.get(`/api/kitap/${kitapId}`).then((r) => r.data),
+    enabled: ready && !!user,
   });
 
   const { data: uniteler, isLoading } = useQuery<Unite[]>({
     queryKey: ['uniteler', kitapId],
     queryFn: () => api.get(`/api/uniteler/${kitapId}`).then((r) => r.data),
-    enabled: !!user,
+    enabled: ready && !!user,
   });
 
   const { data: etkinlikler } = useQuery<Etkinlik[]>({
     queryKey: ['etkinlikler', selectedUniteId],
     queryFn: () => api.get(`/api/etkinlikler/${selectedUniteId}`).then((r) => r.data),
-    enabled: !!user && !!selectedUniteId,
+    enabled: ready && !!user && !!selectedUniteId,
   });
 
   useEffect(() => {

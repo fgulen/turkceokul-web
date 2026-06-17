@@ -36,21 +36,22 @@ export function etkinlikLabel(tur: string): string {
 }
 
 const BOLUM_COLORS: Record<string, string> = {
-  Kelime:        'bg-blue-100   text-blue-700   dark:bg-blue-950   dark:text-blue-300',
-  Okuma:         'bg-green-100  text-green-700  dark:bg-green-950  dark:text-green-300',
-  Dinleme:       'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-  Yazma:         'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  Dilbilgisi:    'bg-pink-100   text-pink-700   dark:bg-pink-950   dark:text-pink-300',
-  Değerlendirme: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  Kelime:         'bg-blue-100   text-blue-700   dark:bg-blue-950   dark:text-blue-300',
+  Okuma:          'bg-green-100  text-green-700  dark:bg-green-950  dark:text-green-300',
+  Dinleme:        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+  Yazma:          'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  Dilbilgisi:     'bg-pink-100   text-pink-700   dark:bg-pink-950   dark:text-pink-300',
+  Değerlendirme:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  'AI Generated': 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
 };
 
 export function bolumColor(bolum: string): string {
   return BOLUM_COLORS[bolum] ?? 'bg-muted text-muted-foreground';
 }
 
-// Pedagojik bölüm sırası: Kelime→Okuma→Dinleme→Yazma→Dilbilgisi→Değerlendirme
+// Pedagojik bölüm sırası: Kelime→Okuma→Dinleme→Yazma→Dilbilgisi→Değerlendirme→AI Generated
 const BOLUM_SIRASI: Record<string, number> = {
-  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, Dilbilgisi: 4, Değerlendirme: 5,
+  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, Dilbilgisi: 4, Değerlendirme: 5, 'AI Generated': 6,
 };
 
 export function bolumSirasi(bolum: string): number {
@@ -58,12 +59,13 @@ export function bolumSirasi(bolum: string): number {
 }
 
 const BOLUM_ICONS: Record<string, string> = {
-  Kelime:        'BookOpen',
-  Okuma:         'BookMarked',
-  Dinleme:       'Headphones',
-  Yazma:         'PenLine',
-  Dilbilgisi:    'Languages',
-  Değerlendirme: 'Trophy',
+  Kelime:         'BookOpen',
+  Okuma:          'BookMarked',
+  Dinleme:        'Headphones',
+  Yazma:          'PenLine',
+  Dilbilgisi:     'Languages',
+  Değerlendirme:  'Trophy',
+  'AI Generated': 'Sparkles',
 };
 
 export function bolumIconName(bolum: string): string {
@@ -129,6 +131,14 @@ export const BOLUM_ZIGZAG = {
     connector: 'border-amber-200',
     label: 'bg-amber-100 text-amber-700',
     activeLabel: 'text-amber-600',
+  },
+  'AI Generated': {
+    active: 'bg-fuchsia-600',
+    ring: 'ring-fuchsia-200',
+    shadow: 'shadow-fuchsia-200',
+    connector: 'border-fuchsia-200',
+    label: 'bg-fuchsia-100 text-fuchsia-700',
+    activeLabel: 'text-fuchsia-600',
   },
 };
 
