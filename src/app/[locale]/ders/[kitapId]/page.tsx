@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -70,6 +70,7 @@ function ZigzagNode({
   isSiradaki,
   isLocked,
   position,
+  isLastCompleted,
 }: {
   etkinlik: Etkinlik;
   uniteId: string;
@@ -77,6 +78,7 @@ function ZigzagNode({
   isSiradaki: boolean;
   isLocked: boolean;
   position: 'left' | 'center' | 'right';
+  isLastCompleted?: boolean;
 }) {
   const state = getCompletionState(etkinlik.maxPuan, etkinlik.denendi);
   const colors = getBolumZigzagColor(etkinlik.bolum);
@@ -102,7 +104,7 @@ function ZigzagNode({
     'justify-center';
 
   return (
-    <div className={cn('flex w-full', alignmentClass)}>
+    <div id={`node-${etkinlik.id}`} className={cn('flex w-full', alignmentClass)}>
       <div className="flex flex-col items-center relative">
         {isLocked ? (
           <div className={cn(
@@ -147,6 +149,11 @@ function ZigzagNode({
             {etkinlik.maxPuan}%
           </span>
         )}
+        {isLastCompleted && (
+          <span className="mt-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 animate-pulse">
+            Az önce ✓
+          </span>
+        )}
       </div>
     </div>
   );
@@ -157,11 +164,13 @@ function AdventurePath({
   uniteId,
   kitapId,
   filterBolum,
+  lastId,
 }: {
   etkinlikler: Etkinlik[];
   uniteId: string;
   kitapId: string;
   filterBolum: string | null;
+  lastId?: string | null;
 }) {
   const filtered = filterBolum
     ? etkinlikler.filter(e => e.bolum === filterBolum)
@@ -230,6 +239,7 @@ function AdventurePath({
                 isSiradaki={e.id === firstUncompleted?.id}
                 isLocked={isLocked}
                 position={getZigzagPosition(idx)}
+                isLastCompleted={!!lastId && e.id === lastId}
               />
               {!isLast && (
                 <div className="w-0.5 h-6 sm:h-8 bg-[image:repeating-linear-gradient(to_bottom,currentColor,currentColor_4px,transparent_4px,transparent_8px)] text-slate-300" />
@@ -383,6 +393,8 @@ export default function DersPage({
   const [activeTab, setActiveTab] = useState<string>(
     searchParams.get('bolum') ?? 'Kelime',
   );
+  const lastId = searchParams.get('lastId');
+  const scrolledRef = useRef(false);
 
   const { data: kitap } = useQuery<Kitap>({
     queryKey: ['kitap', kitapId],
@@ -429,6 +441,16 @@ export default function DersPage({
       setActiveTab(availableTabs[0]);
     }
   }, [availableTabs, activeTab]);
+
+  // Etkinlik tamamlanınca geri dönüldüğünde az önce yapılan node'a scroll et
+  useEffect(() => {
+    if (!lastId || !etkinlikler || scrolledRef.current) return;
+    scrolledRef.current = true;
+    const t = setTimeout(() => {
+      document.getElementById(`node-${lastId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [lastId, etkinlikler]);
 
   const filteredEtkinlikler = sortedEtkinlikler.filter(e => e.bolum === activeTab);
 
@@ -561,6 +583,7 @@ export default function DersPage({
                       uniteId={selectedUnite.id}
                       kitapId={kitapId}
                       filterBolum={activeTab}
+                      lastId={lastId}
                     />
                   </div>
                 ) : null}

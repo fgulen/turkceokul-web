@@ -193,7 +193,7 @@ export default function EtkinlikPage({
   const kitapId = searchParams.get('kitapId');
   const bolum = searchParams.get('bolum');
   const returnUrl = uniteId && kitapId
-    ? `/ders/${kitapId}?uniteId=${uniteId}${bolum ? `&bolum=${encodeURIComponent(bolum)}` : ''}`
+    ? `/ders/${kitapId}?uniteId=${uniteId}${bolum ? `&bolum=${encodeURIComponent(bolum)}` : ''}&lastId=${etkinlikId}`
     : null;
 
   const queryClient = useQueryClient();
