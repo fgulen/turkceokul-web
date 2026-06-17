@@ -5,7 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
-  Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload,
+  Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
@@ -167,6 +167,8 @@ export default function AIIcerikPage() {
   // Sonuçlar: sekme başına saklanır
   const [sonuclar, setSonuclar] = useState<Partial<Record<TabId, TabSonuc>>>({});
   const [kopyalandi, setKopyalandi] = useState(false);
+  const [kaydedildi, setKaydedildi] = useState<string | null>(null); // etkinlikId
+  const [kaydetHata, setKaydetHata] = useState('');
   const [hata, setHata] = useState('');
 
   const { data: siniflar = [] } = useQuery<Sinif[]>({
@@ -302,10 +304,36 @@ export default function AIIcerikPage() {
     }
   }
 
+  const kaydetMutation = useMutation({
+    mutationFn: async () => {
+      const sonuc = sonuclar[aktifTab];
+      if (!sonuc?.icerik?.sorular?.length) throw new Error('Önce içerik üretin.');
+      const sorular = sonuc.icerik.sorular.map(s => ({
+        question: s.question ?? s.description ?? '',
+        options: s.options ?? [s.kelime1, s.kelime2, s.kelime3, s.kelime4].filter(Boolean) as string[],
+        answer: s.answer ?? s.kelime1 ?? '',
+      }));
+      return api.post('/api/ai/sinifa-kaydet', {
+        tip: aktifTab,
+        uniteId: seciliUniteId,
+        duzey: seviye,
+        baslik: sonuc.icerik.baslik ?? undefined,
+        sorular,
+      }).then(r => r.data);
+    },
+    onSuccess: (data: { etkinlikId: string }) => {
+      setKaydedildi(data.etkinlikId);
+      setKaydetHata('');
+      setTimeout(() => setKaydedildi(null), 5000);
+    },
+    onError: (e: Error) => setKaydetHata(e.message),
+  });
+
   const mevcutSonuc = sonuclar[aktifTab];
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
   const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
   const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
+  const canKaydet = jsonTabAktif && !!seciliUniteId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
 
   const canUret = aktifTab === 'bulten'
     ? !!seciliSinifId
@@ -450,7 +478,7 @@ export default function AIIcerikPage() {
 
             {!uretMutation.isPending && varSonuc && (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="font-semibold text-slate-900">Üretilen İçerik</h2>
                     {seciliUniteAdi && (
@@ -477,6 +505,18 @@ export default function AIIcerikPage() {
                         Word İndir
                       </button>
                     )}
+                    {canKaydet && (
+                      <button
+                        onClick={() => kaydetMutation.mutate()}
+                        disabled={kaydetMutation.isPending}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                        title={`"${seciliUniteAdi}" ünitesine kaydet`}
+                      >
+                        {kaydetMutation.isPending
+                          ? <><Loader2 className="size-3.5 animate-spin" />Kaydediliyor...</>
+                          : <><Save className="size-3.5" />Üniteye Kaydet</>}
+                      </button>
+                    )}
                     <button
                       onClick={() => sonucuSil(aktifTab)}
                       title="Sonucu temizle"
@@ -486,6 +526,26 @@ export default function AIIcerikPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* AI uyarısı */}
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 mb-4">
+                  <AlertTriangle className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
+                  <span>Bu içerik yapay zeka tarafından oluşturulmuştur. Sınıfa eklemeden önce doğruluğunu kontrol edin.</span>
+                </div>
+
+                {/* Kaydet başarı mesajı */}
+                {kaydedildi && (
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 mb-4">
+                    <Check className="size-3.5 text-emerald-600 shrink-0" />
+                    <span>İçerik üniteye kaydedildi! Öğrenci akışında görünecek.</span>
+                  </div>
+                )}
+                {kaydetHata && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 mb-4">
+                    <AlertTriangle className="size-3.5 shrink-0" />
+                    {kaydetHata}
+                  </div>
+                )}
 
                 {mevcutSonuc?.metin ? (
                   <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed font-sans">

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, GraduationCap, Plus, Users, ClipboardList, ArrowRight,
-  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2,
+  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2, Sparkles,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
@@ -160,13 +160,22 @@ export default function OgretmenDashboard() {
             <h1 className="text-2xl font-bold text-slate-900">İyi günler, {user.name}!</h1>
             <p className="text-slate-500 text-sm mt-1">Öğretmen Paneli</p>
           </div>
-          <button
-            onClick={() => setFormAcik(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="size-4" />
-            Yeni Sınıf
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/ogretmen/ai-icerik"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 transition-colors"
+            >
+              <Sparkles className="size-4" />
+              AI Stüdyo
+            </Link>
+            <button
+              onClick={() => setFormAcik(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="size-4" />
+              Yeni Sınıf
+            </button>
+          </div>
         </div>
 
         {/* Yeni sınıf formu */}
