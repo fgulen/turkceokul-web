@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
-import { Logo } from '@/components/logo';
+import { LandingNav } from '@/components/landing-nav';
+import { LandingFooter } from '@/components/landing-footer';
 import {
   CheckCircle2, BookOpen, Zap, ArrowRight, Star,
   Flame, Heart, Trophy, Layers, ListChecks, PencilLine,
@@ -105,20 +106,7 @@ export default function LearnTurkishOnlinePage() {
       <div style={{ background: '#f9fafb', color: '#1e1b1c' }}>
 
         {/* Nav */}
-        <nav
-          className="sticky top-0 z-50"
-          style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(192,199,210,0.35)' }}
-        >
-          <div className="px-4 md:px-10" style={{ maxWidth: 1200, margin: '0 auto', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <Logo size="md" />
-            </Link>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link href="/giris" className="hidden md:block" style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}>Log In</Link>
-              <Link href="/kayit" style={{ background: '#1b75bc', color: '#fff', fontSize: 13, fontWeight: 600, padding: '8px 18px', borderRadius: 8, textDecoration: 'none' }}>Start Free</Link>
-            </div>
-          </div>
-        </nav>
+        <LandingNav locale="en" alternateHref="/tr/turkce-ogren" links={[]} />
 
         {/* Hero */}
         <section style={{ background: 'linear-gradient(160deg, #eff6ff 0%, #fff 60%)', padding: '72px 0 60px' }}>
@@ -369,6 +357,9 @@ export default function LearnTurkishOnlinePage() {
             </p>
           </div>
         </section>
+
+        {/* Footer */}
+        <LandingFooter locale="en" />
 
         <script
           type="application/ld+json"

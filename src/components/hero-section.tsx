@@ -36,13 +36,53 @@ const RECENT_USERS = [
   { name: "Lisa B.", initials: "LB", color: "#fb923c" },
 ];
 
-const LIVE_JOINS = [
-  "Sarah M. az önce katıldı 🎉",
-  "Ahmed K. öğrenmeye başladı ✨",
-  "Yuki T. dersini tamamladı 🏆",
-  "Marco R. ligi geçti ⚡",
-  "Priya S. az önce katıldı 🎉",
-];
+const LIVE_JOINS = {
+  tr: [
+    "Sarah M. az önce katıldı 🎉",
+    "Ahmed K. öğrenmeye başladı ✨",
+    "Yuki T. dersini tamamladı 🏆",
+    "Marco R. ligi geçti ⚡",
+    "Priya S. az önce katıldı 🎉",
+  ],
+  en: [
+    "Sarah M. just joined 🎉",
+    "Ahmed K. started learning ✨",
+    "Yuki T. completed a lesson 🏆",
+    "Marco R. levelled up ⚡",
+    "Priya S. just joined 🎉",
+  ],
+};
+
+const HERO_TEXT = {
+  tr: {
+    badge: "NEVAİ YAYINLARI — A1'DEN C1'E",
+    h1a: "Türkçe Eğitimini",
+    h1b: "Yeniden Tasarladık.",
+    subtitle: "Öğretmenler; yapay zeka destekli stüdyomuzla kitap içeriklerinden saniyeler içinde quizler ve çalışma yaprakları hazırlayın. Öğrenciler; okudukça puan toplayın, liglerde yükselin ve arkadaşlarınızla kıyasıya yarışarak Türkçenizi geliştirin.",
+    ctaPrimary: "Okulunuz için Ücretsiz Başla",
+    ctaSecondary: "Öğrenci Kaydı",
+    statLessons: "Ders Tamamlandı",
+    statStudents: "Aktif Öğrenci",
+    todayXp: "BUGÜNKÜ XP",
+    streak: "12 gün",
+    correct: "Harika! +10 XP kazandın",
+    continueCta: "Devam Et →",
+  },
+  en: {
+    badge: "NEVAI PUBLISHERS — A1 TO C1",
+    h1a: "We Reimagined",
+    h1b: "Turkish Education.",
+    subtitle: "Teachers: generate quizzes and worksheets from book content in seconds with our AI studio. Students: earn points as you learn, climb the leagues, and improve your Turkish in live competition with friends.",
+    ctaPrimary: "Start Free for Your School",
+    ctaSecondary: "Student Sign Up",
+    statLessons: "Lessons Completed",
+    statStudents: "Active Students",
+    todayXp: "TODAY'S XP",
+    streak: "12 days",
+    correct: "Great! You earned +10 XP",
+    continueCta: "Continue →",
+  },
+};
 
 const ANSWERS = [
   { text: "bugün", correct: true },
@@ -70,7 +110,7 @@ function CheckIcon() {
   );
 }
 
-function LessonMockup() {
+function LessonMockup({ streak, correct, continueCta }: { streak: string; correct: string; continueCta: string }) {
   return (
     <div style={{ background: "white", borderRadius: 20, border: "1px solid rgba(192,199,210,0.4)", boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 4px 16px rgba(27,117,188,0.08)", overflow: "hidden" }}>
 
@@ -81,7 +121,7 @@ function LessonMockup() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 999, padding: "2px 8px" }}>
           <span style={{ fontSize: 12 }}>🔥</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#ea580c" }}>12 gün</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#ea580c" }}>{streak}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, background: "#dbeafe", border: "1px solid #bfdbfe", borderRadius: 999, padding: "2px 8px" }}>
           <Zap style={{ width: 11, height: 11, color: "#1b75bc", fill: "#1b75bc" }} />
@@ -135,10 +175,10 @@ function LessonMockup() {
       <div style={{ background: "#dcfce7", borderTop: "1px solid #bbf7d0", padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <CheckIcon />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#15803d" }}>Harika! +10 XP kazandın</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#15803d" }}>{correct}</span>
         </div>
         <div style={{ background: "#16a34a", color: "white", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>
-          Devam Et →
+          {continueCta}
         </div>
       </div>
     </div>
@@ -153,7 +193,10 @@ const glassStyle: React.CSSProperties = {
   boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 4px 16px rgba(27,117,188,0.08)",
 };
 
-export function HeroSection() {
+export function HeroSection({ locale = 'tr' }: { locale?: string }) {
+  const T = locale === 'en' ? HERO_TEXT.en : HERO_TEXT.tr;
+  const liveJoins = locale === 'en' ? LIVE_JOINS.en : LIVE_JOINS.tr;
+
   const [liveIdx, setLiveIdx] = useState(0);
   const [showLive, setShowLive] = useState(true);
 
@@ -161,11 +204,12 @@ export function HeroSection() {
     const interval = setInterval(() => {
       setShowLive(false);
       setTimeout(() => {
-        setLiveIdx((i) => (i + 1) % LIVE_JOINS.length);
+        setLiveIdx((i) => (i + 1) % liveJoins.length);
         setShowLive(true);
       }, 400);
     }, 4000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -218,7 +262,7 @@ export function HeroSection() {
             style={{ background: "#dbeafe", color: "#1e3a5f", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "5px 14px", borderRadius: 999 }}
           >
             <BookOpen style={{ width: 12, height: 12 }} />
-            NEVAİ YAYINLARI — A1&rsquo;DEN C1&rsquo;E
+            {T.badge}
           </motion.div>
 
           <motion.h1
@@ -228,7 +272,7 @@ export function HeroSection() {
             className="font-extrabold"
             style={{ fontSize: "clamp(34px,3.8vw,52px)", lineHeight: 1.12, letterSpacing: "-0.03em", marginBottom: 18 }}
           >
-            Türkçe Eğitimini<br />
+            {T.h1a}<br />
             <span
               style={{
                 background: "linear-gradient(130deg,#1b75bc 0%,#57dffe 55%,#1565a8 100%)",
@@ -237,7 +281,7 @@ export function HeroSection() {
                 backgroundClip: "text",
               }}
             >
-              Yeniden Tasarladık.
+              {T.h1b}
             </span>
           </motion.h1>
 
@@ -247,7 +291,7 @@ export function HeroSection() {
             transition={{ delay: 0.2 }}
             style={{ fontSize: 17, lineHeight: "28px", color: "#414751", maxWidth: 460, marginBottom: 28 }}
           >
-            Öğretmenler; yapay zeka destekli stüdyomuzla kitap içeriklerinden saniyeler içinde quizler ve çalışma yaprakları hazırlayın. Öğrenciler; okudukça puan toplayın, liglerde yükselin ve arkadaşlarınızla kıyasıya yarışarak Türkçenizi geliştirin.
+            {T.subtitle}
           </motion.p>
 
           <motion.div
@@ -261,7 +305,7 @@ export function HeroSection() {
               className="inline-flex items-center gap-2 text-white font-semibold rounded-lg"
               style={{ background: "#1b75bc", fontSize: 14, padding: "12px 22px" }}
             >
-              Okulunuz için Ücretsiz Başla
+              {T.ctaPrimary}
               <ArrowRight style={{ width: 15, height: 15 }} />
             </Link>
             <Link
@@ -269,7 +313,7 @@ export function HeroSection() {
               className="inline-flex items-center gap-2 font-semibold rounded-lg"
               style={{ ...glassStyle, fontSize: 14, padding: "12px 22px", color: "#1e1b1c" }}
             >
-              Öğrenci Kaydı
+              {T.ctaSecondary}
             </Link>
           </motion.div>
 
@@ -312,7 +356,7 @@ export function HeroSection() {
                     style={{ ...glassStyle, padding: "6px 13px", fontSize: 11, fontWeight: 600, color: "#414751" }}
                   >
                     <span className="inline-block size-1.5 rounded-full bg-green-400 flex-shrink-0" />
-                    {LIVE_JOINS[liveIdx]}
+                    {liveJoins[liveIdx]}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -351,14 +395,14 @@ export function HeroSection() {
               </div>
               {/* Lesson mockup overlay — geçici kapalı
               <div style={{ position: "absolute", bottom: -32, right: -8, width: "60%", zIndex: 10 }}>
-                <LessonMockup />
+                <LessonMockup streak={T.streak} correct={T.correct} continueCta={T.continueCta} />
               </div>
               <div style={{ height: 120 }} />
               */}
             </div>
           ) : (
             /* Varsayılan: sadece uygulama mockup'ı */
-            <LessonMockup />
+            <LessonMockup streak={T.streak} correct={T.correct} continueCta={T.continueCta} />
           )}
 
           {/* Stat card — top right */}
@@ -373,7 +417,7 @@ export function HeroSection() {
               <CheckCircle2 style={{ width: 18, height: 18, color: "#16a34a" }} />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, letterSpacing: "0.04em" }}>Ders Tamamlandı</div>
+              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, letterSpacing: "0.04em" }}>{T.statLessons}</div>
               <div className="font-black leading-snug" style={{ fontSize: 20, color: "#1e1b1c" }}>1,247</div>
             </div>
           </motion.div>
@@ -390,7 +434,7 @@ export function HeroSection() {
               <Users style={{ width: 18, height: 18, color: "#1565a8" }} />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, letterSpacing: "0.04em" }}>Aktif Öğrenci</div>
+              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, letterSpacing: "0.04em" }}>{T.statStudents}</div>
               <div className="font-black leading-snug" style={{ fontSize: 20, color: "#1e1b1c" }}>5,320</div>
             </div>
           </motion.div>
@@ -408,7 +452,7 @@ export function HeroSection() {
               className="rounded-xl px-3.5 py-2.5"
               style={glassStyle}
             >
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", color: "#9ca3af", marginBottom: 4 }}>BUGÜNKÜ XP</div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", color: "#9ca3af", marginBottom: 4 }}>{T.todayXp}</div>
               <div className="flex items-center gap-1.5">
                 <Zap style={{ width: 16, height: 16, color: "#f97316", fill: "#f97316" }} />
                 <span className="font-black leading-tight" style={{ fontSize: 22, color: "#1b75bc" }}>+240</span>

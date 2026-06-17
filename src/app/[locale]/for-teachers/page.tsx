@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
-import { Logo } from '@/components/logo';
+import { LandingNav } from '@/components/landing-nav';
+import { LandingFooter } from '@/components/landing-footer';
 import {
   ArrowRight, CheckCircle2, Zap, Users, Brain,
   BarChart3, QrCode, FileDown, Sparkles, Star,
@@ -171,21 +172,17 @@ export default function ForTeachersPage() {
       <div style={{ background: '#f9fafb', color: '#1e1b1c' }}>
 
         {/* Nav */}
-        <nav className="sticky top-0 z-50" style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(192,199,210,0.35)' }}>
-          <div className="px-4 md:px-10" style={{ maxWidth: 1200, margin: '0 auto', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <Logo size="md" />
-            </Link>
-            <div className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
-              <Link href="/learn-turkish-online" style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}>Students</Link>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#1b75bc' }}>Teachers</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link href="/giris" className="hidden md:block" style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}>Log In</Link>
-              <Link href="/kayit?tip=ogretmen" style={{ background: '#1b75bc', color: '#fff', fontSize: 13, fontWeight: 600, padding: '8px 18px', borderRadius: 8, textDecoration: 'none' }}>Try Free</Link>
-            </div>
-          </div>
-        </nav>
+        {/* Nav */}
+        <LandingNav
+          locale="en"
+          alternateHref="/tr/ogretmenler"
+          links={[
+            { label: 'Students', href: '/learn-turkish-online' },
+            { label: 'Teachers', href: '/for-teachers', active: true },
+          ]}
+          ctaLabel="Try Free"
+          ctaHref="/kayit?tip=ogretmen"
+        />
 
         {/* Hero */}
         <section style={{ background: 'linear-gradient(160deg,#0f172a 0%,#1e3a5f 50%,#1b75bc 100%)', padding: '80px 0 72px', position: 'relative', overflow: 'hidden' }}>
@@ -462,6 +459,9 @@ export default function ForTeachersPage() {
             </div>
           </div>
         </section>
+
+        {/* Footer */}
+        <LandingFooter locale="en" />
 
       </div>
     </>
