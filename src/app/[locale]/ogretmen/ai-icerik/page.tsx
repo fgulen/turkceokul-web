@@ -6,7 +6,7 @@ import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
   Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
-  Trash2, Plus,
+  Trash2, Plus, History, Clock,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
@@ -123,9 +123,13 @@ interface IcerikSonuc {
 
 type TabSonuc = { icerik: IcerikSonuc | null; metin: string; resimUrls: string[] };
 
-interface Sinif    { id: number; name: string; }
-interface Kitap    { id: string; name: string; seviye?: string; }
-interface UniteDto { id: string; name: string; }
+interface Sinif       { id: number; name: string; }
+interface Kitap       { id: string; name: string; seviye?: string; }
+interface UniteDto    { id: string; name: string; }
+interface GecmisItem  {
+  id: string; name: string; tip: string; unite: string;
+  soruSayisi: number; insertDate: string; zorluk: number;
+}
 
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -189,6 +193,19 @@ export default function AIIcerikPage() {
     queryKey: ['uniteler', seciliKitapId],
     queryFn: () => api.get(`/api/uniteler/${seciliKitapId}`).then(r => r.data),
     enabled: !!seciliKitapId,
+  });
+
+  const { data: gecmisData, refetch: gecmisYenile } = useQuery<{
+    toplam: number; liste: GecmisItem[];
+  }>({
+    queryKey: ['ai-gecmis'],
+    queryFn: () => api.get('/api/ai/gecmis?boyut=50').then(r => r.data),
+    enabled: !!user,
+  });
+
+  const silMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
+    onSuccess: () => gecmisYenile(),
   });
 
   const ekYonlendirme = PROMPT_SABLON
@@ -619,6 +636,27 @@ export default function AIIcerikPage() {
             )}
           </div>
         </div>
+
+        {/* Geçmiş kütüphanesi */}
+        {(gecmisData?.liste?.length ?? 0) > 0 && (
+          <section className="mt-10">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="size-5 text-slate-400" />
+              <h2 className="font-semibold text-slate-700">Üretim Geçmişi</h2>
+              <span className="text-xs text-slate-400 ml-1">({gecmisData!.toplam} kayıt)</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {gecmisData!.liste.map(item => (
+                <GecmisKart
+                  key={item.id}
+                  item={item}
+                  onSil={() => silMutation.mutate(item.id)}
+                  silIsPending={silMutation.isPending}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
@@ -1289,6 +1327,54 @@ function SoruDuzenleyiciKart({
           <Trash2 className="size-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+const TIP_ETIKETLER: Record<string, { label: string; renk: string }> = {
+  Quiz:             { label: 'Quiz',          renk: 'bg-blue-50 text-blue-700 border-blue-200' },
+  KelimeleriEslestir: { label: 'Eşleştirme', renk: 'bg-purple-50 text-purple-700 border-purple-200' },
+  BoslukDoldurma:   { label: 'Boşluk Doldur', renk: 'bg-amber-50 text-amber-700 border-amber-200' },
+};
+
+function GecmisKart({
+  item, onSil, silIsPending,
+}: {
+  item: GecmisItem;
+  onSil: () => void;
+  silIsPending: boolean;
+}) {
+  const etiket = TIP_ETIKETLER[item.tip] ?? { label: item.tip, renk: 'bg-slate-50 text-slate-600 border-slate-200' };
+  const tarih = new Date(item.insertDate).toLocaleDateString('tr-TR', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+  const seviyeMetin = item.zorluk === 1 ? 'A1–A2' : item.zorluk === 2 ? 'B1–B2' : 'C1–C2';
+
+  return (
+    <div className="flex items-center gap-4 bg-white border border-slate-100 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow group">
+      <div className={cn('shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border', etiket.renk)}>
+        {etiket.label}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+        <p className="text-xs text-slate-400 mt-0.5 truncate">{item.unite}</p>
+      </div>
+      <div className="shrink-0 flex items-center gap-3 text-xs text-slate-400">
+        <span className="hidden sm:inline">{item.soruSayisi} soru</span>
+        <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">{seviyeMetin}</span>
+        <span className="flex items-center gap-1">
+          <Clock className="size-3" />
+          {tarih}
+        </span>
+      </div>
+      <button
+        onClick={onSil}
+        disabled={silIsPending}
+        title="Sil"
+        className="shrink-0 p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
+      >
+        <Trash2 className="size-4" />
+      </button>
     </div>
   );
 }
