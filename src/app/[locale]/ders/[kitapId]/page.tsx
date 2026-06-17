@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   CheckCircle2,
   Circle, Lock, Play, RotateCcw,
-  BookOpen, BookMarked, Headphones, PenLine, Languages, Trophy,
+  BookOpen, BookMarked, Headphones, PenLine, Languages, Trophy, Sparkles,
   Book, List,
 } from 'lucide-react';
 import { AppNav } from '@/components/app-nav';
@@ -51,9 +51,10 @@ const BOLUM_ICONS: Record<string, React.ReactNode> = {
   Yazma: <PenLine className="size-4" />,
   Dilbilgisi: <Languages className="size-4" />,
   Değerlendirme: <Trophy className="size-4" />,
+  'AI Generated': <Sparkles className="size-4" />,
 };
 
-const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'Dilbilgisi', 'Değerlendirme'];
+const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'Dilbilgisi', 'Değerlendirme', 'AI Generated'];
 
 function getZigzagPosition(index: number): 'left' | 'center' | 'right' {
   const pattern = index % 4;
@@ -85,9 +86,11 @@ function ZigzagNode({
 
   const nodeStyle = isLocked
     ? 'bg-slate-100 border-slate-200 text-slate-300'
-    : (state !== 'none' || isSiradaki)
-      ? `${colors.active} border-transparent text-white shadow-lg ${colors.shadow}${isSiradaki ? ` ring-4 ${colors.ring} animate-pulse` : ''}`
-      : 'bg-white border-border text-muted-foreground';
+    : isSiradaki
+      ? `${colors.active} border-transparent text-white shadow-xl ${colors.shadow} ring-4 ${colors.ring} ring-offset-2 animate-node-bounce`
+      : (state !== 'none')
+        ? `${colors.active} border-transparent text-white shadow-md ${colors.shadow} ring-2 ring-white ring-offset-2`
+        : 'bg-white border-border text-muted-foreground hover:border-primary/40';
 
   function NodeIcon() {
     if (isLocked) return <Lock className="size-3.5" />;
@@ -117,12 +120,17 @@ function ZigzagNode({
           <Link
             href={`/etkinlik/${etkinlik.id}?uniteId=${uniteId}&kitapId=${kitapId}&bolum=${encodeURIComponent(etkinlik.bolum)}`}
             className={cn(
-              'w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border-4 transition-all shrink-0 relative z-10',
+              'rounded-full flex items-center justify-center border-4 transition-all shrink-0 relative z-10 active:translate-y-0.5',
+              isSiradaki ? 'w-16 h-16 sm:w-20 sm:h-20 border-b-[6px]' : 'w-14 h-14 sm:w-16 sm:h-16 border-b-4',
               nodeStyle,
-              state === 'none' && !isSiradaki && 'hover:border-primary cursor-pointer hover:bg-primary/5',
+              state === 'none' && !isSiradaki && 'hover:border-primary/40 cursor-pointer hover:bg-primary/5',
             )}
           >
-            <NodeIcon />
+            {isSiradaki ? (
+              <Play className="size-5 sm:size-6 fill-current" />
+            ) : (
+              <NodeIcon />
+            )}
           </Link>
         )}
         <span className={cn(
@@ -197,31 +205,31 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6">
-      {/* Decorative SVGs from adventure HTML */}
+    <div className="relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
+      {/* Decorative SVGs */}
       {/* Mountains - top left */}
-      <div className="absolute top-8 left-8 opacity-10 select-none pointer-events-none">
+      <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
         <svg fill="none" height="80" viewBox="0 0 120 80" width="120" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 80L60 10L100 80H20Z" fill="currentColor" className="text-slate-400" />
+          <path d="M20 80L60 10L100 80H20Z" fill="currentColor" className="text-primary/60" />
           <path d="M50 80L80 30L110 80H50Z" fill="currentColor" className="text-slate-300" />
         </svg>
       </div>
       {/* Pine trees - bottom right */}
-      <div className="absolute bottom-16 right-8 opacity-15 select-none pointer-events-none">
+      <div className="absolute bottom-16 right-8 opacity-30 select-none pointer-events-none">
         <svg fill="none" height="100" viewBox="0 0 60 100" width="60" xmlns="http://www.w3.org/2000/svg">
-          <path d="M30 0L50 35H38L55 65H42L60 100H0L18 65H5L22 35H10L30 0Z" fill="currentColor" className="text-slate-400" />
+          <path d="M30 0L50 35H38L55 65H42L60 100H0L18 65H5L22 35H10L30 0Z" fill="currentColor" className="text-emerald-400" />
         </svg>
       </div>
       {/* Cloud - mid left */}
-      <div className="absolute top-1/3 left-4 opacity-20 select-none pointer-events-none">
+      <div className="absolute top-1/3 left-4 opacity-35 select-none pointer-events-none">
         <svg fill="none" height="40" viewBox="0 0 80 40" width="80" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="40" cy="20" fill="currentColor" className="text-sky-200" rx="40" ry="20" />
+          <ellipse cx="40" cy="20" fill="currentColor" className="text-sky-300" rx="40" ry="20" />
         </svg>
       </div>
       {/* Dashed wave - bottom left */}
-      <div className="absolute bottom-8 left-4 opacity-15 select-none pointer-events-none">
+      <div className="absolute bottom-8 left-4 opacity-25 select-none pointer-events-none">
         <svg fill="none" height="60" viewBox="0 0 120 60" width="120" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 30C20 30 20 50 40 50C60 50 60 10 80 10C100 10 100 40 120 40" stroke="currentColor" strokeDasharray="6 6" strokeWidth="3" className="text-slate-400" />
+          <path d="M0 30C20 30 20 50 40 50C60 50 60 10 80 10C100 10 100 40 120 40" stroke="currentColor" strokeDasharray="6 6" strokeWidth="3" className="text-primary/40" />
         </svg>
       </div>
 
@@ -229,6 +237,7 @@ function AdventurePath({
         {filtered.map((e, idx) => {
           const isLocked = lockStates[idx];
           const isLast = idx === filtered.length - 1;
+          const eColors = getBolumZigzagColor(e.bolum);
 
           return (
             <div key={e.id} className="flex flex-col items-center w-full">
@@ -242,7 +251,10 @@ function AdventurePath({
                 isLastCompleted={!!lastId && e.id === lastId}
               />
               {!isLast && (
-                <div className="w-0.5 h-6 sm:h-8 bg-[image:repeating-linear-gradient(to_bottom,currentColor,currentColor_4px,transparent_4px,transparent_8px)] text-slate-300" />
+                <div className={cn(
+                  'w-0.5 h-6 sm:h-8 bg-[image:repeating-linear-gradient(to_bottom,currentColor,currentColor_4px,transparent_4px,transparent_8px)] opacity-50',
+                  eColors.activeLabel,
+                )} />
               )}
             </div>
           );
@@ -327,9 +339,9 @@ function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string }) {
   const allDone = hasCount && unite.tamamlananEtkinlik === unite.toplamEtkinlik;
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 mb-6 overflow-hidden relative">
+    <div className="bg-gradient-to-br from-card to-primary/[0.04] border border-border rounded-2xl p-4 sm:p-5 mb-6 overflow-hidden relative shadow-sm">
       {/* Decorative illustration - top right */}
-      <div className="absolute -top-4 -right-4 opacity-[0.07] pointer-events-none select-none">
+      <div className="absolute -top-4 -right-4 opacity-[0.16] pointer-events-none select-none">
         <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* Mountain */}
           <path d="M20 140L70 30L120 140H20Z" fill="currentColor" className="text-primary" />
@@ -359,9 +371,12 @@ function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string }) {
             <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
               {unite.tamamlananEtkinlik}/{unite.toplamEtkinlik}
             </div>
-            <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden w-24 sm:w-32">
+            <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden w-24 sm:w-32">
               <div
-                className="h-full rounded-full transition-all duration-700 bg-primary"
+                className={cn(
+                  'h-full rounded-full transition-all duration-700',
+                  allDone ? 'bg-emerald-500' : 'progress-shimmer',
+                )}
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -462,14 +477,14 @@ export default function DersPage({
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9]">
+    <div className="min-h-screen bg-background">
       <AppNav />
 
       <div className="max-w-[1200px] mx-auto px-4 h-[calc(100vh-4rem)]">
         <div className="flex h-full py-6">
 
           {/* ── Desktop Sidebar ── */}
-          <aside className="hidden lg:flex lg:flex-col w-72 shrink-0 h-full rounded-2xl bg-[#F1F5F9] p-5">
+          <aside className="hidden lg:flex lg:flex-col w-72 shrink-0 h-full rounded-2xl bg-card border border-border/50 shadow-sm p-5">
             {kitap && (
               <h3 className="text-sm font-bold text-foreground leading-tight mb-3 shrink-0">{kitap.name}</h3>
             )}
@@ -558,10 +573,10 @@ export default function DersPage({
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={cn(
-                                  'flex-1 min-w-[100px] snap-start flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm transition-all shrink-0',
+                                  'flex-1 min-w-[100px] snap-start flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm transition-all shrink-0',
                                   activeTab === tab
-                                    ? cn(tabColors.label, 'shadow-sm font-semibold')
-                                    : 'text-muted-foreground hover:bg-white/50 font-medium',
+                                    ? cn(tabColors.active, 'text-white shadow-md font-semibold scale-[1.02]')
+                                    : 'text-muted-foreground hover:bg-white/70 hover:text-foreground font-medium',
                                 )}
                               >
                                 <span>{Icon}</span>
