@@ -6,6 +6,7 @@ import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
   Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
+  Trash2, Plus,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { AppNav } from '@/components/app-nav';
@@ -170,6 +171,7 @@ export default function AIIcerikPage() {
   const [kaydedildi, setKaydedildi] = useState<string | null>(null); // etkinlikId
   const [kaydetHata, setKaydetHata] = useState('');
   const [hata, setHata] = useState('');
+  const [duzenlemeModuAktif, setDuzenlemeModuAktif] = useState(false);
 
   const { data: siniflar = [] } = useQuery<Sinif[]>({
     queryKey: ['siniflarim'],
@@ -223,6 +225,7 @@ export default function AIIcerikPage() {
     },
     onSuccess: (data: unknown) => {
       setHata('');
+      setDuzenlemeModuAktif(false);
       const tabId = aktifTab;
       const resimUrls = tabId === 'resim_analiz' ? capturedResimUrls.current : [];
 
@@ -237,12 +240,37 @@ export default function AIIcerikPage() {
     onError: (err: Error) => setHata(err.message || 'Bilinmeyen hata'),
   });
 
+  function soruGuncelle(idx: number, updates: Partial<Soru>) {
+    const sonuc = sonuclar[aktifTab];
+    if (!sonuc?.icerik) return;
+    const sorular = sonuc.icerik.sorular.map((s, i) => i === idx ? { ...s, ...updates } : s);
+    setSonuclar(prev => ({ ...prev, [aktifTab]: { ...sonuc, icerik: { ...sonuc.icerik!, sorular } } }));
+  }
+
+  function soruSil(idx: number) {
+    const sonuc = sonuclar[aktifTab];
+    if (!sonuc?.icerik) return;
+    const sorular = sonuc.icerik.sorular.filter((_, i) => i !== idx);
+    setSonuclar(prev => ({ ...prev, [aktifTab]: { ...sonuc, icerik: { ...sonuc.icerik!, sorular } } }));
+  }
+
+  function soruEkle() {
+    const sonuc = sonuclar[aktifTab];
+    if (!sonuc?.icerik) return;
+    const yeni: Soru = { question: '', options: ['', '', '', ''], answer: '' };
+    setSonuclar(prev => ({
+      ...prev,
+      [aktifTab]: { ...sonuc, icerik: { ...sonuc.icerik!, sorular: [...sonuc.icerik!.sorular, yeni] } },
+    }));
+  }
+
   function tabDegistir(id: TabId) {
     setAktifTab(id);
     setHata('');
     setSeciliSablonlar(new Set());
     setSupportLanguage('');
     setFocusMode('');
+    setDuzenlemeModuAktif(false);
   }
 
   function kitapDegistir(kitapId: string) {
@@ -273,6 +301,7 @@ export default function AIIcerikPage() {
 
   function sonucuSil(tabId: TabId) {
     setSonuclar(prev => { const next = { ...prev }; delete next[tabId]; return next; });
+    setDuzenlemeModuAktif(false);
   }
 
   function kopyala() {
@@ -488,6 +517,21 @@ export default function AIIcerikPage() {
                     )}
                   </div>
                   <div className="flex gap-2 items-center">
+                    {jsonTabAktif && mevcutSonuc?.icerik && (
+                      <button
+                        onClick={() => setDuzenlemeModuAktif(p => !p)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                          duzenlemeModuAktif
+                            ? 'bg-primary text-white border-primary'
+                            : 'border-slate-200 text-slate-500 hover:text-primary hover:border-primary/40',
+                        )}
+                      >
+                        {duzenlemeModuAktif
+                          ? <><Check className="size-3.5" />Bitti</>
+                          : <><PenLine className="size-3.5" />Düzenle</>}
+                      </button>
+                    )}
                     <button
                       onClick={kopyala}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/40 transition-colors"
@@ -552,7 +596,17 @@ export default function AIIcerikPage() {
                     {mevcutSonuc.metin}
                   </pre>
                 ) : mevcutSonuc?.icerik ? (
-                  <SonucKartlari sonuc={mevcutSonuc.icerik} resimUrls={mevcutSonuc.resimUrls} />
+                  duzenlemeModuAktif ? (
+                    <SorularDuzenleyici
+                      sonuc={mevcutSonuc.icerik}
+                      tabId={aktifTab}
+                      onGuncelle={soruGuncelle}
+                      onSil={soruSil}
+                      onEkle={soruEkle}
+                    />
+                  ) : (
+                    <SonucKartlari sonuc={mevcutSonuc.icerik} resimUrls={mevcutSonuc.resimUrls} />
+                  )
                 ) : null}
               </div>
             )}
@@ -1102,6 +1156,139 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SorularDuzenleyici({
+  sonuc, tabId, onGuncelle, onSil, onEkle,
+}: {
+  sonuc: IcerikSonuc;
+  tabId: TabId;
+  onGuncelle: (idx: number, updates: Partial<Soru>) => void;
+  onSil: (idx: number) => void;
+  onEkle: () => void;
+}) {
+  const distractorCount = tabId === 'quiz' ? 3 : tabId === 'eslestir' ? 2 : 0;
+
+  return (
+    <div className="space-y-3">
+      {sonuc.sorular.map((soru, i) => {
+        const soruMetni = soru.question ?? soru.description ?? '';
+        const dogruCevap = soru.answer ?? soru.kelime1 ?? '';
+        const allOpts = soru.options?.length
+          ? soru.options
+          : [soru.kelime2, soru.kelime3, soru.kelime4].filter(Boolean) as string[];
+        const distractors = allOpts.filter(o => o !== dogruCevap).slice(0, distractorCount);
+        while (distractors.length < distractorCount) distractors.push('');
+
+        return (
+          <SoruDuzenleyiciKart
+            key={i}
+            index={i}
+            soruMetni={soruMetni}
+            dogruCevap={dogruCevap}
+            distractors={distractors}
+            tabId={tabId}
+            onGuncelle={(updates) => onGuncelle(i, updates)}
+            onSil={() => onSil(i)}
+          />
+        );
+      })}
+      <button
+        onClick={onEkle}
+        className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 hover:border-primary/40 hover:text-primary transition-colors text-sm font-medium"
+      >
+        <Plus className="size-4" />
+        Soru Ekle
+      </button>
+    </div>
+  );
+}
+
+function SoruDuzenleyiciKart({
+  index, soruMetni, dogruCevap, distractors, tabId, onGuncelle, onSil,
+}: {
+  index: number;
+  soruMetni: string;
+  dogruCevap: string;
+  distractors: string[];
+  tabId: TabId;
+  onGuncelle: (updates: Partial<Soru>) => void;
+  onSil: () => void;
+}) {
+  const questionLabel =
+    tabId === 'eslestir' ? 'Sol taraf (Türkçe kelime/cümle)' :
+    tabId === 'bosluk_doldur' ? 'Cümle (____ ile boşluğu gösterin)' :
+    'Soru metni';
+  const answerLabel =
+    tabId === 'eslestir' ? 'Sağ taraf (doğru eşleşme)' :
+    tabId === 'bosluk_doldur' ? 'Doğru cevap' :
+    'Doğru cevap';
+
+  function updateDistractor(dIdx: number, value: string) {
+    const newDist = [...distractors];
+    newDist[dIdx] = value;
+    onGuncelle({
+      question: soruMetni,
+      answer: dogruCevap,
+      options: [dogruCevap, ...newDist].filter(Boolean),
+    });
+  }
+
+  function updateAnswer(value: string) {
+    onGuncelle({
+      answer: value,
+      options: [value, ...distractors].filter(Boolean),
+    });
+  }
+
+  return (
+    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 group">
+      <div className="flex items-start gap-2">
+        <span className="text-primary font-semibold text-sm shrink-0 mt-2.5">{index + 1}.</span>
+        <div className="flex-1 min-w-0 space-y-2">
+          {/* Soru metni */}
+          <textarea
+            value={soruMetni}
+            onChange={e => onGuncelle({ question: e.target.value })}
+            placeholder={questionLabel + '...'}
+            rows={2}
+            className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none"
+          />
+          {/* Doğru cevap */}
+          <div className="flex items-center gap-2">
+            <span className="size-5 rounded-full border-2 border-emerald-500 bg-emerald-100 flex items-center justify-center shrink-0">
+              <Check className="size-3 text-emerald-600" />
+            </span>
+            <input
+              value={dogruCevap}
+              onChange={e => updateAnswer(e.target.value)}
+              placeholder={answerLabel + '...'}
+              className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 focus:ring-2 focus:ring-emerald-400/30 focus:outline-none text-emerald-900 font-medium"
+            />
+          </div>
+          {/* Yanlış seçenekler */}
+          {distractors.map((d, dIdx) => (
+            <div key={dIdx} className="flex items-center gap-2">
+              <span className="size-5 rounded-full border-2 border-slate-300 bg-white shrink-0" />
+              <input
+                value={d}
+                onChange={e => updateDistractor(dIdx, e.target.value)}
+                placeholder={`Yanlış seçenek ${dIdx + 1}...`}
+                className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-primary/30 focus:outline-none"
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onSil}
+          title="Bu soruyu sil"
+          className="p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 mt-1 opacity-0 group-hover:opacity-100"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
     </div>
   );
 }
