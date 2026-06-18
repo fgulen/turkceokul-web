@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Users, GraduationCap, CheckCircle, Save } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -65,10 +66,10 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
     <div className="min-h-screen bg-[#F3F4F6]">
       <AppNav />
       <main className="max-w-[800px] mx-auto px-4 py-8">
-        <a href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
+        <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="size-4" />
           Admin paneline dön
-        </a>
+        </Link>
 
         {isLoading ? (
           <div className="space-y-4">
