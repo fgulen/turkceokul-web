@@ -153,8 +153,38 @@ function KayitForm() {
       </div>
 
       {/* Sağ panel — form */}
-      <div style={{ flex: 1, background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
-        <div style={{ width: "100%", maxWidth: 420 }}>
+      <div style={{ flex: 1, background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
+        {/* Dekoratif Türkçe harfler */}
+        {[
+          { ch: 'Ş', top: '5%',  left: '82%', size: 130, rotate: 14  },
+          { ch: 'Ü', top: '60%', left: '-4%', size: 150, rotate: -8  },
+          { ch: 'Ö', top: '78%', left: '80%', size: 140, rotate: 18  },
+          { ch: 'Ğ', top: '15%', left: '-2%', size: 120, rotate: -20 },
+          { ch: 'Ç', top: '42%', left: '88%', size: 160, rotate: 10  },
+          { ch: 'İ', top: '88%', left: '30%', size: 110, rotate: -15 },
+        ].map((c, i) => (
+          <span
+            key={i}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: c.top,
+              left: c.left,
+              fontSize: c.size,
+              fontWeight: 900,
+              lineHeight: 1,
+              color: '#1b75bc',
+              opacity: 0.055,
+              transform: `rotate(${c.rotate}deg)`,
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+          >
+            {c.ch}
+          </span>
+        ))}
+
+        <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
 
           {/* Mobil logo */}
           <div className="lg:hidden" style={{ marginBottom: 20, textAlign: "center" }}>
