@@ -118,12 +118,12 @@ function KayitForm() {
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.55)", marginBottom: 12 }}>
             {tab === "kurumsal" ? "KURUMSAL HESAP" : "BİREYSEL HESAP"}
           </div>
-          <h2 style={{ fontSize: "clamp(22px,2.4vw,32px)", fontWeight: 900, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.02em", marginBottom: 12 }}>
+          <h2 style={{ fontSize: "clamp(24px,2.6vw,36px)", fontWeight: 900, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.02em", marginBottom: 12 }}>
             {tab === "kurumsal"
               ? <>Okulunuz için<br />ücretsiz başlayın.</>
               : <>Türkçenizi<br />geliştirin.</>}
           </h2>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: "21px", marginBottom: 36, maxWidth: 280 }}>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", lineHeight: "23px", marginBottom: 36, maxWidth: 280 }}>
             {tab === "kurumsal"
               ? "1 öğretmen, 10 öğrenci — kredi kartı gerekmez, 5 dakikada kurulum."
               : "AI destekli seviye testi, CEFR müfredatı ve gamification ile Türkçe öğrenin."}
@@ -132,10 +132,10 @@ function KayitForm() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {benefits.map(({ Icon, text }) => (
               <div key={text} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon style={{ width: 14, height: 14, color: "#57dffe" }} />
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon style={{ width: 15, height: 15, color: "#57dffe" }} />
                 </div>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.82)", lineHeight: "18px" }}>{text}</span>
+                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: "20px" }}>{text}</span>
               </div>
             ))}
           </div>
@@ -145,8 +145,8 @@ function KayitForm() {
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 24, display: "flex", gap: 28 }}>
           {[{ val: "53k+", label: "Mezun" }, { val: "30+", label: "Ülke" }, { val: "A1–C1", label: "CEFR" }].map((s) => (
             <div key={s.label}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{s.val}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{s.val}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -166,8 +166,8 @@ function KayitForm() {
           {/* Mobil mavi banner — sol panelin özeti, aç/kapat */}
           <MobileBenefitsBanner tab={tab} benefits={benefits} />
 
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1e1b1c", marginBottom: 4, letterSpacing: "-0.02em" }}>Hesap Oluştur</h1>
-          <p style={{ fontSize: 13, color: "#717882", marginBottom: 24 }}>Ücretsiz başla, hemen kullanmaya başla.</p>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1e1b1c", marginBottom: 6, letterSpacing: "-0.02em" }}>Hesap Oluştur</h1>
+          <p style={{ fontSize: 15, color: "#717882", marginBottom: 24 }}>Ücretsiz başla, hemen kullanmaya başla.</p>
 
           {/* Tab seçimi */}
           <div style={{ display: "flex", background: "#f0f2f5", borderRadius: 10, padding: 4, gap: 4, marginBottom: 28 }}>
@@ -196,8 +196,8 @@ function KayitForm() {
               >
                 <Icon style={{ width: 15, height: 15, color: tab === key ? "#1b75bc" : "#9ca3af", flexShrink: 0 }} />
                 <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: tab === key ? "#1e1b1c" : "#9ca3af", lineHeight: 1 }}>{label}</div>
-                  <div style={{ fontSize: 10, color: tab === key ? "#1b75bc" : "#c0c7d2", marginTop: 1 }}>{sub}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: tab === key ? "#1e1b1c" : "#9ca3af", lineHeight: 1 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: tab === key ? "#1b75bc" : "#c0c7d2", marginTop: 2 }}>{sub}</div>
                 </div>
               </button>
             ))}
@@ -211,9 +211,9 @@ function KayitForm() {
               {tab === "kurumsal" ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>
+                    <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>
                       Kurum Adı
-                      <span style={{ fontSize: 10, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>isteğe bağlı</span>
+                      <span style={{ fontSize: 11, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>isteğe bağlı</span>
                     </label>
                     <Input
                       type="text"
@@ -224,9 +224,9 @@ function KayitForm() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>
+                    <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>
                       Kurum Kodu
-                      <span style={{ fontSize: 10, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>lisans varsa</span>
+                      <span style={{ fontSize: 11, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>lisans varsa</span>
                     </label>
                     <Input
                       type="text"
@@ -242,11 +242,11 @@ function KayitForm() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "9px 13px", display: "flex", alignItems: "center", gap: 8 }}>
                     <Brain style={{ width: 13, height: 13, color: "#16a34a", flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: "#15803d" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
+                    <span style={{ fontSize: 13, color: "#15803d" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
                   </div>
                   <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "9px 13px", display: "flex", alignItems: "center", gap: 8 }}>
                     <Users style={{ width: 13, height: 13, color: "#2563eb", flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: "#1d4ed8" }}>Bir okul veya kurumdan mı geliyorsun? <strong>Öğretmeninden sınıf kodunu iste</strong>, seni sınıfına eklesin.</span>
+                    <span style={{ fontSize: 13, color: "#1d4ed8" }}>Bir okul veya kurumdan mı geliyorsun? <strong>Öğretmeninden sınıf kodunu iste</strong>, seni sınıfına eklesin.</span>
                   </div>
                 </div>
               )}
@@ -255,22 +255,22 @@ function KayitForm() {
             {/* Ortak alanlar — tab değişse de sabit konumda */}
             <div className="grid grid-cols-2" style={{ gap: 10 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Ad</label>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Ad</label>
                 <Input type="text" value={form.name} onChange={field("name")} required placeholder="Ahmet" autoComplete="given-name" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Soyad</label>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Soyad</label>
                 <Input type="text" value={form.surname} onChange={field("surname")} required placeholder="Yılmaz" autoComplete="family-name" />
               </div>
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>E-posta</label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>E-posta</label>
               <Input type="email" value={form.email} onChange={field("email")} required placeholder="ornek@email.com" autoComplete="email" />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Şifre</label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>Şifre</label>
               <div style={{ position: "relative" }}>
                 <Input
                   type={showPass ? "text" : "password"}
@@ -306,12 +306,12 @@ function KayitForm() {
             </Button>
           </form>
 
-          <p style={{ textAlign: "center", fontSize: 12, color: "#9ca3af", marginTop: 20 }}>
+          <p style={{ textAlign: "center", fontSize: 13, color: "#9ca3af", marginTop: 20 }}>
             Zaten hesabın var mı?{" "}
             <Link href="/giris" style={{ color: "#1b75bc", fontWeight: 600, textDecoration: "none" }}>Giriş yap</Link>
           </p>
 
-          <p style={{ textAlign: "center", fontSize: 10, color: "#c0c7d2", marginTop: 16, lineHeight: "16px" }}>
+          <p style={{ textAlign: "center", fontSize: 11, color: "#c0c7d2", marginTop: 16, lineHeight: "17px" }}>
             Kayıt olarak{" "}
             <a href="#" style={{ color: "#9ca3af", textDecoration: "underline" }}>Kullanım Koşulları</a>
             {" "}ve{" "}
