@@ -204,7 +204,7 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="flex-1 relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
+    <div className="grow shrink-0 relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
       {/* Decorative SVGs */}
       {/* Mountains - top left */}
       <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
@@ -496,7 +496,7 @@ export default function DersPage({
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="bg-background">
 
       <div className="max-w-[1200px] mx-auto px-4 h-[calc(100dvh-4rem)]">
         <div className="flex h-full py-6">
