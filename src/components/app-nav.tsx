@@ -162,7 +162,7 @@ export function AppNav() {
                   href="/ogretmen"
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/ogretmen')
+                    pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik'
                       ? 'bg-primary/10 text-primary'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
                   )}
