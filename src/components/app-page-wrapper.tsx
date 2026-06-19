@@ -15,7 +15,7 @@ export function AppPageWrapper({ children }: { children: React.ReactNode }) {
     user?.role === 'UlkeTemsilcisi'
   );
   // Ders sayfası kendi fixed-height layout'unu yönetiyor, pb-14 body scroll yaratır
-  const isFixedLayout = pathname?.startsWith('/ders/');
+  const isFixedLayout = pathname?.startsWith('/ders/') || pathname?.startsWith('/etkinlik/');
 
   return (
     <div className={cn(hasMobileBar && !isFixedLayout && 'pb-14 md:pb-0')}>
