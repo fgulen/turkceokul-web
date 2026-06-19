@@ -10,7 +10,6 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
-import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -296,7 +295,6 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
-      <AppNav />
 
       <main className="max-w-[1000px] mx-auto px-4 py-8">
         {/* Geri */}

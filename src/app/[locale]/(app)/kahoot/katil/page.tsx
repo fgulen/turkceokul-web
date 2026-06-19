@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Users, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { useKahoot, type LeaderboardSatir } from '@/hooks/use-kahoot';
 import { cn } from '@/lib/utils';
@@ -107,7 +106,6 @@ export default function KahootKatilPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
       <main className="max-w-[480px] mx-auto px-4 py-10">
         <AnimatePresence mode="wait">
 

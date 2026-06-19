@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, Zap, Heart } from 'lucide-react';
-import { AppNav } from '@/components/app-nav';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -231,8 +230,9 @@ export default function EtkinlikPage({
   }
 
   function renderPlayer(e: EtkinlikData) {
-    const props = { etkinlik: e, onComplete: handleComplete };
+    const props = { etkinlik: e, onComplete: handleComplete, kitapId, uniteId };
     switch (e.etkinlikTuru) {
+      case 'CoktanSecmeli': return <CoktanSecmeliPlayer key={key} {...props} />;
       case 'AkilliKart': return <AkilliKartPlayer key={key} {...props} />;
       case 'Quiz': return <QuizPlayer key={key} {...props} />;
       case 'KelimeleriEslestir': return <KelimeleriEslestirPlayer key={key} {...props} />;
@@ -273,7 +273,6 @@ export default function EtkinlikPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
       <main className="max-w-2xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="mb-8">

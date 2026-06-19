@@ -10,7 +10,6 @@ import {
   Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -429,7 +428,6 @@ export default function AIIcerikPage() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
-      <AppNav />
       <main className="max-w-[1000px] mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">

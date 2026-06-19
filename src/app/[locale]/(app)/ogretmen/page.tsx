@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
-import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -151,7 +150,6 @@ export default function OgretmenDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
-      <AppNav />
 
       <main className="max-w-[1200px] mx-auto px-4 py-10">
         {/* Başlık */}

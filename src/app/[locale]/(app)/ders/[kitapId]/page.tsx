@@ -10,7 +10,6 @@ import {
   BookOpen, BookMarked, Headphones, PenLine, Languages, Trophy, Sparkles,
   Book, List,
 } from 'lucide-react';
-import { AppNav } from '@/components/app-nav';
 import { PlusBanner } from '@/components/plus-banner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
@@ -479,7 +478,6 @@ export default function DersPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
 
       <div className="max-w-[1200px] mx-auto px-4 h-[calc(100vh-4rem)]">
         <div className="flex h-full py-6">

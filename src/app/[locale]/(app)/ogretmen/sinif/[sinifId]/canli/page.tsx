@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Play, Users, Trophy, Wifi, ChevronRight, Square, AlertCircle } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { AppNav } from '@/components/app-nav';
 import { api } from '@/lib/api';
 import { useKahoot } from '@/hooks/use-kahoot';
 import { cn } from '@/lib/utils';
@@ -100,7 +99,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
       <main className="max-w-[800px] mx-auto px-4 py-8">
         <Link href={`/ogretmen/sinif/${id}`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="size-4" />
