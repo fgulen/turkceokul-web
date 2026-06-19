@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LayoutDashboard, LogOut, Trophy, User, Wifi, Zap } from 'lucide-react';
+import { Flame, Heart, LayoutDashboard, LogOut, Sparkles, Trophy, User, Wifi, Zap } from 'lucide-react';
 import { useAuthStore, AuthUser } from '@/stores/auth';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
@@ -260,6 +260,33 @@ export function AppNav() {
         </div>
       </div>
     </header>
+
+    {/* Öğretmen / KurumYoneticisi / UlkeTemsilcisi mobil bottom bar */}
+    {mounted && hydrated && user && (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+        {[
+          { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Panelim'   },
+          { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik' },
+        ].map(({ href, Icon, label }) => {
+          const active = href === '/ogretmen/ai-icerik'
+            ? pathname === href
+            : pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik';
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+                active ? 'text-primary' : 'text-slate-400',
+              )}
+            >
+              <Icon className={cn('size-5', active && 'text-primary')} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    )}
 
     {/* Öğrenci mobil bottom bar */}
     {mounted && hydrated && user?.role === 'Ogrenci' && (

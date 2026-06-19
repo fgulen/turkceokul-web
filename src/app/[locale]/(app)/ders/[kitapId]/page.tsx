@@ -563,7 +563,7 @@ export default function DersPage({
                     <>
                       {/* Skill Tabs - Footer row with light grey background */}
                       <div className="bg-[#F8FAFC] rounded-xl p-1 mb-6">
-                        <nav className="flex gap-1 overflow-x-auto scrollbar-none snap-x snap-mandatory -mx-2 px-2">
+                        <nav className="flex gap-1 overflow-x-auto scrollbar-none [touch-action:pan-x] -mx-2 px-2">
                           {availableTabs.map(tab => {
                             const Icon = BOLUM_ICONS[tab];
                             const tabColors = getBolumZigzagColor(tab);

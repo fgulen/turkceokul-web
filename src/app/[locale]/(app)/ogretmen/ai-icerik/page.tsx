@@ -440,7 +440,8 @@ export default function AIIcerikPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6 overflow-x-auto">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6 overflow-x-auto [touch-action:pan-x]">
+          <div className="flex gap-1">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -459,6 +460,7 @@ export default function AIIcerikPage() {
               )}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Kredi göstergesi */}
