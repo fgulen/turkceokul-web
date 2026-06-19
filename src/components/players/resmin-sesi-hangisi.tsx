@@ -5,14 +5,20 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Volume2, CheckCircle2, XCircle } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
-import { ProgressDots, PlayingBars, NextButton, NavCounter, ActivityHint } from './ui';
+import { GameHUD } from '@/components/game/game-hud';
+import { PlayingBars, NextButton, NavCounter, ActivityHint } from './ui';
 
 interface Answer { detayId: string; secilen: string; dogru: string; sonuc: boolean }
 
 export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
+  const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
   const { play } = useGameSound();
+
+  const [localKalp, setLocalKalp] = useState(initKalp);
+  const [combo, setCombo] = useState(0);
 
   // Ses seçenekleri tüm aktivite boyunca aynı sırada karışık kalır
   const sesSecenekleri = useMemo(
@@ -62,6 +68,15 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
     if (!secilen) return;
     const isCorrect = secilen === correct;
     play(isCorrect ? 'correct' : 'wrong');
+
+    if (isCorrect) {
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      if ([2, 3, 5, 10].includes(newCombo)) play('combo');
+    } else {
+      setCombo(0);
+      setLocalKalp((k) => Math.max(0, k - 1));
+    }
 
     const newAnswers = [...answers, {
       detayId: current.id,
@@ -139,7 +154,13 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm md:max-w-lg mx-auto">
-      <ProgressDots total={detaylar.length} activeIndex={index} />
+      <GameHUD
+        soruNo={index}
+        toplamSoru={detaylar.length}
+        kalp={localKalp}
+        combo={combo}
+        etiket="Resmin Sesi"
+      />
       <ActivityHint>Resmin sesini bul.</ActivityHint>
 
       {/* Resim */}
