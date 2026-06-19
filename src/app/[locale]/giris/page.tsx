@@ -37,9 +37,44 @@ export default function GirisPage() {
     }
   }
 
+  const CHARS: { ch: string; top: string; left: string; size: number; rotate: number }[] = [
+    { ch: 'Ğ', top: '8%',  left: '6%',  size: 160, rotate: -18 },
+    { ch: 'Ş', top: '12%', left: '82%', size: 140, rotate: 14  },
+    { ch: 'Ü', top: '55%', left: '3%',  size: 180, rotate: -8  },
+    { ch: 'Ö', top: '72%', left: '88%', size: 150, rotate: 20  },
+    { ch: 'İ', top: '82%', left: '18%', size: 130, rotate: -22 },
+    { ch: 'Ç', top: '38%', left: '91%', size: 170, rotate: 10  },
+    { ch: 'Â', top: '25%', left: '2%',  size: 120, rotate: 30  },
+    { ch: 'Ğ', top: '90%', left: '70%', size: 110, rotate: -12 },
+  ];
+
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-muted flex items-center justify-center p-4" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Dekoratif Türkçe harfler */}
+      {CHARS.map((c, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: c.top,
+            left: c.left,
+            fontSize: c.size,
+            fontWeight: 900,
+            lineHeight: 1,
+            color: '#1b75bc',
+            opacity: 0.055,
+            transform: `rotate(${c.rotate}deg)`,
+            userSelect: 'none',
+            pointerEvents: 'none',
+            fontFamily: 'inherit',
+          }}
+        >
+          {c.ch}
+        </span>
+      ))}
+
+      <div className="w-full max-w-sm" style={{ position: 'relative', zIndex: 1 }}>
         <Link href="/" className="flex justify-center mb-8">
           <Logo size="md" />
         </Link>
