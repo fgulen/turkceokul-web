@@ -204,7 +204,7 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm min-h-[calc(100%-1.5rem)]">
+    <div className="flex-1 relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
       {/* Decorative SVGs */}
       {/* Mountains - top left */}
       <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
@@ -611,7 +611,7 @@ export default function DersPage({
 
                 {/* Scrollable Adventure Path */}
                 {!selectedUnite.kilitli && etkinlikler?.length ? (
-                  <div className="flex-1 overflow-y-auto scrollbar-none min-h-0">
+                  <div className="flex-1 overflow-y-auto scrollbar-none min-h-0 flex flex-col">
                     <AdventurePath
                       etkinlikler={filteredEtkinlikler}
                       uniteId={selectedUnite.id}
