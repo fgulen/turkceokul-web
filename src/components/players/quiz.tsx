@@ -156,7 +156,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
                   ? { x: [0, -10, 10, -7, 7, -4, 4, 0] }
                   : {}
               }
-              transition={{ duration: 0.38 }}
+              transition={{ duration: 0.38, type: 'tween' }}
             >
               {opt}
             </motion.button>

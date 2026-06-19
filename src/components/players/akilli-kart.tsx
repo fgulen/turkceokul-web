@@ -136,7 +136,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         >
           {/* SIZER */}
           <div style={{ visibility: 'hidden' }} aria-hidden="true" className="w-full rounded-2xl overflow-hidden">
-            {imageMode && <img src={imgUrl!} alt="" className="w-full h-auto block" />}
+            {imageMode && <img src={imgUrl!} alt="" className="w-full max-h-52 object-cover block" />}
             <div className={cn('flex flex-col items-center gap-3 px-6 py-5', !imageMode && 'min-h-44 justify-center')}>
               <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
               {sesUrl && <div className="size-10 rounded-full" />}
@@ -157,7 +157,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           >
             {imageMode && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imgUrl!} alt={word} className="w-full h-auto block" draggable={false} />
+              <img src={imgUrl!} alt={word} className="w-full max-h-52 object-cover block" draggable={false} />
             )}
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
               {!imageMode && (
@@ -182,7 +182,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           >
             {imageMode && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imgUrl!} alt={back} className="w-full h-auto block" draggable={false} />
+              <img src={imgUrl!} alt={back} className="w-full max-h-52 object-cover block" draggable={false} />
             )}
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
               <div className="flex items-center justify-center gap-2">

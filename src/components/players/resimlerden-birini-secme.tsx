@@ -174,7 +174,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                   ? { x: [0, -8, 8, -6, 6, -3, 3, 0] }
                   : {}
               }
-              transition={{ duration: 0.38 }}
+              transition={{ duration: 0.38, type: 'tween' }}
               className={cn(
                 'relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-muted',
                 !revealed && 'border-border hover:border-primary hover:shadow-md cursor-pointer',

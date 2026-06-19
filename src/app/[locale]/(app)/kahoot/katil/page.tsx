@@ -106,7 +106,7 @@ export default function KahootKatilPage() {
 
   return (
     <div className="bg-background">
-      <main className="max-w-[480px] mx-auto px-4 py-10">
+      <main className="max-w-[480px] mx-auto px-4 py-3">
         <AnimatePresence mode="wait">
 
           {/* KOD GİRİŞ */}

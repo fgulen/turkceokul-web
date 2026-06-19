@@ -245,7 +245,7 @@ export function AppNav() {
                         id="nav-xp-counter"
                         className="text-xs sm:text-sm tabular-nums"
                         animate={xpPulse ? { scale: [1, 1.65, 1.2, 1] } : {}}
-                        transition={{ duration: 0.45, type: 'spring', stiffness: 300, damping: 15 }}
+                        transition={{ duration: 0.45, type: 'tween', ease: 'easeOut' }}
                       >
                         {user.puan.toLocaleString('tr', { maximumFractionDigits: 0 })}
                       </motion.span>
