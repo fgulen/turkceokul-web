@@ -206,9 +206,14 @@ function KayitForm() {
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-            {/* Tab'a özel alan — sabit yükseklik, ortak alanları kaydırmaz */}
-            <div style={{ minHeight: 96 }}>
-              {tab === "kurumsal" ? (
+            {/* Tab'a özel alan — CSS Grid overlay: her iki içerik DOM'da, yükseklik sabit */}
+            <div style={{ display: "grid" }}>
+              {/* Kurumsal panel */}
+              <div style={{
+                gridArea: "1/1",
+                visibility: tab === "kurumsal" ? "visible" : "hidden",
+                pointerEvents: tab === "kurumsal" ? "auto" : "none",
+              }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#414751", marginBottom: 5 }}>
@@ -221,6 +226,7 @@ function KayitForm() {
                       onChange={field("kurumAdi")}
                       placeholder="Ankara Türkçe Dil Okulu"
                       autoComplete="organization"
+                      tabIndex={tab === "kurumsal" ? undefined : -1}
                     />
                   </div>
                   <div>
@@ -235,10 +241,18 @@ function KayitForm() {
                       placeholder="TR-ANKA-X4K9"
                       maxLength={11}
                       style={{ letterSpacing: "0.06em", fontSize: 12, fontFamily: "monospace" }}
+                      tabIndex={tab === "kurumsal" ? undefined : -1}
                     />
                   </div>
                 </div>
-              ) : (
+              </div>
+
+              {/* Bireysel panel */}
+              <div style={{
+                gridArea: "1/1",
+                visibility: tab === "bireysel" ? "visible" : "hidden",
+                pointerEvents: tab === "bireysel" ? "auto" : "none",
+              }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "9px 13px", display: "flex", alignItems: "center", gap: 8 }}>
                     <Brain style={{ width: 13, height: 13, color: "#16a34a", flexShrink: 0 }} />
@@ -249,7 +263,7 @@ function KayitForm() {
                     <span style={{ fontSize: 13, color: "#1d4ed8" }}>Bir okul veya kurumdan mı geliyorsun? <strong>Öğretmeninden sınıf kodunu iste</strong>, seni sınıfına eklesin.</span>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Ortak alanlar — tab değişse de sabit konumda */}
