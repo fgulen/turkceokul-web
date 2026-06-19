@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { HelpChat } from '@/components/ogretmen/HelpChat';
 import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
@@ -211,6 +212,21 @@ export default function AIIcerikPage() {
     enabled: !!user,
   });
 
+  const { data: krediData } = useQuery({
+    queryKey: ['ai-kredi'],
+    queryFn: () => api.get('/api/ai/kredi').then(r => r.data as {
+      kalan: number; toplam: number; lisansli: boolean;
+    }),
+    enabled: !!user,
+    staleTime: 0,
+  });
+
+  const queryClient = useQueryClient();
+
+  const limitAsili = krediData
+    ? krediData.kalan === 0 && !krediData.lisansli
+    : false;
+
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
     onSuccess: () => gecmisYenile(),
@@ -254,6 +270,7 @@ export default function AIIcerikPage() {
       }).then(r => r.data);
     },
     onSuccess: (data: unknown) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-kredi'] });
       setHata('');
       setDuzenlemeModuAktif(false);
       const tabId = aktifTab;
@@ -446,6 +463,39 @@ export default function AIIcerikPage() {
           ))}
         </div>
 
+        {/* Kredi göstergesi */}
+        {krediData && !krediData.lisansli && (
+          <div className={cn(
+            'text-xs mb-3',
+            krediData.kalan > 5
+              ? 'text-slate-400'
+              : krediData.kalan > 0
+                ? 'text-amber-500'
+                : 'text-red-500'
+          )}>
+            AI Deneme Kredisi: {krediData.kalan} / {krediData.toplam}
+          </div>
+        )}
+
+        {/* Lockout banner */}
+        {limitAsili && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 mb-4 text-sm">
+            <p className="font-medium text-red-700 mb-1">
+              AI deneme krediniz doldu.
+            </p>
+            <p className="text-slate-500 mb-3">
+              Etkinlik üretmeye devam etmek için lisans alın veya
+              okulunuz / kurumunuzla iletişime geçin.
+            </p>
+            <a
+              href="mailto:info@turkceokulu.com?subject=AI%20Lisans%20Talebi"
+              className="inline-flex items-center gap-1 text-primary underline underline-offset-2 text-xs font-medium"
+            >
+              Lisans Hakkında Bilgi Al →
+            </a>
+          </div>
+        )}
+
         <div className="grid grid-cols-[300px_1fr] gap-6 items-start">
           {/* Form panel */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
@@ -539,7 +589,7 @@ export default function AIIcerikPage() {
 
             <button
               onClick={() => uretMutation.mutate()}
-              disabled={!canUret || uretMutation.isPending}
+              disabled={!canUret || uretMutation.isPending || limitAsili}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors text-sm"
             >
               {uretMutation.isPending
@@ -701,6 +751,7 @@ export default function AIIcerikPage() {
           </section>
         )}
       </main>
+      <HelpChat />
     </div>
   );
 }
