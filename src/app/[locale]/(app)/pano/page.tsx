@@ -90,8 +90,8 @@ export default function PanoPage() {
       <main className="max-w-[1200px] mx-auto px-4 py-10">
         {/* Greeting */}
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-primary">Selam, {user.name}!</h1>
-          <p className="text-muted-foreground mt-0.5 text-sm">Bugün ne öğreneceksin?</p>
+          <h1 className="text-2xl font-bold text-foreground">Selam, {user.name}! 👋</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Bugün ne öğreniyorsun?</p>
         </div>
 
         {/* Stats */}
