@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LogOut, Trophy, User, Wifi, Zap } from 'lucide-react';
+import { Flame, Heart, LayoutDashboard, LogOut, Trophy, User, Wifi, Zap } from 'lucide-react';
 import { useAuthStore, AuthUser } from '@/stores/auth';
-import { PlusBanner } from '@/components/plus-banner';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 
@@ -122,6 +121,7 @@ export function AppNav() {
   }
 
   return (
+    <>
     <header className="bg-white sticky top-0 z-[70] border-b border-slate-100 shadow-sm w-full">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo */}
@@ -251,7 +251,6 @@ export function AppNav() {
                       </motion.span>
                     </span>
                   </div>
-                  <PlusBanner variant="compact" className="hidden sm:flex" />
                 </>
               )}
 
@@ -261,5 +260,32 @@ export function AppNav() {
         </div>
       </div>
     </header>
+
+    {/* Öğrenci mobil bottom bar */}
+    {mounted && hydrated && user?.role === 'Ogrenci' && (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+        {[
+          { href: '/pano',         Icon: LayoutDashboard, label: 'Pano'   },
+          { href: '/lig',          Icon: Trophy,          label: 'Lig'    },
+          { href: '/kahoot/katil', Icon: Wifi,            label: 'Kahoot' },
+        ].map(({ href, Icon, label }) => {
+          const active = pathname === href || (href !== '/pano' && pathname?.startsWith(href));
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+                active ? 'text-primary' : 'text-slate-400',
+              )}
+            >
+              <Icon className={cn('size-5', active && 'text-primary')} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    )}
+    </>
   );
 }

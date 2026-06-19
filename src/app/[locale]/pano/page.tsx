@@ -89,7 +89,7 @@ export default function PanoPage() {
     <div className="min-h-screen bg-background">
       <AppNav />
 
-      <main className="max-w-[1200px] mx-auto px-4 py-10">
+      <main className="max-w-[1200px] mx-auto px-4 py-10 pb-24 md:pb-10">
         {/* Greeting */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Selam, {user.name}!</h1>
