@@ -215,16 +215,16 @@ export default function AIIcerikPage() {
   const { data: krediData } = useQuery({
     queryKey: ['ai-kredi'],
     queryFn: () => api.get('/api/ai/kredi').then(r => r.data as {
-      kalan: number; toplam: number; lisansli: boolean;
+      kalan: number | null; toplam: number | null; lisansli: boolean;
     }),
     enabled: !!user,
-    staleTime: 0,
+    staleTime: 30_000,
   });
 
   const queryClient = useQueryClient();
 
-  const limitAsili = krediData
-    ? krediData.kalan === 0 && !krediData.lisansli
+  const limitAsili = krediData && !krediData.lisansli
+    ? krediData.kalan === 0
     : false;
 
   const silMutation = useMutation({
@@ -464,7 +464,7 @@ export default function AIIcerikPage() {
         </div>
 
         {/* Kredi göstergesi */}
-        {krediData && !krediData.lisansli && (
+        {krediData && !krediData.lisansli && krediData.kalan != null && krediData.toplam != null && (
           <div className={cn(
             'text-xs mb-3',
             krediData.kalan > 5

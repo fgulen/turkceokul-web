@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 import {
   Sheet,
@@ -35,6 +35,7 @@ export function HelpChat() {
   const [showBalon, setShowBalon] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const seen = localStorage.getItem(SEEN_KEY);
@@ -49,7 +50,11 @@ export function HelpChat() {
   }, []);
 
   useEffect(() => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages));
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages));
+    }, 300);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [messages]);
 
   const handleOpen = () => {
