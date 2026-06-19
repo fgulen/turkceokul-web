@@ -204,7 +204,7 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="grow shrink-0 relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
+    <div className="grow shrink-0 relative rounded-2xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
       {/* Decorative SVGs */}
       {/* Mountains - top left */}
       <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
@@ -284,16 +284,12 @@ function UniteSidebarItem({
       onClick={onClick}
       disabled={isLocked}
       className={cn(
-        'w-full text-left px-4 py-3 rounded-lg transition-all relative group',
-        isActive && 'bg-white shadow-sm border border-border',
-        !isActive && 'hover:bg-white/50',
+        'w-full text-left px-4 py-3 rounded-xl transition-all group',
+        isActive && 'bg-primary/10',
+        !isActive && 'hover:bg-white/60',
         isLocked && 'cursor-not-allowed opacity-60 hover:bg-transparent',
       )}
     >
-      {/* Active: 4px solid green left border */}
-      {isActive && (
-        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-sm bg-primary" />
-      )}
 
       <div className="flex items-center gap-3">
         {/* Icon */}
@@ -381,7 +377,6 @@ function UniteHero({ unite, kitapName, kitapId }: { unite: Unite; kitapName?: st
         <div className="flex items-start justify-between gap-3 relative z-10">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-slate-900">{unite.name}</h2>
-            {kitapName && <p className="text-xs text-muted-foreground mt-0.5 truncate">{kitapName}</p>}
           </div>
           {hasCount && !unite.kilitli && (
             <div className="text-right shrink-0">
