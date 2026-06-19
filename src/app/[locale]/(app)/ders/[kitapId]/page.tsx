@@ -204,7 +204,7 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="grow shrink-0 relative rounded-2xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
+    <div className="grow shrink-0 relative overflow-hidden path-zigzag py-10 px-6 sm:px-10">
       {/* Decorative SVGs */}
       {/* Mountains - top left */}
       <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
@@ -363,7 +363,7 @@ function UniteHero({ unite, kitapName, kitapId }: { unite: Unite; kitapName?: st
       </div>
 
       {/* Desktop: hero card */}
-      <div className="hidden sm:block bg-gradient-to-br from-card to-primary/[0.04] border border-border rounded-2xl p-5 mb-6 overflow-hidden relative shadow-sm">
+      <div className="hidden sm:block bg-gradient-to-br from-transparent to-primary/[0.04] p-5 relative border-b border-border/30">
         <div className="absolute -top-4 -right-4 opacity-[0.16] pointer-events-none select-none">
           <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 140L70 30L120 140H20Z" fill="currentColor" className="text-primary" />
@@ -527,9 +527,10 @@ export default function DersPage({
           </aside>
 
           {/* ── Main Content ── */}
-          <main className="flex-1 min-w-0 flex flex-col h-full px-4 lg:px-6">
+          <main className="flex-1 min-w-0 flex flex-col h-full lg:pl-6">
+          <div className="flex flex-col flex-1 min-h-0 px-4 sm:px-0 sm:rounded-2xl sm:bg-card sm:border sm:border-border/50 sm:shadow-sm sm:overflow-hidden">
             {/* Breadcrumbs — sadece desktop */}
-            <nav className="hidden sm:block mb-4 shrink-0">
+            <nav className="hidden sm:block px-5 pt-4 pb-3 shrink-0 border-b border-border/30">
               <ol className="flex items-center gap-1.5 text-sm">
                 <li>
                   <Link href="/pano" className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5" title="Pano">
@@ -576,7 +577,7 @@ export default function DersPage({
                   ) : (
                     <>
                       {/* Skill Tabs - Footer row with light grey background */}
-                      <div className="bg-[#F8FAFC] rounded-xl p-1 mb-6">
+                      <div className="bg-[#F8FAFC] rounded-xl p-1 mb-4 mx-5 mt-3">
                         <nav className="flex gap-1">
                           {availableTabs.map(tab => {
                             const Icon = BOLUM_ICONS[tab];
@@ -622,6 +623,7 @@ export default function DersPage({
                 Bir ünite seç.
               </p>
             ) : null}
+          </div>
           </main>
 
         </div>
