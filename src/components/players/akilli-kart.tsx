@@ -2,14 +2,14 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { GameHUD } from '@/components/game/game-hud';
-import { ProgressDots, PlayingBars, ActivityHint } from './ui';
+import { ProgressDots, AudioPlayButton, ActivityHint } from './ui';
 
 const XP_BASE = 8;
 
@@ -136,10 +136,10 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         >
           {/* SIZER */}
           <div style={{ visibility: 'hidden' }} aria-hidden="true" className="w-full rounded-2xl overflow-hidden">
-            {imageMode && <img src={imgUrl!} alt="" className="w-full max-h-52 object-cover block" />}
-            <div className={cn('flex flex-col items-center gap-3 px-6 py-5', !imageMode && 'min-h-44 justify-center')}>
+            {imageMode && <img src={imgUrl!} alt="" className="w-full h-auto block" />}
+            <div className={cn('flex flex-col items-center gap-2 px-6 py-3', !imageMode && 'min-h-44 justify-center')}>
               <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
-              {sesUrl && <div className="size-10 rounded-full" />}
+              {sesUrl && <div className="size-9 rounded-full" />}
             </div>
           </div>
 
@@ -157,9 +157,9 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           >
             {imageMode && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imgUrl!} alt={word} className="w-full max-h-52 object-cover block" draggable={false} />
+              <img src={imgUrl!} alt={word} className="w-full h-auto block" draggable={false} />
             )}
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 py-3">
               {!imageMode && (
                 <p className="text-2xl font-bold text-center leading-snug">{word}</p>
               )}
@@ -182,24 +182,18 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           >
             {imageMode && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imgUrl!} alt={back} className="w-full max-h-52 object-cover block" draggable={false} />
+              <img src={imgUrl!} alt={back} className="w-full h-auto block" draggable={false} />
             )}
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 py-3">
               <div className="flex items-center justify-center gap-2">
                 <p className="text-3xl font-bold text-primary text-center leading-tight">
                   {imageMode ? word : back}
                 </p>
                 {sesUrl && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); playWordAudio(sesUrl); }}
-                    className="shrink-0 size-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                    aria-label="Sesi çal"
-                  >
-                    {wordPlaying
-                      ? <PlayingBars size="sm" color="bg-primary" />
-                      : <Volume2 className="size-4 text-primary" />
-                    }
-                  </button>
+                  <AudioPlayButton
+                    playing={wordPlaying}
+                    onPlay={() => playWordAudio(sesUrl)}
+                  />
                 )}
               </div>
             </div>

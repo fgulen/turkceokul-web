@@ -80,6 +80,31 @@ export function NextButton({ isLast, onClick, disabled }: NextButtonProps) {
   );
 }
 
+// ─── Audio Play Button ─────────────────────────────────────────────────────────
+// Standart ses çal butonu — akıllı kart, yazıya tıkla, resme tıkla, vb.
+interface AudioPlayButtonProps {
+  playing: boolean;
+  onPlay: () => void;
+  className?: string;
+}
+export function AudioPlayButton({ playing, onPlay, className }: AudioPlayButtonProps) {
+  return (
+    <button
+      onClick={onPlay}
+      aria-label="Sesi çal"
+      className={cn(
+        'shrink-0 size-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors',
+        className,
+      )}
+    >
+      {playing
+        ? <PlayingBars size="sm" color="bg-primary" />
+        : <Volume2 className="size-4 text-primary" />
+      }
+    </button>
+  );
+}
+
 // ─── Nav Counter ───────────────────────────────────────────────────────────────
 export function NavCounter({ index, total }: { index: number; total: number }) {
   return (

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImageOff, Volume2 } from 'lucide-react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { ImageOff } from 'lucide-react';
+import { toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
-import { ProgressDots, PlayingBars, NextButton, NavCounter, ActivityHint } from './ui';
+import { ProgressDots, AudioPlayButton, NextButton, NavCounter, ActivityHint } from './ui';
 
 export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -41,8 +41,6 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   return (
     <div className="max-w-sm md:max-w-lg mx-auto">
       <ProgressDots total={detaylar.length} activeIndex={index} />
-      <ActivityHint>Resme tıkla, sesi dinle.</ActivityHint>
-
       {/* Kart */}
       <div className="rounded-xl border border-border/50 bg-card shadow-sm mb-5 overflow-hidden">
         <div className="relative aspect-[382/286] overflow-hidden bg-muted">
@@ -71,28 +69,13 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
               )}
             </motion.div>
           </AnimatePresence>
-
-          {/* Ses butonu — resim üstünde */}
-          {sesUrl && (
-            <button
-              onClick={() => play(sesUrl)}
-              aria-label="Sesi çal"
-              className="absolute inset-0 w-full h-full flex items-center justify-center"
-            >
-              <span className={cn(
-                'size-14 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95',
-                playing
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-white/90 text-primary hover:bg-white',
-              )}>
-                {playing
-                  ? <PlayingBars size="lg" />
-                  : <Volume2 className="size-6" />
-                }
-              </span>
-            </button>
-          )}
         </div>
+
+        {sesUrl && (
+          <div className="flex justify-center py-3 border-t border-border/40">
+            <AudioPlayButton playing={playing} onPlay={() => play(sesUrl)} />
+          </div>
+        )}
       </div>
 
       <NextButton isLast={index === detaylar.length - 1} onClick={handleNext} />

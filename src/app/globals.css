@@ -207,18 +207,18 @@
 
 /* Akıllı Kart oyuncu animasyonları */
 .ak-card-in {
-  animation: ak-card-in 0.2s ease-out both;
+  animation: ak-card-in 0.2s ease-out backwards;
 }
 @keyframes ak-card-in {
   from { opacity: 0; transform: translateX(50px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; }
 }
 .ak-btns-in {
-  animation: ak-btns-in 0.15s ease-out both;
+  animation: ak-btns-in 0.15s ease-out backwards;
 }
 @keyframes ak-btns-in {
   from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; }
 }
 .ak-burst {
   animation: ak-burst 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
