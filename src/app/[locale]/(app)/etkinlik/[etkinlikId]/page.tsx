@@ -101,13 +101,24 @@ function ResultScreen({
 
   return (
     <div className="result-screen-in fixed inset-0 gradient-result-bg flex flex-col items-center justify-center p-6 z-[60]">
-      {/* Dekoratif floating elementler */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[12%] left-[14%] w-3 h-3 bg-primary/30 rounded-full" />
-        <div className="absolute top-[18%] right-[18%] w-2.5 h-2.5 bg-purple-400/30 rounded-sm rotate-12" />
-        <div className="absolute bottom-[22%] left-[10%] w-5 h-2 bg-yellow-400/30 rounded-full -rotate-12" />
-        <div className="absolute top-[42%] right-[8%] w-2 h-5 bg-primary/20 rounded-full rotate-[25deg]" />
-        <div className="absolute bottom-[35%] right-[15%] w-3 h-3 bg-purple-300/25 rounded-full" />
+      {/* Dekoratif Türkçe harfler */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        {[
+          { ch: 'Ğ', top: '6%',  left: '5%',  size: 150, rotate: -18 },
+          { ch: 'Ş', top: '10%', left: '80%', size: 130, rotate: 14  },
+          { ch: 'Ü', top: '52%', left: '2%',  size: 170, rotate: -8  },
+          { ch: 'Ö', top: '70%', left: '86%', size: 140, rotate: 20  },
+          { ch: 'İ', top: '80%', left: '15%', size: 120, rotate: -22 },
+          { ch: 'Ç', top: '35%', left: '88%', size: 160, rotate: 10  },
+        ].map((c, i) => (
+          <span key={i} style={{
+            position: 'absolute', top: c.top, left: c.left,
+            fontSize: c.size, fontWeight: 900, lineHeight: 1,
+            color: '#1b75bc', opacity: 0.07,
+            transform: `rotate(${c.rotate}deg)`,
+            userSelect: 'none', fontFamily: 'inherit',
+          }}>{c.ch}</span>
+        ))}
       </div>
 
       {/* Glass kart */}
@@ -273,9 +284,9 @@ export default function EtkinlikPage({
 
   return (
     <div className="bg-background">
-      <main className="max-w-2xl mx-auto px-4 py-10">
+      <main className="max-w-2xl mx-auto px-4 pt-3 pb-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-3">
           <button
             onClick={() => returnUrl ? router.push(returnUrl) : router.back()}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

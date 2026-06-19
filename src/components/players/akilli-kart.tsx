@@ -185,21 +185,23 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
               <img src={imgUrl!} alt={back} className="w-full h-auto block" draggable={false} />
             )}
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-5">
-              <p className="text-3xl font-bold text-primary text-center leading-tight">
-                {imageMode ? word : back}
-              </p>
-              {sesUrl && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); playWordAudio(sesUrl); }}
-                  className="size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                  aria-label="Sesi çal"
-                >
-                  {wordPlaying
-                    ? <PlayingBars size="sm" color="bg-primary" />
-                    : <Volume2 className="size-4 text-primary" />
-                  }
-                </button>
-              )}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-3xl font-bold text-primary text-center leading-tight">
+                  {imageMode ? word : back}
+                </p>
+                {sesUrl && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); playWordAudio(sesUrl); }}
+                    className="shrink-0 size-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+                    aria-label="Sesi çal"
+                  >
+                    {wordPlaying
+                      ? <PlayingBars size="sm" color="bg-primary" />
+                      : <Volume2 className="size-4 text-primary" />
+                    }
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
