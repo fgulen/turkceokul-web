@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef, use } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Circle, Lock, Play, RotateCcw,
   BookOpen, BookMarked, Headphones, PenLine, Languages, Trophy, Sparkles,
-  Book, List,
+  Book, List, ChevronLeft,
 } from 'lucide-react';
 import { PlusBanner } from '@/components/plus-banner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -204,7 +204,7 @@ function AdventurePath({
   const firstUncompleted = firstUncompletedIdx >= 0 ? filtered[firstUncompletedIdx] : null;
 
   return (
-    <div className="relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm">
+    <div className="relative rounded-3xl overflow-hidden path-zigzag py-10 px-6 sm:px-10 mt-6 border border-border/40 shadow-sm min-h-[calc(100%-1.5rem)]">
       {/* Decorative SVGs */}
       {/* Mountains - top left */}
       <div className="absolute top-8 left-8 opacity-25 select-none pointer-events-none">
@@ -332,57 +332,76 @@ function UniteSidebarItem({
   );
 }
 
-function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string }) {
+function UniteHero({ unite, kitapName, kitapId }: { unite: Unite; kitapName?: string; kitapId: string }) {
   const hasCount = unite.toplamEtkinlik > 0;
   const pct = hasCount ? Math.round((unite.tamamlananEtkinlik / unite.toplamEtkinlik) * 100) : 0;
   const allDone = hasCount && unite.tamamlananEtkinlik === unite.toplamEtkinlik;
 
   return (
-    <div className="bg-gradient-to-br from-card to-primary/[0.04] border border-border rounded-2xl p-4 sm:p-5 mb-6 overflow-hidden relative shadow-sm">
-      {/* Decorative illustration - top right */}
-      <div className="absolute -top-4 -right-4 opacity-[0.16] pointer-events-none select-none">
-        <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Mountain */}
-          <path d="M20 140L70 30L120 140H20Z" fill="currentColor" className="text-primary" />
-          <path d="M60 140L90 60L120 140H60Z" fill="currentColor" className="text-primary/60" />
-          {/* Sun */}
-          <circle cx="110" cy="30" r="18" fill="currentColor" className="text-amber-400" />
-          {/* Trees */}
-          <path d="M30 140L45 100L60 140H30Z" fill="currentColor" className="text-emerald-500" />
-          <path d="M80 140L95 110L110 140H80Z" fill="currentColor" className="text-emerald-400" />
-          {/* Cloud */}
-          <ellipse cx="50" cy="50" rx="28" ry="12" fill="currentColor" className="text-sky-300" />
-        </svg>
-      </div>
-
-      <div className="flex items-start justify-between gap-3 relative z-10">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">{unite.name}</h2>
-          {kitapName && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{kitapName}</p>
+    <>
+      {/* Mobil: slim header */}
+      <div className="sm:hidden mb-5">
+        <Link
+          href="/pano"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary/70 mb-3"
+        >
+          <ChevronLeft className="size-3.5" />
+          <span className="truncate max-w-[200px]">{kitapName ?? 'Kitaplar'}</span>
+        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-slate-900 leading-snug">{unite.name}</h2>
+          {hasCount && !unite.kilitli && (
+            <span className={cn('shrink-0 text-sm font-bold tabular-nums', allDone ? 'text-emerald-600' : 'text-primary')}>
+              %{pct}
+            </span>
           )}
         </div>
         {hasCount && !unite.kilitli && (
-          <div className="text-right shrink-0">
-            <div className={cn('text-lg sm:text-xl font-extrabold tabular-nums leading-none', allDone ? 'text-emerald-600' : 'text-slate-900')}>
-              %{pct}
-            </div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-              {unite.tamamlananEtkinlik}/{unite.toplamEtkinlik}
-            </div>
-            <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden w-24 sm:w-32">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all duration-700',
-                  allDone ? 'bg-emerald-500' : 'progress-shimmer',
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+          <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all duration-700', allDone ? 'bg-emerald-500' : 'progress-shimmer')}
+              style={{ width: `${pct}%` }}
+            />
           </div>
         )}
       </div>
-    </div>
+
+      {/* Desktop: hero card */}
+      <div className="hidden sm:block bg-gradient-to-br from-card to-primary/[0.04] border border-border rounded-2xl p-5 mb-6 overflow-hidden relative shadow-sm">
+        <div className="absolute -top-4 -right-4 opacity-[0.16] pointer-events-none select-none">
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 140L70 30L120 140H20Z" fill="currentColor" className="text-primary" />
+            <path d="M60 140L90 60L120 140H60Z" fill="currentColor" className="text-primary/60" />
+            <circle cx="110" cy="30" r="18" fill="currentColor" className="text-amber-400" />
+            <path d="M30 140L45 100L60 140H30Z" fill="currentColor" className="text-emerald-500" />
+            <path d="M80 140L95 110L110 140H80Z" fill="currentColor" className="text-emerald-400" />
+            <ellipse cx="50" cy="50" rx="28" ry="12" fill="currentColor" className="text-sky-300" />
+          </svg>
+        </div>
+        <div className="flex items-start justify-between gap-3 relative z-10">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold text-slate-900">{unite.name}</h2>
+            {kitapName && <p className="text-xs text-muted-foreground mt-0.5 truncate">{kitapName}</p>}
+          </div>
+          {hasCount && !unite.kilitli && (
+            <div className="text-right shrink-0">
+              <div className={cn('text-xl font-extrabold tabular-nums leading-none', allDone ? 'text-emerald-600' : 'text-slate-900')}>
+                %{pct}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {unite.tamamlananEtkinlik}/{unite.toplamEtkinlik}
+              </div>
+              <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden w-32">
+                <div
+                  className={cn('h-full rounded-full transition-all duration-700', allDone ? 'bg-emerald-500' : 'progress-shimmer')}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -470,16 +489,16 @@ export default function DersPage({
   const filteredEtkinlikler = sortedEtkinlikler.filter(e => e.bolum === activeTab);
 
   if (!ready) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
 
-      <div className="max-w-[1200px] mx-auto px-4 h-[calc(100vh-4rem)]">
+      <div className="max-w-[1200px] mx-auto px-4 h-[calc(100dvh-4rem)]">
         <div className="flex h-full py-6">
 
           {/* ── Desktop Sidebar ── */}
@@ -514,8 +533,8 @@ export default function DersPage({
 
           {/* ── Main Content ── */}
           <main className="flex-1 min-w-0 flex flex-col h-full px-4 lg:px-6">
-            {/* Breadcrumbs */}
-            <nav className="mb-4 px-2 sm:px-0 shrink-0">
+            {/* Breadcrumbs — sadece desktop */}
+            <nav className="hidden sm:block mb-4 shrink-0">
               <ol className="flex items-center gap-1.5 text-sm">
                 <li>
                   <Link href="/pano" className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5" title="Pano">
@@ -549,7 +568,7 @@ export default function DersPage({
               <div className="flex flex-col flex-1 min-h-0">
                 {/* Sticky top: Hero + Tabs */}
                 <div className="shrink-0">
-                  <UniteHero unite={selectedUnite} kitapName={kitap?.name} />
+                  <UniteHero unite={selectedUnite} kitapName={kitap?.name} kitapId={kitapId} />
 
                   {selectedUnite.kilitli ? (
                     <p className="text-sm text-muted-foreground text-center py-10">
@@ -563,7 +582,7 @@ export default function DersPage({
                     <>
                       {/* Skill Tabs - Footer row with light grey background */}
                       <div className="bg-[#F8FAFC] rounded-xl p-1 mb-6">
-                        <nav className="flex gap-1 overflow-x-auto scrollbar-none [touch-action:pan-x] -mx-2 px-2">
+                        <nav className="flex gap-1">
                           {availableTabs.map(tab => {
                             const Icon = BOLUM_ICONS[tab];
                             const tabColors = getBolumZigzagColor(tab);
@@ -571,15 +590,16 @@ export default function DersPage({
                               <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
+                                title={tab}
                                 className={cn(
-                                  'flex-1 min-w-[100px] snap-start flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm transition-all shrink-0',
+                                  'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-1.5 sm:px-4 rounded-lg text-sm transition-all',
                                   activeTab === tab
                                     ? cn(tabColors.active, 'text-white shadow-md font-semibold scale-[1.02]')
                                     : 'text-muted-foreground hover:bg-white/70 hover:text-foreground font-medium',
                                 )}
                               >
-                                <span>{Icon}</span>
-                                <span>{tab}</span>
+                                <span className="shrink-0">{Icon}</span>
+                                <span className="hidden sm:inline">{tab}</span>
                               </button>
                             );
                           })}

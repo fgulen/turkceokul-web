@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useQuery } from '@tanstack/react-query';
@@ -160,7 +160,7 @@ export default function LigPage() {
   });
 
   if (!ready) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
@@ -170,7 +170,7 @@ export default function LigPage() {
   const benim = lig?.tablo?.find((s) => s.benimSatir);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
 
       <main className="mt-16 mb-32 max-w-[600px] mx-auto px-4">
 

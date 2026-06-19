@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -86,7 +86,7 @@ function KayitForm() {
   const benefits = tab === "kurumsal" ? KURUMSAL_BENEFITS : BIREYSEL_BENEFITS;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex" }}>
+    <div style={{ minHeight: "100dvh", display: "flex" }}>
 
       {/* Sol panel — marka */}
       <div
@@ -427,7 +427,7 @@ function MobileBenefitsBanner({ tab, benefits }: { tab: Tab; benefits: { Icon: R
 
 export default function KayitPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f9fafb" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100dvh", background: "#f9fafb" }} />}>
       <KayitForm />
     </Suspense>
   );

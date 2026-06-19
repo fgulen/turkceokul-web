@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -36,7 +36,7 @@ export default function SuperAdminPage() {
   if (!ready || !user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-[100dvh] bg-slate-50">
       <main className="max-w-[1200px] mx-auto px-4 py-8">
         <ImpersonationBanner />
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { use, useState, useRef, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -248,7 +248,7 @@ export default function OkumaPage({
   function next() { renditionRef.current?.next(); }
 
   if (!ready) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
@@ -256,7 +256,7 @@ export default function OkumaPage({
 
   if (!kitap) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Kitap bulunamadı.</p>
         <Link href="/pano" className="text-primary text-sm hover:underline">Panoya dön</Link>
       </div>

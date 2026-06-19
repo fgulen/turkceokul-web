@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { use, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -290,11 +290,11 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     setTimeout(() => setKodKopyalandi(false), 2000);
   }
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-[#F3F4F6]">
 
       <main className="max-w-[1000px] mx-auto px-4 py-8">
         {/* Geri */}

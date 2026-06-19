@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -100,7 +100,7 @@ export default function AdminPage() {
     },
   });
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   const tabs: { key: Sekme; label: string; icon: React.ReactNode; badge?: number }[] = [
@@ -110,7 +110,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-[#F3F4F6]">
       <main className="max-w-[1200px] mx-auto px-4 py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, ChevronRight, Key, Languages, Library, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
@@ -103,7 +103,7 @@ export default function ProfilPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-[#F3F4F6]">
 
       <main className="max-w-[1200px] mx-auto px-6 py-10">
         {/* Greeting */}

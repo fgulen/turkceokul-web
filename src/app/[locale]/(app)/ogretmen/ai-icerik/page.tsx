@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -420,14 +420,14 @@ export default function AIIcerikPage() {
         : girdi.trim().length > 0 || !!seciliUniteId;
 
   if (!ready) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-[#F3F4F6]">
       <main className="max-w-[1200px] mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -440,26 +440,27 @@ export default function AIIcerikPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6 overflow-x-auto [touch-action:pan-x]">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6">
           <div className="flex gap-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => tabDegistir(id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
-                aktifTab === id
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-              )}
-            >
-              <Icon className="size-4" />
-              {label}
-              {sonuclar[id] && aktifTab !== id && (
-                <span className="size-1.5 rounded-full bg-emerald-400 ml-0.5" />
-              )}
-            </button>
-          ))}
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => tabDegistir(id)}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  aktifTab === id
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                )}
+                title={label}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">{label}</span>
+                {sonuclar[id] && aktifTab !== id && (
+                  <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -496,7 +497,7 @@ export default function AIIcerikPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-[300px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 items-start">
           {/* Form panel */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
             <p className="text-xs font-medium text-slate-400">

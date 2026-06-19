@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Link, useRouter, useLocale } from "@/navigation";
@@ -70,7 +70,7 @@ const BOOK_RECS: Record<Level, { series: string; subtitle: string; desc: string;
 };
 
 const PAGE_STYLE: React.CSSProperties = {
-  minHeight: "100vh",
+  minHeight: "100dvh",
   background: "#f9fafb",
   display: "flex",
   flexDirection: "column",

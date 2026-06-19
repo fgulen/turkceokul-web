@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { BookMarked, BookOpen, CheckCircle2, Circle, Flame, Heart, Zap, Lock } from 'lucide-react';
@@ -81,11 +81,11 @@ export default function PanoPage() {
     enabled: !!user,
   });
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
 
       <main className="max-w-[1200px] mx-auto px-4 py-10">
         {/* Greeting */}

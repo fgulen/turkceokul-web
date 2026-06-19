@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { use, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -91,14 +91,14 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     : false;
 
   if (!ready) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       <main className="max-w-[800px] mx-auto px-4 py-8">
         <Link href={`/ogretmen/sinif/${id}`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="size-4" />

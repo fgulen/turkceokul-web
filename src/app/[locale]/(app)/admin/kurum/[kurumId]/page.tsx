@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { use, useState } from 'react';
 import Link from 'next/link';
@@ -58,11 +58,11 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
     },
   });
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-[#F3F4F6]">
       <main className="max-w-[800px] mx-auto px-4 py-8">
         <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="size-4" />

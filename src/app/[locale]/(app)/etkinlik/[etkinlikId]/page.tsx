@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { use, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -268,11 +268,11 @@ export default function EtkinlikPage({
     }
   }
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       <main className="max-w-2xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="mb-8">

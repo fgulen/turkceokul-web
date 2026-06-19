@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Link, useLocale, useRouter } from '@/navigation';
@@ -49,7 +49,7 @@ export default function GirisPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4" style={{ position: 'relative', overflow: 'hidden' }}>
+    <div className="min-h-[100dvh] bg-muted flex items-center justify-center p-4" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Dekoratif Türkçe harfler */}
       {CHARS.map((c, i) => (
         <span

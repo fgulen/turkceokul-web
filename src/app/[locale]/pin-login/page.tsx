@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter, useLocale } from '@/navigation';
@@ -33,7 +33,7 @@ export default function PinLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-xs">
         <div className="flex justify-center mb-8">
           <Logo size="md" />
