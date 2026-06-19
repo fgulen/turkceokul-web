@@ -89,12 +89,12 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
 
         {/* Sağ: locale switcher + auth */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Locale switcher */}
+          {/* Locale switcher — sadece masaüstünde */}
           <a
             href={alternateHref}
             title={isEn ? 'Türkçeye geç' : 'Switch to English'}
+            className="hidden md:flex"
             style={{
-              display: 'flex',
               alignItems: 'center',
               gap: 5,
               fontSize: 12,
@@ -113,10 +113,10 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
 
           <Link
             href="/giris"
-            className="hidden md:block"
             style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
           >
-            {auth.login}
+            <span className="hidden md:inline">{auth.login}</span>
+            <span className="md:hidden">{isEn ? 'Log In' : 'Giriş'}</span>
           </Link>
 
           <Link
