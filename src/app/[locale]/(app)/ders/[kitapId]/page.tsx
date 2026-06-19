@@ -44,13 +44,13 @@ function getCompletionState(maxPuan: number | null | undefined, denendi: boolean
 }
 
 const BOLUM_ICONS: Record<string, React.ReactNode> = {
-  Kelime: <BookOpen className="size-4" />,
-  Okuma: <BookMarked className="size-4" />,
-  Dinleme: <Headphones className="size-4" />,
-  Yazma: <PenLine className="size-4" />,
-  Dilbilgisi: <Languages className="size-4" />,
-  Değerlendirme: <Trophy className="size-4" />,
-  'AI Generated': <Sparkles className="size-4" />,
+  Kelime: <BookOpen className="size-5" />,
+  Okuma: <BookMarked className="size-5" />,
+  Dinleme: <Headphones className="size-5" />,
+  Yazma: <PenLine className="size-5" />,
+  Dilbilgisi: <Languages className="size-5" />,
+  Değerlendirme: <Trophy className="size-5" />,
+  'AI Generated': <Sparkles className="size-5" />,
 };
 
 const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'Dilbilgisi', 'Değerlendirme', 'AI Generated'];
@@ -588,7 +588,7 @@ export default function DersPage({
                                 onClick={() => setActiveTab(tab)}
                                 title={tab}
                                 className={cn(
-                                  'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-1.5 sm:px-4 rounded-lg text-sm transition-all',
+                                  'flex-1 flex items-center justify-center gap-1.5 py-3 px-1.5 sm:px-4 rounded-lg text-sm transition-all',
                                   activeTab === tab
                                     ? cn(tabColors.active, 'text-white shadow-md font-semibold scale-[1.02]')
                                     : 'text-muted-foreground hover:bg-white/70 hover:text-foreground font-medium',
