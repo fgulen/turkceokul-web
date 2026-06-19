@@ -6,7 +6,6 @@ import { bookCoverUrl } from '@/lib/book-covers';
 import { useEffect, useState } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
-import { AppNav } from '@/components/app-nav';
 import { PlusBanner } from '@/components/plus-banner';
 import { cn } from '@/lib/utils';
 import { Link } from '@/navigation';
@@ -87,9 +86,8 @@ export default function PanoPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
 
-      <main className="max-w-[1200px] mx-auto px-4 py-10 pb-24 md:pb-10">
+      <main className="max-w-[1200px] mx-auto px-4 py-10">
         {/* Greeting */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Selam, {user.name}!</h1>

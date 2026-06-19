@@ -5,7 +5,6 @@ import { Camera, Check, ChevronRight, Key, Languages, Library, LogOut, Mail, Pho
 import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
-import { AppNav } from '@/components/app-nav';
 import { PlusBanner } from '@/components/plus-banner';
 import { cn } from '@/lib/utils';
 
@@ -105,7 +104,6 @@ export default function ProfilPage() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
-      <AppNav />
 
       <main className="max-w-[1200px] mx-auto px-6 py-10">
         {/* Greeting */}

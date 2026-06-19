@@ -33,6 +33,8 @@ export type Cevap = { id: string; cevap: string };
 export interface PlayerProps {
   etkinlik: EtkinlikData;
   onComplete: (cevaplar: Cevap[]) => void;
+  kitapId?: string | null;
+  uniteId?: string | null;
 }
 
 export function getKelimeler(d: EtkinlikDetay): string[] {

@@ -111,7 +111,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
-      <main className="max-w-[1000px] mx-auto px-4 py-10">
+      <main className="max-w-[1200px] mx-auto px-4 py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>
           <p className="text-slate-500 text-sm mt-1">Öğretmen ve kurum yönetimi</p>

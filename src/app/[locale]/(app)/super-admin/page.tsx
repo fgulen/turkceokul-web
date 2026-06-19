@@ -10,7 +10,6 @@ import {
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { AppNav } from '@/components/app-nav';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
@@ -38,8 +37,7 @@ export default function SuperAdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <AppNav />
-      <main className="max-w-[1400px] mx-auto px-4 py-8">
+      <main className="max-w-[1200px] mx-auto px-4 py-8">
         <ImpersonationBanner />
 
         <div className="flex items-center gap-3 mb-6">

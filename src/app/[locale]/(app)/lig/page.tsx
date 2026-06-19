@@ -4,7 +4,6 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
-import { AppNav } from '@/components/app-nav';
 import { Award, Clock, Info, User } from 'lucide-react';
 
 // --- Sabitler ---
@@ -172,7 +171,6 @@ export default function LigPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav />
 
       <main className="mt-16 mb-32 max-w-[600px] mx-auto px-4">
 
