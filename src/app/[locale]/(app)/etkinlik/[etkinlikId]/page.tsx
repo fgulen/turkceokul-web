@@ -29,6 +29,10 @@ import { ResimlerdenBiriniSecmePlayer } from '@/components/players/resimlerden-b
 import { KelimeleriSiralaPlayer } from '@/components/players/kelimeleri-sirala';
 import { ResmeKelimeYazPlayer } from '@/components/players/resme-kelime-yaz';
 import { SesiDinleveKelimeYazPlayer } from '@/components/players/sesi-dinle-ve-kelime-yaz';
+import { KelimeleriGruplaPlayer } from '@/components/players/kelimeleri-grupla';
+import { KelimelerdenCumleYapPlayer } from '@/components/players/kelimelerden-cumle-yap';
+import { ResimliSoruCevapPlayer } from '@/components/players/resimli-soru-cevap';
+import { KelimeleriAyristirPlayer } from '@/components/players/kelimeleri-ayristir';
 
 interface CevapSonuc {
   puan: number;
@@ -263,6 +267,12 @@ export default function EtkinlikPage({
       case 'KelimeleriSirala': return <KelimeleriSiralaPlayer key={key} {...props} />;
       case 'ResmeKelimeYaz': return <ResmeKelimeYazPlayer key={key} {...props} />;
       case 'SesiDinleveKelimeYaz': return <SesiDinleveKelimeYazPlayer key={key} {...props} />;
+      case 'KelimeleriGrupla': return <KelimeleriGruplaPlayer key={key} {...props} />;
+      case 'KelimelerdenCumleYap': return <KelimelerdenCumleYapPlayer key={key} {...props} />;
+      case 'ResimliSoruCevap': return <ResimliSoruCevapPlayer key={key} {...props} />;
+      case 'KelimeleriAyristir': return <KelimeleriAyristirPlayer key={key} {...props} />;
+      case 'ResimSesEslestirmeDogruYanlis': return <ResimSesEslestirmePlayer key={key} {...props} />;
+      case 'MetinSesEslestirmeDogruYanlis': return <MetinSesEslestirmePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">
