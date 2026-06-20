@@ -25,6 +25,7 @@ export interface EtkinlikData {
   sesLink: string | null;
   videoLink: string | null;
   etkinlikTuru: string;
+  etkinlikTuruId: string;
   detaylar: EtkinlikDetay[];
 }
 

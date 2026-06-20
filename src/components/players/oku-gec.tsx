@@ -212,7 +212,7 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
               )}
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
               <div
-                className="text-lg md:text-xl leading-relaxed md:leading-loose"
+                className="text-lg md:text-xl leading-relaxed md:leading-loose font-mono whitespace-pre-wrap"
                 onMouseUp={handleTextMouseUp}
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description!) }}

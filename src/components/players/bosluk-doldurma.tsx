@@ -122,7 +122,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
         animate={{ opacity: 1, y: 0 }}
         className="bg-card border border-border rounded-2xl p-6 mb-5"
       >
-        <p className="text-lg font-semibold leading-loose text-left">
+        <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
           {parts.map((part, i) => (
             <span key={i}>
               {/* eslint-disable-next-line react/no-danger */}

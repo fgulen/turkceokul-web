@@ -2,9 +2,9 @@
 
 import { use, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/navigation';
+import { useRouter, useLocale } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, Zap, Heart } from 'lucide-react';
+import { ArrowLeft, Star, Zap, Heart, PenLine } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -201,6 +201,7 @@ export default function EtkinlikPage({
   const { etkinlikId } = use(params);
   const { user, ready } = useAuthGuard();
   const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
 
   const uniteId = searchParams.get('uniteId');
@@ -296,7 +297,7 @@ export default function EtkinlikPage({
     <div className="bg-background">
       <main className="max-w-2xl mx-auto px-4 pt-3 pb-8">
         {/* Header */}
-        <div className="mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <button
             onClick={() => returnUrl ? router.push(returnUrl) : router.back()}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -304,6 +305,15 @@ export default function EtkinlikPage({
             <ArrowLeft className="size-4" />
             Geri
           </button>
+          {user && (user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 'Editor') && (
+            <a
+              href={`/${locale}/ogretmen/etkinlik/${etkinlikId}/duzenle`}
+              className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
+            >
+              <PenLine className="size-4" />
+              <span className="hidden sm:inline">Düzenle</span>
+            </a>
+          )}
         </div>
 
         {/* Content */}

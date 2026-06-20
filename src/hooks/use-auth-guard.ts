@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 
-export function useAuthGuard(requiredRole?: 'Ogretmen' | 'Admin' | 'SuperAdmin') {
+export function useAuthGuard(requiredRole?: 'Ogretmen' | 'Admin' | 'SuperAdmin' | 'Editor') {
   const user = useAuthStore((s) => s.user);
   const hydrated = useAuthStore((s) => s._hasHydrated);
   const router = useRouter();
@@ -18,6 +18,8 @@ export function useAuthGuard(requiredRole?: 'Ogretmen' | 'Admin' | 'SuperAdmin')
         yetkili = user.role === 'SuperAdmin';
       } else if (requiredRole === 'Admin') {
         yetkili = user.role === 'Admin' || user.role === 'SuperAdmin';
+      } else if (requiredRole === 'Editor') {
+        yetkili = user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 'Editor';
       } else {
         yetkili = ['Ogretmen', 'Admin', 'KurumYoneticisi', 'UlkeTemsilcisi', 'SuperAdmin'].includes(user.role);
       }

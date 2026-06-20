@@ -4,7 +4,9 @@ import DOMPurify from 'dompurify';
 // Yalnızca metin biçimlendirme tag'lerine izin verilir; script/iframe/object çıkarılır.
 export function sanitizeHtml(dirty: string): string {
   if (typeof window === 'undefined') return dirty;
-  return DOMPurify.sanitize(dirty, {
+  // Plain text \n → <br> (HTML içermeyen ya da editörden gelen düz metin için)
+  const withBr = dirty.replace(/\r?\n/g, '<br>');
+  return DOMPurify.sanitize(withBr, {
     ALLOWED_TAGS: ['span', 'br', 'strong', 'em', 'b', 'i', 'p'],
     ALLOWED_ATTR: ['class', 'title'],
   });
