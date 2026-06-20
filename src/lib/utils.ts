@@ -72,15 +72,17 @@ export function bolumIconName(bolum: string): string {
   return BOLUM_ICONS[bolum] ?? 'Layers';
 }
 
-// Medya URL'i çöz: R2 varsa R2, yoksa public/ klasöründen serve et
+// Medya URL'i çöz: R2 varsa R2, yoksa API'den serve et
+// DB'de /Medya/... (büyük M), R2'de medya/... (küçük m) — normalize et
+// Dosya isimlerinde boşluk + Türkçe karakter olabilir — encodeURI ile encode et
 const R2 = process.env.NEXT_PUBLIC_R2_URL ?? '';
 
 export function toMediaUrl(link: string | null | undefined): string | null {
   if (!link) return null;
   if (link.startsWith('http')) return link;
-  const clean = link.startsWith('/') ? link : `/${link}`;
-  if (!R2) return clean;
-  return `${R2}/${clean.replace(/^\//, '')}`;
+  const withoutSlash = link.startsWith('/') ? link.slice(1) : link;
+  if (!R2) return `/${withoutSlash}`;
+  return `${R2}/${encodeURI(withoutSlash)}`;
 }
 
 export const BOLUM_ZIGZAG = {

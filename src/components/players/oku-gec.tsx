@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ImageOff, BookOpen } from 'lucide-react';
+import { ChevronRight, ImageOff, BookOpen, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PlayerProps } from '@/types/etkinlik';
 import { toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useWordTranslation } from '@/hooks/use-word-translation';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
+import { AudioPlayButton, PlayingBars } from './ui';
 
 function getWordAtPoint(x: number, y: number): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,6 +26,8 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   const [imgError, setImgError] = useState(false);
   const [tiklananKelimeler, setTiklananKelimeler] = useState<string[]>([]);
   const [ozet, setOzet] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const bookId = kitapId ?? etkinlik.id;
   const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(bookId);
@@ -32,8 +35,35 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   const current = detaylar[index];
   const progress = ((index + 1) / detaylar.length) * 100;
   const imgUrl = toMediaUrl(current.resimLink);
+  const sesUrl = toMediaUrl(current.sesLink);
   const hasText = !!current.description?.trim();
   const hasImg = !!imgUrl && !imgError;
+
+  function stopAudio() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setAudioPlaying(false);
+  }
+
+  function playAudio() {
+    if (!sesUrl) return;
+    stopAudio();
+    const a = new Audio(sesUrl);
+    audioRef.current = a;
+    setAudioPlaying(true);
+    a.onended = () => setAudioPlaying(false);
+    a.onerror = () => setAudioPlaying(false);
+    a.play().catch(() => setAudioPlaying(false));
+  }
+
+  // Sayfa değişince sesi durdur
+  useEffect(() => {
+    stopAudio();
+    setImgError(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
   const handleTextMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Önce seçili metin var mı bak (mobil long-press / desktop drag)
@@ -54,6 +84,7 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   }, [translate]);
 
   function next() {
+    stopAudio();
     closeTranslation();
     if (index + 1 >= detaylar.length) {
       if (tiklananKelimeler.length >= 3) {
@@ -63,7 +94,6 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
       }
     } else {
       setIndex(index + 1);
-      setImgError(false);
     }
   }
 
@@ -138,18 +168,48 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
         >
           {imgUrl && (
             imgError ? null : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imgUrl}
-                alt=""
-                className="w-full max-h-72 object-contain bg-muted"
-                onError={() => setImgError(true)}
-              />
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imgUrl}
+                  alt=""
+                  className="w-full max-h-72 object-contain bg-muted"
+                  onError={() => setImgError(true)}
+                />
+                {sesUrl && (
+                  <button
+                    type="button"
+                    onClick={audioPlaying ? stopAudio : playAudio}
+                    className="absolute bottom-2 right-2 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
+                    aria-label="Dialogu dinle"
+                  >
+                    {audioPlaying
+                      ? <PlayingBars size="sm" color="bg-white" />
+                      : <Volume2 className="size-4 text-white" />
+                    }
+                  </button>
+                )}
+              </div>
             )
           )}
 
           {hasText && (
             <div className="p-6">
+              {/* Resim yoksa ses butonu metnin üstünde göster */}
+              {sesUrl && !hasImg && (
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={audioPlaying ? stopAudio : playAudio}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                  >
+                    {audioPlaying
+                      ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
+                      : <><Volume2 className="size-3.5" /><span>Dialogu Dinle</span></>
+                    }
+                  </button>
+                </div>
+              )}
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
               <div
                 className="text-lg md:text-xl leading-relaxed md:leading-loose"

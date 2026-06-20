@@ -92,11 +92,12 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Sıralama"
       />
 
-      {/* Ses varsa perde olarak → açılınca otomatik çalar, kapanınca durur */}
       <HintCurtain
         hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={null}
+        imageUrl={toMediaUrl(etkinlik.resimLink)}
         audioUrl={audioUrl}
+        videoUrl={toMediaUrl(etkinlik.videoLink)}
+        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
       />
 
       <ActivityHint>Cümleleri doğru sıraya koy</ActivityHint>

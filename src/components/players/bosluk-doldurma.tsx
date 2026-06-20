@@ -110,6 +110,9 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
       <HintCurtain
         hint={etkinlik.soruYonergesi || undefined}
         imageUrl={toMediaUrl(etkinlik.resimLink)}
+        audioUrl={toMediaUrl(etkinlik.sesLink)}
+        videoUrl={toMediaUrl(etkinlik.videoLink)}
+        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
       />
 
       {/* Cümle önizleme — yazdıkça boşluk dolar */}

@@ -131,10 +131,12 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
         etiket="Boşluk Doldurma"
       />
 
-      {/* Resim ve/veya ipucu metni perde arkasında — öğrenci önce kendi denesin */}
       <HintCurtain
         hint={etkinlik.soruYonergesi || undefined}
         imageUrl={toMediaUrl(etkinlik.resimLink)}
+        audioUrl={toMediaUrl(etkinlik.sesLink)}
+        videoUrl={toMediaUrl(etkinlik.videoLink)}
+        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
       />
 
       {/* Cümle ve boşluk slotları */}

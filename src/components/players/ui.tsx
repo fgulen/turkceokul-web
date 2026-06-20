@@ -123,22 +123,24 @@ export function ActivityHint({ children }: { children: ReactNode }) {
 }
 
 // ─── Hint Curtain ──────────────────────────────────────────────────────────────
-// • imageUrl varsa → tam ekran modal (konuşma balonları okunabilsin; soru arkada kalır)
-// • audioUrl varsa → inline perde açılır, ses otomatik çalar; kapanınca durur
-// • sadece hint varsa → inline aşağı açılan metin perdesi
-// • kombinasyonlar: imageUrl + hint, audioUrl + hint hepsi çalışır
+// • defaultOpen=true → perde görevi: etkinlik başında otomatik açık, ses otomatik çalar
+// • imageUrl → inline (altına açılır); audioUrl → inline + otomatik çalma; videoUrl → inline video
+// • hint → metin ipucu; kombinasyonlar çalışır
 interface HintCurtainProps {
   hint?: string;
   imageUrl?: string | null;
   audioUrl?: string | null;
+  videoUrl?: string | null;
+  defaultOpen?: boolean;
 }
 
-export function HintCurtain({ hint, imageUrl, audioUrl }: HintCurtainProps) {
-  const [open, setOpen] = useState(false);
+export function HintCurtain({ hint, imageUrl, audioUrl, videoUrl, defaultOpen }: HintCurtainProps) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasImage = Boolean(imageUrl);
   const hasAudio = Boolean(audioUrl);
+  const hasVideo = Boolean(videoUrl);
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -159,24 +161,12 @@ export function HintCurtain({ hint, imageUrl, audioUrl }: HintCurtainProps) {
     a.play().catch(() => setAudioPlaying(false));
   }, [audioUrl, stopAudio]);
 
-  useEffect(() => () => stopAudio(), [stopAudio]);
-
-  function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (hasAudio && !hasImage) {
-      if (next) startAudio();
-      else stopAudio();
-    }
-  }
-
-  // Tam ekran modaldayken body scroll kilitle
+  // defaultOpen=true ise ses otomatik çal
   useEffect(() => {
-    if (!hasImage || !open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [hasImage, open]);
+    if (defaultOpen && hasAudio) startAudio();
+    return () => stopAudio();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Esc ile kapat
   useEffect(() => {
@@ -188,37 +178,72 @@ export function HintCurtain({ hint, imageUrl, audioUrl }: HintCurtainProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [open, stopAudio]);
 
-  if (!hint && !imageUrl && !audioUrl) return null;
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (hasAudio) {
+      if (next) startAudio();
+      else stopAudio();
+    }
+  }
+
+  if (!hint && !imageUrl && !audioUrl && !videoUrl) return null;
+
+  const label = hasAudio && !hasImage && !hasVideo ? 'Dinle' : 'İpucu';
+  const icon = hasAudio && !hasImage && !hasVideo
+    ? <Volume2 className="size-3.5" />
+    : <Lightbulb className="size-3.5" />;
 
   return (
-    <>
-      <div className="mb-4">
-        <button
-          type="button"
-          onClick={toggle}
-          className={cn(
-            'flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors',
-            open && !hasImage
-              ? 'bg-amber-100 border-amber-300 text-amber-800'
-              : 'text-amber-600 border-amber-200/70 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
-          )}
-        >
-          {hasAudio && !hasImage ? <Volume2 className="size-3.5" /> : <Lightbulb className="size-3.5" />}
-          {hasAudio && !hasImage ? 'Dinle' : 'İpucu'}
-        </button>
+    <div className="mb-4">
+      <button
+        type="button"
+        onClick={toggle}
+        className={cn(
+          'flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors',
+          open
+            ? 'bg-amber-100 border-amber-300 text-amber-800'
+            : 'text-amber-600 border-amber-200/70 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
+        )}
+      >
+        {icon}
+        {open ? 'Gizle' : label}
+      </button>
 
-        {/* Ses / metin — inline perde */}
-        {!hasImage && (hasAudio || hint) && (
-          <AnimatePresence>
-            {open && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: 'easeOut' }}
-                className="overflow-hidden"
-              >
-                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+              {/* Resim — inline */}
+              {hasImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl!}
+                  alt=""
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+              )}
+
+              {/* Video — inline */}
+              {hasVideo && (
+                <video
+                  src={videoUrl!}
+                  controls
+                  playsInline
+                  className="w-full block"
+                />
+              )}
+
+              {/* Ses + metin */}
+              {(hasAudio || hint) && (
+                <div className="px-4 py-3">
                   {hasAudio && (
                     <div className="flex items-center gap-2 text-sm text-amber-800">
                       {audioPlaying ? (
@@ -248,65 +273,16 @@ export function HintCurtain({ hint, imageUrl, audioUrl }: HintCurtainProps) {
                     </div>
                   )}
                   {hint && (
-                    <p className={cn(
-                      'text-sm text-amber-900 leading-relaxed',
-                      hasAudio && 'mt-2',
-                    )}>
+                    <p className={cn('text-sm text-amber-900 leading-relaxed', hasAudio && 'mt-2')}>
                       {hint}
                     </p>
                   )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-      </div>
-
-      {/* Resim: tam ekran modal — soru kartı arkada kalır, öğrenci ezberlemeye zorlanır */}
-      {hasImage && (
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-black/88 p-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => { setOpen(false); stopAudio(); }}
-            >
-              <button
-                type="button"
-                aria-label="Kapat"
-                onClick={(e) => { e.stopPropagation(); setOpen(false); stopAudio(); }}
-                className="absolute top-4 right-4 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full bg-white/15 text-white hover:bg-white/30 active:scale-95 transition-all text-2xl font-bold leading-none"
-              >
-                ✕
-              </button>
-
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <motion.img
-                src={imageUrl!}
-                alt=""
-                className="max-h-[80vh] max-w-full object-contain rounded-xl shadow-2xl"
-                initial={{ scale: 0.92, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.22, ease: 'easeOut' }}
-                onClick={(e) => e.stopPropagation()}
-              />
-
-              {hint && (
-                <p className="mt-4 max-w-sm text-center text-white/90 text-sm leading-relaxed px-6">
-                  {hint}
-                </p>
               )}
-
-              <p className="absolute bottom-5 text-white/40 text-xs select-none">
-                Ekrana dokun veya ✕ ile kapat
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-    </>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
