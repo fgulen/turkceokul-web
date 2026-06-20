@@ -27,8 +27,13 @@ export default function GirisPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/api/auth/login', form);
-       setAuth(data.user, data.accessToken, data.refreshToken);
-       router.push('/pano', { locale });
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      const role = data.user?.role;
+      if (role === 'SuperAdmin') router.push('/super-admin', { locale });
+      else if (role === 'Admin') router.push('/admin', { locale });
+      else if (role === 'KurumYoneticisi') router.push('/kurum-yoneticisi', { locale });
+      else if (role === 'Ogretmen' || role === 'UlkeTemsilcisi') router.push('/ogretmen', { locale });
+      else router.push('/pano', { locale });
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
       setError(typeof d === 'string' ? d : 'E-posta veya şifre hatalı.');

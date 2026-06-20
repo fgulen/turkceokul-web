@@ -29,11 +29,10 @@ export function useAuthGuard(requiredRole?: 'Ogretmen' | 'Admin' | 'SuperAdmin')
         router.replace('/super-admin');
       } else if (user.role === 'KurumYoneticisi') {
         router.replace('/kurum-yoneticisi');
-      } else if (user.role === 'Ogretmen' || user.role === 'UlkeTemsilcisi') {
-        router.replace('/ogretmen');
       } else if (user.role === 'Admin') {
         router.replace('/admin');
       }
+      // Ogretmen ve UlkeTemsilcisi /pano'ya erişebilir (öğrenci görünümünü test etmek için)
     }
   }, [hydrated, user, router, locale, requiredRole]);
 
