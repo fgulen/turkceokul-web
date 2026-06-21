@@ -25,7 +25,13 @@ const PdfFlipbook = dynamic(
 );
 
 // ── Katalog ─────────────────────────────────────────────────────────────────
-type Kitap = { baslik: string; yazar: string; url: string; seviye: string; tur: 'epub' | 'pdf' };
+type Kitap = {
+  baslik: string; yazar: string; url: string; seviye: string;
+  tur: 'epub' | 'pdf';
+  // Fixed Layout EPUB (InDesign pre-paginated): piksel-tam layout,
+  // hiçbir CSS override uygulanmaz — InDesign'ın tasarımı korunur.
+  fixedLayout?: boolean;
+};
 
 const KITAPLAR: Record<string, Kitap> = {
   'guliverin-seyahatleri': {
@@ -41,6 +47,7 @@ const KITAPLAR: Record<string, Kitap> = {
     url: '/books/aslan-ile-fare.epub',
     seviye: 'A1',
     tur: 'epub',
+    fixedLayout: true,   // InDesign pre-paginated — CSS override yasak
   },
   'cirkin-ordek-yavrusu': {
     baslik: 'Çirkin Ördek Yavrusu',
@@ -225,8 +232,9 @@ export default function OkumaPage({
 }) {
   const { slug } = use(params);
   const { user, ready } = useAuthGuard();
-  const kitap = KITAPLAR[slug];
-  const isPdf = kitap?.tur === 'pdf';
+  const kitap       = KITAPLAR[slug];
+  const isPdf       = kitap?.tur === 'pdf';
+  const isFixed     = kitap?.fixedLayout === true;   // Fixed Layout EPUB → no CSS override
 
   const [location, setLocation]           = useState<string | number>(0);
   const [theme, setTheme]                 = useState<Theme>('light');
@@ -251,10 +259,12 @@ export default function OkumaPage({
   const getRendition = useCallback((rendition: any) => {
     renditionRef.current = rendition;
 
-    // Her bölüm yüklenince güncel tema/font uygula (stale closure sorunu yok)
-    rendition.on('rendered', () => {
-      applyEpubStyles(renditionRef.current, themeRef.current, fontFamilyRef.current, fontSizeRef.current);
-    });
+    // Fixed Layout EPUB'larda CSS override hiç uygulanmaz (piksel-tam InDesign layout bozulur)
+    if (!isFixed) {
+      rendition.on('rendered', () => {
+        applyEpubStyles(renditionRef.current, themeRef.current, fontFamilyRef.current, fontSizeRef.current);
+      });
+    }
 
     // Metin seçimi (double-click / long-press → seçili kelime)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -308,12 +318,12 @@ export default function OkumaPage({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [translate]);
+  }, [translate, isFixed]);
 
-  // Ayar değişince yeniden uygula
+  // Ayar değişince yeniden uygula — Fixed Layout kitaplarda atla
   useEffect(() => {
-    applyEpubStyles(renditionRef.current, theme, fontFamily, fontSize);
-  }, [theme, fontFamily, fontSize]);
+    if (!isFixed) applyEpubStyles(renditionRef.current, theme, fontFamily, fontSize);
+  }, [isFixed, theme, fontFamily, fontSize]);
 
   function prev() { renditionRef.current?.prev(); }
   function next() { renditionRef.current?.next(); }
@@ -375,8 +385,14 @@ export default function OkumaPage({
           </span>
         )}
 
-        {/* Ayarlar butonu (sadece EPUB) */}
-        {!isPdf && (
+        {isFixed && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0" title="Sabit sayfa düzeni — InDesign tasarımı korunuyor">
+            FXL
+          </span>
+        )}
+
+        {/* Ayarlar butonu — Fixed Layout ve PDF'te gizli */}
+        {!isPdf && !isFixed && (
           <button
             onClick={() => setShowSettings((s) => !s)}
             title="Okuma ayarları"
@@ -407,8 +423,8 @@ export default function OkumaPage({
         </div>
       )}
 
-      {/* ── Ayarlar paneli (floating, sadece EPUB) ── */}
-      {!isPdf && showSettings && (
+      {/* ── Ayarlar paneli — Fixed Layout ve PDF'te gösterilmez ── */}
+      {!isPdf && !isFixed && showSettings && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
           <SettingsPanel
