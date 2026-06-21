@@ -93,27 +93,30 @@ function applyEpubStyles(rend: any, t: Theme, ff: FontFamily, fs: number) {
 
   rend.themes.fontSize(`${fs}%`);
 
+  // line-height sadece paragraf elementlerine → kapak/absolüt konumlu elementler kaymaz
   rend.themes.register('to-theme', {
-    'html, body': {
-      background:  `${bg} !important`,
-      color:       `${fg} !important`,
-      'font-family': `${fontCss} !important`,
-      'line-height': '1.9 !important',
-      'word-break': 'break-word !important',
+    'html': {
+      background: `${bg} !important`,
     },
-    'p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, section, article': {
-      color:       `${fg} !important`,
+    'body': {
+      background:    `${bg} !important`,
+      color:         `${fg} !important`,
       'font-family': `${fontCss} !important`,
-      'line-height': '1.9 !important',
     },
+    // Sadece metin içerikli elementlere line-height
+    'p, li, td, th, blockquote': {
+      color:         `${fg} !important`,
+      'font-family': `${fontCss} !important`,
+      'line-height': '1.85 !important',
+    },
+    // Başlıklara renk ve font ama line-height YOK (absolüt konumlu kapak başlıkları kaymasın)
+    'h1, h2, h3, h4, h5, h6': {
+      color:         `${fg} !important`,
+    },
+    // Inline elementlere sadece renk, font-family/layout OVERRIDE YOK
     'a': { color: `${fg} !important` },
-    // EPUB'ın kendi gömülü fontlarını sıfırla
-    '@font-face': { 'font-display': 'swap' },
   });
   rend.themes.select('to-theme');
-
-  // Ayrıca font() ile global override (bazı eski epub.js sürümlerinde daha güvenilir)
-  try { rend.themes.font(fontCss); } catch { /* ignore */ }
 }
 
 // ── Yükleniyor ───────────────────────────────────────────────────────────────
