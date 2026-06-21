@@ -10,7 +10,6 @@ import { ReactReaderStyle, type IReactReaderStyle } from 'react-reader';
 import { Logo } from '@/components/logo';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { cn } from '@/lib/utils';
 import { useWordTranslation } from '@/hooks/use-word-translation';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
 
@@ -20,13 +19,35 @@ const ReactReader = dynamic<any>(
   { ssr: false, loading: () => <EpubSkeleton /> },
 );
 
+const PdfFlipbook = dynamic(
+  () => import('@/components/okuma/pdf-flipbook'),
+  { ssr: false, loading: () => <EpubSkeleton /> },
+);
+
 // ── Katalog ─────────────────────────────────────────────────────────────────
-const KITAPLAR: Record<string, { baslik: string; yazar: string; epubUrl: string; seviye: string }> = {
+type Kitap = { baslik: string; yazar: string; url: string; seviye: string; tur: 'epub' | 'pdf' };
+
+const KITAPLAR: Record<string, Kitap> = {
   'guliverin-seyahatleri': {
     baslik: "Güliver'in Seyahatleri",
     yazar: 'Jonathan Swift',
-    epubUrl: '/books/guliverin-seyahatleri.epub',
+    url: '/books/guliverin-seyahatleri.epub',
     seviye: 'B1',
+    tur: 'epub',
+  },
+  'aslan-ile-fare': {
+    baslik: 'Aslan ile Fare',
+    yazar: 'Ezop Masalları',
+    url: '/books/aslan-ile-fare.epub',
+    seviye: 'A1',
+    tur: 'epub',
+  },
+  'cirkin-ordek-yavrusu': {
+    baslik: 'Çirkin Ördek Yavrusu',
+    yazar: 'Hans Christian Andersen',
+    url: '/books/cirkin-ordek-yavrusu.pdf',
+    seviye: 'A1',
+    tur: 'pdf',
   },
 };
 
@@ -64,35 +85,35 @@ function buildReaderStyles(theme: Theme): IReactReaderStyle {
 }
 
 // ── EPUB içeriğine uygulanan stiller (iframe içi) ────────────────────────────
-// themes.font() ve themes.fontSize() epub.js'in yerleşik shorthand'leri —
-// direkt body'ye priority:true ile inject eder.
-// Renk için themes.register + themes.select kullanmak gerekiyor çünkü
-// EPUB'ın kendi CSS'i override() ile gelen stilleri ezer.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyEpubStyles(rend: any, t: Theme, ff: FontFamily, fs: number) {
   if (!rend?.themes) return;
   const { bg, fg } = THEMES[t];
+  const fontCss    = FONTS[ff].css;
 
-  rend.themes.font(FONTS[ff].css);
   rend.themes.fontSize(`${fs}%`);
 
   rend.themes.register('to-theme', {
-    'html': {
-      background: `${bg} !important`,
+    'html, body': {
+      background:  `${bg} !important`,
+      color:       `${fg} !important`,
+      'font-family': `${fontCss} !important`,
+      'line-height': '1.9 !important',
+      'word-break': 'break-word !important',
     },
-    'body': {
-      background: `${bg} !important`,
-      color:      `${fg} !important`,
-      'line-height': '1.85 !important',
+    'p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, section, article': {
+      color:       `${fg} !important`,
+      'font-family': `${fontCss} !important`,
+      'line-height': '1.9 !important',
     },
-    'p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, blockquote': {
-      color: `${fg} !important`,
-    },
-    'a': {
-      color: `${fg} !important`,
-    },
+    'a': { color: `${fg} !important` },
+    // EPUB'ın kendi gömülü fontlarını sıfırla
+    '@font-face': { 'font-display': 'swap' },
   });
   rend.themes.select('to-theme');
+
+  // Ayrıca font() ile global override (bazı eski epub.js sürümlerinde daha güvenilir)
+  try { rend.themes.font(fontCss); } catch { /* ignore */ }
 }
 
 // ── Yükleniyor ───────────────────────────────────────────────────────────────
@@ -202,6 +223,7 @@ export default function OkumaPage({
   const { slug } = use(params);
   const { user, ready } = useAuthGuard();
   const kitap = KITAPLAR[slug];
+  const isPdf = kitap?.tur === 'pdf';
 
   const [location, setLocation]           = useState<string | number>(0);
   const [theme, setTheme]                 = useState<Theme>('light');
@@ -212,27 +234,73 @@ export default function OkumaPage({
   const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(slug);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renditionRef = useRef<any>(null);
+  const renditionRef  = useRef<any>(null);
+  // Ref'ler: rendered event'i stale closure olmadan güncel değerleri okusun
+  const themeRef      = useRef(theme);
+  const fontFamilyRef = useRef(fontFamily);
+  const fontSizeRef   = useRef(fontSize);
+
+  useEffect(() => { themeRef.current      = theme;      }, [theme]);
+  useEffect(() => { fontFamilyRef.current = fontFamily; }, [fontFamily]);
+  useEffect(() => { fontSizeRef.current   = fontSize;   }, [fontSize]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getRendition = useCallback((rendition: any) => {
     renditionRef.current = rendition;
-    // İlk render'da mevcut ayarları uygula
+
+    // Her bölüm yüklenince güncel tema/font uygula (stale closure sorunu yok)
     rendition.on('rendered', () => {
-      applyEpubStyles(renditionRef.current, theme, fontFamily, fontSize);
+      applyEpubStyles(renditionRef.current, themeRef.current, fontFamilyRef.current, fontSizeRef.current);
     });
+
+    // Metin seçimi (double-click / long-press → seçili kelime)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rendition.on('selected', (_cfi: string, contents: any) => {
+      const sel  = contents?.window?.getSelection?.() as Selection | null;
+      const word = sel?.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
+      if (word && word.length > 1 && !word.includes(' ')) {
+        sel?.removeAllRanges();
+        translate(word);
+      }
+    });
+
+    // Tek tıklama — Selection.modify ile kelime genişletme (Chrome/Safari/WebKit)
     rendition.on('click', (e: MouseEvent) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const doc = (e.target as any)?.ownerDocument as Document | undefined;
       if (!doc) return;
-      // caretRangeFromPoint: kelime altındaki range'i bul
+
+      const sel = doc.getSelection();
+
+      // Önce mevcut seçim var mı diye bak (double-click durumu)
+      if (sel && !sel.isCollapsed) {
+        const word = sel.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
+        if (word && word.length > 1 && !word.includes(' ')) {
+          sel.removeAllRanges();
+          translate(word);
+          return;
+        }
+      }
+
+      // caretRangeFromPoint ile tıklanan noktaya git
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const range = (doc as any).caretRangeFromPoint?.(e.clientX, e.clientY) as Range | undefined;
-      if (!range) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (range as any).expand('word');
-      const word = range.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
-      if (word && word.split(/\s+/).length === 1 && word.length > 1) {
+      if (!range || !sel) return;
+
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Selection.modify: kelime sınırlarına genişlet (Chrome/Safari)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sel as any).modify?.('move', 'backward', 'word');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sel as any).modify?.('extend', 'forward', 'word');
+      } catch { /* Firefox: modify desteklenmiyor, kelime yok */ }
+
+      const word = sel.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
+      sel.removeAllRanges();
+      if (word && word.length > 1 && !word.includes(' ')) {
         translate(word);
       }
     });
@@ -298,34 +366,46 @@ export default function OkumaPage({
           {kitap.seviye}
         </span>
 
-        {/* Ayarlar butonu */}
-        <button
-          onClick={() => setShowSettings((s) => !s)}
-          title="Okuma ayarları"
-          className="p-2 rounded-lg transition-all shrink-0"
-          style={{
-            background: showSettings ? `${t.headerFg}12` : 'transparent',
-            color: showSettings ? t.headerFg : t.muted,
-          }}
-        >
-          <TypeIcon className="size-4" />
-        </button>
+        {isPdf && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+            PDF
+          </span>
+        )}
+
+        {/* Ayarlar butonu (sadece EPUB) */}
+        {!isPdf && (
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            title="Okuma ayarları"
+            className="p-2 rounded-lg transition-all shrink-0"
+            style={{
+              background: showSettings ? `${t.headerFg}12` : 'transparent',
+              color: showSettings ? t.headerFg : t.muted,
+            }}
+          >
+            <TypeIcon className="size-4" />
+          </button>
+        )}
       </header>
 
-      {/* ── EPUB Reader ── */}
-      <div className="flex-1 relative overflow-hidden">
-        <ReactReader
-          url={kitap.epubUrl}
-          location={location}
-          locationChanged={(cfi: string) => setLocation(cfi)}
-          getRendition={getRendition}
-          readerStyles={buildReaderStyles(theme)}
-          showToc={true}
-        />
-      </div>
+      {/* ── Reader ── */}
+      {isPdf ? (
+        <PdfFlipbook url={kitap.url} onWordClick={translate} />
+      ) : (
+        <div className="flex-1 relative overflow-hidden">
+          <ReactReader
+            url={kitap.url}
+            location={location}
+            locationChanged={(cfi: string) => setLocation(cfi)}
+            getRendition={getRendition}
+            readerStyles={buildReaderStyles(theme)}
+            showToc={true}
+          />
+        </div>
+      )}
 
-      {/* ── Ayarlar paneli (floating) ── */}
-      {showSettings && (
+      {/* ── Ayarlar paneli (floating, sadece EPUB) ── */}
+      {!isPdf && showSettings && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
           <SettingsPanel
@@ -348,42 +428,44 @@ export default function OkumaPage({
         />
       )}
 
-      {/* ── Footer nav ── */}
-      <footer
-        className="h-14 border-t flex items-center justify-between px-4 shrink-0"
-        style={{ background: t.headerBg, borderColor: `${t.headerFg}15` }}
-      >
-        <button
-          onClick={prev}
-          className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg transition-all"
-          style={{ color: t.muted }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = `${t.headerFg}10`)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      {/* ── Footer nav (sadece EPUB) ── */}
+      {!isPdf && (
+        <footer
+          className="h-14 border-t flex items-center justify-between px-4 shrink-0"
+          style={{ background: t.headerBg, borderColor: `${t.headerFg}15` }}
         >
-          <ArrowLeft className="size-4" />
-          <span className="hidden sm:inline">Geri</span>
-        </button>
+          <button
+            onClick={prev}
+            className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg transition-all"
+            style={{ color: t.muted }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = `${t.headerFg}10`)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Geri</span>
+          </button>
 
-        <button
-          onClick={() => setShowSettings((s) => !s)}
-          className="p-2 rounded-lg transition-all"
-          style={{ color: t.muted }}
-        >
-          <ChevronLeft className="size-3 inline" />
-          <ChevronRight className="size-3 inline" />
-        </button>
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            className="p-2 rounded-lg transition-all"
+            style={{ color: t.muted }}
+          >
+            <ChevronLeft className="size-3 inline" />
+            <ChevronRight className="size-3 inline" />
+          </button>
 
-        <button
-          onClick={next}
-          className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg transition-all"
-          style={{ color: t.muted }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = `${t.headerFg}10`)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
-          <span className="hidden sm:inline">İleri</span>
-          <ChevronRight className="size-4" />
-        </button>
-      </footer>
+          <button
+            onClick={next}
+            className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg transition-all"
+            style={{ color: t.muted }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = `${t.headerFg}10`)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span className="hidden sm:inline">İleri</span>
+            <ChevronRight className="size-4" />
+          </button>
+        </footer>
+      )}
     </div>
   );
 }

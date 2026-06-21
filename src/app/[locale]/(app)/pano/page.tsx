@@ -211,6 +211,41 @@ export default function PanoPage() {
                 <div className="text-xs text-muted-foreground mt-0.5">Jonathan Swift</div>
               </div>
             </Link>
+            <Link
+              href="/okuma/aslan-ile-fare"
+              className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
+            >
+              <div className="size-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+                <BookMarked className="size-6 text-emerald-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">A1</span>
+                </div>
+                <div className="font-semibold text-sm group-hover:text-primary transition-colors">
+                  Aslan ile Fare
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Ezop Masalları</div>
+              </div>
+            </Link>
+            <Link
+              href="/okuma/cirkin-ordek-yavrusu"
+              className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
+            >
+              <div className="size-12 rounded-xl bg-sky-50 flex items-center justify-center shrink-0 group-hover:bg-sky-100 transition-colors">
+                <BookMarked className="size-6 text-sky-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">A1</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">PDF</span>
+                </div>
+                <div className="font-semibold text-sm group-hover:text-primary transition-colors">
+                  Çirkin Ördek Yavrusu
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Hans Christian Andersen</div>
+              </div>
+            </Link>
           </div>
         </div>
 
