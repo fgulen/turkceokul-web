@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Admin' | 'KurumYoneticisi' | 'UlkeTemsilcisi' | 'SuperAdmin' | 'Editor';
+export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Koordinator' | 'KurumYoneticisi' | 'UlkeTemsilcisi' | 'SuperAdmin' | 'Editor';
 
 export interface AuthUser {
   id: number;

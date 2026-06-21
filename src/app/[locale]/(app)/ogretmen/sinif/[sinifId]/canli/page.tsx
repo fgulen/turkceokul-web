@@ -22,6 +22,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
   const [oyunBaslatildi, setOyunBaslatildi] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(`${storageKey}_started`) === '1'
   );
+  const [geriSayim, setGeriSayim] = useState(30);
   const kahoot = useKahoot();
 
   const { data: sinif } = useQuery({
@@ -37,6 +38,19 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
       sessionStorage.removeItem(`${storageKey}_started`);
     }
   }, [kahoot.oyunBitti, storageKey]);
+
+  // Soru değişince öğretmen timer'ını sıfırla
+  useEffect(() => {
+    if (!kahoot.soruBilgisi || kahoot.oyunBitti) return;
+    setGeriSayim(30);
+    const timer = setInterval(() => {
+      setGeriSayim(p => {
+        if (p <= 1) { clearInterval(timer); return 0; }
+        return p - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [kahoot.soruBilgisi?.soruNo, kahoot.oyunBitti]);
 
   // Hub hatası → kayıtlı kod artık geçersiz (sunucu yeniden başlatıldı vb.) → sıfırla
   useEffect(() => {
@@ -162,6 +176,27 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                 </div>
               </div>
 
+              {/* Soru zamanlayıcısı — soru aktifken */}
+              {oyunBaslatildi && !kahoot.oyunBitti && kahoot.soruBilgisi && (
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all duration-1000 ease-linear',
+                        geriSayim <= 5 ? 'bg-destructive' : 'bg-primary'
+                      )}
+                      style={{ width: `${(geriSayim / 30) * 100}%` }}
+                    />
+                  </div>
+                  <span className={cn(
+                    'text-3xl font-black tabular-nums w-12 text-center shrink-0',
+                    geriSayim <= 5 ? 'text-destructive animate-pulse' : 'text-foreground'
+                  )}>
+                    {geriSayim}
+                  </span>
+                </div>
+              )}
+
               {/* Kontroller */}
               <div className="flex gap-3 justify-center flex-wrap">
                 {kahoot.oyunBitti ? (
@@ -212,8 +247,8 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                 )}
               </div>
 
-              {/* Mevcut soru (demo modda gösterilir) */}
-              {kahoot.soruBilgisi?.soru && (
+              {/* Mevcut soru (demo modda gösterilir, oyun bittikten sonra gizlenir) */}
+              {!kahoot.oyunBitti && kahoot.soruBilgisi?.soru && (
                 <div className="bg-muted/40 rounded-2xl border border-border p-6 text-left">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     Soru {kahoot.soruBilgisi.soruNo} / {kahoot.soruBilgisi.toplamSoru}

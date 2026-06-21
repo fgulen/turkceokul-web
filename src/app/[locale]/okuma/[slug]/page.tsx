@@ -2,6 +2,7 @@
 
 import { use, useState, useRef, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, BookOpen,
   Sun, BookMarked, Moon, TypeIcon,
@@ -9,6 +10,7 @@ import {
 import { ReactReaderStyle, type IReactReaderStyle } from 'react-reader';
 import { Logo } from '@/components/logo';
 import { Link } from '@/navigation';
+import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useWordTranslation } from '@/hooks/use-word-translation';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
@@ -24,39 +26,20 @@ const PdfFlipbook = dynamic(
   { ssr: false, loading: () => <EpubSkeleton /> },
 );
 
-// ── Katalog ─────────────────────────────────────────────────────────────────
-type Kitap = {
-  baslik: string; yazar: string; url: string; seviye: string;
+// ── API İnterface ───────────────────────────────────────────────────────────
+interface KutuphaneKitap {
+  id: string;
+  baslik: string;
+  yazar: string;
+  seviye: string;
   tur: 'epub' | 'pdf';
-  // Fixed Layout EPUB (InDesign pre-paginated): piksel-tam layout,
-  // hiçbir CSS override uygulanmaz — InDesign'ın tasarımı korunur.
-  fixedLayout?: boolean;
-};
-
-const KITAPLAR: Record<string, Kitap> = {
-  'guliverin-seyahatleri': {
-    baslik: "Güliver'in Seyahatleri",
-    yazar: 'Jonathan Swift',
-    url: '/books/guliverin-seyahatleri.epub',
-    seviye: 'B1',
-    tur: 'epub',
-  },
-  'aslan-ile-fare': {
-    baslik: 'Aslan ile Fare',
-    yazar: 'Ezop Masalları',
-    url: '/books/aslan-ile-fare.epub',
-    seviye: 'A1',
-    tur: 'epub',
-    fixedLayout: true,   // InDesign pre-paginated — CSS override yasak
-  },
-  'cirkin-ordek-yavrusu': {
-    baslik: 'Çirkin Ördek Yavrusu',
-    yazar: 'Hans Christian Andersen',
-    url: '/books/cirkin-ordek-yavrusu.pdf',
-    seviye: 'A1',
-    tur: 'pdf',
-  },
-};
+  url: string;
+  kapakUrl: string | null;
+  fixedLayout: boolean;
+  durum: 'Taslak' | 'Aktif' | 'Pasif';
+  aciklama: string | null;
+  insertDate: string;
+}
 
 // ── Sabitler ─────────────────────────────────────────────────────────────────
 type Theme = 'light' | 'sepia' | 'dark';
@@ -231,8 +214,15 @@ export default function OkumaPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const { user, ready } = useAuthGuard();
-  const kitap       = KITAPLAR[slug];
+  const { user, ready } = useAuthGuard(undefined, true); // içerik sayfası: rol yönlendirmesi yok
+
+  const { data: kitap, isLoading: kitapYukleniyor } = useQuery<KutuphaneKitap>({
+    queryKey: ['kutuphane-kitap', slug],
+    queryFn: () => api.get(`/api/kutuphane/kitaplar/${slug}`).then(r => r.data),
+    retry: false,
+    enabled: !!user,
+  });
+
   const isPdf       = kitap?.tur === 'pdf';
   const isFixed     = kitap?.fixedLayout === true;   // Fixed Layout EPUB → no CSS override
 
@@ -334,7 +324,7 @@ export default function OkumaPage({
   function prev() { renditionRef.current?.prev(); }
   function next() { renditionRef.current?.next(); }
 
-  if (!ready) return (
+  if (!ready || kitapYukleniyor) return (
     <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>

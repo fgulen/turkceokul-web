@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wifi, Users, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
+import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
@@ -11,12 +11,11 @@ import { cn } from '@/lib/utils';
 
 type Asama = 'kod-giris' | 'bekleme' | 'soru' | 'cevap-verildi' | 'leaderboard-ara' | 'bitti';
 
-// Kahoot klasik renkleri — kasıtlı olarak primary'den bağımsız
 const CEVAP_RENKLERI = [
-  { harf: 'A', bg: 'bg-red-500   hover:bg-red-600',   active: 'bg-red-600'   },
-  { harf: 'B', bg: 'bg-blue-500  hover:bg-blue-600',  active: 'bg-blue-600'  },
-  { harf: 'C', bg: 'bg-amber-400 hover:bg-amber-500', active: 'bg-amber-500' },
-  { harf: 'D', bg: 'bg-green-500 hover:bg-green-600', active: 'bg-green-600' },
+  { harf: 'A', bg: 'bg-red-500',   hover: 'hover:bg-red-600'   },
+  { harf: 'B', bg: 'bg-blue-500',  hover: 'hover:bg-blue-600'  },
+  { harf: 'C', bg: 'bg-amber-400', hover: 'hover:bg-amber-500' },
+  { harf: 'D', bg: 'bg-green-500', hover: 'hover:bg-green-600' },
 ];
 
 export default function KahootKatilPage() {
@@ -63,7 +62,6 @@ export default function KahootKatilPage() {
 
   useEffect(() => {
     if (kahoot.oyunBitti || !kahoot.soruBilgisi || asama !== 'leaderboard-ara') return;
-    // 3 sn leaderboard göster, sonra soruya geç — oyun biterse timer iptal edilir
     const timer = setTimeout(() => setAsama('soru'), 3000);
     return () => clearTimeout(timer);
   }, [kahoot.soruBilgisi, asama, kahoot.oyunBitti]);
@@ -104,20 +102,96 @@ export default function KahootKatilPage() {
   );
   if (!user) return null;
 
-  return (
-    <div className="bg-background">
-      <main className="max-w-[480px] mx-auto px-4 py-3">
-        <AnimatePresence mode="wait">
+  // Soru aşaması tam ekran — diğerleri kart
+  const soruEkrani = asama === 'soru';
 
-          {/* KOD GİRİŞ */}
-          {asama === 'kod-giris' && (
-            <motion.div
-              key="kod"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center"
-            >
+  return (
+    <div className={cn('bg-background', soruEkrani && 'h-[calc(100dvh-4rem)]')}>
+      <AnimatePresence mode="wait">
+
+        {/* ── SORU — FULL SCREEN ───────────────────────────────────────────── */}
+        {asama === 'soru' && (
+          <motion.div
+            key={`soru-${kahoot.soruBilgisi?.soruNo}`}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="h-[calc(100dvh-4rem)] flex flex-col px-3 py-3 gap-3"
+          >
+            {/* Üst bar: ilerleme + zamanlayıcı */}
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Progress */}
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground mb-1">
+                  <span>Soru {kahoot.soruBilgisi?.soruNo} / {kahoot.soruBilgisi?.toplamSoru}</span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-primary rounded-full"
+                    initial={{ width: '100%' }}
+                    animate={{ width: `${(geriSayim / 30) * 100}%` }}
+                    transition={{ duration: 1, ease: 'linear' }}
+                  />
+                </div>
+              </div>
+              {/* Zamanlayıcı */}
+              <div className={cn(
+                'text-5xl font-black tabular-nums w-20 text-center shrink-0',
+                geriSayim <= 5 ? 'text-destructive animate-pulse' : 'text-foreground'
+              )}>
+                {geriSayim}
+              </div>
+            </div>
+
+            {/* Soru metni */}
+            {kahoot.soruBilgisi?.soru && (
+              <div className="bg-card rounded-2xl border border-border shadow-sm px-6 py-4 shrink-0 text-center">
+                <p className="text-2xl md:text-3xl font-bold text-foreground leading-snug">
+                  {kahoot.soruBilgisi.soru}
+                </p>
+              </div>
+            )}
+
+            {/* Cevap butonları — kalan alanı doldurur */}
+            <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+              {CEVAP_RENKLERI.map(({ harf, bg, hover }) => {
+                const metin = kahoot.soruBilgisi?.[`sec${harf}` as keyof typeof kahoot.soruBilgisi] as string | undefined;
+                return (
+                  <motion.button
+                    key={harf}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => cevapGonder(harf)}
+                    className={cn(
+                      'rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-3 p-4',
+                      bg, hover,
+                      'h-full w-full'
+                    )}
+                  >
+                    <span className="w-12 h-12 rounded-full bg-black/25 flex items-center justify-center text-white font-black text-2xl shrink-0">
+                      {harf}
+                    </span>
+                    {metin && (
+                      <span className="text-white font-bold text-xl md:text-2xl leading-snug text-center drop-shadow">
+                        {metin}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── KOD GİRİŞ ───────────────────────────────────────────────────── */}
+        {asama === 'kod-giris' && (
+          <motion.div
+            key="kod"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-[480px] mx-auto px-4 py-3"
+          >
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Wifi className="size-8 text-primary" />
               </div>
@@ -151,18 +225,20 @@ export default function KahootKatilPage() {
               >
                 {yukleniyor ? 'Bağlanıyor...' : 'Oyuna Katıl'}
               </button>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
 
-          {/* BEKLEME */}
-          {asama === 'bekleme' && (
-            <motion.div
-              key="bekleme"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center"
-            >
+        {/* ── BEKLEME ──────────────────────────────────────────────────────── */}
+        {asama === 'bekleme' && (
+          <motion.div
+            key="bekleme"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="max-w-[480px] mx-auto px-4 py-3"
+          >
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Users className="size-8 text-primary" />
               </div>
@@ -178,105 +254,51 @@ export default function KahootKatilPage() {
               <p className="text-muted-foreground text-sm mt-6 animate-pulse">
                 Öğretmenin oyunu başlatmasını bekle...
               </p>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
 
-          {/* SORU */}
-          {asama === 'soru' && (
-            <motion.div
-              key={`soru-${kahoot.soruBilgisi?.soruNo}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              {/* Zamanlayıcı + ilerleme */}
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-4 mb-3">
-                <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                  <span>Soru {kahoot.soruBilgisi?.soruNo} / {kahoot.soruBilgisi?.toplamSoru}</span>
-                  <span className={cn(
-                    'font-bold text-base tabular-nums',
-                    geriSayim <= 5 ? 'text-destructive animate-pulse' : 'text-foreground'
-                  )}>
-                    {geriSayim}s
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-primary rounded-full"
-                    initial={{ width: '100%' }}
-                    animate={{ width: `${(geriSayim / 30) * 100}%` }}
-                    transition={{ duration: 1, ease: 'linear' }}
-                  />
-                </div>
-                {/* Soru metni (demo veya soru metni varsa) */}
-                {kahoot.soruBilgisi?.soru && (
-                  <p className="mt-3 text-base font-semibold text-foreground text-center leading-snug">
-                    {kahoot.soruBilgisi.soru}
-                  </p>
-                )}
-              </div>
-
-              {/* Cevap butonları — seçenek metni varsa göster */}
-              <div className="grid grid-cols-2 gap-3">
-                {CEVAP_RENKLERI.map(({ harf, bg }) => {
-                  const metin = kahoot.soruBilgisi?.[`sec${harf}` as keyof typeof kahoot.soruBilgisi] as string | undefined;
-                  return (
-                    <motion.button
-                      key={harf}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => cevapGonder(harf)}
-                      className={cn(
-                        'rounded-2xl shadow-lg transition-transform flex flex-col items-center justify-center gap-2 p-5',
-                        metin ? 'min-h-[110px]' : 'aspect-square',
-                        bg
-                      )}
-                    >
-                      {/* Harf rozeti */}
-                      <span className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center text-white font-black text-lg shrink-0">
-                        {harf}
-                      </span>
-                      {/* Seçenek metni */}
-                      {metin && (
-                        <span className="text-white font-semibold text-sm leading-snug text-center drop-shadow-sm">
-                          {metin}
-                        </span>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          {/* CEVAP VERİLDİ */}
-          {asama === 'cevap-verildi' && (
-            <motion.div
-              key="cevap"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-card rounded-2xl border border-border shadow-sm p-10 text-center"
-            >
+        {/* ── CEVAP VERİLDİ ───────────────────────────────────────────────── */}
+        {asama === 'cevap-verildi' && (
+          <motion.div
+            key="cevap"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-[480px] mx-auto px-4 py-3"
+          >
+          <div className={cn(
+            'rounded-2xl border shadow-sm p-10 text-center',
+            kahoot.cevapDogru === false ? 'bg-destructive/10 border-destructive/30' : 'bg-card border-border'
+          )}>
+            {kahoot.cevapDogru === false ? (
+              <XCircle className="size-16 text-destructive mx-auto mb-4" />
+            ) : (
               <CheckCircle className="size-16 text-correct mx-auto mb-4" />
-              <p className="text-lg font-semibold text-foreground mb-2">Cevabın alındı!</p>
-              <div className="text-4xl font-black text-primary">
-                +{kahoot.kazanilanPuan}
-              </div>
-              <p className="text-muted-foreground text-sm mt-2">puan</p>
-              <p className="text-muted-foreground text-sm mt-4 animate-pulse">
-                Sıradaki soru bekleniyor...
-              </p>
-            </motion.div>
-          )}
+            )}
+            <p className="text-xl font-bold text-foreground mb-2">
+              {kahoot.cevapDogru === false ? 'Yanlış cevap' : 'Doğru cevap!'}
+            </p>
+            <div className="text-5xl font-black text-primary">
+              +{kahoot.kazanilanPuan}
+            </div>
+            <p className="text-muted-foreground text-sm mt-2">puan</p>
+            <p className="text-muted-foreground text-sm mt-4 animate-pulse">
+              Sıradaki soru bekleniyor...
+            </p>
+          </div>
+          </motion.div>
+        )}
 
-          {/* ARA LEADERBOARD */}
-          {asama === 'leaderboard-ara' && (
-            <motion.div
-              key="ara-lb"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden"
-            >
+        {/* ── ARA LEADERBOARD ──────────────────────────────────────────────── */}
+        {asama === 'leaderboard-ara' && (
+          <motion.div
+            key="ara-lb"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="max-w-[480px] mx-auto px-4 py-3"
+          >
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="bg-foreground px-6 py-4 text-center">
                 <Trophy className="size-6 text-secondary mx-auto mb-1" />
                 <p className="text-primary-foreground font-bold">Ara Sıralama</p>
@@ -303,17 +325,19 @@ export default function KahootKatilPage() {
               <p className="text-muted-foreground text-sm text-center py-4 animate-pulse">
                 Sıradaki soru geliyor...
               </p>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
 
-          {/* OYUN BİTTİ */}
-          {asama === 'bitti' && (
-            <motion.div
-              key="bitti"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden"
-            >
+        {/* ── OYUN BİTTİ ───────────────────────────────────────────────────── */}
+        {asama === 'bitti' && (
+          <motion.div
+            key="bitti"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-[480px] mx-auto px-4 py-3"
+          >
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="bg-gradient-to-br from-primary to-primary-dark px-6 py-8 text-center">
                 <Trophy className="size-12 text-secondary mx-auto mb-2" />
                 <h2 className="text-2xl font-black text-primary-foreground">Oyun Bitti!</h2>
@@ -351,18 +375,20 @@ export default function KahootKatilPage() {
                   Panoya Dön
                 </Link>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
 
-        </AnimatePresence>
+      </AnimatePresence>
 
-        {kahoot.hata && (
-          <div className="mt-4 flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
+      {kahoot.hata && (
+        <div className="max-w-[480px] mx-auto px-4 mt-4">
+          <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
             <AlertCircle className="size-4 shrink-0" />
             {kahoot.hata}
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }

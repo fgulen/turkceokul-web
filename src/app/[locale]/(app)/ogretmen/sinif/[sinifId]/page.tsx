@@ -72,17 +72,17 @@ interface WordIntensityDto {
   difficulty: 'high' | 'medium' | 'low';
 }
 
-function WordIntensityTable({ sinifId, bookId }: { sinifId: number; bookId: string }) {
+function WordIntensityTable({ sinifId }: { sinifId: number }) {
   const [words, setWords] = useState<WordIntensityDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get(`/api/okuma/kitap/${bookId}/word-intensity?classId=${sinifId}`)
+    api.get(`/api/okuma/word-intensity?classId=${sinifId}`)
       .then(r => setWords(r.data))
       .catch((e) => setError(e?.response?.status === 403 ? 'Yetki hatası (403)' : `Hata: ${e?.message}`))
       .finally(() => setLoading(false));
-  }, [sinifId, bookId]);
+  }, [sinifId]);
 
   if (loading) return <p className="text-sm text-muted-foreground">Yükleniyor...</p>;
   if (error) return <p className="text-sm text-red-500">{error}</p>;
@@ -652,7 +652,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           <p className="text-sm text-muted-foreground mb-4">
             Öğrencilerin en çok çeviri baktığı kelimeler — quiz oluşturmak için kullanabilirsiniz.
           </p>
-          <WordIntensityTable sinifId={id} bookId="guliverin-seyahatleri" />
+          <WordIntensityTable sinifId={id} />
         </section>
       </main>
 

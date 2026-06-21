@@ -28,7 +28,7 @@ interface KurumDetay {
 export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: string }> }) {
   const { kurumId } = use(params);
   const id = parseInt(kurumId);
-  const { user, ready } = useAuthGuard('Admin');
+  const { user, ready } = useAuthGuard('Koordinator');
   const qc = useQueryClient();
 
   const [duzenleme, setDuzenleme] = useState(false);

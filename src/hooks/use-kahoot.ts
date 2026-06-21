@@ -59,6 +59,7 @@ export function useKahoot() {
   const [hata, setHata] = useState<string | null>(null);
   const [cevapAlindi, setCevapAlindi] = useState(false);
   const [kazanilanPuan, setKazanilanPuan] = useState(0);
+  const [cevapDogru, setCevapDogru] = useState<boolean | null>(null);
 
   // [] deps: tüm token işi accessTokenFactory içinde; bağımlılık yok
   const connect = useCallback(async (): Promise<boolean> => {
@@ -82,11 +83,13 @@ export function useKahoot() {
       setOyunBasladi(true);
       setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD });
       setCevapAlindi(false);
+      setCevapDogru(null);
     });
 
     conn.on('SoruGeldi', (data: SoruBilgisi) => {
       setSoruBilgisi(data);
       setCevapAlindi(false);
+      setCevapDogru(null);
     });
 
     conn.on('Leaderboard', (data: LeaderboardSatir[]) => setLeaderboard(data));
@@ -96,9 +99,10 @@ export function useKahoot() {
       setOyunBitti(true);
     });
 
-    conn.on('CevapAlindi', (data: { puan: number }) => {
+    conn.on('CevapAlindi', (data: { dogru: boolean; puan: number }) => {
       setCevapAlindi(true);
       setKazanilanPuan(data.puan);
+      setCevapDogru(data.dogru);
     });
 
     conn.on('Hata', (msg: string) => setHata(msg));
@@ -161,6 +165,7 @@ export function useKahoot() {
     hata,
     cevapAlindi,
     kazanilanPuan,
+    cevapDogru,
     connect,
     disconnect,
     joinGame,

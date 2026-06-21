@@ -30,7 +30,7 @@ export default function GirisPage() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       const role = data.user?.role;
       if (role === 'SuperAdmin') router.push('/super-admin', { locale });
-      else if (role === 'Admin') router.push('/admin', { locale });
+      else if (role === 'Koordinator') router.push('/admin', { locale });
       else if (role === 'KurumYoneticisi') router.push('/kurum-yoneticisi', { locale });
       else if (role === 'Ogretmen' || role === 'UlkeTemsilcisi') router.push('/ogretmen', { locale });
       else router.push('/pano', { locale });

@@ -19,7 +19,7 @@ type UlkeTab = 'temsilciler' | 'kurumlar' | 'kitaplar' | 'siniflar';
 
 const ROL_RENKLERI: Record<string, string> = {
   SuperAdmin: 'bg-purple-100 text-purple-700',
-  Admin: 'bg-red-100 text-red-700',
+  Koordinator: 'bg-red-100 text-red-700',
   Editor: 'bg-indigo-100 text-indigo-700',
   UlkeTemsilcisi: 'bg-orange-100 text-orange-700',
   KurumYoneticisi: 'bg-blue-100 text-blue-700',
@@ -27,7 +27,7 @@ const ROL_RENKLERI: Record<string, string> = {
   Ogrenci: 'bg-slate-100 text-slate-600',
 };
 
-const TUM_ROLLER = ['SuperAdmin', 'Admin', 'Editor', 'UlkeTemsilcisi', 'KurumYoneticisi', 'Ogretmen', 'Ogrenci'];
+const TUM_ROLLER = ['SuperAdmin', 'Koordinator', 'Editor', 'UlkeTemsilcisi', 'KurumYoneticisi', 'Ogretmen', 'Ogrenci'];
 
 export default function SuperAdminPage() {
   const { user, ready } = useAuthGuard('SuperAdmin');
@@ -259,11 +259,22 @@ function KitaplarTab() {
 
   return (
     <div className="space-y-4">
+      {/* Kütüphane yönetimi linki */}
+      <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-indigo-900">Kütüphane Kitapları</p>
+          <p className="text-xs text-indigo-600 mt-0.5">PDF/EPUB okuma kitaplarını ekle, düzenle, önizle</p>
+        </div>
+        <Link href="/editor/kutuphane" className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+          Kütüphane Yönetimi →
+        </Link>
+      </div>
+
       <div className="flex gap-3 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
           <input value={arama} onChange={e => setArama(e.target.value)}
-            placeholder="Kitap ara..."
+            placeholder="Ders kitabı ara..."
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
         </div>
         {secili.size > 0 && (

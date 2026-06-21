@@ -305,7 +305,7 @@ export default function EtkinlikPage({
             <ArrowLeft className="size-4" />
             Geri
           </button>
-          {user && (user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 'Editor') && (
+          {user && (user.role === 'Koordinator' || user.role === 'SuperAdmin' || user.role === 'Editor') && (
             <a
               href={`/${locale}/ogretmen/etkinlik/${etkinlikId}/duzenle`}
               className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"

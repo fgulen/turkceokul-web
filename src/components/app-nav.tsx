@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 const AVATAR_COLORS: Record<string, string> = {
   SuperAdmin: 'bg-purple-600',
-  Admin: 'bg-red-500',
+  Koordinator: 'bg-red-500',
   Editor: 'bg-indigo-500',
   KurumYoneticisi: 'bg-blue-600',
   UlkeTemsilcisi: 'bg-orange-500',
@@ -20,7 +20,7 @@ const AVATAR_COLORS: Record<string, string> = {
 
 const ROL_BADGE: Record<string, string> = {
   SuperAdmin: 'bg-purple-100 text-purple-700',
-  Admin: 'bg-red-100 text-red-700',
+  Koordinator: 'bg-red-100 text-red-700',
   Editor: 'bg-indigo-100 text-indigo-700',
   KurumYoneticisi: 'bg-blue-100 text-blue-700',
   UlkeTemsilcisi: 'bg-orange-100 text-orange-700',
@@ -144,7 +144,7 @@ export function AppNav() {
               >
                 Super Admin
               </Link>
-            ) : user.role === 'Admin' ? (
+            ) : user.role === 'Koordinator' ? (
               <Link
                 href="/admin"
                 className={cn(
@@ -154,7 +154,19 @@ export function AppNav() {
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
                 )}
               >
-                Admin
+                Koordinatör
+              </Link>
+            ) : user.role === 'Editor' ? (
+              <Link
+                href="/editor/kutuphane"
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  pathname?.startsWith('/editor')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                Kütüphane
               </Link>
             ) : user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi' ? (
               <>

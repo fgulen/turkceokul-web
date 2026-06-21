@@ -28,7 +28,7 @@ interface Kurum {
 type Sekme = 'ogretmenler' | 'bekleyen' | 'kurumlar';
 
 export default function AdminPage() {
-  const { user, ready } = useAuthGuard('Admin');
+  const { user, ready } = useAuthGuard('Koordinator');
   const qc = useQueryClient();
 
   const [sekme, setSekme] = useState<Sekme>('ogretmenler');
