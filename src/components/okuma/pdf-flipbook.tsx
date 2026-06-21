@@ -108,17 +108,30 @@ export default function PdfViewer({ url, onWordClick }: Props) {
         const textContent = await page.getTextContent();
         if (cancelled) return;
 
-        // pdfjs-dist v5 API
+        // pdfjs v4+: TextLayer class; v3 compat: renderTextLayer function
         try {
-          if (typeof lib.renderTextLayer === 'function') {
-            lib.renderTextLayer({
+          if (typeof lib.TextLayer === 'function') {
+            // pdfjs v4/v5 preferred API
+            const tl = new lib.TextLayer({
+              textContentSource: textContent,
+              container: textDiv,
+              viewport: vp,
+            });
+            await tl.render();
+          } else if (typeof lib.renderTextLayer === 'function') {
+            const task = lib.renderTextLayer({
               textContentSource: textContent,
               container: textDiv,
               viewport: vp,
               textDivs: [],
             });
+            // v4 returns { promise, cancel }; v3 returns RenderTask
+            const p = task?.promise ?? task;
+            if (p && typeof p.then === 'function') await p;
           }
-        } catch { /* text layer desteklenmiyor, kelime seçimi manuel olacak */ }
+        } catch (te) {
+          if (!cancelled) console.warn('[PdfViewer] text layer failed:', te);
+        }
 
       } catch (e: unknown) {
         // RenderingCancelledException beklenen bir durum
@@ -134,26 +147,66 @@ export default function PdfViewer({ url, onWordClick }: Props) {
     return () => { cancelled = true; renderTaskRef.current?.cancel(); };
   }, [pdfDoc, pageIndex, zoom]);
 
-  // ── 3. Text layer kelime seçimi ────────────────────────────────────────────
+  // ── 3. Text layer — kelime seçimi + tek tıklama çeviri ───────────────────
   useEffect(() => {
     const el = textLayerRef.current;
     if (!el || !onWordClick) return;
 
-    function onMouseUp() {
+    function wordAtPoint(x: number, y: number): string {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const range = (document as any).caretRangeFromPoint?.(x, y) as Range | null;
+      if (!range) return '';
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) return;
-      const raw = sel.toString().replace(/[.,!?;:"'()\n\r\s]+/g, '').trim();
-      if (raw && raw.length > 1 && !raw.includes(' ')) {
-        sel.removeAllRanges();
-        onWordClick!(raw);
+      if (!sel) return '';
+      sel.removeAllRanges();
+      sel.addRange(range);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sel as any).modify?.('move', 'backward', 'word');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sel as any).modify?.('extend', 'forward', 'word');
+      } catch { /* Firefox: modify yok */ }
+      const w = sel.toString().replace(/[.,!?;:"'()\n\r]/g, '').trim();
+      sel.removeAllRanges();
+      return w;
+    }
+
+    function handleWord(word: string) {
+      if (word && word.length > 1 && !word.includes(' ')) {
+        onWordClick!(word);
       }
     }
 
+    function onMouseUp(e: MouseEvent) {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) {
+        // Kullanıcı sürükleyerek seçti
+        const raw = sel.toString().replace(/[.,!?;:"'()\n\r\s]+/g, '').trim();
+        sel.removeAllRanges();
+        handleWord(raw);
+        return;
+      }
+      // Tek tıklama → caretRangeFromPoint ile kelimeye git
+      handleWord(wordAtPoint(e.clientX, e.clientY));
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) {
+        const raw = sel.toString().replace(/[.,!?;:"'()\n\r\s]+/g, '').trim();
+        sel.removeAllRanges();
+        handleWord(raw);
+        return;
+      }
+      const touch = e.changedTouches[0];
+      if (touch) handleWord(wordAtPoint(touch.clientX, touch.clientY));
+    }
+
     el.addEventListener('mouseup', onMouseUp);
-    el.addEventListener('touchend', onMouseUp);
+    el.addEventListener('touchend', onTouchEnd);
     return () => {
       el.removeEventListener('mouseup', onMouseUp);
-      el.removeEventListener('touchend', onMouseUp);
+      el.removeEventListener('touchend', onTouchEnd as EventListener);
     };
   }, [onWordClick]);
 
