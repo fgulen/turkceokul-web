@@ -241,8 +241,14 @@ export default function OkumaPage({
   const [fontFamily, setFontFamily]       = useState<FontFamily>('serif');
   const [fontSize, setFontSize]           = useState<number>(100);
   const [showSettings, setShowSettings]   = useState(false);
+  const [anchorRect, setAnchorRect]       = useState<DOMRect | null>(null);
 
   const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(slug);
+
+  const handlePdfWordClick = useCallback((word: string, rect: DOMRect) => {
+    setAnchorRect(rect);
+    translate(word);
+  }, [translate]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renditionRef  = useRef<any>(null);
@@ -409,7 +415,7 @@ export default function OkumaPage({
 
       {/* ── Reader ── */}
       {isPdf ? (
-        <PdfFlipbook url={kitap.url} onWordClick={translate} />
+        <PdfFlipbook url={kitap.url} onWordClick={handlePdfWordClick} />
       ) : (
         <div className="flex-1 relative overflow-hidden">
           <ReactReader
@@ -442,8 +448,9 @@ export default function OkumaPage({
           word={activeWord}
           result={translationResult}
           loading={translating}
-          onClose={closeTranslation}
+          onClose={() => { closeTranslation(); setAnchorRect(null); }}
           theme={theme}
+          anchorRect={anchorRect}
         />
       )}
 
