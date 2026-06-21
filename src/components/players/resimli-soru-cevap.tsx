@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Splits text on "..." markers; returns array where even indices are text, blanks sit between them
 function splitBlanks(text: string): string[] {
@@ -118,12 +119,12 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
         {blankCount === 0 ? (
           <div
             className="whitespace-pre-wrap"
-            dangerouslySetInnerHTML={{ __html: current.description ?? '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(current.description ?? '') }}
           />
         ) : (
           textParts.map((part, i) => (
             <span key={i}>
-              <span dangerouslySetInnerHTML={{ __html: part }} />
+              <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
               {i < blankCount && (
                 <span
                   className={cn(
