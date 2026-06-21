@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
@@ -73,13 +73,6 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
           style={{ width: `${progressPct}%` }}
         />
       </div>
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
       <ActivityHint>Bir ses seç, sonra eşleşen resme tıkla.</ActivityHint>
 
       {/* Images */}

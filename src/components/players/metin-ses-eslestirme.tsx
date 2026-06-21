@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useRef } from 'react';
 import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
-import { PlayingBars, ActivityHint, HintCurtain } from './ui';
+import { PlayingBars, ActivityHint } from './ui';
 
 export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -85,13 +85,6 @@ export function MetinSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
           style={{ width: `${progressPct}%` }}
         />
       </div>
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
       <ActivityHint>Bir ses seç, sonra eşleşen metne tıkla.</ActivityHint>
 
       {/* Ses butonları — üstte */}

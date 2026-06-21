@@ -7,7 +7,6 @@ import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { HintCurtain } from './ui';
 
 function comboMult(combo: number) {
   if (combo >= 10) return 10;
@@ -68,9 +67,6 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Doğru / Yanlış"
       />
 
-      {etkinlik.soruYonergesi && (
-        <HintCurtain hint={etkinlik.soruYonergesi} />
-      )}
 
       <motion.div
         key={current.id}

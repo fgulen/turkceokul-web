@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,7 @@ import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { ProgressDots, HintCurtain } from './ui';
+import { ProgressDots } from './ui';
 
 // Sunucu Sadelestir() ile birebir aynı: sadece lowercase + trim (Türkçe karakterler korunur)
 function sadelestir(s: string) {
@@ -148,13 +148,6 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Resme Kelime Yaz"
       />
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
       <ProgressDots total={detaylar.length} activeIndex={index} />
 
       <motion.div

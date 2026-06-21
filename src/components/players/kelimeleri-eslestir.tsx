@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 
@@ -69,13 +69,6 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
           style={{ width: `${progressPct}%` }}
         />
       </div>
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
       <ActivityHint>Sol taraftan bir kelime seç, sağ taraftan eşleştir.</ActivityHint>
 
       <div className="grid grid-cols-2 gap-3">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,7 +7,7 @@ import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 
 export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -92,13 +92,6 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Sıralama"
       />
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={audioUrl}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
 
       <ActivityHint>Cümleleri doğru sıraya koy</ActivityHint>
 

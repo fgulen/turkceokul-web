@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,6 @@ import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinl
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { HintCurtain } from './ui';
 
 // "...", "…", "[___]", "___" hepsini blank olarak tanı
 const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
@@ -131,13 +130,6 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
         etiket="Boşluk Doldurma"
       />
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
 
       {/* Cümle ve boşluk slotları */}
       <motion.div

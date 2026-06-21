@@ -134,13 +134,6 @@ import { ActivityHint } from './ui';
 <ActivityHint>Sol taraftan bir kelime seç, sağ taraftan eşleştir.</ActivityHint>
 ```
 
-**HintCurtain** — `soruYonergesi` (öğretmen ipucu) için; butona basınca perde gibi açılır:
-```tsx
-import { HintCurtain } from './ui';
-{etkinlik.soruYonergesi && <HintCurtain hint={etkinlik.soruYonergesi} />}
-```
-→ `soruYonergesi` varsa HintCurtain, yoksa hiçbir şey render etme. ActivityHint ile karıştırma.
-
 ---
 
 ## 9. NextButton / NavCounter (okuma/dinleme tipler)
@@ -161,7 +154,7 @@ import { NextButton, NavCounter } from './ui';
 - [ ] Doğru/yanlış varsa `useGameSound` kullanılıyor
 - [ ] `onComplete` doğru pattern (adım-adım / toplu / pasif)
 - [ ] `toMediaUrl()` null kontrolü yapıldı
-- [ ] Statik talimat varsa `ActivityHint`, `soruYonergesi` varsa `HintCurtain` kullanıldı
+- [ ] Statik talimat varsa `ActivityHint` kullanıldı
 - [ ] Kalp eksilme ve combo artışı GameHUD'a yansıtılıyor
 - [ ] **[Tablet]** Dokunma hedefleri ≥44px (mobil), ≥48px (tablet md:)
 - [ ] **[Tablet]** Input focus anında `scrollIntoView({ block: 'nearest' })` çağrısı var

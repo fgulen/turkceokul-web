@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { ImageOff } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 
@@ -77,13 +77,6 @@ export function ResimMetinEslestirmePlayer({ etkinlik, onComplete }: PlayerProps
           style={{ width: `${progressPct}%` }}
         />
       </div>
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
       <ActivityHint>Bir kelime seç, sonra eşleşen resme tıkla.</ActivityHint>
 
       {/* Metin etiketleri — üstte */}

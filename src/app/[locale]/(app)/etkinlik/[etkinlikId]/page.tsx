@@ -4,7 +4,8 @@ import { use, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, Zap, Heart, PenLine } from 'lucide-react';
+import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen } from 'lucide-react';
+import { PerdeGiris } from '@/components/perde-giris';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -215,6 +216,8 @@ export default function EtkinlikPage({
   const [sonuc, setSonuc] = useState<CevapSonuc | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [key, setKey] = useState(0);
+  const [perdeGosteriliyor, setPerdeGosteriliyor] = useState(false);
+  const [perdeAcimaSayisi, setPerdeAcimaSayisi] = useState(0); // gönüllü re-open sayısı
 
   const { data: etkinlik, isLoading } = useQuery<EtkinlikData>({
     queryKey: ['etkinlik', etkinlikId],
@@ -222,12 +225,34 @@ export default function EtkinlikPage({
     enabled: !!user,
   });
 
+  // Perde verisi olan etkinliklerde başlarken perdeyi göster
+  useEffect(() => {
+    if (!etkinlik) return;
+    const hasPerde = !!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink);
+    if (hasPerde) {
+      setPerdeGosteriliyor(true);
+      setPerdeAcimaSayisi(0);
+    }
+  }, [etkinlik?.id]);
+
+  const hasPerde = !!(etkinlik?.resimLink || etkinlik?.sesLink || etkinlik?.videoLink);
+
+  function handlePerdeBasla() {
+    setPerdeGosteriliyor(false);
+  }
+
+  function handlePerdeyeBak() {
+    setPerdeAcimaSayisi((n) => n + 1);
+    setPerdeGosteriliyor(true);
+  }
+
   async function handleComplete(cevaplar: Cevap[]) {
     setSubmitting(true);
     try {
       const { data } = await api.post('/api/etkinlik/cevapla', {
         etkinlikId,
         detaylar: cevaplar,
+        perdeAcimaSayisi,
       });
       setSonuc(data);
       if (uniteId) queryClient.invalidateQueries({ queryKey: ['etkinlikler', uniteId] });
@@ -333,9 +358,35 @@ export default function EtkinlikPage({
         ) : sonuc && etkinlik ? (
           <ResultScreen sonuc={sonuc} onRetry={handleRetry} returnUrl={returnUrl} />
         ) : etkinlik ? (
-          renderPlayer(etkinlik)
+          <>
+            {/* "Perdeye Bak" floating butonu — yalnızca perde verisi olan etkinliklerde */}
+            {hasPerde && (
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={handlePerdeyeBak}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-muted border border-transparent hover:border-border"
+                >
+                  <BookOpen className="size-3.5" />
+                  İpucuna Bak
+                  {perdeAcimaSayisi > 0 && (
+                    <span className="ml-1 text-destructive font-semibold">−{perdeAcimaSayisi} XP</span>
+                  )}
+                </button>
+              </div>
+            )}
+            {renderPlayer(etkinlik)}
+          </>
         ) : null}
       </main>
+
+      {/* Perde overlay — etkinliğin üzerini tam kaplar */}
+      {etkinlik && perdeGosteriliyor && (
+        <PerdeGiris
+          etkinlik={etkinlik}
+          onBasla={handlePerdeBasla}
+          acilmaSayisi={perdeAcimaSayisi}
+        />
+      )}
     </div>
   );
 }

@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 
 interface WordItem {
   word: string;
@@ -82,13 +82,6 @@ export function KelimeleriGruplaPlayer({ etkinlik, onComplete }: PlayerProps) {
         />
       </div>
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
 
       <ActivityHint>Bir kelime seç, sonra doğru gruba yerleştir.</ActivityHint>
 

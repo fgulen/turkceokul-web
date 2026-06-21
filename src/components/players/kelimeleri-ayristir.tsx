@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,7 +7,7 @@ import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { ActivityHint, HintCurtain } from './ui';
+import { ActivityHint } from './ui';
 
 // Words are stored comma-separated in description field
 function parseWords(description: string | null): string[] {
@@ -93,13 +93,6 @@ export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) 
         etiket="Ayırt Et"
       />
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
 
       <ActivityHint>Kelimeleri doğru sıraya koy</ActivityHint>
 

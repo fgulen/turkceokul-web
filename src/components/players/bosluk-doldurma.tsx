@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -8,7 +8,6 @@ import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinl
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
-import { HintCurtain } from './ui';
 
 // "......", "…", "[___]", "___" hepsini tek boşluk olarak tanı
 // \.{3,} greedy — kaç nokta olursa olsun (......., ...........) tek blank sayılır
@@ -107,13 +106,6 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Boşluk Doldurma"
       />
 
-      <HintCurtain
-        hint={etkinlik.soruYonergesi || undefined}
-        imageUrl={toMediaUrl(etkinlik.resimLink)}
-        audioUrl={toMediaUrl(etkinlik.sesLink)}
-        videoUrl={toMediaUrl(etkinlik.videoLink)}
-        defaultOpen={!!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink)}
-      />
 
       {/* Cümle önizleme — yazdıkça boşluk dolar */}
       <motion.div
