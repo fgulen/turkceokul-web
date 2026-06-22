@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LayoutDashboard, LogOut, Sparkles, Trophy, User, Wifi, Zap } from 'lucide-react';
+import { Flame, Heart, LayoutDashboard, Library, LogOut, Settings, Sparkles, Trophy, User, Users, Wifi, Zap } from 'lucide-react';
 import { useAuthStore, AuthUser } from '@/stores/auth';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
@@ -133,29 +133,66 @@ export function AppNav() {
         {mounted && hydrated && user && (
           <nav className="hidden md:flex items-center gap-1">
             {user.role === 'SuperAdmin' ? (
-              <Link
-                href="/super-admin"
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  pathname?.startsWith('/super-admin')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                )}
-              >
-                Super Admin
-              </Link>
+              <>
+                <Link
+                  href="/super-admin"
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/super-admin')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Super Admin
+                </Link>
+                <Link
+                  href="/admin"
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/admin')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Admin Paneli
+                </Link>
+                <Link
+                  href="/ogretmen"
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/ogretmen')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Öğretmen Paneli
+                </Link>
+              </>
             ) : user.role === 'Koordinator' ? (
-              <Link
-                href="/admin"
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  pathname?.startsWith('/admin')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                )}
-              >
-                Koordinatör
-              </Link>
+              <>
+                <Link
+                  href="/admin"
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/admin')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Admin Paneli
+                </Link>
+                <Link
+                  href="/ogretmen"
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname?.startsWith('/ogretmen')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Öğretmen Paneli
+                </Link>
+              </>
             ) : user.role === 'Editor' ? (
               <Link
                 href="/editor/kutuphane"
@@ -272,6 +309,73 @@ export function AppNav() {
         </div>
       </div>
     </header>
+
+    {/* SuperAdmin mobil bottom bar */}
+    {mounted && hydrated && user?.role === 'SuperAdmin' && (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+        {[
+          { href: '/super-admin', Icon: Settings,         label: 'Super Admin' },
+          { href: '/admin',       Icon: Users,            label: 'Admin'       },
+          { href: '/ogretmen',    Icon: LayoutDashboard,  label: 'Öğretmen'   },
+        ].map(({ href, Icon, label }) => {
+          const active = pathname?.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+                active ? 'text-primary' : 'text-slate-400',
+              )}
+            >
+              <Icon className={cn('size-5', active && 'text-primary')} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    )}
+
+    {/* Koordinator mobil bottom bar */}
+    {mounted && hydrated && user?.role === 'Koordinator' && (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+        {[
+          { href: '/admin',    Icon: Users,           label: 'Admin'     },
+          { href: '/ogretmen', Icon: LayoutDashboard, label: 'Öğretmen' },
+        ].map(({ href, Icon, label }) => {
+          const active = pathname?.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+                active ? 'text-primary' : 'text-slate-400',
+              )}
+            >
+              <Icon className={cn('size-5', active && 'text-primary')} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    )}
+
+    {/* Editor mobil bottom bar */}
+    {mounted && hydrated && user?.role === 'Editor' && (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+        <Link
+          href="/editor/kutuphane"
+          className={cn(
+            'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+            pathname?.startsWith('/editor') ? 'text-primary' : 'text-slate-400',
+          )}
+        >
+          <Library className={cn('size-5', pathname?.startsWith('/editor') && 'text-primary')} />
+          Kütüphane
+        </Link>
+      </nav>
+    )}
 
     {/* Öğretmen / KurumYoneticisi / UlkeTemsilcisi mobil bottom bar */}
     {mounted && hydrated && user && (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && (
