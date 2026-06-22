@@ -51,9 +51,9 @@ function SinifKatilContent() {
     const k = kod.trim().toUpperCase();
     if (k.length < 4) return;
 
-    // Giriş yapılmamışsa kayıt sayfasına yönlendir; redirect ile kod korunur
+    // Giriş yapılmamışsa kayıt sayfasına yönlendir; kodu URL'e göm (manuel giriş dahil)
     if (_hasHydrated && !user) {
-      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+      const returnTo = encodeURIComponent(`${window.location.pathname}?kod=${encodeURIComponent(k)}`);
       router.push(`/kayit?tip=bireysel&redirect=${returnTo}` as Parameters<typeof router.push>[0]);
       return;
     }
