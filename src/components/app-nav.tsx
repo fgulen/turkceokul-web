@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
-import { Flame, Heart, LayoutDashboard, Library, LogOut, Settings, Sparkles, Trophy, User, Users, Wifi, Zap } from 'lucide-react';
+import { BookOpen, Flame, Heart, LayoutDashboard, Library, LogOut, Settings, Sparkles, Trophy, User, Users, Wifi, Zap } from 'lucide-react';
 import { useAuthStore, AuthUser } from '@/stores/auth';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
@@ -93,6 +93,44 @@ function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) 
   );
 }
 
+// ─── Shared nav helpers ───────────────────────────────────────────────────────
+
+interface NLProps { href: string; label: string; active: boolean; icon?: React.ReactNode }
+function NL({ href, label, active, icon }: NLProps) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+        active ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+      )}
+    >
+      {icon}{label}
+    </Link>
+  );
+}
+
+interface MBItem { href: string; Icon: React.ElementType; label: string; active: boolean }
+function MobileBar({ items }: { items: MBItem[] }) {
+  return (
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+      {items.map(({ href, Icon, label, active }) => (
+        <Link
+          key={href}
+          href={href}
+          className={cn(
+            'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+            active ? 'text-primary' : 'text-slate-400',
+          )}
+        >
+          <Icon className={cn('size-5', active && 'text-primary')} />
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export function AppNav() {
   const { user, logout } = useAuthStore();
   const hydrated = useAuthStore((s) => s._hasHydrated);
@@ -132,143 +170,31 @@ export function AppNav() {
         {/* Nav */}
         {mounted && hydrated && user && (
           <nav className="hidden md:flex items-center gap-1">
-            {user.role === 'SuperAdmin' ? (
-              <>
-                <Link
-                  href="/super-admin"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/super-admin')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Super Admin
-                </Link>
-                <Link
-                  href="/admin"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/admin')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Admin Paneli
-                </Link>
-                <Link
-                  href="/ogretmen"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/ogretmen')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Öğretmen Paneli
-                </Link>
-              </>
-            ) : user.role === 'Koordinator' ? (
-              <>
-                <Link
-                  href="/admin"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/admin')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Admin Paneli
-                </Link>
-                <Link
-                  href="/ogretmen"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/ogretmen')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Öğretmen Paneli
-                </Link>
-              </>
-            ) : user.role === 'Editor' ? (
-              <Link
-                href="/editor/kutuphane"
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  pathname?.startsWith('/editor')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                )}
-              >
-                Kütüphane
-              </Link>
-            ) : user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi' ? (
-              <>
-                <Link
-                  href="/ogretmen"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Panelim
-                </Link>
-                <Link
-                  href="/ogretmen/ai-icerik"
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname === '/ogretmen/ai-icerik'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  AI İçerik
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/pano"
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname === '/pano'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  Pano
-                </Link>
-                <Link
-                  href="/lig"
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname === '/lig'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  <Trophy className="size-3.5" />
-                  Lig
-                </Link>
-                <Link
-                  href="/kahoot/katil"
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname?.startsWith('/kahoot')
-                      ? 'bg-emerald-50 text-emerald-600'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  <Wifi className="size-3.5" />
-                  Kahoot
-                </Link>
-              </>
+            {user.role === 'SuperAdmin' && <>
+              <NL href="/super-admin"       label="Super Admin"      active={!!pathname?.startsWith('/super-admin')} />
+              <NL href="/admin"             label="Admin Paneli"     active={!!pathname?.startsWith('/admin')} />
+              <NL href="/ogretmen"          label="Öğretmen Paneli"  active={!!pathname?.startsWith('/ogretmen')} />
+              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+            </>}
+            {user.role === 'Koordinator' && <>
+              <NL href="/admin"             label="Admin Paneli"     active={!!pathname?.startsWith('/admin')} />
+              <NL href="/ogretmen"          label="Öğretmen Paneli"  active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+            </>}
+            {user.role === 'Editor' && (
+              <NL href="/editor/kutuphane"  label="Kütüphane"        active={!!pathname?.startsWith('/editor')} />
             )}
+            {(user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && <>
+              <NL href="/ogretmen"          label="Panelim"          active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+            </>}
+            {user.role === 'Ogrenci' && <>
+              <NL href="/pano"              label="Pano"             active={pathname === '/pano'} />
+              <NL href="/lig"               label="Lig"              active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
+              <NL href="/kahoot/katil"      label="Kahoot"           active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
+            </>}
           </nav>
         )}
 
@@ -310,124 +236,41 @@ export function AppNav() {
       </div>
     </header>
 
-    {/* SuperAdmin mobil bottom bar */}
+    {/* Mobil bottom bar'lar — rol bazlı */}
     {mounted && hydrated && user?.role === 'SuperAdmin' && (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
-        {[
-          { href: '/super-admin', Icon: Settings,         label: 'Super Admin' },
-          { href: '/admin',       Icon: Users,            label: 'Admin'       },
-          { href: '/ogretmen',    Icon: LayoutDashboard,  label: 'Öğretmen'   },
-        ].map(({ href, Icon, label }) => {
-          const active = pathname?.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-                active ? 'text-primary' : 'text-slate-400',
-              )}
-            >
-              <Icon className={cn('size-5', active && 'text-primary')} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <MobileBar items={[
+        { href: '/super-admin',        Icon: Settings,        label: 'Super Admin', active: !!pathname?.startsWith('/super-admin') },
+        { href: '/admin',              Icon: Users,           label: 'Admin',       active: !!pathname?.startsWith('/admin') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!pathname?.startsWith('/ogretmen') },
+        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+      ]} />
     )}
-
-    {/* Koordinator mobil bottom bar */}
     {mounted && hydrated && user?.role === 'Koordinator' && (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
-        {[
-          { href: '/admin',    Icon: Users,           label: 'Admin'     },
-          { href: '/ogretmen', Icon: LayoutDashboard, label: 'Öğretmen' },
-        ].map(({ href, Icon, label }) => {
-          const active = pathname?.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-                active ? 'text-primary' : 'text-slate-400',
-              )}
-            >
-              <Icon className={cn('size-5', active && 'text-primary')} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <MobileBar items={[
+        { href: '/admin',              Icon: Users,           label: 'Admin',       active: !!pathname?.startsWith('/admin') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+      ]} />
     )}
-
-    {/* Editor mobil bottom bar */}
     {mounted && hydrated && user?.role === 'Editor' && (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
-        <Link
-          href="/editor/kutuphane"
-          className={cn(
-            'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-            pathname?.startsWith('/editor') ? 'text-primary' : 'text-slate-400',
-          )}
-        >
-          <Library className={cn('size-5', pathname?.startsWith('/editor') && 'text-primary')} />
-          Kütüphane
-        </Link>
-      </nav>
+      <MobileBar items={[
+        { href: '/editor/kutuphane',   Icon: Library,         label: 'Kütüphane',   active: !!pathname?.startsWith('/editor') },
+      ]} />
     )}
-
-    {/* Öğretmen / KurumYoneticisi / UlkeTemsilcisi mobil bottom bar */}
     {mounted && hydrated && user && (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
-        {[
-          { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Panelim'   },
-          { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik' },
-        ].map(({ href, Icon, label }) => {
-          const active = href === '/ogretmen/ai-icerik'
-            ? pathname === href
-            : pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik';
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-                active ? 'text-primary' : 'text-slate-400',
-              )}
-            >
-              <Icon className={cn('size-5', active && 'text-primary')} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <MobileBar items={[
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Panelim',     active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+      ]} />
     )}
-
-    {/* Öğrenci mobil bottom bar */}
     {mounted && hydrated && user?.role === 'Ogrenci' && (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
-        {[
-          { href: '/pano',         Icon: LayoutDashboard, label: 'Pano'   },
-          { href: '/lig',          Icon: Trophy,          label: 'Lig'    },
-          { href: '/kahoot/katil', Icon: Wifi,            label: 'Kahoot' },
-        ].map(({ href, Icon, label }) => {
-          const active = pathname === href || (href !== '/pano' && pathname?.startsWith(href));
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-                active ? 'text-primary' : 'text-slate-400',
-              )}
-            >
-              <Icon className={cn('size-5', active && 'text-primary')} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <MobileBar items={[
+        { href: '/pano',               Icon: LayoutDashboard, label: 'Pano',        active: pathname === '/pano' },
+        { href: '/lig',                Icon: Trophy,          label: 'Lig',         active: pathname === '/lig' },
+        { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot',      active: !!pathname?.startsWith('/kahoot') },
+      ]} />
     )}
     </>
   );

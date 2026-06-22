@@ -422,7 +422,7 @@ export default function DersPage({
   params: Promise<{ kitapId: string }>;
 }) {
   const { kitapId } = use(params);
-  const { user, ready } = useAuthGuard();
+  const { user, ready } = useAuthGuard(undefined, true);
   const searchParams = useSearchParams();
   const [selectedUniteId, setSelectedUniteId] = useState<string | null>(
     searchParams.get('uniteId'),
