@@ -172,12 +172,14 @@ function AdventurePath({
   kitapId,
   filterBolum,
   lastId,
+  isEditor,
 }: {
   etkinlikler: Etkinlik[];
   uniteId: string;
   kitapId: string;
   filterBolum: string | null;
   lastId?: string | null;
+  isEditor?: boolean;
 }) {
   const filtered = filterBolum
     ? etkinlikler.filter(e => e.bolum === filterBolum)
@@ -192,7 +194,9 @@ function AdventurePath({
   }
 
   // Activities are locked sequentially: each activity requires the previous one to have >= 70% score
+  // Editors bypass all locks to access any activity freely
   const lockStates = filtered.map((e, idx) => {
+    if (isEditor) return false;
     if (idx === 0) return false; // First activity always unlocked
     const prev = filtered[idx - 1];
     const prevScore = prev.maxPuan ?? 0;
@@ -490,6 +494,8 @@ export default function DersPage({
   );
   if (!user) return null;
 
+  const isEditor = ['Editor', 'SuperAdmin', 'Koordinator'].includes(user.role);
+
   return (
     <div className="bg-background">
 
@@ -515,7 +521,7 @@ export default function DersPage({
                     key={u.id}
                     unite={u}
                     selected={selectedUniteId === u.id}
-                    onClick={() => !u.kilitli && setSelectedUniteId(u.id)}
+                    onClick={() => (isEditor || !u.kilitli) && setSelectedUniteId(u.id)}
                   />
                 ))}
               </div>
@@ -566,7 +572,7 @@ export default function DersPage({
                 <div className="shrink-0">
                   <UniteHero unite={selectedUnite} kitapName={kitap?.name} kitapId={kitapId} />
 
-                  {selectedUnite.kilitli ? (
+                  {selectedUnite.kilitli && !isEditor ? (
                     <p className="text-sm text-muted-foreground text-center py-10">
                       Önceki üniteyi tamamlayarak bu üniteye erişebilirsin.
                     </p>
@@ -614,6 +620,7 @@ export default function DersPage({
                       kitapId={kitapId}
                       filterBolum={activeTab}
                       lastId={lastId}
+                      isEditor={isEditor}
                     />
                   </div>
                 ) : null}

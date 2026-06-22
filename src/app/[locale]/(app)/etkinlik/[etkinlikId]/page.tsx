@@ -295,7 +295,8 @@ export default function EtkinlikPage({
       case 'SesiDinleveKelimeYaz': return <SesiDinleveKelimeYazPlayer key={key} {...props} />;
       case 'KelimeleriGrupla': return <KelimeleriGruplaPlayer key={key} {...props} />;
       case 'KelimelerdenCumleYap': return <KelimelerdenCumleYapPlayer key={key} {...props} />;
-      case 'ResimliSoruCevap': return <ResimliSoruCevapPlayer key={key} {...props} />;
+      case 'ResimliSoruCevap':
+      case 'SoruCevap': return <ResimliSoruCevapPlayer key={key} {...props} />;
       case 'KelimeleriAyristir': return <KelimeleriAyristirPlayer key={key} {...props} />;
       case 'ResimSesEslestirmeDogruYanlis': return <ResimSesEslestirmePlayer key={key} {...props} />;
       case 'MetinSesEslestirmeDogruYanlis': return <MetinSesEslestirmePlayer key={key} {...props} />;
