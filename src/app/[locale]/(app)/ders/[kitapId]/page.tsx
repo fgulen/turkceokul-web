@@ -48,12 +48,17 @@ const BOLUM_ICONS: Record<string, React.ReactNode> = {
   Okuma: <BookMarked className="size-5" />,
   Dinleme: <Headphones className="size-5" />,
   Yazma: <PenLine className="size-5" />,
-  Dilbilgisi: <Languages className="size-5" />,
-  Değerlendirme: <Trophy className="size-5" />,
+  DilBilgisi: <Languages className="size-5" />,
+  Degerlendirme: <Trophy className="size-5" />,
   'AI Generated': <Sparkles className="size-5" />,
 };
 
-const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'Dilbilgisi', 'Değerlendirme', 'AI Generated'];
+const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'DilBilgisi', 'Degerlendirme', 'AI Generated'];
+
+const BOLUM_LABEL: Record<string, string> = {
+  DilBilgisi: 'Dil Bilgisi',
+  Degerlendirme: 'Değerlendirme',
+};
 
 function getZigzagPosition(index: number): 'left' | 'center' | 'right' {
   const pattern = index % 4;
@@ -601,7 +606,7 @@ export default function DersPage({
                                 )}
                               >
                                 <span className="shrink-0">{Icon}</span>
-                                <span className="hidden sm:inline">{tab}</span>
+                                <span className="hidden sm:inline">{BOLUM_LABEL[tab] ?? tab}</span>
                               </button>
                             );
                           })}

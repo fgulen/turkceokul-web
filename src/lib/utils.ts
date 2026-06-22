@@ -40,8 +40,8 @@ const BOLUM_COLORS: Record<string, string> = {
   Okuma:          'bg-green-100  text-green-700  dark:bg-green-950  dark:text-green-300',
   Dinleme:        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
   Yazma:          'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  Dilbilgisi:     'bg-pink-100   text-pink-700   dark:bg-pink-950   dark:text-pink-300',
-  Değerlendirme:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  DilBilgisi:     'bg-pink-100   text-pink-700   dark:bg-pink-950   dark:text-pink-300',
+  Degerlendirme:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
   'AI Generated': 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
 };
 
@@ -51,7 +51,7 @@ export function bolumColor(bolum: string): string {
 
 // Pedagojik bölüm sırası: Kelime→Okuma→Dinleme→Yazma→Dilbilgisi→Değerlendirme→AI Generated
 const BOLUM_SIRASI: Record<string, number> = {
-  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, Dilbilgisi: 4, Değerlendirme: 5, 'AI Generated': 6,
+  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, DilBilgisi: 4, Degerlendirme: 5, 'AI Generated': 6,
 };
 
 export function bolumSirasi(bolum: string): number {
@@ -63,8 +63,8 @@ const BOLUM_ICONS: Record<string, string> = {
   Okuma:          'BookMarked',
   Dinleme:        'Headphones',
   Yazma:          'PenLine',
-  Dilbilgisi:     'Languages',
-  Değerlendirme:  'Trophy',
+  DilBilgisi:     'Languages',
+  Degerlendirme:  'Trophy',
   'AI Generated': 'Sparkles',
 };
 
@@ -118,7 +118,7 @@ export const BOLUM_ZIGZAG = {
     label: 'bg-cyan-100 text-cyan-700',
     activeLabel: 'text-cyan-600',
   },
-  Dilbilgisi: {
+  DilBilgisi: {
     active: 'bg-rose-500',
     ring: 'ring-rose-200',
     shadow: 'shadow-rose-200',
@@ -126,7 +126,7 @@ export const BOLUM_ZIGZAG = {
     label: 'bg-rose-100 text-rose-700',
     activeLabel: 'text-rose-600',
   },
-  Değerlendirme: {
+  Degerlendirme: {
     active: 'bg-amber-500',
     ring: 'ring-amber-200',
     shadow: 'shadow-amber-200',
