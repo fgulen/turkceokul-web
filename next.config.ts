@@ -39,11 +39,13 @@ const nextConfig: NextConfig = {
       // /learn-turkish-online → /en/learn-turkish-online
       // /ogretmenler          → /tr/ogretmenler
       // /for-teachers         → /en/for-teachers
+      // /sinif/katil          → /tr/sinif/katil (QR kodu kısa link)
       // ----------------------------------------------------------------
       { source: '/turkce-ogren',         destination: '/tr/turkce-ogren',         permanent: true },
       { source: '/learn-turkish-online', destination: '/en/learn-turkish-online', permanent: true },
       { source: '/ogretmenler',          destination: '/tr/ogretmenler',          permanent: true },
       { source: '/for-teachers',         destination: '/en/for-teachers',         permanent: true },
+      { source: '/sinif/katil',          destination: '/tr/sinif/katil',          permanent: false },
 
       // ----------------------------------------------------------------
       // 1. ÖĞRENCI PANELİ

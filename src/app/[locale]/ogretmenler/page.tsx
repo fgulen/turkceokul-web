@@ -147,6 +147,8 @@ const plans = [
 
 const faqs = [
   { q: 'Kurumsal hesap açmak ücretsiz mi?', a: 'Evet. 1 sınıf ve 10 öğrenci ücretsiz olarak süresiz kullanılabilir. Sınıf ve öğrenci sayısı artınca Kurumsal Pro planına geçebilirsiniz.' },
+  { q: 'Öğrencim sınıfa nasıl katılır?', a: 'İki yol var: (1) Öğretmen panelinden QR kodu açın, öğrenci telefonu ile tarasın. (2) Katılım kodunu paylaşın, öğrenci turkceokulu.com/sinif/katil sayfasına girip kodu yazsın. Ayrıntılı adımlar için aşağıdaki "Öğrenci Katılım Rehberi" bölümüne bakın.' },
+  { q: 'QR kodu nasıl çalışır? Özel uygulama gerekiyor mu?', a: 'Hayır, uygulama gerekmez. Öğretmen Paneli → Sınıfım → "QR ile Katıl" butonuna tıklayınca büyük bir QR kodu açılır. Öğrenci telefon kamerasıyla (iOS veya Android — ayrı QR uygulaması şart değil) kodu tarar; tarayıcıda turkceokulu.com/sinif/katil sayfası açılır ve sınıfa katılır. Hesabı yoksa önce kayıt olur, ardından otomatik olarak katılım sayfasına yönlendirilir.' },
   { q: 'AI İçerik Stüdyosu hangi dillerde çalışır?', a: 'Şu an Türkçe içerik üretimi için optimize edilmiştir. Konu Türkçe verilince kelime düzeyine uygun quiz, boşluk doldurma ve kelime listesi üretir.' },
   { q: 'Kahoot modunda kaç öğrenci aynı anda katılabilir?', a: 'Kurumsal Pro planda 50 öğrenciye kadar aynı anda canlı quiz yapılabilir. Kampüs planında bu limit kaldırılır.' },
   { q: 'Nevai Yayınları kitaplarıyla entegrasyon nasıl çalışır?', a: 'Kitap aktivasyon kodları öğrencilere 6 aylık premium erişim verir. Öğretmen panelinden sınıfı bağlı kitaba göre filtreleyebilirsiniz.' },
@@ -458,6 +460,115 @@ export default function OgretmenlerPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Öğrenci Katılım Rehberi */}
+        <section id="ogrenci-katilim" style={{ background: '#fff', padding: '72px 0', borderTop: '1px solid #f0f2f5' }}>
+          <div className="px-4 md:px-10" style={{ maxWidth: 820, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', padding: '4px 14px', borderRadius: 999, marginBottom: 16 }}>
+                <QrCode style={{ width: 13, height: 13 }} />
+                ÖĞRENCİ KATILIM REHBERİ
+              </div>
+              <h2 style={{ fontSize: 'clamp(22px,3vw,34px)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 12 }}>
+                Öğrenciniz sınıfa nasıl katılır?
+              </h2>
+              <p style={{ fontSize: 16, color: '#6b7280', maxWidth: 520, margin: '0 auto' }}>
+                QR kod veya katılım koduyla 30 saniyede. Uygulama indirmeye gerek yok.
+              </p>
+            </div>
+
+            {/* İki yol: QR ve Kod */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: 24, marginBottom: 48 }}>
+
+              {/* Yol A: QR */}
+              <div style={{ background: '#f8faff', border: '2px solid #bfdbfe', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <QrCode style={{ width: 20, height: 20, color: '#1b75bc' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1b75bc', letterSpacing: '0.06em' }}>YOL A</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#1e1b1c' }}>QR Kod ile Katıl</div>
+                  </div>
+                </div>
+                <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {[
+                    { n: '1', text: 'Öğretmen Paneli → Sınıfım → "QR ile Katıl" butonuna tıkla', icon: '🖥️' },
+                    { n: '2', text: 'QR kodu projeksiyon ya da tabletten öğrencilere göster', icon: '📺' },
+                    { n: '3', text: 'Öğrenci kamerasıyla QR\'ı tara — sınıfa katıl sayfası açılır', icon: '📱' },
+                    { n: '4', text: '"Sınıfa Katıl" butonuna bas, anında sınıfa gir', icon: '✅' },
+                  ].map(({ n, text, icon }) => (
+                    <li key={n} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1b75bc', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                      <span style={{ fontSize: 14, color: '#374151', lineHeight: '22px' }}>{icon} {text}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Yol B: Kod */}
+              <div style={{ background: '#f5f3ff', border: '2px solid #ddd6fe', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users style={{ width: 20, height: 20, color: '#7c3aed' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', letterSpacing: '0.06em' }}>YOL B</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#1e1b1c' }}>Kod ile Katıl</div>
+                  </div>
+                </div>
+                <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {[
+                    { n: '1', text: 'Öğretmen Paneli → Sınıfım → katılım kodunu kopyala (örn: AB3X9K)', icon: '📋' },
+                    { n: '2', text: 'Kodu öğrencilere WhatsApp veya yazılı olarak ilet', icon: '💬' },
+                    { n: '3', text: 'Öğrenci turkceokulu.com/sinif/katil adresini açar', icon: '🌐' },
+                    { n: '4', text: 'Kodu yazar, "Sınıfa Katıl" der — anında sınıfa girer', icon: '✅' },
+                  ].map(({ n, text, icon }) => (
+                    <li key={n} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#7c3aed', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                      <span style={{ fontSize: 14, color: '#374151', lineHeight: '22px' }}>{icon} {text}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+
+            {/* Mock UI */}
+            <div style={{ background: '#1e1b1c', borderRadius: 16, padding: 28, marginBottom: 32 }}>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16, letterSpacing: '0.04em' }}>ÖRNEK — Öğrencinin gördüğü ekran</div>
+              <div style={{ background: '#f9fafb', borderRadius: 12, padding: 24, maxWidth: 360, margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users style={{ width: 20, height: 20, color: '#1b75bc' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>Sınıfa Katıl</div>
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>Öğretmeninden aldığın kodu gir</div>
+                  </div>
+                </div>
+                <div style={{ background: '#fff', border: '2px solid #1b75bc', borderRadius: 12, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 28, fontWeight: 800, letterSpacing: '0.15em', color: '#1b75bc', marginBottom: 12 }}>
+                  AB3X9K
+                </div>
+                <div style={{ background: '#1b75bc', borderRadius: 12, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16 }}>
+                  Sınıfa Katıl ✓
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <Link
+                href="/sinif/katil"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#1b75bc', color: '#fff', fontSize: 14, fontWeight: 700, padding: '12px 24px', borderRadius: 10, textDecoration: 'none' }}
+              >
+                <QrCode style={{ width: 16, height: 16 }} />
+                Sınıfa Katıl Sayfasını Aç
+              </Link>
+              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 10 }}>
+                Henüz hesabın yoksa önce ücretsiz kayıt ol, sonra kodunu gir.
+              </p>
             </div>
           </div>
         </section>

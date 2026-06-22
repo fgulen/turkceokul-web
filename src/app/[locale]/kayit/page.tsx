@@ -33,6 +33,7 @@ const BIREYSEL_BENEFITS = [
 function KayitForm() {
   const searchParams = useSearchParams();
   const initialTab: Tab = searchParams.get("tip") === "bireysel" ? "bireysel" : "kurumsal";
+  const redirectAfter = searchParams.get("redirect") ?? "";
 
   const router = useRouter();
   const locale = useLocale();
@@ -72,6 +73,10 @@ function KayitForm() {
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken, data.refreshToken);
+      if (tab === "bireysel" && redirectAfter && redirectAfter.startsWith("/")) {
+        window.location.href = redirectAfter;
+        return;
+      }
       router.push(tab === "kurumsal" ? "/ogretmen" : "/seviye-testi", { locale });
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
@@ -278,9 +283,17 @@ function KayitForm() {
                     <Brain style={{ width: 15, height: 15, color: "#16a34a", flexShrink: 0 }} />
                     <span style={{ fontSize: 14, color: "#15803d", lineHeight: "20px" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
                   </div>
-                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 9 }}>
-                    <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Bir okul veya kurumdan mı geliyorsun? <strong>Öğretmeninden sınıf kodunu iste</strong>, seni sınıfına eklesin.</span>
+                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                      <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
+                    </div>
+                    <a
+                      href="/sinif/katil"
+                      style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", whiteSpace: "nowrap", textDecoration: "none", borderBottom: "1px solid #93c5fd" }}
+                    >
+                      Sınıfa Katıl →
+                    </a>
                   </div>
                 </div>
               </div>
@@ -347,7 +360,19 @@ function KayitForm() {
 
           <p style={{ textAlign: "center", fontSize: 15, color: "#9ca3af", marginTop: 22 }}>
             Zaten hesabın var mı?{" "}
-            <Link href="/giris" style={{ color: "#1b75bc", fontWeight: 600, textDecoration: "none" }}>Giriş yap</Link>
+            <a
+              href="/giris"
+              onClick={(e) => {
+                e.preventDefault();
+                const href = redirectAfter
+                  ? `/giris?redirect=${encodeURIComponent(redirectAfter)}`
+                  : '/giris';
+                router.push(href, { locale });
+              }}
+              style={{ color: "#1b75bc", fontWeight: 600, textDecoration: "none", cursor: "pointer" }}
+            >
+              Giriş yap
+            </a>
           </p>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "#c0c7d2", marginTop: 16, lineHeight: "19px" }}>

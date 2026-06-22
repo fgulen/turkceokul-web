@@ -28,6 +28,13 @@ export default function GirisPage() {
     try {
       const { data } = await api.post('/api/auth/login', form);
       setAuth(data.user, data.accessToken, data.refreshToken);
+      // Redirect param'ı kontrol et (QR tarama, korumalı sayfa yönlendirmesi için)
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect && redirect.startsWith('/')) {
+        window.location.href = redirect;
+        return;
+      }
       const role = data.user?.role;
       if (role === 'SuperAdmin') router.push('/super-admin', { locale });
       else if (role === 'Koordinator') router.push('/admin', { locale });
@@ -135,9 +142,18 @@ export default function GirisPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Hesabın yok mu?{' '}
-          <Link href="/kayit" className="text-primary font-medium hover:underline">
+          <a
+            href="/kayit"
+            onClick={(e) => {
+              e.preventDefault();
+              const red = new URLSearchParams(window.location.search).get('redirect');
+              const href = red ? `/kayit?redirect=${encodeURIComponent(red)}` : '/kayit';
+              router.push(href, { locale });
+            }}
+            className="text-primary font-medium hover:underline cursor-pointer"
+          >
             Ücretsiz kayıt ol
-          </Link>
+          </a>
         </p>
       </div>
     </div>
