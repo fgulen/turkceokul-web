@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,49 @@ interface CevapSonuc {
   combo: number;
   kalpAzaldi: boolean;
   kalanKalp: number;
+}
+
+interface EtkinlikListItem {
+  id: string;
+  bolum: string;
+}
+
+function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDon: () => void }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { btnRef.current?.focus(); }, []);
+
+  return (
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
+      <div className="bg-card border border-border rounded-[2rem] p-8 text-center max-w-xs w-full shadow-xl">
+        <motion.div
+          className="flex justify-center mb-5"
+          animate={{ scale: [1, 1.25, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 0.85, ease: 'easeInOut', repeat: Infinity }}
+        >
+          <Heart className="size-16 fill-red-500 text-red-500" />
+        </motion.div>
+        <h2 className="text-2xl font-extrabold mb-2">Kalbin Bitti!</h2>
+        <p className="text-muted-foreground text-sm mb-7">
+          30 dakika bekle ya da başka bir etkinlik yap, kalbin yenilenir.
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            ref={btnRef}
+            onClick={onGeriDon}
+            className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors focus:outline-none focus:ring-4 focus:ring-primary/40"
+          >
+            Haritaya Dön
+          </button>
+          <button
+            onClick={onRetry}
+            className="w-full py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StarRating({ puan }: { puan: number }) {
@@ -89,10 +133,12 @@ function ResultScreen({
   sonuc,
   onRetry,
   returnUrl,
+  sonrakiUrl,
 }: {
   sonuc: CevapSonuc;
   onRetry: () => void;
   returnUrl: string | null;
+  sonrakiUrl: string | null;
 }) {
   const router = useRouter();
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -103,6 +149,8 @@ function ResultScreen({
     updateUser({ puan: sonuc.yeniToplam, kalp: sonuc.kalanKalp });
     play(sonuc.basarili ? 'complete' : 'wrong');
   }, [sonuc, updateUser, play]);
+
+  const devamUrl = sonrakiUrl ?? returnUrl;
 
   return (
     <div className="result-screen-in fixed inset-0 gradient-result-bg flex flex-col items-center justify-center p-6 z-[60]">
@@ -177,10 +225,10 @@ function ResultScreen({
         {/* Butonlar */}
         <div className="result-a5 flex flex-col gap-2 w-full">
           <button
-            onClick={() => returnUrl ? router.push(returnUrl) : router.back()}
+            onClick={() => devamUrl ? router.push(devamUrl) : router.back()}
             className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors"
           >
-            Devam Et →
+            {sonrakiUrl ? 'Sonraki Etkinlik →' : 'Devam Et →'}
           </button>
           <button
             onClick={onRetry}
@@ -219,11 +267,34 @@ export default function EtkinlikPage({
   const [perdeGosteriliyor, setPerdeGosteriliyor] = useState(false);
   const [perdeAcimaSayisi, setPerdeAcimaSayisi] = useState(0); // gönüllü re-open sayısı
 
+  // Aynı sayfada etkinlikId değişince (otomatik geçiş) state'i sıfırla
+  useEffect(() => {
+    setSonuc(null);
+    setSubmitting(false);
+    setKey((k) => k + 1);
+    setPerdeAcimaSayisi(0);
+  }, [etkinlikId]);
+
   const { data: etkinlik, isLoading } = useQuery<EtkinlikData>({
     queryKey: ['etkinlik', etkinlikId],
     queryFn: () => api.get(`/api/etkinlik/${etkinlikId}`).then((r) => r.data),
     enabled: !!user,
   });
+
+  const { data: etkinlikListesi } = useQuery<EtkinlikListItem[]>({
+    queryKey: ['etkinlikler', uniteId],
+    queryFn: () => api.get(`/api/etkinlikler/${uniteId}`).then((r) => r.data),
+    enabled: !!user && !!uniteId,
+  });
+
+  const sonrakiUrl = useMemo(() => {
+    if (!etkinlikListesi || !bolum || !uniteId || !kitapId) return null;
+    const bolumList = etkinlikListesi.filter((e) => e.bolum === bolum);
+    const idx = bolumList.findIndex((e) => e.id === etkinlikId);
+    if (idx === -1 || idx + 1 >= bolumList.length) return null;
+    const nextId = bolumList[idx + 1].id;
+    return `/etkinlik/${nextId}?uniteId=${uniteId}&kitapId=${kitapId}&bolum=${encodeURIComponent(bolum)}`;
+  }, [etkinlikListesi, bolum, etkinlikId, uniteId, kitapId]);
 
   // OkuGec: Etkinlik.ResimLink/SesLink = içeriğin kendisi (okuma metni + ses).
   // Migration bu alanları detay tablosundan kopyaladığı için etkinlik-level dolu görünür; perde değil.
@@ -364,8 +435,13 @@ export default function EtkinlikPage({
             <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
             <p className="text-muted-foreground">Sonuç hesaplanıyor…</p>
           </div>
+        ) : sonuc && sonuc.kalanKalp === 0 && !sonuc.basarili ? (
+          <KalpSifirScreen
+            onRetry={handleRetry}
+            onGeriDon={() => returnUrl ? router.push(returnUrl) : router.back()}
+          />
         ) : sonuc && etkinlik ? (
-          <ResultScreen sonuc={sonuc} onRetry={handleRetry} returnUrl={returnUrl} />
+          <ResultScreen sonuc={sonuc} onRetry={handleRetry} returnUrl={returnUrl} sonrakiUrl={sonrakiUrl} />
         ) : etkinlik ? (
           <>
             {/* "Perdeye Bak" floating butonu — yalnızca perde verisi olan etkinliklerde */}
@@ -373,7 +449,7 @@ export default function EtkinlikPage({
               <div className="flex justify-end mb-2">
                 <button
                   onClick={handlePerdeyeBak}
-                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-muted border border-transparent hover:border-border"
+                  className="inline-flex items-center gap-1.5 text-xs text-sky-700 dark:text-sky-400 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors"
                 >
                   <BookOpen className="size-3.5" />
                   İpucuna Bak
@@ -389,13 +465,16 @@ export default function EtkinlikPage({
       </main>
 
       {/* Perde overlay — etkinliğin üzerini tam kaplar */}
-      {etkinlik && perdeGosteriliyor && (
-        <PerdeGiris
-          etkinlik={etkinlik}
-          onBasla={handlePerdeBasla}
-          acilmaSayisi={perdeAcimaSayisi}
-        />
-      )}
+      <AnimatePresence>
+        {etkinlik && perdeGosteriliyor && (
+          <PerdeGiris
+            key="perde"
+            etkinlik={etkinlik}
+            onBasla={handlePerdeBasla}
+            acilmaSayisi={perdeAcimaSayisi}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

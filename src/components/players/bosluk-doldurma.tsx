@@ -76,19 +76,21 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
     );
 
     play(isCorrect ? 'correct' : 'wrong');
+    let newKalp = localKalp;
     if (isCorrect) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) play('combo');
     } else {
       setCombo(0);
-      setLocalKalp((k) => Math.max(0, k - 1));
+      newKalp = Math.max(0, localKalp - 1);
+      setLocalKalp(newKalp);
     }
 
     setTimeout(() => {
       const yeni = [...cevaplar, { id: current.id, cevap: answer }];
       setCevaplar(yeni);
-      if (index + 1 >= detaylar.length) {
+      if (newKalp === 0 || index + 1 >= detaylar.length) {
         onComplete(yeni);
       } else {
         setIndex((i) => i + 1);
