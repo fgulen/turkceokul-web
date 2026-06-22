@@ -200,7 +200,7 @@ export default function EtkinlikPage({
   params: Promise<{ etkinlikId: string }>;
 }) {
   const { etkinlikId } = use(params);
-  const { user, ready } = useAuthGuard();
+  const { user, ready } = useAuthGuard(undefined, true);
   const router = useRouter();
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -225,17 +225,25 @@ export default function EtkinlikPage({
     enabled: !!user,
   });
 
+  // OkuGec: Etkinlik.ResimLink/SesLink = içeriğin kendisi (okuma metni + ses).
+  // Migration bu alanları detay tablosundan kopyaladığı için etkinlik-level dolu görünür; perde değil.
+  // Diğer tüm tiplerde Etkinlik-level ResimLink/SesLink/VideoLink = gerçek perde
+  // (eski admin UI'da "Perde: Resim/Ses/Video" etiketiyle tüm tipler için aynı form).
+  const PERDE_DISI = ['OkuGec'];
+
   // Perde verisi olan etkinliklerde başlarken perdeyi göster
   useEffect(() => {
     if (!etkinlik) return;
-    const hasPerde = !!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink);
+    if (PERDE_DISI.includes(etkinlik.etkinlikTuru)) return;
+    const hasPerde = !!(etkinlik.resimLink || etkinlik.sesLink || etkinlik.videoLink || etkinlik.description);
     if (hasPerde) {
       setPerdeGosteriliyor(true);
       setPerdeAcimaSayisi(0);
     }
-  }, [etkinlik?.id]);
+  }, [etkinlik?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasPerde = !!(etkinlik?.resimLink || etkinlik?.sesLink || etkinlik?.videoLink);
+  const hasPerde = !!(etkinlik?.resimLink || etkinlik?.sesLink || etkinlik?.videoLink || etkinlik?.description)
+    && !PERDE_DISI.includes(etkinlik?.etkinlikTuru ?? '');
 
   function handlePerdeBasla() {
     setPerdeGosteriliyor(false);

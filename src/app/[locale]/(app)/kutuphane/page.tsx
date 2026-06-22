@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Lock } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
-import { bookCoverUrl } from '@/lib/book-covers';
+import { bookCoverUrl, normalizeSeriesName } from '@/lib/book-covers';
 import { Link } from '@/navigation';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +28,50 @@ function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
 }
 
 const SEVIYE_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+const SERI_PRIORITY = ['CAN', 'YAGMUR', 'HARMONI'];
+
+const KNOWN_LABELS: Record<string, string> = {
+  CAN: 'Can Serisi',
+  YAGMUR: 'Yağmur Serisi',
+  HARMONI: 'Harmoni Serisi',
+};
+
+// kitapSeti null ise kitap adının ilk kelimesinden seri çıkar
+function getSeriKey(k: { kitapSeti?: string | null; name: string }): string {
+  // 1. kitapSeti varsa normalize et (Can/Yağmur/Harmoni)
+  const normalized = normalizeSeriesName(k.kitapSeti);
+  if (normalized) return normalized;
+
+  // 2. Kitap adının ilk kelimesini dene
+  const first = k.name.trim().split(' ')[0];
+  // "[TEST]..." veya "ETKİNLİK..." gibi all-caps/köşeli parantez → Diğer
+  if (!first || first.startsWith('[') || first === first.toLocaleUpperCase('tr')) return '__diger';
+
+  // 3. İlk kelimeyi de normalize et — "Yağmur" → YAGMUR, "Can" → CAN
+  const normalizedFirst = normalizeSeriesName(first);
+  if (normalizedFirst) return normalizedFirst;
+
+  // 4. Bilinmeyen seri (Açılım, Lale, Anadolu…)
+  return first;
+}
+
+function getSeriLabel(key: string): string {
+  if (KNOWN_LABELS[key]) return KNOWN_LABELS[key];
+  if (key === '__diger') return 'Diğer';
+  return `${key} Serisi`;
+}
+
+function seriSort(a: string, b: string): number {
+  const ai = SERI_PRIORITY.indexOf(a);
+  const bi = SERI_PRIORITY.indexOf(b);
+  if (ai !== -1 && bi !== -1) return ai - bi;
+  if (ai !== -1) return -1;
+  if (bi !== -1) return 1;
+  if (a === '__diger') return 1;
+  if (b === '__diger') return -1;
+  return a.localeCompare(b, 'tr');
+}
 
 export default function KutuphanePage() {
   const { user, ready } = useAuthGuard(undefined, true);
@@ -52,9 +96,9 @@ export default function KutuphanePage() {
 
   const isStaff = user.role !== 'Ogrenci';
 
-  // Seri bazında grupla, sonra seviyeye göre sırala
+  // Seri bazında grupla (kitapSeti null ise kitap adından çıkar)
   const seriListesi = kitaplar
-    ? [...new Set(kitaplar.map((k) => k.kitapSeti))].sort()
+    ? [...new Set(kitaplar.map(getSeriKey))].sort(seriSort)
     : [];
 
   return (
@@ -96,7 +140,7 @@ export default function KutuphanePage() {
           <div className="space-y-10">
             {seriListesi.map((seri) => {
               const seridekiKitaplar = (kitaplar ?? [])
-                .filter((k) => k.kitapSeti === seri)
+                .filter((k) => getSeriKey(k) === seri)
                 .sort((a, b) => {
                   const ai = SEVIYE_ORDER.indexOf(a.seviye);
                   const bi = SEVIYE_ORDER.indexOf(b.seviye);
@@ -107,7 +151,7 @@ export default function KutuphanePage() {
                 <div key={seri}>
                   <h2 className="font-semibold text-base text-foreground mb-3 flex items-center gap-2">
                     <span className="w-1.5 h-5 rounded-full bg-primary inline-block" />
-                    {seri}
+                    {getSeriLabel(seri)}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {seridekiKitaplar.map((k, idx) => {

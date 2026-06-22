@@ -20,6 +20,7 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
   const resimUrl = toMediaUrl(etkinlik.resimLink);
   const sesUrl = toMediaUrl(etkinlik.sesLink);
   const videoUrl = toMediaUrl(etkinlik.videoLink);
+  const metin = etkinlik.description;
   const ilkAcilis = acilmaSayisi === 0;
 
   function handlePlay() {
@@ -83,6 +84,13 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
 
           {videoUrl && (
             <video src={videoUrl} controls className="w-full rounded-xl" />
+          )}
+
+          {metin && (
+            <div
+              className="rounded-xl bg-muted/50 border border-border px-4 py-3 text-sm leading-relaxed [&_p]:mb-2 [&_br]:block"
+              dangerouslySetInnerHTML={{ __html: metin }}
+            />
           )}
         </div>
       </div>

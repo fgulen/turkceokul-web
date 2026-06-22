@@ -21,6 +21,7 @@ export interface EtkinlikData {
   name: string;
   bolum: string;
   soruYonergesi: string | null;
+  description: string | null;
   resimLink: string | null;
   sesLink: string | null;
   videoLink: string | null;

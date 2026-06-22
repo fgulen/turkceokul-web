@@ -8,7 +8,7 @@ export const BOOK_COVERS = {
 
 export type BookSeries = keyof typeof BOOK_COVERS;
 
-function normalizeSeriesName(kitapSeti: string | null | undefined): BookSeries | null {
+export function normalizeSeriesName(kitapSeti: string | null | undefined): BookSeries | null {
   if (!kitapSeti) return null;
   const s = kitapSeti
     .toLocaleUpperCase('tr')
