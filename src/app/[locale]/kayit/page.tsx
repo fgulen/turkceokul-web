@@ -278,24 +278,45 @@ function KayitForm() {
                 visibility: tab === "bireysel" ? "visible" : "hidden",
                 pointerEvents: tab === "bireysel" ? "auto" : "none",
               }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 9 }}>
-                    <Brain style={{ width: 15, height: 15, color: "#16a34a", flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, color: "#15803d", lineHeight: "20px" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
-                  </div>
-                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                      <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
+                {redirectAfter.includes('/sinif/katil') ? (
+                  <div style={{
+                    background: "linear-gradient(135deg,#1e3a5f 0%,#1b75bc 100%)",
+                    borderRadius: 12,
+                    padding: "16px 18px",
+                    display: "flex",
+                    gap: 14,
+                    alignItems: "flex-start",
+                  }}>
+                    <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>🎉</span>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 4 }}>
+                        Sınıf kodunu başarıyla girdin!
+                      </div>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: "19px" }}>
+                        Son bir adım kaldı — ismin, e-posta ve şifreni gir, artık sınıftasın.
+                      </div>
                     </div>
-                    <a
-                      href="/sinif/katil"
-                      style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", whiteSpace: "nowrap", textDecoration: "none", borderBottom: "1px solid #93c5fd" }}
-                    >
-                      Sınıfa Katıl →
-                    </a>
                   </div>
-                </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 9 }}>
+                      <Brain style={{ width: 15, height: 15, color: "#16a34a", flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: "#15803d", lineHeight: "20px" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
+                    </div>
+                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
+                      </div>
+                      <a
+                        href="/sinif/katil"
+                        style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", whiteSpace: "nowrap", textDecoration: "none", borderBottom: "1px solid #93c5fd" }}
+                      >
+                        Sınıfa Katıl →
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
