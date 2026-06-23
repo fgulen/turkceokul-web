@@ -65,6 +65,11 @@ const SOUND_DEFS: Record<string, () => void> = {
   select: () => playTones([
     { freq: 600, duration: 0.07, type: 'triangle', gain: 0.12 },
   ]),
+  sparkle: () => playTones([
+    { freq: 1047, duration: 0.07, type: 'triangle', gain: 0.11 },        // C6
+    { freq: 1319, duration: 0.07, delay: 0.09, type: 'triangle', gain: 0.09 }, // E6
+    { freq: 1568, duration: 0.12, delay: 0.18, type: 'triangle', gain: 0.13 }, // G6
+  ]),
 };
 
 type SoundKey = keyof typeof SOUND_DEFS;

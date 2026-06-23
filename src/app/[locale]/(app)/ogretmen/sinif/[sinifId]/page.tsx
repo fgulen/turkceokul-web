@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@/navigation';
+import { Link, useLocale } from '@/navigation';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
   Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode,
@@ -126,6 +126,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const { sinifId } = use(params);
   const id = parseInt(sinifId);
   const { user, ready } = useAuthGuard('Ogretmen');
+  const locale = useLocale();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [tab, setTab] = useState<Tab>('genel');
   const [kodKopyalandi, setKodKopyalandi] = useState(false);
@@ -671,7 +672,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             </div>
             <div className="p-6 flex flex-col items-center gap-5">
               <QRCodeSVG
-                value={sinif.katilimKodu}
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/sinif/katil?kod=${sinif.katilimKodu}`}
                 size={200}
                 bgColor="#ffffff"
                 fgColor="#1a1a2e"

@@ -13,7 +13,13 @@ export function useAuthGuard(
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!user) { router.replace('/giris'); return; }
+    if (!user) {
+      const returnTo = typeof window !== 'undefined'
+        ? encodeURIComponent(window.location.pathname + window.location.search)
+        : '';
+      router.replace(returnTo ? `/giris?redirect=${returnTo}` : '/giris');
+      return;
+    }
 
     if (requiredRole) {
       let yetkili = false;

@@ -387,7 +387,7 @@ function GorevSatiri({ gorev }: { gorev: Gorev }) {
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary rounded-full transition-all"
+            className={cn('h-full rounded-full transition-all', gorev.tamamlandi ? 'bg-emerald-500' : 'progress-shimmer')}
             style={{ width: `${pct}%` }}
           />
         </div>

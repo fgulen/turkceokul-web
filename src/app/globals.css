@@ -92,7 +92,7 @@
   --sidebar-ring: oklch(0.51 0.14 241);
 
   /* Oyun renkleri */
-  --heart: oklch(0.62 0.22 15);            /* #ef4444 kırmızı */
+  --heart: oklch(0.51 0.14 241);           /* mavi = primary */
   --streak: oklch(0.72 0.18 45);           /* #f97316 turuncu */
   --xp: oklch(0.51 0.14 241);             /* mavi = primary */
   --combo: oklch(0.68 0.20 290);           /* #7c3aed mor */
@@ -314,5 +314,19 @@
     );
     background-size: 200% 100%;
     animation: shimmer 2.4s linear infinite;
+  }
+
+  @keyframes heart-shimmer {
+    0%, 100% {
+      fill: var(--heart);
+      filter: drop-shadow(0 0 0px transparent);
+    }
+    50% {
+      fill: oklch(0.65 0.20 210);
+      filter: drop-shadow(0 0 4px oklch(0.51 0.14 241 / 0.45));
+    }
+  }
+  .heart-active {
+    animation: heart-shimmer 2.4s ease-in-out infinite;
   }
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth';
 
 const TIERS = [
   { min: 10, label: '10x', cls: 'bg-purple-500 text-white', emoji: '⚡' },
@@ -31,6 +32,8 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
   const progress = (soruNo / toplamSoru) * 100;
   const tier = getTier(combo);
   const prevKalp = useRef(kalp);
+  const role = useAuthStore((s) => s.user?.role);
+  const gosterEtiket = role && role !== 'Ogrenci';
   const [heartShake, setHeartShake] = useState(false);
 
   useEffect(() => {
@@ -55,12 +58,11 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
           {Array.from({ length: 5 }).map((_, i) => (
             <Heart
               key={i}
-              className="size-5 transition-all duration-300"
-              style={{
-                fill: i < kalp ? 'var(--heart)' : 'transparent',
-                color: i < kalp ? 'var(--heart)' : 'oklch(0.80 0.02 145)',
-                opacity: i < kalp ? 1 : 0.32,
-              }}
+              className={cn('size-5 transition-all duration-300', i < kalp && 'heart-active')}
+              style={i < kalp
+                ? { color: 'var(--heart)' }
+                : { fill: 'transparent', color: 'oklch(0.80 0.02 145)', opacity: 0.32 }
+              }
             />
           ))}
         </motion.div>
@@ -81,7 +83,7 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
             >
               {tier.emoji} {tier.label} Combo
             </motion.div>
-          ) : etiket ? (
+          ) : etiket && gosterEtiket ? (
             <span key="etiket" className="text-xs font-medium text-muted-foreground">
               {etiket}
             </span>
@@ -93,8 +95,7 @@ export function GameHUD({ soruNo, toplamSoru, kalp, combo, etiket, birim = 'Soru
       {!hideProgress && (
         <div className="h-2.5 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full rounded-full"
-            style={{ background: 'var(--correct)' }}
+            className="h-full rounded-full progress-shimmer"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
