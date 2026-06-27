@@ -73,7 +73,7 @@ function KayitForm() {
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken, data.refreshToken);
-      if (tab === "bireysel" && redirectAfter && redirectAfter.startsWith("/")) {
+      if (tab === "bireysel" && redirectAfter && redirectAfter.startsWith("/") && !redirectAfter.startsWith("//")) {
         window.location.href = redirectAfter;
         return;
       }
@@ -278,7 +278,7 @@ function KayitForm() {
                 visibility: tab === "bireysel" ? "visible" : "hidden",
                 pointerEvents: tab === "bireysel" ? "auto" : "none",
               }}>
-                {redirectAfter.includes('/sinif/katil') ? (
+                {redirectAfter.startsWith('/') && !redirectAfter.startsWith('//') && redirectAfter.includes('/sinif/katil') ? (
                   <div style={{
                     background: "linear-gradient(135deg,#1e3a5f 0%,#1b75bc 100%)",
                     borderRadius: 12,

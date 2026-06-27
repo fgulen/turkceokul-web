@@ -31,7 +31,7 @@ export default function GirisPage() {
       // Redirect param'ı kontrol et (QR tarama, korumalı sayfa yönlendirmesi için)
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
-      if (redirect && redirect.startsWith('/')) {
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
         window.location.href = redirect;
         return;
       }

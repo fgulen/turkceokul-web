@@ -273,6 +273,7 @@ export default function EtkinlikPage({
     setSubmitting(false);
     setKey((k) => k + 1);
     setPerdeAcimaSayisi(0);
+    setPerdeGosteriliyor(false);
   }, [etkinlikId]);
 
   const { data: etkinlik, isLoading } = useQuery<EtkinlikData>({
@@ -420,6 +421,26 @@ export default function EtkinlikPage({
             </a>
           )}
         </div>
+
+        {/* Üst bilgi: kitap / ünite / bölüm */}
+        {etkinlik && (etkinlik.kitapAdi || etkinlik.uniteAdi) && (
+          <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+            <BookOpen className="size-3.5 shrink-0" />
+            {etkinlik.kitapAdi && <span className="font-medium text-foreground/70">{etkinlik.kitapAdi}</span>}
+            {etkinlik.uniteAdi && (
+              <>
+                <span className="text-muted-foreground/40">/</span>
+                <span>{etkinlik.uniteAdi}</span>
+              </>
+            )}
+            {etkinlik.bolum && (
+              <>
+                <span className="text-muted-foreground/40">/</span>
+                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{etkinlik.bolum}</span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Content */}
         {isLoading ? (
