@@ -38,11 +38,17 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   const options = useMemo(() => {
     const list = getKelimeler(current).slice(0, 4);
-    return [...list].sort(() => Math.random() - 0.5);
+    // Fisher-Yates shuffle
+    const arr = [...list];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  const correct = current.kelime1 ?? '';
+  const correct = current.cevap ?? current.kelime1 ?? '';
 
   function handleSelect(opt: string) {
     if (selected !== null) return;

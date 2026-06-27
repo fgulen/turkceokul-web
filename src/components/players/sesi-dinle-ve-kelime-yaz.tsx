@@ -10,20 +10,9 @@ import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { GameHUD } from '@/components/game/game-hud';
 import { ProgressDots, PlayingBars } from './ui';
+import { TurkceKlavye, insertIntoInput, scoreAnswer } from './turkce-klavye';
 
 const MAX_TEKRAR = 2;
-
-function sadelestir(s: string) {
-  return s.trim().toLowerCase();
-}
-
-function stripTurkce(s: string) {
-  return sadelestir(s)
-    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
-    .replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/ı/g, 'i').replace(/İ/gi, 'i');
-}
-
-const TURKCE_KLAVYE = ['ğ', 'ü', 'ş', 'ö', 'ç', 'ı', 'İ'];
 
 export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -43,13 +32,13 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
   const [hicCalınmadı, setHicCalınmadı] = useState(true);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const current = detaylar[index];
   const sesUrl = toMediaUrl(current.sesLink) || toMediaUrl(etkinlik.sesLink);
   const dogruCevap = current.description ?? '';
 
-  // Soru değişince sıfırla (autoplay yok — browser policy bunu sıklıkla engeller)
   useEffect(() => {
     setValue('');
     setSubmitted(false);
@@ -58,6 +47,7 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
     setIsYakin(false);
     setTekrarKalan(MAX_TEKRAR);
     setHicCalınmadı(true);
+    setIsFocused(false);
     resetAudio();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
@@ -65,6 +55,14 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
   useEffect(() => {
     if (!submitted) setTimeout(() => inputRef.current?.focus(), 80);
   }, [submitted, index]);
+
+  // Yeni soru gelince otomatik çal (SesiDinle için ses = soru)
+  useEffect(() => {
+    if (!sesUrl) return;
+    const t = setTimeout(() => handlePlayAudio(), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
   function handlePlayAudio() {
     if (!sesUrl || tekrarKalan <= 0 || submitted) return;
@@ -79,14 +77,8 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
   function insertChar(ch: string) {
     const input = inputRef.current;
     if (!input) return;
-    const start = input.selectionStart ?? value.length;
-    const end = input.selectionEnd ?? value.length;
-    const next = value.slice(0, start) + ch + value.slice(end);
+    const next = insertIntoInput(input, value, ch);
     setValue(next);
-    requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(start + ch.length, start + ch.length);
-    });
   }
 
   function handleSubmit(e?: React.FormEvent) {
@@ -98,18 +90,16 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
     }
     if (submitted) return;
 
-    const correct = sadelestir(value) === sadelestir(dogruCevap);
-    const perfect = correct && value.trim() === dogruCevap;
-    const yakin = !correct && stripTurkce(value) === stripTurkce(dogruCevap);
+    const { isCorrect, isPerfect, isYakin } = scoreAnswer(value, dogruCevap);
 
     setSubmitted(true);
-    setIsCorrect(correct);
-    setIsPerfect(perfect);
-    setIsYakin(yakin);
+    setIsCorrect(isCorrect);
+    setIsPerfect(isPerfect);
+    setIsYakin(isYakin);
     resetAudio();
 
-    playSound(correct ? 'correct' : 'wrong');
-    if (correct) {
+    playSound(isCorrect ? 'correct' : 'wrong');
+    if (isCorrect) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) playSound('combo');
@@ -126,7 +116,7 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
       } else {
         setIndex((i) => i + 1);
       }
-    }, yakin ? 1800 : 900);
+    }, isYakin ? 1800 : 900);
   }
 
   return (
@@ -150,7 +140,6 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
         {/* Ses butonu */}
         <div className="flex flex-col items-center gap-3 py-8">
           <div className="relative">
-            {/* İlk tıklamayı çeken pulse halkası */}
             {hicCalınmadı && sesUrl && !submitted && (
               <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
             )}
@@ -176,7 +165,6 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
             </button>
           </div>
 
-          {/* Durum mesajı */}
           {!submitted && (
             <p className={cn(
               'text-xs font-medium text-center',
@@ -247,6 +235,12 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
             value={value}
             disabled={submitted}
             onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onPaste={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
             placeholder="Duyduğunuzu yazın…"
             autoComplete="off"
             autoCorrect="off"
@@ -264,20 +258,12 @@ export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps
           />
         </motion.div>
 
-        {/* Türkçe karakter klavyesi */}
-        <div className="flex gap-2 justify-center flex-wrap my-3">
-          {TURKCE_KLAVYE.map((ch) => (
-            <button
-              key={ch}
-              type="button"
-              disabled={submitted}
-              onClick={() => insertChar(ch)}
-              className="min-w-[44px] h-11 px-3 rounded-xl border border-input bg-muted text-base font-semibold hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-40 select-none"
-            >
-              {ch}
-            </button>
-          ))}
-        </div>
+        {/* Türkçe klavye — sadece focus varken */}
+        <TurkceKlavye
+          onChar={insertChar}
+          visible={isFocused && !submitted}
+          disabled={submitted}
+        />
 
         <button
           type="submit"

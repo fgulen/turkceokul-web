@@ -1,17 +1,17 @@
-﻿'use client';
+'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
+import { TurkceKlavye, insertIntoInput, sadelestir, stripTurkce, scoreAnswer } from './turkce-klavye';
 
-// Words are stored comma-separated in description field
-function parseWords(description: string | null): string[] {
-  return (description ?? '').split(',').map((w) => w.trim()).filter(Boolean);
+function stripHtml(s: string) {
+  return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
 }
 
 export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) {
@@ -21,49 +21,61 @@ export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) 
 
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
-  const [arranged, setArranged] = useState<number[]>([]);
+  const [values, setValues] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [results, setResults] = useState<{ isCorrect: boolean; isPerfect: boolean; isYakin: boolean }[]>([]);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const current = detaylar[index];
-  const correctWords = useMemo(() => parseWords(current.description), [current]);
-
-  const shuffled = useMemo(
-    () => correctWords.map((word, origIdx) => ({ word, origIdx })).sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [index],
-  );
+  // Her virgül = bir boşluk — "iyi akşamlar" gibi deyimler tek boşluk
+  const correctWords = stripHtml(current.description ?? '')
+    .split(',')
+    .map((w) => w.trim())
+    .filter(Boolean);
+  // Bitişik form: her öğe içindeki boşluklar da kaldırılır ("iyi akşamlar" → "iyiakşamlar")
+  const bitisikForm = correctWords.map((w) => w.replace(/\s+/g, '')).join('');
+  const blankCount = correctWords.length;
 
   useEffect(() => {
-    setArranged([]);
+    setValues(Array(blankCount).fill(''));
     setSubmitted(false);
-  }, [index]);
+    setResults([]);
+    setFocusedIdx(null);
+    inputRefs.current = Array(blankCount).fill(null);
+    setTimeout(() => inputRefs.current[0]?.focus(), 80);
+  }, [index, blankCount]);
 
-  const usedSet = new Set(arranged);
-  const allPlaced = arranged.length === shuffled.length;
+  const safe = values.length === blankCount ? values : Array(blankCount).fill('');
+  const allFilled = safe.every((v) => v.trim().length > 0);
 
-  function addWord(shuffledIdx: number) {
-    if (submitted || usedSet.has(shuffledIdx)) return;
-    setArranged((prev) => [...prev, shuffledIdx]);
-  }
-
-  function removeWord(pos: number) {
-    if (submitted) return;
-    setArranged((prev) => prev.filter((_, i) => i !== pos));
-  }
+  const insertChar = useCallback((ch: string) => {
+    if (focusedIdx === null) return;
+    const el = inputRefs.current[focusedIdx];
+    if (!el) return;
+    const next = insertIntoInput(el, safe[focusedIdx], ch);
+    setValues((prev) => {
+      const arr = [...prev];
+      arr[focusedIdx] = next;
+      return arr;
+    });
+  }, [focusedIdx, safe]);
 
   function handleSubmit() {
-    if (!allPlaced || submitted) return;
+    if (!allFilled || submitted) return;
     setSubmitted(true);
 
-    const studentWords = arranged.map((i) => shuffled[i].word);
-    const answer = studentWords.join(',');
-    const isCorrect =
-      answer.toLowerCase().trim() === correctWords.join(',').toLowerCase().trim();
+    const wordResults = safe.map((v, i) => scoreAnswer(v, correctWords[i]));
+    setResults(wordResults);
 
-    play(isCorrect ? 'correct' : 'wrong');
-    if (isCorrect) {
+    const allCorrect = wordResults.every((r) => r.isCorrect);
+    const allPerfect = wordResults.every((r) => r.isPerfect);
+    const anyYakin = !allCorrect && wordResults.some((r) => r.isYakin);
+
+    play(allCorrect ? 'correct' : 'wrong');
+    if (allCorrect) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) play('combo');
@@ -73,15 +85,20 @@ export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) 
     }
 
     setTimeout(() => {
-      const yeni = [...cevaplar, { id: current.id, cevap: answer }];
+      const cevap = safe.join(',');
+      const yeni = [...cevaplar, { id: current.id, cevap: cevap }];
       setCevaplar(yeni);
       if (index + 1 >= detaylar.length) {
         onComplete(yeni);
       } else {
         setIndex((i) => i + 1);
       }
-    }, 900);
+    }, anyYakin ? 1800 : 1100);
   }
+
+  const allCorrect = results.length > 0 && results.every((r) => r.isCorrect);
+  const allPerfect = results.length > 0 && results.every((r) => r.isPerfect);
+  const anyYakin = results.length > 0 && !allCorrect && results.some((r) => r.isYakin);
 
   return (
     <div className="max-w-lg md:max-w-2xl mx-auto">
@@ -93,91 +110,114 @@ export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) 
         etiket="Ayırt Et"
       />
 
+      <ActivityHint>Bitişik yazılan kelimeleri ayırarak yaz</ActivityHint>
 
-      <ActivityHint>Kelimeleri doğru sıraya koy</ActivityHint>
-
-      {/* Placed words */}
+      {/* Bitişik form */}
       <motion.div
         key={current.id}
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border-2 border-dashed border-border rounded-2xl p-3 mb-4 min-h-[56px] flex flex-wrap gap-2 content-start"
+        className="bg-card border-2 border-border rounded-2xl px-6 py-4 mb-5 text-center select-none"
       >
-        {arranged.length === 0 ? (
-          <p className="text-muted-foreground/40 text-sm text-center py-1 w-full select-none">
-            Kelime seç…
-          </p>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {arranged.map((shuffledIdx, pos) => {
-              const word = shuffled[shuffledIdx].word;
-              const isCorrectPos = submitted && word === correctWords[pos];
-              const isWrongPos = submitted && !isCorrectPos;
-              return (
-                <motion.button
-                  key={`arr-${shuffledIdx}`}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.12 }}
-                  type="button"
-                  onClick={() => removeWord(pos)}
-                  disabled={submitted}
-                  className={cn(
-                    'px-3 py-2 rounded-xl border-2 font-medium text-sm transition-all min-h-[44px]',
-                    !submitted &&
-                      'bg-primary/10 border-primary text-primary cursor-pointer hover:bg-primary/20',
-                    isCorrectPos &&
-                      'bg-[--correct]/15 border-[--correct] text-[--correct] cursor-default',
-                    isWrongPos &&
-                      'bg-destructive/10 border-destructive text-destructive cursor-default',
-                  )}
-                >
-                  {word}
-                </motion.button>
-              );
-            })}
-          </AnimatePresence>
-        )}
+        <p className="text-3xl md:text-4xl font-bold break-all leading-tight">
+          {bitisikForm || '—'}
+        </p>
       </motion.div>
 
-      {/* Word bank */}
-      <div className="flex flex-wrap gap-2 mb-5 justify-center">
-        <AnimatePresence mode="popLayout">
-          {shuffled.map((item, shuffledIdx) => {
-            if (usedSet.has(shuffledIdx)) return null;
-            return (
-              <motion.button
-                key={`bank-${shuffledIdx}`}
-                layout
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.12 }}
-                type="button"
-                onClick={() => addWord(shuffledIdx)}
+      {/* Geri bildirim */}
+      <AnimatePresence>
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4"
+          >
+            {allCorrect ? (
+              <p className={cn(
+                'text-center text-sm font-bold px-4 py-1.5 rounded-full',
+                allPerfect
+                  ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                  : 'bg-[--correct]/10 text-[--correct]',
+              )}>
+                {allPerfect ? '⭐ Mükemmel!' : '✓ Doğru'}
+              </p>
+            ) : anyYakin ? (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-2 text-center text-sm">
+                <p className="text-amber-800 font-bold">Neredeyse! Türkçe karakterlere dikkat et.</p>
+                <p className="text-amber-700 text-xs mt-1">Klavyeyi kullan ve tam puan al.</p>
+              </div>
+            ) : (
+              <p className="text-center text-sm text-destructive font-medium">
+                Doğrusu: <span className="font-bold">{correctWords.join(' ')}</span>
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Per-kelime boşluklar — klavye her inputun hemen altında */}
+      <div className="space-y-1 mb-3">
+        {safe.map((val, i) => {
+          const res = results[i];
+          return (
+            <div key={i}>
+              <input
+                ref={(el) => { inputRefs.current[i] = el; }}
+                type="text"
+                value={val}
                 disabled={submitted}
+                onChange={(e) => {
+                  if (submitted) return;
+                  const arr = [...safe];
+                  arr[i] = e.target.value;
+                  setValues(arr);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && i < blankCount - 1) {
+                    e.preventDefault();
+                    inputRefs.current[i + 1]?.focus();
+                  } else if (e.key === 'Enter' && i === blankCount - 1) {
+                    handleSubmit();
+                  }
+                }}
+                onFocus={() => setFocusedIdx(i)}
+                onBlur={() => setFocusedIdx(null)}
+                onPaste={(e) => e.preventDefault()}
+                onCopy={(e) => e.preventDefault()}
+                onCut={(e) => e.preventDefault()}
+                onContextMenu={(e) => e.preventDefault()}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                placeholder="Kelimeyi yazın…"
                 className={cn(
-                  'px-3 py-2 rounded-xl border-2 border-border bg-card font-medium text-sm transition-all min-h-[44px]',
-                  !submitted && 'hover:border-primary hover:bg-primary/5 active:scale-[0.98]',
-                  submitted && 'opacity-40 cursor-not-allowed',
+                  'w-full h-14 px-4 rounded-2xl border-2 text-base font-medium transition-all outline-none placeholder:text-muted-foreground/50',
+                  'focus:ring-2 focus:ring-primary/20',
+                  !res && 'border-input focus:border-primary bg-background',
+                  res?.isCorrect && 'border-[--correct] bg-[--correct]/5 text-[--correct]',
+                  res && !res.isCorrect && res.isYakin && 'border-amber-400 bg-amber-50 text-amber-700',
+                  res && !res.isCorrect && !res.isYakin && 'border-destructive bg-destructive/5 text-destructive',
                 )}
-              >
-                {item.word}
-              </motion.button>
-            );
-          })}
-        </AnimatePresence>
+              />
+              {/* Klavye bu inputun hemen altında — sadece focus varken */}
+              <TurkceKlavye
+                onChar={insertChar}
+                visible={focusedIdx === i && !submitted}
+                disabled={submitted}
+              />
+            </div>
+          );
+        })}
       </div>
 
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!allPlaced || submitted}
+        disabled={!allFilled || submitted}
         className={cn(
-          'w-full py-4 rounded-2xl font-semibold transition-all',
-          allPlaced && !submitted
+          'w-full py-4 rounded-2xl font-semibold transition-all mt-1',
+          allFilled && !submitted
             ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]'
             : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60',
         )}

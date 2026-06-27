@@ -3,11 +3,12 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { HelpChat } from '@/components/ogretmen/HelpChat';
+import { MdImport } from '@/components/ogretmen/md-import';
 import {
   Sparkles, FileText, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
   Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
-  Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp,
+  Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp, FileUp,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
@@ -20,7 +21,7 @@ const KONULAR = [
   'Eğitim', 'Sağlık', 'Alışveriş', 'Hava Durumu', 'Hobiler', 'Şehir Hayatı',
 ];
 
-type TabId = 'quiz' | 'eslestir' | 'bosluk_doldur' | 'worksheet' | 'konusma' | 'bulten' | 'resim_analiz';
+type TabId = 'quiz' | 'eslestir' | 'bosluk_doldur' | 'worksheet' | 'konusma' | 'bulten' | 'resim_analiz' | 'pdf_import';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; aciklama: string }[] = [
   { id: 'quiz',          label: 'Quiz',              icon: ListChecks,    aciklama: 'Çoktan seçmeli quiz soruları' },
@@ -30,6 +31,7 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: 
   { id: 'konusma',       label: 'Konuşma Egzersizi', icon: MessageSquare, aciklama: 'Diyalog, kelimeler ve anlama soruları' },
   { id: 'bulten',        label: 'Sınıf Bülteni',     icon: Newspaper,     aciklama: 'Sınıf istatistiklerine göre veli bülteni' },
   { id: 'resim_analiz',  label: 'Resimli',            icon: ImageIcon,     aciklama: 'Resim yükleyin — AI her biri için Türkçe açıklama ve kelime üretsin' },
+  { id: 'pdf_import',    label: 'MD Aktar',           icon: FileUp,        aciklama: `Kitap markdown dosyasını (books/*.md) AI ile çözümleyip üniteye toplu aktarın` },
 ];
 
 interface PromptSablon {
@@ -130,6 +132,10 @@ interface GecmisItem  {
   id: string; name: string; tip: string; unite: string;
   soruSayisi: number; insertDate: string; zorluk: number;
   onaylandi: boolean;
+  bolum?: string;
+  kitapAdi?: string;
+  kitapId?: string;
+  uniteId?: string;
 }
 
 interface GecmisDetay {
@@ -407,8 +413,8 @@ export default function AIIcerikPage() {
 
   const mevcutSonuc = sonuclar[aktifTab];
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
-  const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
-  const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz';
+  const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz' && aktifTab !== 'pdf_import';
+  const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz' && aktifTab !== 'pdf_import';
   const canKaydet = jsonTabAktif && !!seciliUniteId && !!seciliSinifId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
 
   const canUret = aktifTab === 'bulten'
@@ -417,6 +423,8 @@ export default function AIIcerikPage() {
       ? konu.trim().length > 0 || !!seciliUniteId
       : aktifTab === 'resim_analiz'
         ? resimDosyalari.length > 0
+        : aktifTab === 'pdf_import'
+          ? false
         : girdi.trim().length > 0 || !!seciliUniteId;
 
   if (!ready) return (
@@ -499,7 +507,10 @@ export default function AIIcerikPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 items-start">
           {/* Form panel */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+          <div className={cn(
+            'bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5',
+            aktifTab === 'pdf_import' && 'md:col-span-2',
+          )}>
             <p className="text-xs font-medium text-slate-400">
               {TABS.find(t => t.id === aktifTab)?.aciklama}
             </p>
@@ -555,6 +566,8 @@ export default function AIIcerikPage() {
                 onSeviye={setSeviye}
                 onKonu={setKonu}
               />
+            ) : aktifTab === 'pdf_import' ? (
+              <MdImport />
             ) : aktifTab === 'resim_analiz' ? (
               <ResimYuklemeFormu
                 seviye={seviye}
@@ -588,19 +601,21 @@ export default function AIIcerikPage() {
               />
             )}
 
-            <button
-              onClick={() => uretMutation.mutate()}
-              disabled={!canUret || uretMutation.isPending || limitAsili}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors text-sm"
-            >
-              {uretMutation.isPending
-                ? <><Loader2 className="size-4 animate-spin" />Üretiliyor...</>
-                : <><Sparkles className="size-4" />Üret</>}
-            </button>
+            {aktifTab !== 'pdf_import' && (
+              <button
+                onClick={() => uretMutation.mutate()}
+                disabled={!canUret || uretMutation.isPending || limitAsili}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors text-sm"
+              >
+                {uretMutation.isPending
+                  ? <><Loader2 className="size-4 animate-spin" />Üretiliyor...</>
+                  : <><Sparkles className="size-4" />Üret</>}
+              </button>
+            )}
           </div>
 
           {/* Sonuç panel */}
-          <div>
+          {aktifTab !== 'pdf_import' && <div>
             {hata && (
               <div className="mb-4 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
                 <AlertTriangle className="size-4 mt-0.5 shrink-0" />
@@ -726,7 +741,7 @@ export default function AIIcerikPage() {
                 <p className="text-sm">Üretilen içerik burada görünecek</p>
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         {/* Geçmiş kütüphanesi */}
@@ -1463,7 +1478,17 @@ function GecmisKart({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
-          <p className="text-xs text-slate-400 mt-0.5 truncate">{item.unite}</p>
+          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1.5">
+            <span className="text-primary/70">{item.kitapAdi ?? '—'}</span>
+            <span className="text-slate-300">·</span>
+            <span>{item.unite}</span>
+            {item.bolum && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="bg-slate-100 px-1 py-0.5 rounded text-[10px] font-medium">{item.bolum}</span>
+              </>
+            )}
+          </p>
         </div>
         <div className="shrink-0 flex items-center gap-2 text-xs text-slate-400">
           <span className="hidden sm:inline">{item.soruSayisi} soru</span>

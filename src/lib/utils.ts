@@ -42,7 +42,8 @@ const BOLUM_COLORS: Record<string, string> = {
   Yazma:          'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
   DilBilgisi:     'bg-pink-100   text-pink-700   dark:bg-pink-950   dark:text-pink-300',
   Degerlendirme:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
-  'AI Generated': 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
+  'AI Generated':  'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
+  'Okuma Kitabı': 'bg-amber-100  text-amber-700  dark:bg-amber-950  dark:text-amber-300',
 };
 
 export function bolumColor(bolum: string): string {
@@ -51,7 +52,7 @@ export function bolumColor(bolum: string): string {
 
 // Pedagojik bölüm sırası: Kelime→Okuma→Dinleme→Yazma→Dilbilgisi→Değerlendirme→AI Generated
 const BOLUM_SIRASI: Record<string, number> = {
-  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, DilBilgisi: 4, Degerlendirme: 5, 'AI Generated': 6,
+  Kelime: 0, Okuma: 1, Dinleme: 2, Yazma: 3, DilBilgisi: 4, Degerlendirme: 5, 'AI Generated': 6, 'Okuma Kitabı': 7,
 };
 
 export function bolumSirasi(bolum: string): number {
@@ -66,6 +67,7 @@ const BOLUM_ICONS: Record<string, string> = {
   DilBilgisi:     'Languages',
   Degerlendirme:  'Trophy',
   'AI Generated': 'Sparkles',
+  'Okuma Kitabı': 'BookOpen',
 };
 
 export function bolumIconName(bolum: string): string {
@@ -141,6 +143,14 @@ export const BOLUM_ZIGZAG = {
     connector: 'border-fuchsia-200',
     label: 'bg-fuchsia-100 text-fuchsia-700',
     activeLabel: 'text-fuchsia-600',
+  },
+  'Okuma Kitabı': {
+    active: 'bg-orange-500',
+    ring: 'ring-orange-200',
+    shadow: 'shadow-orange-200',
+    connector: 'border-orange-200',
+    label: 'bg-orange-100 text-orange-700',
+    activeLabel: 'text-orange-600',
   },
 };
 

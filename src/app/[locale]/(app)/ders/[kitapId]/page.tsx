@@ -53,7 +53,7 @@ const BOLUM_ICONS: Record<string, React.ReactNode> = {
   'AI Generated': <Sparkles className="size-5" />,
 };
 
-const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'DilBilgisi', 'Degerlendirme', 'AI Generated'];
+const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'DilBilgisi', 'Degerlendirme', 'AI Generated', 'Okuma Kitabı'];
 
 const BOLUM_LABEL: Record<string, string> = {
   DilBilgisi: 'Dil Bilgisi',

@@ -10,7 +10,7 @@ import { ProgressDots, AudioPlayButton, NextButton, NavCounter, ActivityHint } f
 
 export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
-  const { playing, play, reset } = usePlayerAudio();
+  const { playing, needsTap, play, reset } = usePlayerAudio();
 
   const [index, setIndex] = useState(0);
   const [imgError, setImgError] = useState(false);
@@ -73,7 +73,7 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
 
         {sesUrl && (
           <div className="flex justify-center py-3 border-t border-border/40">
-            <AudioPlayButton playing={playing} onPlay={() => play(sesUrl)} />
+            <AudioPlayButton playing={playing} pulse={needsTap} onPlay={() => play(sesUrl)} />
           </div>
         )}
       </div>

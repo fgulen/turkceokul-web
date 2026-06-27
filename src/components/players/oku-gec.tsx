@@ -27,6 +27,7 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   const [tiklananKelimeler, setTiklananKelimeler] = useState<string[]>([]);
   const [ozet, setOzet] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioNeedsTap, setAudioNeedsTap] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const bookId = kitapId ?? etkinlik.id;
@@ -50,18 +51,31 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   function playAudio() {
     if (!sesUrl) return;
     stopAudio();
+    setAudioNeedsTap(false);
     const a = new Audio(sesUrl);
     audioRef.current = a;
     setAudioPlaying(true);
-    a.onended = () => setAudioPlaying(false);
+    a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
     a.onerror = () => setAudioPlaying(false);
     a.play().catch(() => setAudioPlaying(false));
   }
 
-  // Sayfa değişince sesi durdur
+  // Sayfa değişince sesi durdur, varsa otomatik çal
   useEffect(() => {
     stopAudio();
     setImgError(false);
+    setAudioNeedsTap(false);
+    const url = toMediaUrl(detaylar[index]?.sesLink);
+    if (!url) return;
+    const t = setTimeout(() => {
+      const a = new Audio(url);
+      audioRef.current = a;
+      setAudioPlaying(true);
+      a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
+      a.onerror = () => setAudioPlaying(false);
+      a.play().catch(() => { setAudioPlaying(false); setAudioNeedsTap(true); });
+    }, 400);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
@@ -151,7 +165,7 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
       </div>
       <div className="h-1.5 bg-muted rounded-full mb-5">
         <motion.div
-          className="h-full bg-primary rounded-full"
+          className="h-full rounded-full progress-shimmer"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.4 }}
         />
@@ -177,17 +191,22 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
                   onError={() => setImgError(true)}
                 />
                 {sesUrl && (
-                  <button
-                    type="button"
-                    onClick={audioPlaying ? stopAudio : playAudio}
-                    className="absolute bottom-2 right-2 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
-                    aria-label="Dialogu dinle"
-                  >
-                    {audioPlaying
-                      ? <PlayingBars size="sm" color="bg-white" />
-                      : <Volume2 className="size-4 text-white" />
-                    }
-                  </button>
+                  <div className="absolute bottom-2 right-2">
+                    {audioNeedsTap && !audioPlaying && (
+                      <span className="absolute inset-0 rounded-full bg-white/40 animate-ping" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={audioPlaying ? stopAudio : playAudio}
+                      className="relative size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
+                      aria-label="Dialogu dinle"
+                    >
+                      {audioPlaying
+                        ? <PlayingBars size="sm" color="bg-white" />
+                        : <Volume2 className="size-4 text-white" />
+                      }
+                    </button>
+                  </div>
                 )}
               </div>
             )
@@ -198,16 +217,21 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
               {/* Resim yoksa ses butonu metnin üstünde göster */}
               {sesUrl && !hasImg && (
                 <div className="flex items-center gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={audioPlaying ? stopAudio : playAudio}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                  >
-                    {audioPlaying
-                      ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
-                      : <><Volume2 className="size-3.5" /><span>Dialogu Dinle</span></>
-                    }
-                  </button>
+                  <span className="relative inline-flex">
+                    {audioNeedsTap && !audioPlaying && (
+                      <span className="absolute inset-0 rounded-lg bg-primary/30 animate-ping" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={audioPlaying ? stopAudio : playAudio}
+                      className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      {audioPlaying
+                        ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
+                        : <><Volume2 className="size-3.5" /><span>Dialogu Dinle</span></>
+                      }
+                    </button>
+                  </span>
                 </div>
               )}
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}

@@ -28,11 +28,18 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const correct = current.kelime1 ?? '';
+  // cevap alanı varsa kullan, yoksa kelime1 (eski etkinlikler için)
+  const correct = current.cevap ?? current.kelime1 ?? '';
 
   const options = useMemo(() => {
     const list = getKelimeler(current);
-    return [...list].sort(() => Math.random() - 0.5);
+    // Fisher-Yates shuffle
+    const arr = [...list];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 

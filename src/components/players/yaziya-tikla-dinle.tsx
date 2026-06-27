@@ -9,7 +9,7 @@ import { ProgressDots, AudioPlayButton, NextButton, NavCounter } from './ui';
 
 export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
-  const { playing, play, reset } = usePlayerAudio();
+  const { playing, needsTap, play, reset } = usePlayerAudio();
   const [index, setIndex] = useState(0);
 
   const current = detaylar[index];
@@ -59,7 +59,7 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
           )}
           {sesUrl && (
             <div className="flex justify-center mt-5">
-              <AudioPlayButton playing={playing} onPlay={() => play(sesUrl)} />
+              <AudioPlayButton playing={playing} pulse={needsTap} onPlay={() => play(sesUrl)} />
             </div>
           )}
         </motion.div>

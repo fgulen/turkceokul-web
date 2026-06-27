@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,45 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { ProgressDots } from './ui';
-
-// Sunucu Sadelestir() ile birebir aynı: sadece lowercase + trim (Türkçe karakterler korunur)
-function sadelestir(s: string) {
-  return s.trim().toLowerCase();
-}
-
-// Türkçe özel karakterleri ASCII karşılığına indirgeyerek karşılaştırır
-// Sadece "yakın mı?" tespiti için kullanılır, puanlama için değil
-function stripTurkce(s: string) {
-  return sadelestir(s)
-    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
-    .replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/ı/g, 'i').replace(/İ/gi, 'i');
-}
-
-const TURKCE_KLAVYE = ['ğ', 'ü', 'ş', 'ö', 'ç', 'ı', 'İ'];
-
-function TurkceKlavye({
-  onChar,
-  disabled,
-}: {
-  onChar: (ch: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex gap-2 justify-center flex-wrap my-3">
-      {TURKCE_KLAVYE.map((ch) => (
-        <button
-          key={ch}
-          type="button"
-          disabled={disabled}
-          onClick={() => onChar(ch)}
-          className="min-w-[44px] md:min-w-[52px] h-11 md:h-12 px-3 md:px-4 rounded-xl border border-input bg-muted text-base font-semibold hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-40 select-none"
-        >
-          {ch}
-        </button>
-      ))}
-    </div>
-  );
-}
+import { TurkceKlavye, insertIntoInput, scoreAnswer } from './turkce-klavye';
 
 export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -65,6 +27,7 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [imgError, setImgError] = useState(false);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const current = detaylar[index];
@@ -78,6 +41,7 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
     setIsPerfect(false);
     setIsYakin(false);
     setImgError(false);
+    setIsFocused(false);
     setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -87,14 +51,8 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   function insertChar(ch: string) {
     const input = inputRef.current;
     if (!input) return;
-    const start = input.selectionStart ?? value.length;
-    const end = input.selectionEnd ?? value.length;
-    const next = value.slice(0, start) + ch + value.slice(end);
+    const next = insertIntoInput(input, value, ch);
     setValue(next);
-    requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(start + ch.length, start + ch.length);
-    });
   }
 
   function handleSubmit(e?: React.FormEvent) {
@@ -106,18 +64,15 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
     }
     if (submitted) return;
 
-    const correct = sadelestir(value) === sadelestir(dogruCevap);
-    const perfect = correct && value.trim() === dogruCevap;
-    // Türkçe karakter eksik ama anlam doğru: yanlış sayılır, ama farklı mesaj gösterilir
-    const yakin = !correct && stripTurkce(value) === stripTurkce(dogruCevap);
+    const { isCorrect, isPerfect, isYakin } = scoreAnswer(value, dogruCevap);
 
     setSubmitted(true);
-    setIsCorrect(correct);
-    setIsPerfect(perfect);
-    setIsYakin(yakin);
+    setIsCorrect(isCorrect);
+    setIsPerfect(isPerfect);
+    setIsYakin(isYakin);
 
-    play(correct ? 'correct' : 'wrong');
-    if (correct) {
+    play(isCorrect ? 'correct' : 'wrong');
+    if (isCorrect) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) play('combo');
@@ -126,7 +81,6 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
       setLocalKalp((k) => Math.max(0, k - 1));
     }
 
-    // Yakın cevaplarda biraz daha uzun bekle — öğrenci mesajı okusun
     setTimeout(() => {
       const yeni = [...cevaplar, { id: current.id, cevap: value.trim() }];
       setCevaplar(yeni);
@@ -135,7 +89,7 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
       } else {
         setIndex((i) => i + 1);
       }
-    }, yakin ? 1800 : 900);
+    }, isYakin ? 1800 : 900);
   }
 
   return (
@@ -174,7 +128,7 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
           )}
         </div>
 
-        {/* Geri bildirim rozeti */}
+        {/* Geri bildirim */}
         <AnimatePresence>
           {submitted && (
             <motion.div
@@ -225,6 +179,12 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
             value={value}
             disabled={submitted}
             onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onPaste={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
             placeholder="Kelimeyi yazın…"
             autoComplete="off"
             autoCorrect="off"
@@ -243,8 +203,12 @@ export function ResmeKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
           />
         </motion.div>
 
-        {/* Türkçe karakter klavyesi */}
-        <TurkceKlavye onChar={insertChar} disabled={submitted} />
+        {/* Türkçe klavye — sadece focus varken */}
+        <TurkceKlavye
+          onChar={insertChar}
+          visible={isFocused && !submitted}
+          disabled={submitted}
+        />
 
         <button
           type="submit"

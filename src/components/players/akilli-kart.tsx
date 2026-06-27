@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
+import { api } from '@/lib/api';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -34,10 +35,13 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
   const [biliyorumAnim, setBiliyorumAnim] = useState(false);
+  const [sm2Mesaj, setSm2Mesaj] = useState<string | null>(null);
   const burstId = useRef(0);
   const flipDisabled = useRef(false);
   const { play } = useGameSound();
-  const { playing: wordPlaying, play: playWordAudio } = usePlayerAudio();
+  const { playing: wordPlaying, needsTap: wordNeedsTap, play: playWordAudio } = usePlayerAudio();
+
+  useEffect(() => { setSm2Mesaj(null); }, [index]);
 
   const current = detaylar[index];
   const imgUrl = toMediaUrl(current.resimLink);
@@ -77,7 +81,18 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
     const next = [...cevaplar, { id: current.id, cevap: bildi ? '1' : '0' }];
     setCevaplar(next);
 
-    const delay = bildi ? 480 : 320;
+    // SM-2 değerlendirmesi — fire-and-forget, UX'i bloklamaz
+    // Biliyorum=3 (Iyi), Bilmiyorum=1 (Tekrar)
+    api.post('/api/akilli-kart/degerlendirme', {
+      kartId: 0,
+      etkinlikDetayId: current.id,
+      degerlendirme: bildi ? 3 : 1,
+    }).then((res) => {
+      const msg: string = res.data?.aciklama ?? '';
+      if (msg) setSm2Mesaj(msg);
+    }).catch(() => { /* sessizce geç */ });
+
+    const delay = bildi ? 950 : 600;
     setTimeout(() => {
       if (index + 1 >= detaylar.length) {
         onComplete(next);
@@ -192,6 +207,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
                 {sesUrl && (
                   <AudioPlayButton
                     playing={wordPlaying}
+                    pulse={wordNeedsTap}
                     onPlay={() => playWordAudio(sesUrl)}
                   />
                 )}
@@ -222,6 +238,20 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {sm2Mesaj && (
+          <motion.p
+            key="sm2"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-xs text-center text-muted-foreground mt-3"
+          >
+            🗓 {sm2Mesaj}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
     </div>
   );

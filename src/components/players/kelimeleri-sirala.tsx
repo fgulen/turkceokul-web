@@ -144,7 +144,7 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
 
       {/* Kelime/cümle bankası — dikey liste */}
       <div className="flex flex-col gap-2 mb-5">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {shuffled.map((item, shuffledIdx) => {
             if (usedSet.has(shuffledIdx)) return null;
             return (

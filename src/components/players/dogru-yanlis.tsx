@@ -28,7 +28,7 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const correct = current.kelime1 ?? '';
+  const correct = current.cevap ?? current.kelime1 ?? '';
 
   function handleSelect(val: 'Doğru' | 'Yanlış') {
     if (selected !== null) return;

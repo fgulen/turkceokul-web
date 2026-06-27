@@ -1,23 +1,21 @@
-﻿'use client';
+'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
+import { TurkceKlavye, insertIntoInput, sadelestir, stripTurkce } from './turkce-klavye';
 
-// "......", "…", "[___]", "___" hepsini tek boşluk olarak tanı
-// \.{3,} greedy — kaç nokta olursa olsun (......., ...........) tek blank sayılır
 const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
 
 function splitByBlanks(text: string): string[] {
   return text.split(BLANK_RE);
 }
 
-// BoslukDoldurma: doğru cevap sırası kelime1, kelime2, ... (hepsi sırayla)
 function getCorrectAnswers(d: EtkinlikDetay): string[] {
   return [
     d.kelime1, d.kelime2, d.kelime3, d.kelime4, d.kelime5,
@@ -37,6 +35,11 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [shake, setShake] = useState(false);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
+  const [isAllPerfect, setIsAllPerfect] = useState(false);
+  const [isAllCorrect, setIsAllCorrect] = useState(false);
+  const [isAnyYakin, setIsAnyYakin] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   const current = detaylar[index];
@@ -44,13 +47,16 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   const parts = useMemo(() => splitByBlanks(sentence), [sentence]);
   const blankCount = Math.max(1, parts.length - 1);
-
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
 
-  // Soru değişince input sıfırla
   useEffect(() => {
     setValues(Array(blankCount).fill(''));
     setSubmitted(false);
+    setFocusedIdx(null);
+    setIsAllPerfect(false);
+    setIsAllCorrect(false);
+    setIsAnyYakin(false);
+    inputRefs.current = Array(blankCount).fill(null);
     setTimeout(() => {
       firstInputRef.current?.focus();
       firstInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -59,6 +65,18 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   const safe = values.length === blankCount ? values : Array(blankCount).fill('');
   const allFilled = safe.every((v) => v.trim().length > 0);
+
+  const insertChar = useCallback((ch: string) => {
+    if (focusedIdx === null) return;
+    const el = focusedIdx === 0 ? firstInputRef.current : inputRefs.current[focusedIdx];
+    if (!el) return;
+    const next = insertIntoInput(el, safe[focusedIdx], ch);
+    setValues((prev) => {
+      const arr = [...prev];
+      arr[focusedIdx] = next;
+      return arr;
+    });
+  }, [focusedIdx, safe]);
 
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -70,14 +88,25 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
     if (submitted) return;
     setSubmitted(true);
 
-    const answer = safe.join(',');
-    const isCorrect = safe.every(
-      (v, i) => v.toLowerCase().trim() === (correctAnswers[i] ?? '').toLowerCase().trim()
+    const correct = safe.every(
+      (v, i) => sadelestir(v) === sadelestir(correctAnswers[i] ?? '')
+    );
+    const perfect = safe.every(
+      (v, i) => v.trim() === (correctAnswers[i] ?? '').trim()
+    );
+    const yakin = !correct && safe.some(
+      (v, i) => !( sadelestir(v) === sadelestir(correctAnswers[i] ?? '') ) &&
+        stripTurkce(v) === stripTurkce(correctAnswers[i] ?? '')
     );
 
-    play(isCorrect ? 'correct' : 'wrong');
+    setIsAllCorrect(correct);
+    setIsAllPerfect(perfect);
+    setIsAnyYakin(yakin);
+
+    const answer = safe.join(',');
+    play(correct ? 'correct' : 'wrong');
     let newKalp = localKalp;
-    if (isCorrect) {
+    if (correct) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) play('combo');
@@ -95,7 +124,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
       } else {
         setIndex((i) => i + 1);
       }
-    }, 800);
+    }, yakin ? 1800 : 800);
   }
 
   return (
@@ -108,8 +137,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Boşluk Doldurma"
       />
 
-
-      {/* Cümle önizleme — yazdıkça boşluk dolar */}
+      {/* Cümle önizleme */}
       <motion.div
         key={current.id}
         initial={{ opacity: 0, y: 10 }}
@@ -123,9 +151,8 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
               <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
               {i < blankCount && (() => {
                 const val = safe[i];
-                const isCorrectBlank = submitted &&
-                  val.toLowerCase().trim() === (correctAnswers[i] ?? '').toLowerCase().trim();
-                const isWrongBlank = submitted && !isCorrectBlank;
+                const correct = submitted && sadelestir(val) === sadelestir(correctAnswers[i] ?? '');
+                const wrong = submitted && !correct;
                 const blankMinW = `${Math.max(3, (correctAnswers[i] ?? '___').length * 0.75)}em`;
                 return (
                   <span
@@ -134,8 +161,8 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
                       'inline-block mx-1 px-2 py-0.5 border-b-2 text-center align-middle rounded-sm transition-all',
                       !val && 'border-primary/40 border-dashed text-transparent',
                       val && !submitted && 'border-primary text-primary font-bold',
-                      isCorrectBlank && 'border-[--correct] text-[--correct] font-bold',
-                      isWrongBlank && 'border-destructive text-destructive font-bold',
+                      correct && 'border-[--correct] text-[--correct] font-bold',
+                      wrong && 'border-destructive text-destructive font-bold',
                     )}
                   >
                     {val || ' '}
@@ -146,6 +173,37 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
           ))}
         </p>
       </motion.div>
+
+      {/* Geri bildirim */}
+      <AnimatePresence>
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4"
+          >
+            {isAllCorrect ? (
+              <p className={cn(
+                'text-center text-sm font-bold px-4 py-1.5 rounded-full',
+                isAllPerfect
+                  ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                  : 'bg-[--correct]/10 text-[--correct]',
+              )}>
+                {isAllPerfect ? '⭐ Mükemmel!' : '✓ Doğru'}
+              </p>
+            ) : isAnyYakin ? (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-2 text-center text-sm">
+                <p className="text-amber-800 font-bold">Neredeyse! Türkçe karakterlere dikkat et.</p>
+                <p className="text-amber-600 text-xs mt-1">Klavyeyi kullan ve tam puan al.</p>
+              </div>
+            ) : (
+              <p className="text-center text-sm text-destructive font-medium">
+                Doğrusu: <span className="font-bold">{correctAnswers.join(', ')}</span>
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Input(lar) */}
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -161,8 +219,10 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
               </label>
             )}
             <input
-              ref={i === 0 ? firstInputRef : undefined}
-              autoFocus={i === 0}
+              ref={(el) => {
+                inputRefs.current[i] = el;
+                if (i === 0) (firstInputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+              }}
               value={val}
               disabled={submitted}
               onChange={(e) => {
@@ -171,20 +231,34 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
                 setValues(next);
               }}
               onKeyDown={(e) => {
-                // Enter ile sonraki inputa geç veya gönder
                 if (e.key === 'Enter' && i < blankCount - 1) {
                   e.preventDefault();
-                  const next = document.querySelectorAll<HTMLInputElement>('.bosluk-input');
-                  next[i + 1]?.focus();
+                  inputRefs.current[i + 1]?.focus();
                 }
               }}
-              placeholder={blankCount > 1 ? `${i + 1}. boşluğu yaz…` : 'Cevabınızı yazın…'}
+              onFocus={() => setFocusedIdx(i)}
+              onBlur={() => setFocusedIdx(null)}
+              onPaste={(e) => e.preventDefault()}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
+              placeholder="Cevabınızı yazın…"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               className={cn(
                 'bosluk-input w-full h-14 px-5 rounded-2xl border-2 border-input bg-background text-lg font-medium outline-none transition-colors',
                 'focus:border-primary focus:ring-2 focus:ring-primary/20',
                 'placeholder:text-muted-foreground',
                 'disabled:opacity-60',
               )}
+            />
+            {/* Klavye bu inputun hemen altında — sadece focus varken */}
+            <TurkceKlavye
+              onChar={insertChar}
+              visible={focusedIdx === i && !submitted}
+              disabled={submitted}
             />
           </motion.div>
         ))}

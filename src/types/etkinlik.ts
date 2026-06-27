@@ -3,6 +3,7 @@ export interface EtkinlikDetay {
   description: string | null;
   resimLink: string | null;
   sesLink: string | null;
+  cevap: string | null;   // doğru cevap (CoktanSecmeli/Quiz/BoslukDoldurma/DogruYanlis)
   kelime1: string | null;
   kelime2: string | null;
   kelime3: string | null;
@@ -27,6 +28,10 @@ export interface EtkinlikData {
   videoLink: string | null;
   etkinlikTuru: string;
   etkinlikTuruId: string;
+  uniteAdi?: string;
+  uniteId?: string;
+  kitapAdi?: string;
+  kitapId?: string;
   detaylar: EtkinlikDetay[];
 }
 

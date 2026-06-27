@@ -82,26 +82,33 @@ export function NextButton({ isLast, onClick, disabled }: NextButtonProps) {
 
 // ─── Audio Play Button ─────────────────────────────────────────────────────────
 // Standart ses çal butonu — akıllı kart, yazıya tıkla, resme tıkla, vb.
+// pulse: ses bitti veya autoplay engellendi → "tekrar çalmak için dokunun" ping halkası
 interface AudioPlayButtonProps {
   playing: boolean;
   onPlay: () => void;
   className?: string;
+  pulse?: boolean;
 }
-export function AudioPlayButton({ playing, onPlay, className }: AudioPlayButtonProps) {
+export function AudioPlayButton({ playing, onPlay, className, pulse }: AudioPlayButtonProps) {
   return (
-    <button
-      onClick={onPlay}
-      aria-label="Sesi çal"
-      className={cn(
-        'shrink-0 size-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors',
-        className,
+    <span className="relative inline-flex shrink-0">
+      {pulse && !playing && (
+        <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
       )}
-    >
-      {playing
-        ? <PlayingBars size="sm" color="bg-primary" />
-        : <Volume2 className="size-4 text-primary" />
-      }
-    </button>
+      <button
+        onClick={onPlay}
+        aria-label="Sesi çal"
+        className={cn(
+          'relative size-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors',
+          className,
+        )}
+      >
+        {playing
+          ? <PlayingBars size="sm" color="bg-primary" />
+          : <Volume2 className="size-4 text-primary" />
+        }
+      </button>
+    </span>
   );
 }
 
