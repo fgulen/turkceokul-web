@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { getLocale } from "next-intl/server";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -20,11 +21,12 @@ export const metadata: Metadata = {
     "Gerçek ders kitapları, oyun mekaniği ve canlı lig rekabeti ile Türkçe öğrenin.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

@@ -1,24 +1,186 @@
-﻿'use client';
+'use client';
 
 import { use, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Play, Users, Trophy, Wifi, ChevronRight, Square, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft, Play, Users, Trophy, Wifi, ChevronRight,
+  Square, AlertCircle, Sparkles, BookOpen, Check, Search,
+} from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { useKahoot } from '@/hooks/use-kahoot';
 import { cn } from '@/lib/utils';
 
+interface KahootEtkinlik {
+  id: string;
+  name: string;
+  etkinlikTuruId: string;
+  turuAdi: string;
+  isAiGenerated: boolean;
+  soruSayisi: number;
+}
+
+// ── Etkinlik Seçim Ekranı ─────────────────────────────────────────────────────
+function EtkinlikSecimEkrani({
+  sinifId,
+  onBaslat,
+}: {
+  sinifId: number;
+  onBaslat: (etkinlikIdleri: string[]) => void;
+}) {
+  const [secili, setSecili] = useState<Set<string>>(new Set());
+  const [arama, setArama] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { data: etkinlikler = [], isLoading } = useQuery<KahootEtkinlik[]>({
+    queryKey: ['kahoot-secim-etkinlikler'],
+    queryFn: () => api.get('/api/kahoot/secim-etkinlikler').then(r => r.data),
+  });
+
+  const filtrelenmis = etkinlikler.filter(e =>
+    e.name.toLowerCase().includes(arama.toLowerCase())
+  );
+
+  function toggle(id: string) {
+    setSecili(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBaslat(demo: boolean) {
+    setLoading(true);
+    try {
+      onBaslat(demo ? [] : [...secili]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const toplamSoru = [...secili]
+    .map(id => etkinlikler.find(e => e.id === id)?.soruSayisi ?? 0)
+    .reduce((a, b) => a + b, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Üst bilgi */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Etkinlik Seç</h2>
+          <p className="text-sm text-muted-foreground">
+            Kahoot'ta oynamak istediğin quiz etkinliklerini seç.
+          </p>
+        </div>
+        {secili.size > 0 && (
+          <div className="bg-primary/10 text-primary text-sm font-semibold px-3 py-1.5 rounded-lg">
+            {secili.size} etkinlik · {toplamSoru} soru
+          </div>
+        )}
+      </div>
+
+      {/* Arama */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <input
+          value={arama}
+          onChange={e => setArama(e.target.value)}
+          placeholder="Etkinlik ara..."
+          className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+
+      {/* Liste */}
+      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        {isLoading ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">Yükleniyor...</div>
+        ) : filtrelenmis.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            {arama ? 'Sonuç bulunamadı.' : 'Uygun quiz etkinliği yok.'}
+          </div>
+        ) : (
+          filtrelenmis.map(e => {
+            const checked = secili.has(e.id);
+            return (
+              <button
+                key={e.id}
+                onClick={() => toggle(e.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all',
+                  checked
+                    ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
+                    : 'bg-card border-border hover:bg-muted/40'
+                )}
+              >
+                {/* Checkbox */}
+                <div className={cn(
+                  'size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors',
+                  checked ? 'bg-primary border-primary' : 'border-border'
+                )}>
+                  {checked && <Check className="size-3 text-primary-foreground" />}
+                </div>
+
+                {/* İkon */}
+                <div className={cn(
+                  'size-8 rounded-lg flex items-center justify-center shrink-0',
+                  e.isAiGenerated ? 'bg-fuchsia-100' : 'bg-blue-100'
+                )}>
+                  {e.isAiGenerated
+                    ? <Sparkles className="size-4 text-fuchsia-600" />
+                    : <BookOpen className="size-4 text-blue-600" />}
+                </div>
+
+                {/* Metin */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{e.name}</p>
+                  <p className="text-xs text-muted-foreground">{e.soruSayisi} soru</p>
+                </div>
+
+                {/* Tür badge */}
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {e.isAiGenerated ? 'AI' : e.turuAdi}
+                </span>
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {/* Butonlar */}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={() => handleBaslat(false)}
+          disabled={secili.size === 0 || loading}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary-dark transition-colors disabled:opacity-40"
+        >
+          <Play className="size-4 fill-current" />
+          {loading ? 'Oluşturuluyor...' : `Başlat (${toplamSoru} soru)`}
+        </button>
+        <button
+          onClick={() => handleBaslat(true)}
+          disabled={loading}
+          className="px-4 py-3 bg-muted text-muted-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-40"
+        >
+          Demo
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Ana Sayfa ─────────────────────────────────────────────────────────────────
 export default function CanliKahootPage({ params }: { params: Promise<{ sinifId: string }> }) {
   const { sinifId } = use(params);
   const id = parseInt(sinifId);
   const { user, ready } = useAuthGuard('Ogretmen');
   const storageKey = `kahoot_canli_${id}`;
+
   const [oyunKodu, setOyunKodu] = useState<string | null>(() => {
     if (typeof window !== 'undefined') return sessionStorage.getItem(storageKey);
     return null;
   });
-  const [loading, setLoading] = useState(false);
   const [oyunBaslatildi, setOyunBaslatildi] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(`${storageKey}_started`) === '1'
   );
@@ -31,7 +193,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     enabled: !!user,
   });
 
-  // Oyun bitti (manuel EndGame veya otomatik son soru) → sessionStorage temizle
   useEffect(() => {
     if (kahoot.oyunBitti) {
       sessionStorage.removeItem(storageKey);
@@ -39,7 +200,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     }
   }, [kahoot.oyunBitti, storageKey]);
 
-  // Soru değişince öğretmen timer'ını sıfırla
   useEffect(() => {
     if (!kahoot.soruBilgisi || kahoot.oyunBitti) return;
     setGeriSayim(30);
@@ -52,7 +212,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     return () => clearInterval(timer);
   }, [kahoot.soruBilgisi?.soruNo, kahoot.oyunBitti]);
 
-  // Hub hatası → kayıtlı kod artık geçersiz (sunucu yeniden başlatıldı vb.) → sıfırla
   useEffect(() => {
     if (kahoot.hata && oyunKodu) {
       sessionStorage.removeItem(storageKey);
@@ -61,7 +220,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     }
   }, [kahoot.hata]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Oyun oluşturulunca (veya sessionStorage'dan geri yüklenince) hub'a bağlan
   useEffect(() => {
     if (!oyunKodu) return;
     (async () => {
@@ -70,15 +228,10 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
     })();
   }, [oyunKodu, kahoot.connect, kahoot.joinAsTeacher]);
 
-  async function oyunOlustur() {
-    setLoading(true);
-    try {
-      const res = await api.post('/api/kahoot/olustur', { sinifId: id, etkinlikIdleri: [] });
-      sessionStorage.setItem(storageKey, res.data.oyunKodu);
-      setOyunKodu(res.data.oyunKodu);
-    } finally {
-      setLoading(false);
-    }
+  async function oyunOlustur(etkinlikIdleri: string[]) {
+    const res = await api.post('/api/kahoot/olustur', { sinifId: id, etkinlikIdleri });
+    sessionStorage.setItem(storageKey, res.data.oyunKodu);
+    setOyunKodu(res.data.oyunKodu);
   }
 
   async function oyunuBaslat() {
@@ -119,39 +272,34 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
           Sınıfa dön
         </Link>
 
-        <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
-          <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Wifi className="size-8 text-primary" />
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="size-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+              <Wifi className="size-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Canlı Kahoot Modu</h1>
+              <p className="text-sm text-muted-foreground">{sinif?.name ?? '...'}</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Canlı Kahoot Modu</h1>
-          <p className="text-muted-foreground mb-8">{sinif?.name ?? '...'}</p>
 
           {!oyunKodu ? (
-            <div className="space-y-3">
-              <button
-                onClick={oyunOlustur}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl text-lg font-bold hover:bg-primary-dark transition-colors disabled:opacity-50"
-              >
-                <Play className="size-5 fill-current" />
-                {loading ? 'Oluşturuluyor...' : 'Demo Sorularla Başlat'}
-              </button>
-              <p className="text-xs text-muted-foreground">5 hazır Türkçe sorusu · Etkinlik seçimi yakında</p>
-            </div>
+            // ── Etkinlik Seçim ───────────────────────────────────────────────
+            <EtkinlikSecimEkrani sinifId={id} onBaslat={oyunOlustur} />
           ) : (
+            // ── Oyun Ekranı ──────────────────────────────────────────────────
             <div className="space-y-6">
+
               {/* Katılım kodu */}
-              <div className="bg-primary/5 border-2 border-primary/20 rounded-2xl p-8">
+              <div className="bg-primary/5 border-2 border-primary/20 rounded-2xl p-8 text-center">
                 <p className="text-sm font-semibold text-primary/70 mb-2 uppercase tracking-wider">Oyun Kodu</p>
-                <div className="text-6xl font-black tracking-[0.2em] text-primary">
-                  {oyunKodu}
-                </div>
+                <div className="text-6xl font-black tracking-[0.2em] text-primary">{oyunKodu}</div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Öğrenciler navdaki <strong>Kahoot</strong> linkinden bu kodu girer
+                  Öğrenciler nav&apos;daki <strong>Kahoot</strong> linkinden bu kodu girer
                 </p>
               </div>
 
-              {/* Canlı istatistikler */}
+              {/* İstatistikler */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-muted/40 rounded-xl p-4 text-center border border-border">
                   <Users className="size-5 text-muted-foreground mx-auto mb-1" />
@@ -166,32 +314,23 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                   <div className="text-xs text-muted-foreground">Soru</div>
                 </div>
                 <div className="bg-muted/40 rounded-xl p-4 text-center border border-border">
-                  <div className={cn(
-                    'size-3 rounded-full mx-auto mb-2',
-                    kahoot.connected ? 'bg-correct animate-pulse' : 'bg-destructive'
-                  )} />
+                  <div className={cn('size-3 rounded-full mx-auto mb-2', kahoot.connected ? 'bg-correct animate-pulse' : 'bg-destructive')} />
                   <div className="text-xs text-muted-foreground font-medium">
                     {kahoot.connected ? 'Bağlı' : 'Bağlantı yok'}
                   </div>
                 </div>
               </div>
 
-              {/* Soru zamanlayıcısı — soru aktifken */}
+              {/* Timer */}
               {oyunBaslatildi && !kahoot.oyunBitti && kahoot.soruBilgisi && (
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={cn(
-                        'h-full rounded-full transition-all duration-1000 ease-linear',
-                        geriSayim <= 5 ? 'bg-destructive' : 'bg-primary'
-                      )}
+                      className={cn('h-full rounded-full transition-all duration-1000 ease-linear', geriSayim <= 5 ? 'bg-destructive' : 'bg-primary')}
                       style={{ width: `${(geriSayim / 30) * 100}%` }}
                     />
                   </div>
-                  <span className={cn(
-                    'text-3xl font-black tabular-nums w-12 text-center shrink-0',
-                    geriSayim <= 5 ? 'text-destructive animate-pulse' : 'text-foreground'
-                  )}>
+                  <span className={cn('text-3xl font-black tabular-nums w-12 text-center shrink-0', geriSayim <= 5 ? 'text-destructive animate-pulse' : 'text-foreground')}>
                     {geriSayim}
                   </span>
                 </div>
@@ -200,7 +339,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
               {/* Kontroller */}
               <div className="flex gap-3 justify-center flex-wrap">
                 {kahoot.oyunBitti ? (
-                  /* Oyun bitti — XP kaydedildi */
                   <div className="w-full text-center py-4 px-6 bg-primary/5 border border-primary/20 rounded-2xl">
                     <Trophy className="size-8 text-secondary mx-auto mb-2" />
                     <p className="font-bold text-foreground">Oyun Bitti!</p>
@@ -224,7 +362,6 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                   </button>
                 ) : (
                   <>
-                    {/* Son soruda "Sonraki Soru" gizlenir */}
                     {!sonSoru && (
                       <button
                         onClick={sonrakiSoru}
@@ -247,7 +384,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                 )}
               </div>
 
-              {/* Mevcut soru (demo modda gösterilir, oyun bittikten sonra gizlenir) */}
+              {/* Mevcut soru */}
               {!kahoot.oyunBitti && kahoot.soruBilgisi?.soru && (
                 <div className="bg-muted/40 rounded-2xl border border-border p-6 text-left">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -273,9 +410,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
               {/* Leaderboard */}
               {kahoot.leaderboard.length > 0 && (
                 <div className="text-left space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    Anlık Sıralama
-                  </p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Anlık Sıralama</p>
                   {kahoot.leaderboard.slice(0, 10).map(s => (
                     <div key={s.userId} className={cn(
                       'flex items-center justify-between px-4 py-3 rounded-xl border',
