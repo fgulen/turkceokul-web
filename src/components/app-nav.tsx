@@ -199,6 +199,7 @@ export function AppNav() {
             {user.role === 'Ogrenci' && <>
               <NL href="/pano"              label="Pano"             active={pathname === '/pano'} />
               <NL href="/lig"               label="Lig"              active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
+              <NL href="/okuma"             label="Okuma"            active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} />
               <NL href="/kahoot/katil"      label="Kahoot"           active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
             </>}
           </nav>
@@ -275,6 +276,7 @@ export function AppNav() {
       <MobileBar items={[
         { href: '/pano',               Icon: LayoutDashboard, label: 'Pano',        active: pathname === '/pano' },
         { href: '/lig',                Icon: Trophy,          label: 'Lig',         active: pathname === '/lig' },
+        { href: '/okuma',              Icon: BookOpen,        label: 'Okuma',       active: !!pathname?.startsWith('/okuma') },
         { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot',      active: !!pathname?.startsWith('/kahoot') },
       ]} />
     )}
