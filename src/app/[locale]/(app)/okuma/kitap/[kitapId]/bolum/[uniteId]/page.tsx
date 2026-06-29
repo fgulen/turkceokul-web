@@ -6,11 +6,13 @@ import { api } from '@/lib/api';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { OkumaMetin } from '@/components/okuma/okuma-metin';
-import { ChevronLeft, CheckCircle2, BookOpen, AlertCircle } from 'lucide-react';
+import { MikroQuiz } from '@/components/okuma/mikro-quiz';
+import { BolumTamamlandi } from '@/components/okuma/bolum-tamamlandi';
+import { ChevronLeft, BookOpen, AlertCircle } from 'lucide-react';
 import { type EtkinlikData } from '@/types/etkinlik';
 import { Button } from '@/components/ui/button';
 
-type Asama = 'metin' | 'tamamlandi';
+type Asama = 'metin' | 'quiz' | 'tamamlandi';
 
 interface EtkinlikOzet {
   id: string;
@@ -60,6 +62,7 @@ export default function BolumPage({
   });
 
   const okugecEtkinlik = etkinlikler?.find((e) => e.etkinlikTuru === 'OkuGec');
+  const quizEtkinlikler = (etkinlikler ?? []).filter((e) => e.etkinlikTuru !== 'OkuGec');
 
   // OkuGec'in tam verisini al (detaylar içerir)
   const { data: okugecData, isLoading: okugecLoading, isError: okugecError } = useQuery<EtkinlikData>({
@@ -74,12 +77,6 @@ export default function BolumPage({
   const bolumNo = mevcutBolumIndex >= 0 ? mevcutBolumIndex + 1 : null;
   const toplamBolum = kitapDetay?.kitap.toplamBolum;
 
-  // Bir sonraki bölüm (tamamlandi aşamasında göster)
-  const sonrakiBolum =
-    mevcutBolumIndex >= 0 && mevcutBolumIndex < bolumler.length - 1
-      ? bolumler[mevcutBolumIndex + 1]
-      : null;
-
   // OkuGec description'larını paragraf olarak ayıkla
   const paragraflar =
     okugecData?.detaylar
@@ -93,6 +90,14 @@ export default function BolumPage({
       .catch(() => {
         // sessizce geç — UI engellenmesin
       });
+    if (quizEtkinlikler.length > 0) {
+      setAsama('quiz');
+    } else {
+      setAsama('tamamlandi');
+    }
+  };
+
+  const handleQuizBitti = () => {
     setAsama('tamamlandi');
   };
 
@@ -127,7 +132,7 @@ export default function BolumPage({
         <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: asama === 'metin' ? '50%' : '100%' }}
+            style={{ width: asama === 'metin' ? '33%' : asama === 'quiz' ? '67%' : '100%' }}
           />
         </div>
       </div>
@@ -191,64 +196,18 @@ export default function BolumPage({
         </>
       )}
 
+      {/* ── Quiz aşaması ── */}
+      {asama === 'quiz' && quizEtkinlikler.length > 0 && (
+        <MikroQuiz etkinlikler={quizEtkinlikler} onBitti={handleQuizBitti} />
+      )}
+
       {/* ── Tamamlandı aşaması ── */}
       {asama === 'tamamlandi' && (
-        <div className="flex flex-col items-center gap-6 py-10 text-center">
-          <div className="size-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle2 className="size-8 text-emerald-500" />
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-1">Bölüm Tamamlandı!</h2>
-            {kazanilanKelimeler.length > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Bu bölümde{' '}
-                <span className="font-semibold text-foreground">
-                  {kazanilanKelimeler.length}
-                </span>{' '}
-                kelime kaydettiniz.
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Metni başarıyla okudunuz.
-              </p>
-            )}
-          </div>
-
-          {/* Kaydedilen kelimeler */}
-          {kazanilanKelimeler.length > 0 && (
-            <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-              {kazanilanKelimeler.map((k) => (
-                <span
-                  key={k}
-                  className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium"
-                >
-                  {k}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* TODO: Task 8 — Mikro Quiz */}
-
-          {/* Navigasyon */}
-          <div className="flex flex-col gap-2 w-full max-w-xs">
-            {sonrakiBolum && !sonrakiBolum.kilitli && (
-              <Link
-                href={`/okuma/kitap/${kitapId}/bolum/${sonrakiBolum.id}`}
-                className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
-              >
-                Sonraki Bölüm →
-              </Link>
-            )}
-            <Link
-              href={`/okuma/kitap/${kitapId}`}
-              className="flex items-center justify-center w-full rounded-xl border border-border py-3 text-sm font-medium hover:bg-muted/50 transition-colors min-h-[48px]"
-            >
-              Kitaba Dön
-            </Link>
-          </div>
-        </div>
+        <BolumTamamlandi
+          uniteId={uniteId}
+          kitapId={kitapId}
+          kelimeSayisi={kazanilanKelimeler.length}
+        />
       )}
     </div>
   );
