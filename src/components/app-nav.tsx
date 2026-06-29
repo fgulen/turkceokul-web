@@ -113,17 +113,23 @@ function NL({ href, label, active, icon }: NLProps) {
 interface MBItem { href: string; Icon: React.ElementType; label: string; active: boolean }
 function MobileBar({ items }: { items: MBItem[] }) {
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex">
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-white border-t border-slate-100 flex"
+      // iOS Safari: fixed konumlu öğelerin scroll sırasında kaybolmasını önler
+      style={{ WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}
+    >
       {items.map(({ href, Icon, label, active }) => (
         <Link
           key={href}
           href={href}
           className={cn(
-            'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+            'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
             active ? 'text-primary' : 'text-slate-400',
           )}
         >
-          <Icon className={cn('size-5', active && 'text-primary')} />
+          <div className={cn('flex items-center justify-center w-10 h-7 rounded-xl transition-colors', active && 'bg-primary/10')}>
+            <Icon className={cn('size-5', active ? 'text-primary' : 'text-slate-400')} />
+          </div>
           {label}
         </Link>
       ))}
@@ -258,14 +264,14 @@ export function AppNav() {
         { href: '/editor/kutuphane',   Icon: Library,         label: 'Kütüphane',   active: !!pathname?.startsWith('/editor') },
       ]} />
     )}
-    {mounted && hydrated && user && (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && (
+    {mounted && hydrated && user && (user.role === 'Ogretmen' || user.role === 'KurumYoneticisi' || user.role === 'UlkeTemsilcisi') && !pathname?.endsWith('/canli') && (
       <MobileBar items={[
         { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Panelim',     active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
         { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
         { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
-    {mounted && hydrated && user?.role === 'Ogrenci' && (
+    {mounted && hydrated && user?.role === 'Ogrenci' && !pathname?.startsWith('/kahoot') && (
       <MobileBar items={[
         { href: '/pano',               Icon: LayoutDashboard, label: 'Pano',        active: pathname === '/pano' },
         { href: '/lig',                Icon: Trophy,          label: 'Lig',         active: pathname === '/lig' },

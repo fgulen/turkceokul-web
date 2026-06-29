@@ -24,6 +24,9 @@ export interface SoruBilgisi {
   secB?: string;
   secC?: string;
   secD?: string;
+  turuAdi?: string;
+  resimUrl?: string;
+  sesUrl?: string;
 }
 
 function redirectToHome() {
@@ -60,6 +63,7 @@ export function useKahoot() {
   const [cevapAlindi, setCevapAlindi] = useState(false);
   const [kazanilanPuan, setKazanilanPuan] = useState(0);
   const [cevapDogru, setCevapDogru] = useState<boolean | null>(null);
+  const [oyunDurumuBaslatildi, setOyunDurumuBaslatildi] = useState<boolean | null>(null);
 
   // [] deps: tüm token işi accessTokenFactory içinde; bağımlılık yok
   const connect = useCallback(async (): Promise<boolean> => {
@@ -77,11 +81,15 @@ export function useKahoot() {
       .build();
 
     conn.on('OyuncuKatildi', () => setOyuncuSayisi(p => p + 1));
-    conn.on('OyunDurumu', (data: { oyuncuSayisi: number }) => setOyuncuSayisi(data.oyuncuSayisi));
+    conn.on('OyunDurumu', (data: { oyuncuSayisi: number; oyunBaslatildi?: boolean }) => {
+      setOyuncuSayisi(data.oyuncuSayisi);
+      if (data.oyunBaslatildi !== undefined) setOyunDurumuBaslatildi(data.oyunBaslatildi);
+      setHata(null); // Başarılı JoinAsTeacher → eski hatayı temizle
+    });
 
-    conn.on('OyunBasladi', (data: { soruId: string; toplamSoru: number; soru?: string; secA?: string; secB?: string; secC?: string; secD?: string }) => {
+    conn.on('OyunBasladi', (data: { soruId: string; toplamSoru: number; soru?: string; secA?: string; secB?: string; secC?: string; secD?: string; turuAdi?: string; resimUrl?: string; sesUrl?: string }) => {
       setOyunBasladi(true);
-      setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD });
+      setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD, turuAdi: data.turuAdi, resimUrl: data.resimUrl, sesUrl: data.sesUrl });
       setCevapAlindi(false);
       setCevapDogru(null);
     });
@@ -166,6 +174,7 @@ export function useKahoot() {
     cevapAlindi,
     kazanilanPuan,
     cevapDogru,
+    oyunDurumuBaslatildi,
     connect,
     disconnect,
     joinGame,

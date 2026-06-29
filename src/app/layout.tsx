@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "TürkçeOkulu — Türkçe Öğren",
   description:
     "Gerçek ders kitapları, oyun mekaniği ve canlı lig rekabeti ile Türkçe öğrenin.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({

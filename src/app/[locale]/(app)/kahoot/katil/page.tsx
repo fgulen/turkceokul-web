@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle, Volume2 } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { useKahoot, type LeaderboardSatir } from '@/hooks/use-kahoot';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 
 type Asama = 'kod-giris' | 'bekleme' | 'soru' | 'cevap-verildi' | 'leaderboard-ara' | 'bitti';
 
@@ -17,6 +17,8 @@ const CEVAP_RENKLERI = [
   { harf: 'C', bg: 'bg-amber-400', hover: 'hover:bg-amber-500' },
   { harf: 'D', bg: 'bg-green-500', hover: 'hover:bg-green-600' },
 ];
+
+const SESSION_KEY = 'kahoot_aktif_kod';
 
 export default function KahootKatilPage() {
   const { user, ready } = useAuthGuard();
@@ -67,8 +69,34 @@ export default function KahootKatilPage() {
   }, [kahoot.soruBilgisi, asama, kahoot.oyunBitti]);
 
   useEffect(() => {
-    if (kahoot.oyunBitti) setAsama('bitti');
+    if (kahoot.oyunBitti) {
+      setAsama('bitti');
+      sessionStorage.removeItem(SESSION_KEY);
+    }
   }, [kahoot.oyunBitti]);
+
+  // Mid-game yenileme: sunucu oyunun başladığını bildirince bekleme→soru geç
+  useEffect(() => {
+    if (kahoot.oyunDurumuBaslatildi && asama === 'bekleme') setAsama('soru');
+  }, [kahoot.oyunDurumuBaslatildi, asama]);
+
+  // Sayfa yenilenince sessionStorage'dan kodu alıp otomatik bağlan
+  useEffect(() => {
+    if (!ready || !user) return;
+    const kaydedilmisKod = sessionStorage.getItem(SESSION_KEY);
+    if (!kaydedilmisKod) return;
+    setYukleniyor(true);
+    api.get(`/api/kahoot/kontrol/${kaydedilmisKod}`)
+      .then(async () => {
+        const ok = await kahoot.connect();
+        if (!ok) { sessionStorage.removeItem(SESSION_KEY); return; }
+        await kahoot.joinGame(kaydedilmisKod);
+        setAktifKod(kaydedilmisKod);
+        setAsama('bekleme');
+      })
+      .catch(() => sessionStorage.removeItem(SESSION_KEY))
+      .finally(() => setYukleniyor(false));
+  }, [ready, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function oyunaKatil() {
     if (!kod.trim()) return;
@@ -81,6 +109,7 @@ export default function KahootKatilPage() {
       if (!ok) return;
       await kahoot.joinGame(girilenKod);
       setAktifKod(girilenKod);
+      sessionStorage.setItem(SESSION_KEY, girilenKod);
       setAsama('bekleme');
     } catch {
       setHataMsg('Oyun kodu bulunamadı veya oyun sona erdi.');
@@ -116,7 +145,7 @@ export default function KahootKatilPage() {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="h-[calc(100dvh-4rem)] flex flex-col px-3 py-3 gap-3"
+            className="h-[calc(100dvh-4rem)] flex flex-col px-3 py-3 gap-3 max-w-2xl mx-auto w-full"
           >
             {/* Üst bar: ilerleme + zamanlayıcı */}
             <div className="flex items-center gap-3 shrink-0">
@@ -143,14 +172,34 @@ export default function KahootKatilPage() {
               </div>
             </div>
 
-            {/* Soru metni */}
-            {kahoot.soruBilgisi?.soru && (
-              <div className="bg-card rounded-2xl border border-border shadow-sm px-6 py-4 shrink-0 text-center">
-                <p className="text-2xl md:text-3xl font-bold text-foreground leading-snug">
-                  {kahoot.soruBilgisi.soru}
-                </p>
-              </div>
-            )}
+            {/* Soru — resim kenardan kenara, altında ses/metin */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm shrink-0 text-center overflow-hidden">
+              {kahoot.soruBilgisi?.resimUrl && (
+                <img
+                  src={toMediaUrl(kahoot.soruBilgisi.resimUrl) ?? ''}
+                  alt=""
+                  className="w-full object-contain max-h-56 bg-slate-50"
+                />
+              )}
+              {(kahoot.soruBilgisi?.sesUrl || kahoot.soruBilgisi?.soru) && (
+                <div className="px-6 py-4 space-y-2">
+                  {kahoot.soruBilgisi?.sesUrl && (
+                    <button
+                      onClick={() => { const u = toMediaUrl(kahoot.soruBilgisi!.sesUrl!); if (u) new Audio(u).play().catch(() => {}); }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl font-semibold text-sm hover:bg-primary/20 transition-colors"
+                    >
+                      <Volume2 className="size-4" />
+                      Sesi Dinle
+                    </button>
+                  )}
+                  {kahoot.soruBilgisi?.soru && (
+                    <p className="text-xl md:text-2xl font-bold text-foreground leading-snug whitespace-pre-wrap">
+                      {kahoot.soruBilgisi.soru}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Cevap butonları — kalan alanı doldurur */}
             <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
@@ -162,9 +211,8 @@ export default function KahootKatilPage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => cevapGonder(harf)}
                     className={cn(
-                      'rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-3 p-4',
+                      'rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-3 p-4 h-full w-full',
                       bg, hover,
-                      'h-full w-full'
                     )}
                   >
                     <span className="w-12 h-12 rounded-full bg-black/25 flex items-center justify-center text-white font-black text-2xl shrink-0">

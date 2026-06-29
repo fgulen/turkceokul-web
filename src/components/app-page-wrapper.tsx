@@ -8,14 +8,9 @@ export function AppPageWrapper({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const hydrated = useAuthStore((s) => s._hasHydrated);
   const pathname = usePathname();
-  const hasMobileBar = hydrated && (
-    user?.role === 'Ogrenci' ||
-    user?.role === 'Ogretmen' ||
-    user?.role === 'KurumYoneticisi' ||
-    user?.role === 'UlkeTemsilcisi'
-  );
-  // Ders sayfası kendi fixed-height layout'unu yönetiyor, pb-14 body scroll yaratır
-  const isFixedLayout = pathname?.startsWith('/ders/');
+  // Alt nav mobilde tüm roller için görünüyor (SuperAdmin/Koordinator da dahil)
+  const hasMobileBar = hydrated && !!user;
+  const isFixedLayout = pathname?.startsWith('/ders/') || pathname?.startsWith('/kahoot') || pathname?.endsWith('/canli');
 
   return (
     <div className={cn(hasMobileBar && !isFixedLayout && 'pb-14 md:pb-0')}>
