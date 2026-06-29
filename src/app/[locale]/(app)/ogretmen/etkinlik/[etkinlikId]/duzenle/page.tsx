@@ -60,6 +60,7 @@ function emptyDetay(orderNo: number): EtkinlikDetay {
     description: null,
     resimLink: null,
     sesLink: null,
+    cevap: null,
     kelime1: null, kelime2: null, kelime3: null, kelime4: null, kelime5: null,
     kelime6: null, kelime7: null, kelime8: null, kelime9: null, kelime10: null,
     orderNo,
