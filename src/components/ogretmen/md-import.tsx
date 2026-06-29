@@ -60,10 +60,19 @@ export function MdImport() {
   const [hata, setHata] = useState('');
   const [kayitSonuc, setKayitSonuc] = useState<KitapOlusturSonuc | null>(null);
   const [cachedSonuc, setCachedSonuc] = useState<MdParseResult | null>(null);
+  const [kitapAdi, setKitapAdi] = useState('');
+  const [yazar, setYazar] = useState('');
+  const [seviye, setSeviye] = useState('');
 
   // Dosya adı değişince cache'i yükle
   useEffect(() => {
-    setCachedSonuc(readCache(mdDosyaAdi));
+    const cached = readCache(mdDosyaAdi);
+    setCachedSonuc(cached);
+    if (cached) {
+      setKitapAdi(cached.kitapAdi ?? '');
+      setYazar('');
+      setSeviye(cached.duzey ?? '');
+    }
     setKayitSonuc(null);
     setHata('');
   }, [mdDosyaAdi]);
@@ -82,6 +91,9 @@ export function MdImport() {
       const sonuc = data as MdParseResult;
       writeCache(mdDosyaAdi, sonuc);
       setCachedSonuc(sonuc);
+      setKitapAdi(sonuc.kitapAdi ?? '');
+      setYazar('');
+      setSeviye(sonuc.duzey ?? '');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: string } })?.response?.data
         ?? (err instanceof Error ? err.message : 'İşlem başarısız');
@@ -100,9 +112,9 @@ export function MdImport() {
     setHata('');
     try {
       const { data } = await api.post('/api/ai/md-import/kitap-olustur', {
-        kitapAdi: cachedSonuc.kitapAdi,
-        yazar: '',
-        seviye: cachedSonuc.duzey,
+        kitapAdi: kitapAdi || cachedSonuc.kitapAdi,
+        yazar: yazar || '',
+        seviye: seviye || cachedSonuc.duzey || '',
         bolumler: cachedSonuc.bolumler.map(b => ({
           baslik: b.baslik,
           metin: b.metin,
@@ -186,9 +198,42 @@ export function MdImport() {
             {' · '}
             <strong>{toplamEtkinlik} etkinlik</strong>
           </p>
-          <p className="text-xs text-muted-foreground">
-            Kitap adı: {cachedSonuc.kitapAdi} · Seviye: {cachedSonuc.duzey}
-          </p>
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Kitap Adı</label>
+              <input
+                value={kitapAdi}
+                onChange={e => setKitapAdi(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border bg-background text-sm"
+                placeholder="Kitap adı"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Yazar</label>
+              <input
+                value={yazar}
+                onChange={e => setYazar(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border bg-background text-sm"
+                placeholder="Yazar adı"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Seviye</label>
+              <select
+                value={seviye}
+                onChange={e => setSeviye(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border bg-background text-sm"
+              >
+                <option value="">Seviye seç</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+              </select>
+            </div>
+          </div>
           <button
             onClick={handleKitapOlustur}
             disabled={islemYapiliyor}
