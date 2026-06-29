@@ -44,11 +44,11 @@ interface DersKitabi {
 
 interface OkumaKitabi {
   id: string;
-  baslik: string;
-  yazar: string;
+  name: string;
   seviye: string;
-  tur: string;
-  kapakUrl: string | null;
+  thumbnailPicture: string | null;
+  toplamBolum: number;
+  tamamlananBolum: number;
 }
 
 const gorevLabel: Record<string, string> = {
@@ -91,8 +91,8 @@ export default function PanoPage() {
   });
 
   const { data: okumaKitaplari } = useQuery<OkumaKitabi[]>({
-    queryKey: ['kutuphane-kitaplar'],
-    queryFn: () => api.get('/api/kutuphane/kitaplar').then((r) => r.data),
+    queryKey: ['okuma-kitaplar'],
+    queryFn: () => api.get('/api/okuma/kitaplar').then((r) => r.data),
     enabled: !!user,
   });
 
@@ -208,29 +208,54 @@ export default function PanoPage() {
         {/* Okuma Kitapları */}
         {okumaKitaplari && okumaKitaplari.length > 0 && (
           <div className="mb-10">
-            <h2 className="font-semibold text-lg mb-4">Okuma Kitapları</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-lg">Okuma Kitapları</h2>
+              <Link href="/okuma" className="text-xs text-primary hover:underline">
+                Tümünü gör →
+              </Link>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {okumaKitaplari.map((kitap) => (
-                <Link
-                  key={kitap.id}
-                  href={`/okuma/${kitap.id}`}
-                  className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
-                >
-                  <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <BookMarked className="size-6 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{kitap.seviye}</span>
-                      {kitap.tur === 'pdf' && (
-                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">PDF</span>
-                      )}
+              {okumaKitaplari.map((kitap) => {
+                const pct = kitap.toplamBolum > 0
+                  ? Math.round((kitap.tamamlananBolum / kitap.toplamBolum) * 100)
+                  : 0;
+                const tamam = kitap.tamamlananBolum === kitap.toplamBolum && kitap.toplamBolum > 0;
+                const devamEtHref = `/okuma/kitap/${kitap.id}`;
+
+                return (
+                  <Link
+                    key={kitap.id}
+                    href={devamEtHref}
+                    className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
+                  >
+                    <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                      <BookMarked className="size-6 text-primary" />
                     </div>
-                    <div className="font-semibold text-sm group-hover:text-primary transition-colors">{kitap.baslik}</div>
-                    {kitap.yazar && <div className="text-xs text-muted-foreground mt-0.5">{kitap.yazar}</div>}
-                  </div>
-                </Link>
-              ))}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          {kitap.seviye}
+                        </span>
+                      </div>
+                      <div className="font-semibold text-sm group-hover:text-primary transition-colors leading-snug">
+                        {kitap.name}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {kitap.tamamlananBolum}/{kitap.toplamBolum} bölüm
+                      </p>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all',
+                            tamam ? 'bg-emerald-500' : 'bg-primary'
+                          )}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
