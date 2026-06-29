@@ -6,26 +6,8 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { type EtkinlikData, type Cevap } from '@/types/etkinlik';
 import { CoktanSecmeliPlayer } from '@/components/players/coktan-secmeli';
-import { QuizPlayer } from '@/components/players/quiz';
 import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
 import { BoslukDoldurmaPlayer } from '@/components/players/bosluk-doldurma';
-import { AkilliKartPlayer } from '@/components/players/akilli-kart';
-import { KelimeleriEslestirPlayer } from '@/components/players/kelimeleri-eslestir';
-import { CoktanSecmeliBoslukDoldurmaPlayer } from '@/components/players/coktan-secmeli-bosluk-doldurma';
-import { ResimSesEslestirmePlayer } from '@/components/players/resim-ses-eslestirme';
-import { ResmeTiklaDinlePlayer } from '@/components/players/resme-tikla-dinle';
-import { YaziyaTiklaDinlePlayer } from '@/components/players/yaziya-tikla-dinle';
-import { ResimMetinEslestirmePlayer } from '@/components/players/resim-metin-eslestirme';
-import { MetinSesEslestirmePlayer } from '@/components/players/metin-ses-eslestirme';
-import { ResminSesiHangisiPlayer } from '@/components/players/resmin-sesi-hangisi';
-import { ResimlerdenBiriniSecmePlayer } from '@/components/players/resimlerden-birini-secme';
-import { KelimeleriSiralaPlayer } from '@/components/players/kelimeleri-sirala';
-import { ResmeKelimeYazPlayer } from '@/components/players/resme-kelime-yaz';
-import { SesiDinleveKelimeYazPlayer } from '@/components/players/sesi-dinle-ve-kelime-yaz';
-import { KelimeleriGruplaPlayer } from '@/components/players/kelimeleri-grupla';
-import { KelimelerdenCumleYapPlayer } from '@/components/players/kelimelerden-cumle-yap';
-import { ResimliSoruCevapPlayer } from '@/components/players/resimli-soru-cevap';
-import { KelimeleriAyristirPlayer } from '@/components/players/kelimeleri-ayristir';
 
 export interface QuizEtkinlik {
   id: string;
@@ -38,72 +20,21 @@ interface MikroQuizProps {
   onBitti: () => void;
 }
 
-// Mevcut /etkinlik/[etkinlikId]/page.tsx renderPlayer mantığının kopyası.
-// OkuGec burada kasıtlı olarak yer almaz — okuma metni ayrı aşamada gösterilir.
-// Not: Kalp sistemi okuma modülünde uygulanmaz; onComplete her durumda sonraki etkinliğe geçirir.
+// Okuma modülü için sadece 3 player tipi desteklenir.
+// Diğer tipler sessizce geçilir; kalp sistemi uygulanmaz.
 function renderPlayer(etkinlik: EtkinlikData, onComplete: (cevaplar: Cevap[]) => void) {
   const props = { etkinlik, onComplete };
   switch (etkinlik.etkinlikTuru) {
     case 'CoktanSecmeli':
       return <CoktanSecmeliPlayer {...props} />;
-    case 'AkilliKart':
-      return <AkilliKartPlayer {...props} />;
-    case 'Quiz':
-      return <QuizPlayer {...props} />;
-    case 'KelimeleriEslestir':
-      return <KelimeleriEslestirPlayer {...props} />;
-    case 'CoktanSecmeliBoslukDoldurma':
-      return <CoktanSecmeliBoslukDoldurmaPlayer {...props} />;
-    case 'ResimSesEslestirme':
-    case 'ResimSesEslestirmeDogruYanlis':
-      return <ResimSesEslestirmePlayer {...props} />;
-    case 'MetinDogruYanlis':
-    case 'MetinCheckBox':
-    case 'ResimMetinEslestirmeDogruYanlis':
+    case 'DogruYanlis':
       return <DogruYanlisPlayer {...props} />;
     case 'BoslukDoldurma':
       return <BoslukDoldurmaPlayer {...props} />;
-    case 'ResmeTiklaDinle':
-      return <ResmeTiklaDinlePlayer {...props} />;
-    case 'YaziyaTiklaDinle':
-      return <YaziyaTiklaDinlePlayer {...props} />;
-    case 'ResimMetinEslestirme':
-      return <ResimMetinEslestirmePlayer {...props} />;
-    case 'MetinSesEslestirme':
-    case 'MetinSesEslestirmeDogruYanlis':
-      return <MetinSesEslestirmePlayer {...props} />;
-    case 'ResminSesiHangisi':
-      return <ResminSesiHangisiPlayer {...props} />;
-    case 'ResimlerdenBiriniSecme':
-      return <ResimlerdenBiriniSecmePlayer {...props} />;
-    case 'KelimeleriSirala':
-      return <KelimeleriSiralaPlayer {...props} />;
-    case 'ResmeKelimeYaz':
-      return <ResmeKelimeYazPlayer {...props} />;
-    case 'SesiDinleveKelimeYaz':
-      return <SesiDinleveKelimeYazPlayer {...props} />;
-    case 'KelimeleriGrupla':
-      return <KelimeleriGruplaPlayer {...props} />;
-    case 'KelimelerdenCumleYap':
-      return <KelimelerdenCumleYapPlayer {...props} />;
-    case 'ResimliSoruCevap':
-    case 'SoruCevap':
-      return <ResimliSoruCevapPlayer {...props} />;
-    case 'KelimeleriAyristir':
-      return <KelimeleriAyristirPlayer {...props} />;
     default:
-      // Bilinmeyen tip — etkinliği geç
-      return (
-        <div className="text-center py-10 space-y-4">
-          <p className="text-sm text-muted-foreground">{etkinlik.name}</p>
-          <button
-            onClick={() => onComplete(etkinlik.detaylar.map((d) => ({ id: d.id, cevap: '1' })))}
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors"
-          >
-            Devam Et
-          </button>
-        </div>
-      );
+      // Diğer tipler için sessizce geç
+      onComplete([]);
+      return null;
   }
 }
 

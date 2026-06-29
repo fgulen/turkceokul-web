@@ -11,9 +11,11 @@ interface BolumTamamlandiProps {
   kitapId: string;
   /** Okuma sırasında kullanıcının tıkladığı kelime sayısı */
   kelimeSayisi: number;
+  /** Bir sonraki bölümün id'si. Yoksa son bölümdeyiz. */
+  sonrakiBolumId?: string;
 }
 
-export function BolumTamamlandi({ uniteId, kitapId, kelimeSayisi }: BolumTamamlandiProps) {
+export function BolumTamamlandi({ uniteId, kitapId, kelimeSayisi, sonrakiBolumId }: BolumTamamlandiProps) {
   const queryClient = useQueryClient();
 
   // Kitap detay cache'ini temizle — bölüm kilit durumu güncellendi
@@ -38,7 +40,9 @@ export function BolumTamamlandi({ uniteId, kitapId, kelimeSayisi }: BolumTamamla
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Bölüm Tamamlandı!</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {sonrakiBolumId ? 'Bölüm Tamamlandı!' : 'Kitabı Tamamladın!'}
+        </h2>
         <p className="text-muted-foreground text-sm">Harika iş çıkardın.</p>
       </div>
 
@@ -69,12 +73,21 @@ export function BolumTamamlandi({ uniteId, kitapId, kelimeSayisi }: BolumTamamla
 
       {/* Navigasyon */}
       <div className="space-y-3 max-w-xs mx-auto w-full">
-        <Link
-          href={`/okuma/kitap/${kitapId}`}
-          className="flex items-center justify-center w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
-        >
-          Sonraki Bölüme Geç
-        </Link>
+        {sonrakiBolumId ? (
+          <Link
+            href={`/okuma/kitap/${kitapId}/bolum/${sonrakiBolumId}`}
+            className="flex items-center justify-center w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
+          >
+            Sonraki Bölüme Geç
+          </Link>
+        ) : (
+          <Link
+            href={`/okuma/kitap/${kitapId}`}
+            className="flex items-center justify-center w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
+          >
+            Kitaba Dön
+          </Link>
+        )}
         <Link
           href="/okuma"
           className="flex items-center justify-center w-full rounded-xl border border-border py-3 text-sm font-medium hover:bg-muted/50 transition-colors min-h-[48px]"

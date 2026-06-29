@@ -76,6 +76,7 @@ export default function BolumPage({
   const mevcutBolumIndex = bolumler.findIndex((b) => b.id === uniteId);
   const bolumNo = mevcutBolumIndex >= 0 ? mevcutBolumIndex + 1 : null;
   const toplamBolum = kitapDetay?.kitap.toplamBolum;
+  const sonrakiBolum = bolumler[mevcutBolumIndex + 1] ?? null;
 
   // OkuGec description'larını paragraf olarak ayıkla
   const paragraflar =
@@ -85,19 +86,25 @@ export default function BolumPage({
 
   // Bölümü tamamla + aşamayı ilerlet
   const handleMetinBitti = () => {
-    api
-      .post('/api/okuma/bolum-tamamla', { uniteId })
-      .catch(() => {
-        // sessizce geç — UI engellenmesin
-      });
     if (quizEtkinlikler.length > 0) {
       setAsama('quiz');
+      // API çağrısı YOK burada — quiz bittikten sonra çağrılacak
     } else {
+      api
+        .post('/api/okuma/bolum-tamamla', { uniteId })
+        .catch(() => {
+          // sessizce geç — UI engellenmesin
+        });
       setAsama('tamamlandi');
     }
   };
 
   const handleQuizBitti = () => {
+    api
+      .post('/api/okuma/bolum-tamamla', { uniteId })
+      .catch(() => {
+        // sessizce geç — UI engellenmesin
+      });
     setAsama('tamamlandi');
   };
 
@@ -207,6 +214,7 @@ export default function BolumPage({
           uniteId={uniteId}
           kitapId={kitapId}
           kelimeSayisi={kazanilanKelimeler.length}
+          sonrakiBolumId={sonrakiBolum?.id}
         />
       )}
     </div>
