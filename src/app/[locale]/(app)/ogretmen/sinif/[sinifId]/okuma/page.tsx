@@ -73,9 +73,9 @@ export default function OkumaIlerlemePage({
         <div className="max-w-[1000px] mx-auto px-4 py-8">
           <div className="p-8 text-red-600">
             Sınıf verisi yüklenemedi.{' '}
-            <a href="/ogretmen" className="underline">
+            <Link href="/ogretmen" className="underline">
               Geri dön
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@ export default function OkumaIlerlemePage({
                                   bolumAcMut.mutate({ uniteId: masterBolum.id, userId: ogr.userId })
                                 }
                                 disabled={bolumAcMut.isPending}
-                                className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50"
+                                className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50 min-h-[44px] min-w-[44px] justify-center"
                                 title={`${ogr.ad} için "${masterBolum.name}" bölümünü aç`}
                               >
                                 <Lock className="size-4 text-slate-300 group-hover:text-primary transition-colors" />

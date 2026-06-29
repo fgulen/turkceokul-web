@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,8 @@ interface MikroQuizProps {
 
 // Okuma modülü için sadece 3 player tipi desteklenir.
 // Diğer tipler sessizce geçilir; kalp sistemi uygulanmaz.
+const DESTEKLENEN_TIPLER = ['CoktanSecmeli', 'DogruYanlis', 'BoslukDoldurma'] as const;
+
 function renderPlayer(etkinlik: EtkinlikData, onComplete: (cevaplar: Cevap[]) => void) {
   const props = { etkinlik, onComplete };
   switch (etkinlik.etkinlikTuru) {
@@ -32,8 +34,6 @@ function renderPlayer(etkinlik: EtkinlikData, onComplete: (cevaplar: Cevap[]) =>
     case 'BoslukDoldurma':
       return <BoslukDoldurmaPlayer {...props} />;
     default:
-      // Diğer tipler için sessizce geç
-      onComplete([]);
       return null;
   }
 }
@@ -50,6 +50,16 @@ function EtkinlikPlayerInline({
     queryFn: () => api.get(`/api/etkinlik/${etkinlikId}`).then((r) => r.data),
   });
 
+  // Desteklenmeyen tipler için onComplete'i render fazında değil, effect'te çağır
+  const isUnsupported =
+    !!etkinlik && !DESTEKLENEN_TIPLER.includes(etkinlik.etkinlikTuru as typeof DESTEKLENEN_TIPLER[number]);
+
+  useEffect(() => {
+    if (isUnsupported) {
+      onComplete([]);
+    }
+  }, [isUnsupported, onComplete]);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -65,6 +75,7 @@ function EtkinlikPlayerInline({
   }
 
   if (!etkinlik) return null;
+  if (isUnsupported) return null;
 
   return renderPlayer(etkinlik, onComplete);
 }
