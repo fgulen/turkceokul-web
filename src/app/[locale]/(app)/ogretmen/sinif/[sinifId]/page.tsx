@@ -467,16 +467,28 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           {tab === 'raporlar' && (
             <div>
               <h2 className="font-semibold text-slate-900 mb-4">İlerleme Raporu</h2>
-              <Link
-                href={`/ogretmen/sinif/${id}/raporlar`}
-                className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
-              >
-                <div>
-                  <div className="font-medium text-slate-800">Öğrenci × Ünite Heatmap</div>
-                  <div className="text-sm text-slate-500 mt-0.5">Her öğrencinin her ünitedeki ilerleme oranını görün</div>
-                </div>
-                <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
-              </Link>
+              <div className="space-y-3">
+                <Link
+                  href={`/ogretmen/sinif/${id}/raporlar`}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                >
+                  <div>
+                    <div className="font-medium text-slate-800">Öğrenci × Ünite Heatmap</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Her öğrencinin her ünitedeki ilerleme oranını görün</div>
+                  </div>
+                  <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
+                </Link>
+                <Link
+                  href={`/ogretmen/sinif/${id}/okuma`}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                >
+                  <div>
+                    <div className="font-medium text-slate-800">Okuma Raporu</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Öğrenci × bölüm ilerleme grid'i, risk uyarıları ve bölüm açma</div>
+                  </div>
+                  <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
+                </Link>
+              </div>
             </div>
           )}
 
