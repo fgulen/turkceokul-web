@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BookOpen, Loader2, Check, RotateCcw, FileText, ExternalLink } from 'lucide-react';
+import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 
 interface MdSoru {
@@ -273,13 +274,13 @@ export function MdImport() {
             <p className="text-xs text-muted-foreground">{kayitSonuc.mesaj}</p>
           )}
           {kayitSonuc.kitapId && (
-            <a
-              href={`/ogretmen/okuma/kitap/${kayitSonuc.kitapId}`}
+            <Link
+              href={`/okuma/kitap/${kayitSonuc.kitapId}`}
               className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
             >
               <ExternalLink className="size-3.5" />
               Kitabı görüntüle
-            </a>
+            </Link>
           )}
           <button
             onClick={handleYenidenParse}
