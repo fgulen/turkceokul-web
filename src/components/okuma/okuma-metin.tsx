@@ -17,13 +17,29 @@ interface OkumaMetinProps {
   onBitti: () => void;
 }
 
-function getWordAtPoint(x: number, y: number): string {
+function getCaretRange(x: number, y: number): Range | null {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const range = (document as any).caretRangeFromPoint?.(x, y) as Range | undefined;
-  if (!range) return '';
+  if (typeof (document as any).caretRangeFromPoint === 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (document as any).caretRangeFromPoint(x, y) as Range;
+  }
+  // Firefox fallback
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pos = (document as any).caretPositionFromPoint?.(x, y);
+  if (!pos) return null;
+  const r = document.createRange();
+  r.setStart(pos.offsetNode, pos.offset);
+  r.setEnd(pos.offsetNode, pos.offset);
+  return r;
+}
+
+function getWordAtPoint(x: number, y: number): { word: string; range: Range | null } {
+  const range = getCaretRange(x, y);
+  if (!range) return { word: '', range: null };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (range as any).expand?.('word');
-  return range.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim();
+  const word = range.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim();
+  return { word, range };
 }
 
 export function OkumaMetin({
@@ -42,6 +58,7 @@ export function OkumaMetin({
   } = useWordTranslation(kitapId);
 
   const [kaydilenKelimeler, setKaydilenKelimeler] = useState<Set<string>>(new Set());
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, paragraf: string) => {
@@ -51,14 +68,22 @@ export function OkumaMetin({
         selection?.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim() ?? '';
 
       let word = '';
+      let rect: DOMRect | null = null;
       if (selectedText && selectedText.split(/\s+/).length === 1 && selectedText.length > 1) {
         word = selectedText;
+        // selection'dan rect al
+        const selRange = selection?.getRangeAt(0) ?? null;
+        rect = selRange?.getBoundingClientRect() ?? null;
         selection?.removeAllRanges();
       } else {
-        word = getWordAtPoint(e.clientX, e.clientY);
+        const result = getWordAtPoint(e.clientX, e.clientY);
+        word = result.word;
+        rect = result.range?.getBoundingClientRect() ?? null;
       }
 
       if (!word || word.split(/\s+/).length !== 1 || word.length < 2) return;
+
+      setAnchorRect(rect);
 
       // Çeviriyi başlat (async — state üzerinden sonuç gelir)
       translate(word);
@@ -137,6 +162,7 @@ export function OkumaMetin({
           loading={translating}
           onClose={closeTranslation}
           theme="light"
+          anchorRect={anchorRect}
         />
       )}
     </div>
