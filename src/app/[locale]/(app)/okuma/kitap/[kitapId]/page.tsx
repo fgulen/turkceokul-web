@@ -4,9 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Link } from '@/navigation';
 import { use } from 'react';
-import { CheckCircle2, Lock, Play, BookOpen, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, Lock, Play, BookOpen, ChevronLeft, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Button } from '@/components/ui/button';
 
 interface Bolum {
   id: string;
@@ -35,7 +36,7 @@ export default function KitapDetayPage({
   const { user, ready } = useAuthGuard(undefined, true);
   const { kitapId } = use(params);
 
-  const { data, isLoading } = useQuery<KitapDetay>({
+  const { data, isLoading, isError } = useQuery<KitapDetay>({
     queryKey: ['okuma-kitap', kitapId],
     queryFn: () => api.get(`/api/okuma/kitap/${kitapId}`).then((r) => r.data),
     enabled: !!user,
@@ -51,7 +52,7 @@ export default function KitapDetayPage({
 
   if (!user) return null;
 
-  if (isLoading || !data) {
+  if (isLoading || (!data && !isError)) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <div className="h-4 w-32 bg-muted rounded animate-pulse" />
@@ -69,6 +70,20 @@ export default function KitapDetayPage({
             <div key={i} className="h-12 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 max-w-2xl mx-auto px-4">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <AlertCircle className="size-8 text-destructive" />
+          <p className="text-muted-foreground">Kitap yüklenemedi.</p>
+        </div>
+        <Link href="/okuma">
+          <Button variant="outline">Geri Dön</Button>
+        </Link>
       </div>
     );
   }
