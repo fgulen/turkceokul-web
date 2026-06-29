@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { CheckCircle2, Lock, Unlock, AlertTriangle, ChevronLeft, BookOpen } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 interface BolumDurumu {
   id: string;
@@ -44,18 +45,19 @@ export default function OkumaIlerlemePage({
   const { sinifId } = use(params);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery<OkumaIlerleme>({
+  const { data, isLoading, isError } = useQuery<OkumaIlerleme>({
     queryKey: ['ogretmen-okuma', sinifId],
     queryFn: () => api.get(`/api/ogretmen/sinif/${sinifId}/okuma`).then(r => r.data),
   });
 
   const bolumAcMut = useMutation({
     mutationFn: ({ uniteId, userId }: { uniteId: string; userId?: number }) =>
-      api.post('/api/ogretmen/okuma/bolum-ac', { sinifId: parseInt(sinifId), uniteId, userId }),
+      api.post('/api/ogretmen/okuma/bolum-ac', { sinifId: parseInt(sinifId, 10), uniteId, userId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] }),
+    onError: () => toast.error('Bölüm açılamadı. Lütfen tekrar deneyin.'),
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="min-h-[100dvh] bg-[#F3F4F6]">
         <div className="max-w-[1000px] mx-auto px-4 py-8">
@@ -64,6 +66,23 @@ export default function OkumaIlerlemePage({
       </div>
     );
   }
+
+  if (isError) {
+    return (
+      <div className="min-h-[100dvh] bg-[#F3F4F6]">
+        <div className="max-w-[1000px] mx-auto px-4 py-8">
+          <div className="p-8 text-red-600">
+            Sınıf verisi yüklenemedi.{' '}
+            <a href="/ogretmen" className="underline">
+              Geri dön
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   if (!data.atama) {
     return (
@@ -187,35 +206,39 @@ export default function OkumaIlerlemePage({
                         </div>
                       </td>
 
-                      {/* Bölüm hücreleri */}
-                      {ogr.bolumler.map(b => (
-                        <td key={b.id} className="text-center py-3 px-3">
-                          {b.durum === 'tamamlandi' && (
-                            <CheckCircle2 className="size-5 text-emerald-500 mx-auto" />
-                          )}
-                          {b.durum === 'acildi' && (
-                            <div className="flex flex-col items-center gap-0.5">
-                              <Unlock className="size-4 text-blue-400 mx-auto" />
-                              <span className="text-[10px] text-blue-400 leading-none">açıldı</span>
-                            </div>
-                          )}
-                          {b.durum === 'kilitli' && (
-                            <button
-                              onClick={() =>
-                                bolumAcMut.mutate({ uniteId: b.id, userId: ogr.userId })
-                              }
-                              disabled={bolumAcMut.isPending}
-                              className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50"
-                              title={`${ogr.ad} için "${b.name}" bölümünü aç`}
-                            >
-                              <Lock className="size-4 text-slate-300 group-hover:text-primary transition-colors" />
-                              <span className="text-[10px] text-slate-300 group-hover:text-primary transition-colors leading-none">
-                                Aç
-                              </span>
-                            </button>
-                          )}
-                        </td>
-                      ))}
+                      {/* Bölüm hücreleri — master listeye göre hizalanır */}
+                      {data.bolumler.map(masterBolum => {
+                        const b = ogr.bolumler.find(x => x.id === masterBolum.id);
+                        const durum = b?.durum ?? 'kilitli';
+                        return (
+                          <td key={masterBolum.id} className="text-center py-3 px-3">
+                            {durum === 'tamamlandi' && (
+                              <CheckCircle2 className="size-5 text-emerald-500 mx-auto" />
+                            )}
+                            {durum === 'acildi' && (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <Unlock className="size-4 text-blue-400 mx-auto" />
+                                <span className="text-[10px] text-blue-400 leading-none">açıldı</span>
+                              </div>
+                            )}
+                            {durum === 'kilitli' && (
+                              <button
+                                onClick={() =>
+                                  bolumAcMut.mutate({ uniteId: masterBolum.id, userId: ogr.userId })
+                                }
+                                disabled={bolumAcMut.isPending}
+                                className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50"
+                                title={`${ogr.ad} için "${masterBolum.name}" bölümünü aç`}
+                              >
+                                <Lock className="size-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                <span className="text-[10px] text-slate-300 group-hover:text-primary transition-colors leading-none">
+                                  Aç
+                                </span>
+                              </button>
+                            )}
+                          </td>
+                        );
+                      })}
 
                       {/* İlerleme yüzdesi */}
                       <td className="py-3 px-5 text-right whitespace-nowrap">
