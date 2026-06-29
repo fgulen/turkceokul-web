@@ -10,6 +10,7 @@ import {
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
@@ -37,7 +38,8 @@ export default function SuperAdminPage() {
 
   return (
     <div className="min-h-[100dvh] bg-slate-50">
-      <main className="max-w-[1200px] mx-auto px-4 py-8">
+      <TurkishLetterBackdrop variant="super-admin" opacity={0.04} />
+      <main className="max-w-[1200px] mx-auto px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
         <ImpersonationBanner />
 
         <div className="flex items-center gap-3 mb-6">

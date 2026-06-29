@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, GraduationCap, Plus, Users, ClipboardList, ArrowRight,
-  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2, Sparkles,
+  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2, Sparkles, Wifi,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { Link } from '@/navigation';
+import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
+import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,7 @@ interface FormData {
 export default function OgretmenDashboard() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const qc = useQueryClient();
+  const router = useRouter();
   const [formAcik, setFormAcik] = useState(false);
   const [duzenleFormAcik, setDuzenleFormAcik] = useState(false);
   const [duzenleSinifId, setDuzenleSinifId] = useState<number | null>(null);
@@ -149,9 +151,9 @@ export default function OgretmenDashboard() {
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
-
-      <main className="max-w-[1200px] mx-auto px-4 py-10">
+    <div className="min-h-[calc(100dvh-7.5rem)] bg-[#F3F4F6]">
+      <TurkishLetterBackdrop variant="ogretmen" opacity={0.04} />
+      <main className="max-w-[1200px] mx-auto px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
         {/* Başlık */}
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -370,9 +372,19 @@ export default function OgretmenDashboard() {
                   <div className="size-11 bg-primary/10 rounded-xl flex items-center justify-center">
                     <BookOpen className="size-5 text-primary" />
                   </div>
-                  <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-mono">
-                    {sinif.katilimKodu}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/ogretmen/sinif/${sinif.id}/canli`); }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors text-[10px] font-semibold"
+                      title="Canlı Kahoot Başlat"
+                    >
+                      <Wifi className="size-3" />
+                      Canlı
+                    </button>
+                    <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-mono">
+                      {sinif.katilimKodu}
+                    </span>
+                  </div>
                 </div>
                 <h3 className="font-semibold text-slate-900 group-hover:text-primary transition-colors mb-3">
                   {sinif.name}

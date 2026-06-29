@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link, useRouter, useLocale } from "@/navigation";
 import { Brain, Check, X, ArrowRight, BookOpen, RotateCcw } from "lucide-react";
+import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
 import { Logo } from "@/components/logo";
 import { api } from "@/lib/api";
 
@@ -78,6 +79,7 @@ const PAGE_STYLE: React.CSSProperties = {
 };
 
 const HEADER_STYLE: React.CSSProperties = {
+  position: "relative", zIndex: 1,
   padding: "18px 28px",
   background: "#fff",
   borderBottom: "1px solid #e5e7eb",
@@ -87,6 +89,7 @@ const HEADER_STYLE: React.CSSProperties = {
 };
 
 const MAIN_STYLE: React.CSSProperties = {
+  position: "relative", zIndex: 1,
   flex: 1,
   display: "flex",
   alignItems: "center",
@@ -140,6 +143,7 @@ export default function SeviyeTestiPage() {
   // ── INTRO ──────────────────────────────────────────────────────────────────
   if (phase === "intro") return (
     <div style={PAGE_STYLE}>
+      <TurkishLetterBackdrop variant="seviye-testi" />
       <header style={HEADER_STYLE}>
         <Link href="/" style={{ textDecoration: "none" }}><Logo size="sm" /></Link>
       </header>
@@ -186,6 +190,7 @@ export default function SeviyeTestiPage() {
     const isCorrect = selected === q.correctIndex;
     return (
       <div style={PAGE_STYLE}>
+        <TurkishLetterBackdrop variant="seviye-testi" />
         <header style={HEADER_STYLE}>
           <Link href="/" style={{ textDecoration: "none" }}><Logo size="sm" /></Link>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -257,6 +262,7 @@ export default function SeviyeTestiPage() {
   // ── RESULTS ────────────────────────────────────────────────────────────────
   return (
     <div style={PAGE_STYLE}>
+      <TurkishLetterBackdrop variant="seviye-testi" />
       <header style={HEADER_STYLE}>
         <Link href="/" style={{ textDecoration: "none" }}><Logo size="sm" /></Link>
       </header>

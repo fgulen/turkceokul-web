@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Lock } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { api } from '@/lib/api';
 import { bookCoverUrl, normalizeSeriesName } from '@/lib/book-covers';
 import { Link } from '@/navigation';
@@ -103,7 +104,8 @@ export default function KutuphanePage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F3F4F6] pb-20 md:pb-10">
-      <main className="max-w-[1200px] mx-auto px-4 py-10">
+      <TurkishLetterBackdrop variant="kutuphane" opacity={0.04} />
+      <main className="max-w-[1200px] mx-auto px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Ders Kitapları</h1>
           <p className="text-muted-foreground text-sm mt-1">

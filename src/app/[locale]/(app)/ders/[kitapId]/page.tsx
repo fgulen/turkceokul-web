@@ -504,7 +504,7 @@ export default function DersPage({
   return (
     <div className="bg-background">
 
-      <div className="max-w-[1200px] mx-auto px-4 h-[calc(100dvh-4rem)]">
+      <div className="max-w-[1200px] mx-auto px-4 h-[calc(100dvh-7.5rem)] md:h-[calc(100dvh-4rem)]">
         <div className="flex h-full py-6">
 
           {/* ── Desktop Sidebar ── */}

@@ -12,6 +12,7 @@ export interface AuthUser {
   kalp: number;
   streakCount: number;
   role: UserRole;
+  nativeLanguage?: string;
 }
 
 interface AuthState {

@@ -312,10 +312,10 @@ export default function KahootKatilPage() {
             key="cevap"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-[480px] mx-auto px-4 py-3"
+            className="h-[calc(100dvh-4rem)] flex items-center justify-center px-4"
           >
           <div className={cn(
-            'rounded-2xl border shadow-sm p-10 text-center',
+            'w-full max-w-[480px] rounded-2xl border shadow-sm p-10 text-center',
             kahoot.cevapDogru === false ? 'bg-destructive/10 border-destructive/30' : 'bg-card border-border'
           )}>
             {kahoot.cevapDogru === false ? (

@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useLocale, useRouter } from "@/navigation";
+import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
 import {
   Eye, EyeOff, ArrowRight,
   Building2, GraduationCap, Zap, Users, BookOpen, Brain,
@@ -41,6 +42,7 @@ function KayitForm() {
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [form, setForm] = useState({ name: "", surname: "", email: "", password: "", kurumAdi: "", kurumKodu: "" });
+  const [nativeLanguage, setNativeLanguage] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -70,6 +72,7 @@ function KayitForm() {
         role: tab === "kurumsal" ? "teacher" : "student",
         ...(tab === "kurumsal" && form.kurumAdi ? { kurumAdi: form.kurumAdi } : {}),
         ...(tab === "kurumsal" && form.kurumKodu ? { kurumKodu: form.kurumKodu.toUpperCase() } : {}),
+        ...(nativeLanguage ? { nativeLanguage } : {}),
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken, data.refreshToken);
@@ -153,34 +156,7 @@ function KayitForm() {
 
       {/* Sağ panel — form */}
       <div style={{ flex: 1, background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
-        {[
-          { ch: 'Ş', top: '5%',  left: '82%', size: 130, rotate: 14  },
-          { ch: 'Ü', top: '60%', left: '-4%', size: 150, rotate: -8  },
-          { ch: 'Ö', top: '78%', left: '80%', size: 140, rotate: 18  },
-          { ch: 'Ğ', top: '15%', left: '-2%', size: 120, rotate: -20 },
-          { ch: 'Ç', top: '42%', left: '88%', size: 160, rotate: 10  },
-          { ch: 'İ', top: '88%', left: '30%', size: 110, rotate: -15 },
-        ].map((c, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: c.top,
-              left: c.left,
-              fontSize: c.size,
-              fontWeight: 900,
-              lineHeight: 1,
-              color: '#1b75bc',
-              opacity: 0.055,
-              transform: `rotate(${c.rotate}deg)`,
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          >
-            {c.ch}
-          </span>
-        ))}
+        <TurkishLetterBackdrop variant="kayit" fixed={false} />
 
         <div style={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}>
 
@@ -360,6 +336,8 @@ function KayitForm() {
               </div>
             </div>
 
+            <NativeLanguagePicker value={nativeLanguage} onChange={setNativeLanguage} />
+
             {error && (
               <p style={{ fontSize: 14, color: "#dc2626", background: "#fee2e2", padding: "10px 14px", borderRadius: 7, border: "1px solid #fecaca" }}>{error}</p>
             )}
@@ -462,6 +440,62 @@ function MobileBenefitsBanner({ tab, benefits }: { tab: Tab; benefits: { Icon: R
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const NATIVE_LANGS = [
+  { code: "ku", nativeName: "کوردی",       label: "Kürtçe",   flag: "🏔️" },
+  { code: "ru", nativeName: "Русский",     label: "Rusça",    flag: "🇷🇺" },
+  { code: "ar", nativeName: "العربية",     label: "Arapça",   flag: "🇮🇶" },
+  { code: "en", nativeName: "English",     label: "İngilizce",flag: "🇬🇧" },
+] as const;
+
+function NativeLanguagePicker({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  return (
+    <div>
+      <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 8 }}>
+        Ana diliniz nedir?
+        <span style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginLeft: 6 }}>isteğe bağlı</span>
+      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        {NATIVE_LANGS.map(({ code, nativeName, label, flag }) => {
+          const selected = value === code;
+          return (
+            <button
+              key={code}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onChange(selected ? null : code)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                padding: "10px 6px",
+                borderRadius: 8,
+                border: selected ? "2px solid #1b75bc" : "1.5px solid #e5e7eb",
+                background: selected ? "#eff6ff" : "#fff",
+                cursor: "pointer",
+                transition: "all 0.12s",
+              }}
+            >
+              <span style={{ fontSize: 22, lineHeight: 1 }}>{flag}</span>
+              <span style={{
+                fontSize: code === "ar" || code === "ku" ? 13 : 12,
+                fontWeight: 700,
+                color: selected ? "#1b75bc" : "#374151",
+                lineHeight: 1.2,
+                textAlign: "center",
+                direction: code === "ar" || code === "ku" ? "rtl" : "ltr",
+              }}>
+                {nativeName}
+              </span>
+              <span style={{ fontSize: 11, color: selected ? "#3b82f6" : "#9ca3af" }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

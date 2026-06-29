@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GraduationCap, Plus, Users, Building2, Clock, CheckCircle, XCircle, ChevronRight, Share2, Mail } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -111,7 +112,8 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F3F4F6]">
-      <main className="max-w-[1200px] mx-auto px-4 py-10">
+      <TurkishLetterBackdrop variant="admin" opacity={0.04} />
+      <main className="max-w-[1200px] mx-auto px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>
           <p className="text-slate-500 text-sm mt-1">Öğretmen ve kurum yönetimi</p>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Plus, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { BookOpen, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
@@ -32,11 +33,21 @@ export default function EditorKutuphaneListPage() {
   const { user, ready } = useAuthGuard('Editor');
   const authUser = useAuthStore(s => s.user);
   const isSuperAdmin = authUser?.role === 'SuperAdmin';
+  const queryClient = useQueryClient();
+  const [silOnayId, setSilOnayId] = useState<string | null>(null);
 
   const { data: kitaplar, isLoading } = useQuery<KutuphaneKitap[]>({
     queryKey: ['editor-kutuphane-kitaplar'],
     queryFn: () => api.get('/api/kutuphane/kitaplar').then(r => r.data),
     enabled: !!user,
+  });
+
+  const sil = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/kutuphane/kitaplar/${id}`),
+    onSuccess: () => {
+      setSilOnayId(null);
+      queryClient.invalidateQueries({ queryKey: ['editor-kutuphane-kitaplar'] });
+    },
   });
 
   if (!ready) return (
@@ -85,37 +96,77 @@ export default function EditorKutuphaneListPage() {
           ) : (
             <div className="divide-y divide-slate-50">
               {kitaplar.map(k => (
-                <div key={k.id} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                      <BookOpen className="size-5 text-slate-400" />
+                <div key={k.id}>
+                  <div className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="size-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <BookOpen className="size-5 text-slate-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm text-slate-800 truncate">{k.baslik}</div>
+                        <div className="text-xs text-slate-400">{k.yazar} · <span className="font-mono">{k.id}</span></div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-sm text-slate-800">{k.baslik}</div>
-                      <div className="text-xs text-slate-400">{k.yazar} · <span className="font-mono">{k.id}</span></div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{k.seviye}</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">{k.tur}</span>
+                      {k.fixedLayout && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">FXL</span>
+                      )}
+                      <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', durumStyle[k.durum] ?? 'bg-slate-100 text-slate-600')}>
+                        {k.durum}
+                      </span>
+                      {isSuperAdmin && (
+                        <Link
+                          href={`/okuma/${k.id}`}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                          title="Öğrencinin gördüğünü gör"
+                        >
+                          <Eye className="size-3" />
+                          Önizle
+                        </Link>
+                      )}
+                      <Link
+                        href={`/editor/kutuphane/${k.id}/duzenle`}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                      >
+                        <Pencil className="size-3" />
+                        Düzenle
+                      </Link>
+                      <button
+                        onClick={() => setSilOnayId(k.id)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 className="size-3" />
+                        Sil
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{k.seviye}</span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">{k.tur}</span>
-                    {k.fixedLayout && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">FXL</span>
-                    )}
-                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', durumStyle[k.durum] ?? 'bg-slate-100 text-slate-600')}>
-                      {k.durum}
-                    </span>
-                    {isSuperAdmin && (
-                      <Link
-                        href={`/okuma/${k.id}`}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                        title="Öğrencinin gördüğünü gör"
-                      >
-                        <Eye className="size-3" />
-                        Önizle
-                      </Link>
-                    )}
-                  </div>
+                  {/* Satır içi silme onayı */}
+                  {silOnayId === k.id && (
+                    <div className="px-6 py-3 bg-red-50 border-t border-red-100 flex items-center justify-between gap-4">
+                      <p className="text-sm text-red-700 font-medium">
+                        <strong>&quot;{k.baslik}&quot;</strong> silinecek. Emin misin?
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSilOnayId(null)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                        >
+                          İptal
+                        </button>
+                        <button
+                          onClick={() => sil.mutate(k.id)}
+                          disabled={sil.isPending}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                        >
+                          {sil.isPending ? 'Siliniyor...' : 'Evet, Sil'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
