@@ -1,10 +1,10 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Lock, Unlock, AlertTriangle, ChevronLeft, BookOpen } from 'lucide-react';
+import { CheckCircle2, Lock, Unlock, AlertTriangle, ChevronLeft, BookOpen, X, Plus } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
@@ -30,10 +30,131 @@ interface OkumaIlerleme {
   ogrenciler: OgrenciRow[];
 }
 
+function KitapAtaModal({
+  kitaplar,
+  yukleniyor,
+  seciliKitapId,
+  teslimTarihi,
+  isPending,
+  onSecim,
+  onTeslimTarihi,
+  onAta,
+  onKapat,
+}: {
+  kitaplar: OkumaKitap[];
+  yukleniyor: boolean;
+  seciliKitapId: string | null;
+  teslimTarihi: string;
+  isPending: boolean;
+  onSecim: (id: string) => void;
+  onTeslimTarihi: (v: string) => void;
+  onAta: () => void;
+  onKapat: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        {/* Başlık */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="font-bold text-slate-900">Okuma Kitabı Seç</h2>
+          <button
+            onClick={onKapat}
+            className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Kitap listesi */}
+        <div className="overflow-y-auto flex-1 p-5 space-y-2">
+          {yukleniyor && (
+            <p className="text-sm text-slate-400 text-center py-8">Kitaplar yükleniyor...</p>
+          )}
+          {!yukleniyor && kitaplar.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-8">Sistemde okuma kitabı bulunamadı.</p>
+          )}
+          {kitaplar.map(k => (
+            <button
+              key={k.id}
+              onClick={() => onSecim(k.id)}
+              className={cn(
+                'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all',
+                seciliKitapId === k.id
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
+              )}
+            >
+              {k.thumbnailPicture ? (
+                <img
+                  src={k.thumbnailPicture}
+                  alt={k.name}
+                  className="size-12 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="size-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                  <BookOpen className="size-6 text-slate-400" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800 text-sm leading-tight">{k.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {k.seviye && <span className="mr-2">{k.seviye}</span>}
+                  {k.toplamBolum} bölüm
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Teslim tarihi + Ata */}
+        <div className="p-5 border-t border-slate-100 space-y-3">
+          <div>
+            <label className="text-xs font-medium text-slate-500 block mb-1.5">
+              Son okuma tarihi <span className="font-normal">(opsiyonel)</span>
+            </label>
+            <input
+              type="date"
+              value={teslimTarihi}
+              onChange={e => onTeslimTarihi(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={onKapat}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              İptal
+            </button>
+            <button
+              onClick={onAta}
+              disabled={!seciliKitapId || isPending}
+              className="flex items-center gap-1.5 px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            >
+              {isPending && (
+                <div className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              )}
+              Ata
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function riskSeviyesi(sonGiris: string | null): 'normal' | 'risk' {
   if (!sonGiris) return 'risk';
   const fark = (Date.now() - new Date(sonGiris).getTime()) / (1000 * 60 * 60 * 24);
   return fark >= 3 ? 'risk' : 'normal';
+}
+
+interface OkumaKitap {
+  id: string;
+  name: string;
+  seviye: string | null;
+  thumbnailPicture: string | null;
+  toplamBolum: number;
 }
 
 export default function OkumaIlerlemePage({
@@ -45,9 +166,40 @@ export default function OkumaIlerlemePage({
   const { sinifId } = use(params);
   const qc = useQueryClient();
 
+  const [ataModalAcik, setAtaModalAcik] = useState(false);
+  const [seciliKitapId, setSeciliKitapId] = useState<string | null>(null);
+  const [teslimTarihi, setTeslimTarihi] = useState('');
+
   const { data, isLoading, isError } = useQuery<OkumaIlerleme>({
     queryKey: ['ogretmen-okuma', sinifId],
     queryFn: () => api.get(`/api/ogretmen/sinif/${sinifId}/okuma`).then(r => r.data),
+  });
+
+  const { data: kitaplar, isLoading: kitaplarYukleniyor } = useQuery<OkumaKitap[]>({
+    queryKey: ['okuma-kitaplar'],
+    queryFn: () => api.get('/api/okuma/kitaplar').then(r => r.data),
+    enabled: ataModalAcik,
+  });
+
+  const ataMut = useMutation({
+    mutationFn: (kitapId: string) => {
+      const kitap = kitaplar?.find(k => k.id === kitapId);
+      return api.post('/api/ogretmen/okuma/ata', {
+        sinifId: parseInt(sinifId, 10),
+        dersKitabiId: kitapId,
+        baslik: kitap?.name ?? kitapId,
+        teslimTarihi: teslimTarihi || null,
+        quizZorunlu: false,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] });
+      setAtaModalAcik(false);
+      setSeciliKitapId(null);
+      setTeslimTarihi('');
+      toast.success('Kitap sınıfa atandı.');
+    },
+    onError: () => toast.error('Kitap atanamadı. Lütfen tekrar deneyin.'),
   });
 
   const bolumAcMut = useMutation({
@@ -95,14 +247,35 @@ export default function OkumaIlerlemePage({
             <ChevronLeft className="size-4" />
             Sınıfa dön
           </Link>
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
-            <BookOpen className="size-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">Bu sınıfa henüz okuma kitabı atanmamış.</p>
-            <p className="text-slate-400 text-sm mt-1">
-              Sınıf sayfasından bir okuma kitabı atayın.
+          <div className="bg-white rounded-2xl border border-slate-100 p-10 shadow-sm text-center">
+            <BookOpen className="size-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600 font-semibold text-lg mb-1">Okuma kitabı atanmamış</p>
+            <p className="text-slate-400 text-sm mb-6">
+              Bu sınıf için bir okuma kitabı seçin.
             </p>
+            <button
+              onClick={() => setAtaModalAcik(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="size-4" />
+              Kitap Ata
+            </button>
           </div>
         </div>
+
+        {ataModalAcik && (
+          <KitapAtaModal
+            kitaplar={kitaplar ?? []}
+            yukleniyor={kitaplarYukleniyor}
+            seciliKitapId={seciliKitapId}
+            teslimTarihi={teslimTarihi}
+            isPending={ataMut.isPending}
+            onSecim={setSeciliKitapId}
+            onTeslimTarihi={setTeslimTarihi}
+            onAta={() => seciliKitapId && ataMut.mutate(seciliKitapId)}
+            onKapat={() => { setAtaModalAcik(false); setSeciliKitapId(null); setTeslimTarihi(''); }}
+          />
+        )}
       </div>
     );
   }

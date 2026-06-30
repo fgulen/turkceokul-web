@@ -1,11 +1,11 @@
 ﻿'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocale } from '@/navigation';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
-  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode,
+  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -54,13 +54,14 @@ interface Duyuru {
   yorumSayisi: number;
 }
 
-type Tab = 'genel' | 'ogrenciler' | 'raporlar' | 'odevler' | 'duyurular';
+type Tab = 'genel' | 'ogrenciler' | 'raporlar' | 'odevler' | 'duyurular' | 'okuma';
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'genel', label: 'Genel', icon: BookOpen },
   { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'raporlar', label: 'Raporlar', icon: Trophy },
   { key: 'odevler', label: 'Ödevler', icon: ClipboardList },
+  { key: 'okuma', label: 'Okuma', icon: BookOpen },
   { key: 'duyurular', label: 'Duyurular', icon: Megaphone },
 ];
 
@@ -72,52 +73,141 @@ interface WordIntensityDto {
   difficulty: 'high' | 'medium' | 'low';
 }
 
-function WordIntensityTable({ sinifId }: { sinifId: number }) {
-  const [words, setWords] = useState<WordIntensityDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+type DifficultyFilter = 'all' | 'high' | 'medium' | 'low';
 
-  useEffect(() => {
-    api.get(`/api/okuma/word-intensity?classId=${sinifId}`)
-      .then(r => setWords(r.data))
-      .catch((e) => setError(e?.response?.status === 403 ? 'Yetki hatası (403)' : `Hata: ${e?.message}`))
-      .finally(() => setLoading(false));
-  }, [sinifId]);
+const DIFFICULTY_TABS: { key: DifficultyFilter; label: string; color: string; activeClass: string; tooltip: string }[] = [
+  { key: 'all',    label: 'Tümü',  color: 'text-slate-600',   activeClass: 'bg-slate-700 text-white',   tooltip: 'Tüm kelimeler (sınıfın en az 1 öğrencisi baktı)' },
+  { key: 'high',   label: 'Zor',   color: 'text-red-600',     activeClass: 'bg-red-500 text-white',     tooltip: 'Zor — sınıfın %60\'ından fazlası bu kelimeye baktı' },
+  { key: 'medium', label: 'Orta',  color: 'text-amber-600',   activeClass: 'bg-amber-500 text-white',   tooltip: 'Orta — sınıfın %30–59\'u bu kelimeye baktı' },
+  { key: 'low',    label: 'Kolay', color: 'text-emerald-600', activeClass: 'bg-emerald-500 text-white', tooltip: 'Kolay — sınıfın %30\'undan azı bu kelimeye baktı' },
+];
 
-  if (loading) return <p className="text-sm text-muted-foreground">Yükleniyor...</p>;
-  if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (words.length === 0) return <p className="text-sm text-muted-foreground">Henüz kelime verisi yok. Öğrenciler okuma sayfasında kelimeye tıkladığında burada görünür.</p>;
+function WordIntensityPanel({ sinifId, enabled }: { sinifId: number; enabled: boolean }) {
+  const [filter, setFilter] = useState<DifficultyFilter>('all');
+
+  const { data: words = [], isLoading, isError } = useQuery<WordIntensityDto[]>({
+    queryKey: ['word-intensity', sinifId],
+    queryFn: () => api.get(`/api/okuma/word-intensity?classId=${sinifId}`).then(r => r.data),
+    enabled,
+  });
+
+  const filtered = filter === 'all' ? words : words.filter(w => w.difficulty === filter);
+
+  const counts = {
+    high:   words.filter(w => w.difficulty === 'high').length,
+    medium: words.filter(w => w.difficulty === 'medium').length,
+    low:    words.filter(w => w.difficulty === 'low').length,
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-10 justify-center text-slate-400 text-sm">
+        <div className="size-4 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+        Yükleniyor...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <p className="text-sm text-red-500 py-4">Kelime verisi yüklenemedi.</p>;
+  }
+
+  if (words.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-slate-500 text-sm font-medium">Henüz kelime verisi yok.</p>
+        <p className="text-slate-400 text-xs mt-1">Öğrenciler okuma sırasında kelimeye tıkladığında burada görünür.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-2 pr-4">Kelime</th>
-            <th className="text-left py-2 pr-4">Toplam Bakış</th>
-            <th className="text-left py-2 pr-4">Sınıf %</th>
-            <th className="text-left py-2">Zorluk</th>
-          </tr>
-        </thead>
-        <tbody>
-          {words.map(w => (
-            <tr key={w.word} className="border-b hover:bg-muted/40">
-              <td className="py-2 pr-4 font-medium">{w.word}</td>
-              <td className="py-2 pr-4">{w.totalLookups}</td>
-              <td className="py-2 pr-4">{w.classPercentage}%</td>
-              <td className="py-2">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  w.difficulty === 'high' ? 'bg-red-100 text-red-700' :
-                  w.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-green-100 text-green-700'
-                }`}>
-                  {w.difficulty === 'high' ? 'Zor' : w.difficulty === 'medium' ? 'Orta' : 'Kolay'}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      {/* Filtre tabları */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {DIFFICULTY_TABS.map(t => {
+          const count = t.key === 'all' ? words.length : counts[t.key as 'high' | 'medium' | 'low'];
+          const isActive = filter === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key)}
+              title={t.tooltip}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                isActive ? t.activeClass : `bg-slate-100 ${t.color} hover:bg-slate-200`,
+              )}
+            >
+              {t.label}
+              <span className={cn(
+                'text-[10px] px-1.5 py-0.5 rounded-full font-bold',
+                isActive ? 'bg-white/20' : 'bg-white text-slate-500',
+              )}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tablo */}
+      {filtered.length === 0 ? (
+        <p className="text-slate-400 text-sm text-center py-6">Bu kategoride kelime yok.</p>
+      ) : (
+        <div className="rounded-xl border border-slate-100 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="text-left py-3 px-4 font-medium text-slate-500">Kelime</th>
+                <th className="text-right py-3 px-4 font-medium text-slate-500">Bakış</th>
+                <th className="text-right py-3 px-4 font-medium text-slate-500">Sınıf %</th>
+                <th className="text-right py-3 px-4 font-medium text-slate-500">
+                  <span
+                    className="inline-flex items-center justify-end gap-1 cursor-default"
+                    title="Zorluk = sınıfın kaçı bu kelimeye baktı: Zor ≥%60 · Orta %30–59 · Kolay <%30"
+                  >
+                    Zorluk
+                    <Info className="size-3 text-slate-400" />
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.map(w => (
+                <tr key={w.word} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-800">{w.word}</td>
+                  <td className="py-3 px-4 text-right text-slate-600">{w.totalLookups}</td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full',
+                            w.difficulty === 'high' ? 'bg-red-400' :
+                            w.difficulty === 'medium' ? 'bg-amber-400' : 'bg-emerald-400',
+                          )}
+                          style={{ width: `${Math.min(w.classPercentage, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-slate-500 tabular-nums w-8 text-right">{w.classPercentage}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <span className={cn(
+                      'text-xs px-2 py-0.5 rounded-full font-semibold',
+                      w.difficulty === 'high'   ? 'bg-red-100 text-red-700' :
+                      w.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                                  'bg-emerald-100 text-emerald-700',
+                    )}>
+                      {w.difficulty === 'high' ? 'Zor' : w.difficulty === 'medium' ? 'Orta' : 'Kolay'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -478,16 +568,6 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                   </div>
                   <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
                 </Link>
-                <Link
-                  href={`/ogretmen/sinif/${id}/okuma`}
-                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
-                >
-                  <div>
-                    <div className="font-medium text-slate-800">Okuma Raporu</div>
-                    <div className="text-sm text-slate-500 mt-0.5">Öğrenci × bölüm ilerleme grid'i, risk uyarıları ve bölüm açma</div>
-                  </div>
-                  <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors" />
-                </Link>
               </div>
             </div>
           )}
@@ -605,6 +685,42 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             </div>
           )}
 
+          {/* Okuma */}
+          {tab === 'okuma' && (
+            <div className="space-y-6">
+              {/* Okuma raporu linki */}
+              <div>
+                <h2 className="font-semibold text-slate-900 mb-3">Okuma Takibi</h2>
+                <Link
+                  href={`/ogretmen/sinif/${id}/okuma`}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                      <BookOpen className="size-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-800 text-sm">Okuma İlerleme Raporu</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Öğrenci × bölüm grid, risk uyarıları, bölüm açma ve kitap atama</div>
+                    </div>
+                  </div>
+                  <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors shrink-0" />
+                </Link>
+              </div>
+
+              {/* Kelime zorlukları */}
+              <div>
+                <div className="mb-3">
+                  <h2 className="font-semibold text-slate-900">Kelime Zorlukları</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Öğrencilerin en çok çeviri baktığı kelimeler — zordan kolaya sıralı
+                  </p>
+                </div>
+                <WordIntensityPanel sinifId={id} enabled={tab === 'okuma'} />
+              </div>
+            </div>
+          )}
+
           {/* Duyurular */}
           {tab === 'duyurular' && (
             <div>
@@ -659,14 +775,6 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           )}
         </div>
 
-        {/* Kelime Yoğunluğu — OkuGec */}
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold mb-3">Okuma: Kelime Zorlukları</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Öğrencilerin en çok çeviri baktığı kelimeler — quiz oluşturmak için kullanabilirsiniz.
-          </p>
-          <WordIntensityTable sinifId={id} />
-        </section>
       </main>
 
       {/* QR Kod Modalı */}
