@@ -462,11 +462,11 @@ function KitaplarTab() {
 }
 
 function KitapEditForm({ kitap, onSave }: { kitap: any; onSave: (d: any) => void }) {
-  const [form, setForm] = useState({ name: kitap.name, seviye: kitap.seviye ?? '', kitapSeti: kitap.kitapSeti ?? '', orderNo: kitap.orderNo, visible: kitap.visible, onaylandi: kitap.onaylandi });
+  const [form, setForm] = useState({ name: kitap.name, seviye: kitap.seviye ?? '', kitapSeti: kitap.kitapSeti ?? '', seri: kitap.seri ?? '', orderNo: kitap.orderNo, visible: kitap.visible, onaylandi: kitap.onaylandi });
 
   return (
     <form id="kitap-edit-form" onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
-      {[['name', 'Ad'], ['seviye', 'Seviye (A1, B2...)'], ['kitapSeti', 'Kitap Seti']].map(([key, label]) => (
+      {[['name', 'Ad'], ['seviye', 'Seviye (A1, B2...)'], ['kitapSeti', 'Kitap Seti'], ['seri', 'Seri (kurumsal katalogda kategori olarak gösterilir)']].map(([key, label]) => (
         <div key={key}>
           <label className="text-xs font-medium text-slate-600 block mb-1">{label}</label>
           <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}

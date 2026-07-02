@@ -450,9 +450,9 @@ export default async function LandingPage(
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#eef0f3", color: "#414751", fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", padding: "4px 12px", borderRadius: 999, marginBottom: 10 }}>{t.booksBadge}</div>
                 <h2 style={{ fontSize: "clamp(22px,3vw,36px)", fontWeight: 800, letterSpacing: "-0.025em" }}>{t.booksH2}</h2>
               </div>
-              <a href="#" style={{ fontSize: 13, fontWeight: 600, color: "#1b75bc", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+              <Link href="/kurumsal-satis" style={{ fontSize: 13, fontWeight: 600, color: "#1b75bc", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
                 {t.booksAll} <ArrowRight style={{ width: 13, height: 13 }} />
-              </a>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={{ gap: 20 }}>

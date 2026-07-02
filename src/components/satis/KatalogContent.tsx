@@ -19,6 +19,7 @@ const C = {
     hacimDiscount: 'indirim',
     paketlerTitle: 'Paketler',
     kitaplarOther: 'Diğer Kitaplar',
+    okumaKitaplariTitle: 'Okuma Kitapları',
     ctaTitle: 'Kurumunuz için teklif alın',
     ctaSub: 'Satış ekibimiz 48 saat içinde sizinle iletişime geçer. Ödeme: havale.',
     ctaButton: 'Teklif Al',
@@ -32,6 +33,7 @@ const C = {
     hacimDiscount: 'discount',
     paketlerTitle: 'Packages',
     kitaplarOther: 'Other Books',
+    okumaKitaplariTitle: 'Reading Books',
     ctaTitle: 'Get a quote for your institution',
     ctaSub: 'Our sales team will reach out within 48 hours. Payment: bank transfer.',
     ctaButton: 'Request a Quote',
@@ -50,9 +52,12 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
     );
   }
 
-  const seriler = Array.from(new Set(katalog.kitaplar.map((k) => k.seri).filter(Boolean))) as string[];
-  const seriGrouplu = katalog.kitaplar.filter((k) => k.seri);
-  const seriGruplusuz = katalog.kitaplar.filter((k) => !k.seri);
+  const dersKitaplari = katalog.kitaplar.filter((k) => k.kitapTuru !== 'OkumaKitabi');
+  const okumaKitaplari = katalog.kitaplar.filter((k) => k.kitapTuru === 'OkumaKitabi');
+
+  const seriler = Array.from(new Set(dersKitaplari.map((k) => k.seri).filter(Boolean))) as string[];
+  const seriGrouplu = dersKitaplari.filter((k) => k.seri);
+  const seriGruplusuz = dersKitaplari.filter((k) => !k.seri);
 
   return (
     <div className="px-4 md:px-10" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 0 80px' }}>
@@ -128,6 +133,18 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1e1b1c', marginBottom: 16 }}>{c.kitaplarOther}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4" style={{ gap: 16 }}>
             {seriGruplusuz.map((k) => (
+              <KitapKarti key={k.id} kitap={k} birimFiyatEurCent={katalog.birimFiyatEurCent} locale={locale} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Okuma kitapları — ders kitapları serilerinden ayrı gösterilir */}
+      {okumaKitaplari.length > 0 && (
+        <section style={{ marginBottom: 48 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1e1b1c', marginBottom: 16 }}>{c.okumaKitaplariTitle}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4" style={{ gap: 16 }}>
+            {okumaKitaplari.map((k) => (
               <KitapKarti key={k.id} kitap={k} birimFiyatEurCent={katalog.birimFiyatEurCent} locale={locale} />
             ))}
           </div>
