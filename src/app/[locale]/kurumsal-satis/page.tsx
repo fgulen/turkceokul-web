@@ -1,9 +1,21 @@
 // web/src/app/[locale]/kurumsal-satis/page.tsx
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { KatalogContent } from '@/components/satis/KatalogContent';
 import { getKatalog, type Katalog } from '@/lib/katalog-api';
+
+// getKatalog() axios kullanıyor — Next.js'in fetch-enstrümanlı Data Cache'ini
+// bypass eder. Sayfa `force-dynamic` kalsın diye (build zamanı fetch yok) ama
+// asıl backend çağrısı 300 sn'de bir cache'lensin diye unstable_cache ile sarıldı.
+// Bu, her istekte Irak/Kazakistan'dan Avrupa'daki API'ye canlı round-trip yapılmasını
+// engeller (TTFB/LCP riski).
+const getKatalogCached = unstable_cache(
+  async () => getKatalog(),
+  ['katalog'],
+  { revalidate: 300, tags: ['katalog'] }
+);
 
 const BASE = 'https://turkceokulu.com';
 
@@ -89,7 +101,7 @@ export default async function KurumsalSatisPage(
   // KatalogContent bu durumda hata mesajı gösterir.
   let katalog: Katalog | null = null;
   try {
-    katalog = await getKatalog();
+    katalog = await getKatalogCached();
   } catch {
     katalog = null;
   }
