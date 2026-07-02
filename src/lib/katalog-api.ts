@@ -38,10 +38,11 @@ export interface Katalog {
   birimFiyatEurCent: number;
 }
 
-// Client-side fetch — bu proje `api` (axios) örneğini yalnızca client bileşenlerinde
-// kullanıyor (bkz. super-admin/page.tsx). Server Component içinde çağırmak, build
-// sırasında API'ye erişilemediğinde `next build`'i kırar; bu yüzden bu fonksiyon
-// 'use client' bir bileşen içinden (useQuery ile) çağrılmalı.
+// Server Component'ten çağrılabilir — `api` (axios) örneği `typeof window === 'undefined'`
+// durumunda server base URL'ini kullanacak şekilde tasarlandı (bkz. lib/api.ts). Bu fonksiyon
+// `/kurumsal-satis` sayfasında `export const dynamic = 'force-dynamic'` ile birlikte
+// çağrılıyor; bu sayede `next build` sırasında prerender denenmez, fetch yalnızca
+// istek anında (runtime) çalışır — build-time ECONNREFUSED riski yok.
 export async function getKatalog(): Promise<Katalog> {
   const { data } = await api.get<Katalog>('/api/katalog');
   return data;

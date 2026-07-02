@@ -1,17 +1,16 @@
 // web/src/components/satis/KatalogContent.tsx
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
+// Server Component — veri `/kurumsal-satis` sayfasında server-side getKatalog() ile
+// çekilip prop olarak buraya geçiriliyor (SEO: içerik ilk HTML'de hazır olmalı).
+// Bu bileşende client-side interaktivite (useState/onClick) yok; 'use client' gerekmiyor.
 import { ArrowRight, TrendingDown } from 'lucide-react';
 import { Link } from '@/navigation';
-import { getKatalog } from '@/lib/katalog-api';
+import type { Katalog } from '@/lib/katalog-api';
 import { KampanyaBanner } from '@/components/satis/KampanyaBanner';
 import { KitapKarti } from '@/components/satis/KitapKarti';
 import { PaketKarti } from '@/components/satis/PaketKarti';
 
 const C = {
   tr: {
-    loading: 'Katalog yükleniyor…',
     error: 'Katalog şu anda yüklenemedi. Lütfen daha sonra tekrar deneyin.',
     unitPricePrefix: 'Öğrenci başına',
     unitPriceSuffix: '/ yıl · hacim indirimleri uygulanır',
@@ -25,7 +24,6 @@ const C = {
     ctaButton: 'Teklif Al',
   },
   en: {
-    loading: 'Loading catalogue…',
     error: 'The catalogue could not be loaded right now. Please try again later.',
     unitPricePrefix: 'Per student',
     unitPriceSuffix: '/ year · volume discounts apply',
@@ -40,25 +38,11 @@ const C = {
   },
 };
 
-export function KatalogContent({ locale }: { locale: string }) {
+export function KatalogContent({ locale, katalog }: { locale: string; katalog: Katalog | null }) {
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
 
-  const { data: katalog, isLoading, isError } = useQuery({
-    queryKey: ['katalog'],
-    queryFn: getKatalog,
-    staleTime: 5 * 60 * 1000, // 5 dk — kampanya/paket verisi sık değişmez
-  });
-
-  if (isLoading) {
-    return (
-      <div className="px-4 md:px-10" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 0', textAlign: 'center' }}>
-        <p style={{ fontSize: 14, color: '#9ca3af' }}>{c.loading}</p>
-      </div>
-    );
-  }
-
-  if (isError || !katalog) {
+  if (!katalog) {
     return (
       <div className="px-4 md:px-10" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 0', textAlign: 'center' }}>
         <p style={{ fontSize: 14, color: '#dc2626' }}>{c.error}</p>

@@ -3,8 +3,16 @@ import type { Metadata } from 'next';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { KatalogContent } from '@/components/satis/KatalogContent';
+import { getKatalog, type Katalog } from '@/lib/katalog-api';
 
 const BASE = 'https://turkceokulu.com';
+
+// Katalog verisi (kitaplar/paketler/fiyatlar) SEO-kritik içerik — ilk HTML'de hazır
+// olmalı (bkz. görev incelemesi: Kazakistan trafiğinin büyük kısmı Yandex üzerinden
+// geliyor, client-hydrate edilen içerik güvenilir indexlenmiyor). force-dynamic bu
+// sayfayı `next build` sırasında statik prerender etmekten çıkarır — fetch yalnızca
+// istek anında çalışır, build zamanı API'ye erişilemese bile build kırılmaz.
+export const dynamic = 'force-dynamic';
 
 // ─── Metadata ───────────────────────────────────────────────────────────────
 
@@ -76,6 +84,16 @@ export default async function KurumsalSatisPage(
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
 
+  // Server-side fetch — sayfanın ilk HTML çıktısında gerçek katalog içeriği bulunur.
+  // API erişilemezse (örn. bakım penceresi) sayfa çökmesin diye null'a düşür;
+  // KatalogContent bu durumda hata mesajı gösterir.
+  let katalog: Katalog | null = null;
+  try {
+    katalog = await getKatalog();
+  } catch {
+    katalog = null;
+  }
+
   return (
     <div style={{ background: '#f9fafb', color: '#1e1b1c' }}>
       <LandingNav
@@ -107,8 +125,8 @@ export default async function KurumsalSatisPage(
         </div>
       </section>
 
-      {/* Katalog (client-side veri çekimi) */}
-      <KatalogContent locale={locale} />
+      {/* Katalog — server-side çekilip SSR edildi (SEO-kritik içerik) */}
+      <KatalogContent locale={locale} katalog={katalog} />
 
       <LandingFooter locale={locale} />
     </div>
