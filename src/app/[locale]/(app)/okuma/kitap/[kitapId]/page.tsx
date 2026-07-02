@@ -25,6 +25,7 @@ interface KitapDetay {
     thumbnailPicture: string | null;
     toplamBolum: number;
   };
+  kutuphaneKitapId: string | null;
   bolumler: Bolum[];
 }
 
@@ -88,7 +89,7 @@ export default function KitapDetayPage({
     );
   }
 
-  const { kitap, bolumler } = data;
+  const { kitap, kutuphaneKitapId, bolumler } = data;
   const tamamlanan = bolumler.filter((b) => b.tamamlandi).length;
   const pct =
     kitap.toplamBolum > 0
@@ -160,6 +161,17 @@ export default function KitapDetayPage({
             : tamamlanan === 0
               ? 'Okumaya Başla'
               : 'Devam Et'}
+        </Link>
+      )}
+
+      {/* PDF/EPUB versiyonu — eşleştirme varsa */}
+      {kutuphaneKitapId && (
+        <Link
+          href={`/okuma/${kutuphaneKitapId}`}
+          className="flex items-center justify-center gap-2 w-full rounded-xl border border-border py-3 font-semibold text-foreground hover:bg-muted/50 transition-colors min-h-[48px]"
+        >
+          <BookOpen className="size-4" />
+          Kitabı Oku (PDF)
         </Link>
       )}
 
