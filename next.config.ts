@@ -126,7 +126,7 @@ const nextConfig: NextConfig = {
       '/(tr|en)/lig',
       '/(tr|en)/ogretmen/:path*',
       '/(tr|en)/admin/:path*',
-      '/(tr|en)/super-admin',
+      '/(tr|en)/super-admin/:path*',
       '/(tr|en)/kurum-yoneticisi',
       '/(tr|en)/ders/:path*',
       '/(tr|en)/etkinlik/:path*',
