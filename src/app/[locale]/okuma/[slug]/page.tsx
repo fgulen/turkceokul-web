@@ -2,10 +2,10 @@
 
 import { use, useState, useRef, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, BookOpen,
-  Sun, BookMarked, Moon, TypeIcon,
+  Sun, BookMarked, Moon, TypeIcon, CheckCircle2,
 } from 'lucide-react';
 import { ReactReaderStyle, type IReactReaderStyle } from 'react-reader';
 import { Logo } from '@/components/logo';
@@ -232,6 +232,8 @@ export default function OkumaPage({
   const [fontSize, setFontSize]           = useState<number>(100);
   const [showSettings, setShowSettings]   = useState(false);
   const [anchorRect, setAnchorRect]       = useState<DOMRect | null>(null);
+  const [sonSayfada, setSonSayfada]       = useState(false);
+  const [tamamSonuc, setTamamSonuc]       = useState<{ tekrar: boolean; xp: number } | null>(null);
 
   const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(slug);
 
@@ -239,6 +241,14 @@ export default function OkumaPage({
     setAnchorRect(rect);
     translate(word);
   }, [translate]);
+
+  const tamamla = useMutation({
+    mutationFn: () =>
+      api.post(`/api/kutuphane/kitaplar/${slug}/tamamla`).then(r => r.data as { tekrar: boolean; xp: number }),
+    onSuccess: (data) => setTamamSonuc(data),
+  });
+
+  const handleReachEnd = useCallback(() => setSonSayfada(true), []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renditionRef  = useRef<any>(null);
@@ -261,6 +271,12 @@ export default function OkumaPage({
         applyEpubStyles(renditionRef.current, themeRef.current, fontFamilyRef.current, fontSizeRef.current);
       });
     }
+
+    // Son sayfa takibi — epubjs relocated event'i atEnd bayrağı taşır
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rendition.on('relocated', (loc: any) => {
+      if (loc?.atEnd) setSonSayfada(true);
+    });
 
     // Metin seçimi (double-click / long-press → seçili kelime)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -313,7 +329,6 @@ export default function OkumaPage({
         translate(word);
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [translate, isFixed]);
 
   // Ayar değişince yeniden uygula — Fixed Layout kitaplarda atla
@@ -335,7 +350,7 @@ export default function OkumaPage({
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Kitap bulunamadı.</p>
-        <Link href="/pano" className="text-primary text-sm hover:underline">Panoya dön</Link>
+        <Link href="/okuma" className="text-primary text-sm hover:underline">Okuma kitaplarına dön</Link>
       </div>
     );
   }
@@ -351,7 +366,7 @@ export default function OkumaPage({
         style={{ background: t.headerBg, borderColor: `${t.headerFg}15` }}
       >
         {/* Logo */}
-        <Link href="/pano" className="shrink-0" title="Panoya dön">
+        <Link href="/okuma" className="shrink-0" title="Okuma kitaplarına dön">
           <Logo
             size="sm"
             className={theme === 'dark' ? '[&>span]:text-zinc-200 [&>span:first-child]:text-primary [&>span:last-child]:text-primary' : ''}
@@ -405,7 +420,7 @@ export default function OkumaPage({
 
       {/* ── Reader ── */}
       {isPdf ? (
-        <PdfFlipbook url={kitap.url} onWordClick={handlePdfWordClick} />
+        <PdfFlipbook url={kitap.url} onWordClick={handlePdfWordClick} onReachEnd={handleReachEnd} />
       ) : (
         <div className="flex-1 relative overflow-hidden">
           <ReactReader
@@ -430,6 +445,53 @@ export default function OkumaPage({
             headerBg={t.headerBg}   headerFg={t.headerFg}
           />
         </>
+      )}
+
+      {/* ── Kitabı Bitir — son sayfada belirir ── */}
+      {sonSayfada && !tamamSonuc && (
+        <button
+          onClick={() => tamamla.mutate()}
+          disabled={tamamla.isPending}
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-500 text-white font-semibold shadow-xl hover:bg-emerald-600 transition-colors disabled:opacity-60 min-h-[48px]"
+        >
+          🎉 {tamamla.isPending ? 'Kaydediliyor…' : 'Kitabı Bitir'}
+        </button>
+      )}
+
+      {/* ── Tamamlama overlay ── */}
+      {tamamSonuc && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center space-y-4">
+            <div className="size-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="size-8 text-emerald-500" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">
+              {tamamSonuc.tekrar ? 'Bu kitabı zaten bitirdin' : 'Kitabı Bitirdin! 🎉'}
+            </h2>
+            {!tamamSonuc.tekrar && (
+              <p className="text-3xl font-extrabold text-amber-500 tabular-nums">+{tamamSonuc.xp} XP</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {tamamSonuc.tekrar
+                ? 'Tekrar okumak her zaman serbest — XP ilk bitirmede verilir.'
+                : 'Harika iş! Haftalık lig puanına eklendi.'}
+            </p>
+            <div className="space-y-2 pt-2">
+              <Link
+                href="/okuma"
+                className="flex items-center justify-center w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
+              >
+                Okuma Kitaplarına Dön
+              </Link>
+              <button
+                onClick={() => setTamamSonuc(null)}
+                className="w-full rounded-xl border border-border py-3 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors min-h-[44px]"
+              >
+                Okumaya Devam Et
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Kelime Çeviri Popup ── */}

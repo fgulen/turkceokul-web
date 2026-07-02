@@ -25,9 +25,11 @@ const TEXT_LAYER_CSS = `
 interface Props {
   url: string;
   onWordClick?: (word: string, rect: DOMRect) => void;
+  /** Son sayfa görünür olduğunda bir kez tetiklenir */
+  onReachEnd?: () => void;
 }
 
-export default function PdfViewer({ url, onWordClick }: Props) {
+export default function PdfViewer({ url, onWordClick, onReachEnd }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pdfDoc, setPdfDoc]       = useState<any>(null);
   const [numPages, setNumPages]   = useState(0);
@@ -138,6 +140,16 @@ export default function PdfViewer({ url, onWordClick }: Props) {
   }, []);
 
   const step = spread ? 2 : 1;
+
+  // Son sayfa görünür → onReachEnd (bir kez)
+  const reachedEndRef = useRef(false);
+  useEffect(() => {
+    if (!numPages || reachedEndRef.current) return;
+    if (pageIndex + step >= numPages) {
+      reachedEndRef.current = true;
+      onReachEnd?.();
+    }
+  }, [pageIndex, step, numPages, onReachEnd]);
 
   const goTo = useCallback((i: number) => {
     if (i < 0 || i >= numPages) return;
