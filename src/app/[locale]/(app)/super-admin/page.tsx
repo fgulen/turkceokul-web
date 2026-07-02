@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Users, Globe, BarChart3, Shield,
   Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
-  RefreshCw, ExternalLink, LogIn, Package, AlertCircle
+  RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
+  Megaphone, TrendingDown, ScrollText, ChevronRight
 } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
@@ -15,7 +16,7 @@ import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 
-type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'ulkeler' | 'raporlar';
+type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'ulkeler' | 'kurumsal' | 'raporlar' | 'loglar';
 type UlkeTab = 'temsilciler' | 'kurumlar' | 'kitaplar' | 'siniflar';
 
 const ROL_RENKLERI: Record<string, string> = {
@@ -58,7 +59,9 @@ export default function SuperAdminPage() {
             ['kitaplar', BookOpen, 'Kitaplar'],
             ['kullanicilar', Users, 'Kullanıcılar'],
             ['ulkeler', Globe, 'Ülkeler & Okullar'],
+            ['kurumsal', Package, 'Kurumsal Satış'],
             ['raporlar', BarChart3, 'Raporlar'],
+            ['loglar', ScrollText, 'Loglar'],
           ] as [Tab, typeof BarChart3, string][]).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -79,7 +82,9 @@ export default function SuperAdminPage() {
         {tab === 'kitaplar' && <KitaplarTab />}
         {tab === 'kullanicilar' && <KullanicilarTab />}
         {tab === 'ulkeler' && <UlkelerTab />}
+        {tab === 'kurumsal' && <KurumsalSatisTab />}
         {tab === 'raporlar' && <RaporlarTab />}
+        {tab === 'loglar' && <LoglarTab />}
       </main>
     </div>
   );
@@ -133,14 +138,9 @@ function eylemRenk(eylem: string): string {
 
 function GenelBakis() {
   const qc = useQueryClient();
-  const [logFilter, setLogFilter] = useState('Tümü');
   const { data: stats } = useQuery({
     queryKey: ['sa-istatistikler'],
     queryFn: () => api.get('/api/super-admin/istatistikler').then(r => r.data),
-  });
-  const { data: auditLog } = useQuery({
-    queryKey: ['sa-audit-log'],
-    queryFn: () => api.get('/api/super-admin/audit-log').then(r => r.data),
   });
   const { data: bekleyenSiparisler = [] } = useQuery({
     queryKey: ['sa-siparisler-bekleyen'],
@@ -219,72 +219,114 @@ function GenelBakis() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Audit log */}
-      <div className="bg-white border border-slate-200 rounded-xl">
-        <div className="px-5 py-4 border-b border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-700">Son İşlemler</h3>
-        </div>
+// ─── Loglar ─────────────────────────────────────────────────────────────────
 
-        {/* Filtre pilleri */}
-        {(auditLog as any[] ?? []).length > 0 && (() => {
-          const logs = auditLog as any[];
-          const tipler = ['Tümü', ...Array.from(new Set(logs.map((l: any) => l.entityType as string)))];
-          return (
-            <div className="px-5 pt-3 pb-2 border-b border-slate-100 flex gap-2 flex-wrap">
-              {tipler.map((tip) => {
-                const count = tip === 'Tümü' ? logs.length : logs.filter((l: any) => l.entityType === tip).length;
-                const active = logFilter === tip;
-                return (
-                  <button
-                    key={tip}
-                    onClick={() => setLogFilter(tip)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      active ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {ENTITY_LABELS[tip] ?? tip}
-                    <span className={`rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none ${
-                      active ? 'bg-purple-500 text-white' : 'bg-white text-slate-500'
-                    }`}>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })()}
+function LoglarTab() {
+  const [logFilter, setLogFilter] = useState('Tümü');
+  const { data: auditLog } = useQuery({
+    queryKey: ['sa-audit-log'],
+    queryFn: () => api.get('/api/super-admin/audit-log').then(r => r.data),
+  });
 
-        <div className="divide-y divide-slate-50">
-          {(() => {
-            const logs = (auditLog as any[] ?? []);
-            const filtered = logFilter === 'Tümü' ? logs : logs.filter((l: any) => l.entityType === logFilter);
-            if (!logs.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Henüz işlem yok</p>;
-            if (!filtered.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Bu kategoride işlem yok</p>;
-            return filtered.slice(0, 20).map((log: any) => (
-              <div key={log.id} className="px-5 py-3 flex items-start gap-3">
-                <span className={`shrink-0 mt-0.5 text-xs px-2 py-0.5 rounded font-medium ${eylemRenk(log.eylem)}`}>
-                  {log.eylem}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                      {ENTITY_LABELS[log.entityType] ?? log.entityType}
-                    </span>
-                    {log.entityId && <span className="text-xs text-slate-400">#{log.entityId}</span>}
-                  </div>
-                  {log.detay && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[380px]">{log.detay}</p>}
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xs font-medium text-slate-600">{log.admin}</p>
-                  <p className="text-xs text-slate-400 whitespace-nowrap">
-                    {new Date(log.tarih).toLocaleString('tr', { dateStyle: 'short', timeStyle: 'short' })}
-                  </p>
-                </div>
-              </div>
-            ));
-          })()}
-        </div>
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl">
+      <div className="px-5 py-4 border-b border-slate-100">
+        <h3 className="text-sm font-semibold text-slate-700">Son İşlemler</h3>
       </div>
+
+      {/* Filtre pilleri */}
+      {(auditLog as any[] ?? []).length > 0 && (() => {
+        const logs = auditLog as any[];
+        const tipler = ['Tümü', ...Array.from(new Set(logs.map((l: any) => l.entityType as string)))];
+        return (
+          <div className="px-5 pt-3 pb-2 border-b border-slate-100 flex gap-2 flex-wrap">
+            {tipler.map((tip) => {
+              const count = tip === 'Tümü' ? logs.length : logs.filter((l: any) => l.entityType === tip).length;
+              const active = logFilter === tip;
+              return (
+                <button
+                  key={tip}
+                  onClick={() => setLogFilter(tip)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    active ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {ENTITY_LABELS[tip] ?? tip}
+                  <span className={`rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none ${
+                    active ? 'bg-purple-500 text-white' : 'bg-white text-slate-500'
+                  }`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      <div className="divide-y divide-slate-50">
+        {(() => {
+          const logs = (auditLog as any[] ?? []);
+          const filtered = logFilter === 'Tümü' ? logs : logs.filter((l: any) => l.entityType === logFilter);
+          if (!logs.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Henüz işlem yok</p>;
+          if (!filtered.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Bu kategoride işlem yok</p>;
+          return filtered.slice(0, 20).map((log: any) => (
+            <div key={log.id} className="px-5 py-3 flex items-start gap-3">
+              <span className={`shrink-0 mt-0.5 text-xs px-2 py-0.5 rounded font-medium ${eylemRenk(log.eylem)}`}>
+                {log.eylem}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                    {ENTITY_LABELS[log.entityType] ?? log.entityType}
+                  </span>
+                  {log.entityId && <span className="text-xs text-slate-400">#{log.entityId}</span>}
+                </div>
+                {log.detay && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[380px]">{log.detay}</p>}
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-medium text-slate-600">{log.admin}</p>
+                <p className="text-xs text-slate-400 whitespace-nowrap">
+                  {new Date(log.tarih).toLocaleString('tr', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+              </div>
+            </div>
+          ));
+        })()}
+      </div>
+    </div>
+  );
+}
+
+// ─── Kurumsal Satış ─────────────────────────────────────────────────────────
+
+function KurumsalSatisTab() {
+  const kartlar = [
+    { href: '/super-admin/paketler', icon: Package, title: 'Paketler', desc: 'Kurumsal katalogdaki kitap paketleri (salt okunur)' },
+    { href: '/super-admin/kampanyalar', icon: Megaphone, title: 'Kampanyalar', desc: 'Zaman sınırlı indirim kampanyaları oluştur ve yönet' },
+    { href: '/super-admin/hacim-indirimleri', icon: TrendingDown, title: 'Hacim İndirimleri', desc: 'Öğrenci sayısına göre kademeli indirim oranları' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {kartlar.map(({ href, icon: Icon, title, desc }) => (
+        <Link
+          key={href}
+          href={href}
+          className="bg-white border border-slate-200 rounded-xl p-5 hover:border-purple-300 hover:shadow-sm transition-all flex items-start gap-3"
+        >
+          <div className="size-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+            <Icon className="size-4 text-purple-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-900">{title}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+          </div>
+          <ChevronRight className="size-4 text-slate-300 shrink-0 mt-2" />
+        </Link>
+      ))}
     </div>
   );
 }
