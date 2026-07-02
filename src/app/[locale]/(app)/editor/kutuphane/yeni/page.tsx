@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -23,6 +23,7 @@ interface KitapEkleForm {
   kelimeSayisi: string;
   dilbilgisiOdagi: string;
   etiketler: string[];
+  dersKitabiId: string;
 }
 
 export default function EditorKitapEklePage() {
@@ -32,7 +33,7 @@ export default function EditorKitapEklePage() {
   const [form, setForm] = useState<KitapEkleForm>({
     id: '', baslik: '', yazar: '', seviye: 'A1', tur: 'pdf',
     url: '', kapakUrl: '', fixedLayout: false, durum: 'Taslak', aciklama: '',
-    yayinevi: '', sayfaSayisi: '', kelimeSayisi: '', dilbilgisiOdagi: '', etiketler: [],
+    yayinevi: '', sayfaSayisi: '', kelimeSayisi: '', dilbilgisiOdagi: '', etiketler: [], dersKitabiId: '',
   });
   const [etiketInput, setEtiketInput] = useState('');
   const [hata, setHata] = useState('');
@@ -52,6 +53,12 @@ export default function EditorKitapEklePage() {
     set('etiketler', form.etiketler.filter(t => t !== tag));
   }
 
+  const { data: okumaKitaplari } = useQuery<{ id: string; name: string; seviye: string }[]>({
+    queryKey: ['okuma-kitaplar'],
+    queryFn: () => api.get('/api/okuma/kitaplar').then(r => r.data),
+    enabled: !!user,
+  });
+
   const ekle = useMutation({
     mutationFn: () => api.post('/api/kutuphane/kitaplar', {
       ...form,
@@ -62,6 +69,7 @@ export default function EditorKitapEklePage() {
       kelimeSayisi:    form.kelimeSayisi ? parseInt(form.kelimeSayisi) : null,
       dilbilgisiOdagi: form.dilbilgisiOdagi || null,
       etiketler:       form.etiketler.length ? JSON.stringify(form.etiketler) : null,
+      dersKitabiId:    form.dersKitabiId || null,
     }),
     onSuccess: () => router.push('/editor/kutuphane'),
     onError: (e: Error) => setHata('Hata: ' + e.message),
@@ -160,6 +168,37 @@ export default function EditorKitapEklePage() {
           <div>
             <label className={labelCls}>Açıklama</label>
             <textarea value={form.aciklama} onChange={e => set('aciklama', e.target.value)} rows={3} className={inputCls + ' resize-none'} />
+          </div>
+
+          <div>
+            <label className={labelCls}>Etkinlik Kitabıyla Eşleştir</label>
+            <select
+              value={form.dersKitabiId}
+              onChange={e => set('dersKitabiId', e.target.value)}
+              className={inputCls}
+            >
+              <option value="">— Eşleştirme yok —</option>
+              {(okumaKitaplari ?? []).map(k => (
+                <option key={k.id} value={k.id}>{k.seviye} — {k.name}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Eşleşen kitabın detay sayfasında &quot;Kitabı Oku (PDF)&quot; butonu görünür.
+            </p>
+            {!form.dersKitabiId && form.baslik && (() => {
+              const oneri = (okumaKitaplari ?? []).find(
+                k => k.name.trim().toLocaleLowerCase('tr') === form.baslik.trim().toLocaleLowerCase('tr'),
+              );
+              return oneri ? (
+                <button
+                  type="button"
+                  onClick={() => set('dersKitabiId', oneri.id)}
+                  className="mt-2 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                >
+                  Öneri: &quot;{oneri.name}&quot; ile eşleştir
+                </button>
+              ) : null;
+            })()}
           </div>
 
           {/* Metadata bölümü */}
