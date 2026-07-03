@@ -12,13 +12,13 @@
  *   4. HTTPS / STS header kontrolü (prod ortamı gerektirir, dev'de fixme)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 
 const API = process.env.API_BASE_URL ?? 'http://localhost:5221';
 
 // ─── Yardımcılar ──────────────────────────────────────────────────────────────
 
-async function registerUser(request: typeof import('@playwright/test').request, suffix: string) {
+async function registerUser(request: APIRequestContext, suffix: string) {
   const email = `sectest_${suffix}_${Date.now()}@example.com`;
   const res = await request.post(`${API}/api/auth/register`, {
     data: { email, password: 'SecTest123!', name: 'Sec', surname: 'Test' },
