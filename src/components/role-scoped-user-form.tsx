@@ -39,7 +39,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   const [kurumlarByUlke, setKurumlarByUlke] = useState<{ id: number; name: string }[]>([]);
   const [davetUrl, setDavetUrl] = useState<string | null>(null);
 
-  const { data: scope } = useQuery<SinifFormData>({
+  const { data: scope, isLoading: scopeYukleniyor, isError: scopeHatali } = useQuery<SinifFormData>({
     queryKey: ['sinif-form-data'],
     queryFn: () => api.get('/api/ogretmen/sinif-form-data').then(r => r.data),
   });
@@ -49,7 +49,9 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   useEffect(() => {
     if (!scopeSuz) { setKurumlarByUlke([]); return; }
     if (!seciliUlkeId) { setKurumlarByUlke([]); return; }
-    api.get(`/api/ogretmen/kurumlar?ulkeId=${seciliUlkeId}`).then(r => setKurumlarByUlke(r.data));
+    api.get(`/api/ogretmen/kurumlar?ulkeId=${seciliUlkeId}`)
+      .then(r => setKurumlarByUlke(r.data))
+      .catch(() => setKurumlarByUlke([]));
   }, [seciliUlkeId, scopeSuz]);
 
   const kurumSecenekleri = scope?.rol === 'UlkeTemsilcisi' ? (scope.kurumlar ?? []) : kurumlarByUlke;
@@ -77,7 +79,11 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
       </h2>
       <p className="text-xs text-slate-400 mb-4">{aciklama}</p>
 
-      {!davetUrl ? (
+      {scopeYukleniyor ? (
+        <p className="text-xs text-slate-400">Yetki bilgisi yükleniyor...</p>
+      ) : scopeHatali ? (
+        <p className="text-xs text-red-500">Yetki bilgisi yüklenemedi, sayfayı yenileyin.</p>
+      ) : !davetUrl ? (
         <div className="space-y-3">
           {hedefRolSecenekleri.length > 1 && (
             <div>
@@ -131,7 +137,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           <button
             onClick={() => davetMutation.mutate()}
-            disabled={davetMutation.isPending}
+            disabled={davetMutation.isPending || !scope}
             className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
           >
             {davetMutation.isPending ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}
