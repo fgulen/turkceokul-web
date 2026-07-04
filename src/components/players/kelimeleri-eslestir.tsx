@@ -10,15 +10,20 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
   const detaylar = etkinlik.detaylar;
   const { play } = useGameSound();
 
-  // Right column: shuffled kelime1 values
+  // Right column: her sağ seçenek benzersiz bir rid taşır. Aynı kelime1 değeri birden
+  // fazla çiftte geçebilir; eşleştirme değere DEĞİL bu instance'a (rid) göre yapılır —
+  // aksi halde duplicate değerde tek eşleşme ikisini birden "kullanıldı" yapıp aktivite
+  // tamamlanamıyordu (ayrıca key={val} duplicate React key uyarısı veriyordu).
   const rightOptions = useMemo(
-    () => detaylar.map((d) => d.kelime1 ?? '').sort(() => Math.random() - 0.5),
+    () => detaylar
+      .map((d, i) => ({ value: d.kelime1 ?? '', rid: i }))
+      .sort(() => Math.random() - 0.5),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
-  const [matched, setMatched] = useState<Map<string, string>>(new Map()); // detayId → kelime1
+  const [matched, setMatched] = useState<Map<string, number>>(new Map()); // detayId → sağ seçenek rid
   const [wrongLeft, setWrongLeft] = useState<string | null>(null);
 
   function handleLeft(id: string) {
@@ -26,22 +31,23 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
     setSelectedLeft(id === selectedLeft ? null : id);
   }
 
-  function handleRight(value: string) {
+  function handleRight(rid: number, value: string) {
     if (!selectedLeft) return;
-    if ([...matched.values()].includes(value)) return;
+    if ([...matched.values()].includes(rid)) return; // bu sağ seçenek zaten kullanıldı
 
     const correctKelime = detaylar.find((d) => d.id === selectedLeft)?.kelime1;
 
     if (value === correctKelime) {
       play('correct');
-      const next = new Map(matched).set(selectedLeft, value);
+      const next = new Map(matched).set(selectedLeft, rid);
       setMatched(next);
       setSelectedLeft(null);
 
       if (next.size === detaylar.length) {
+        // Sol öğe d'nin doğru cevabı = d.kelime1 (eşleşen değer zaten kelime1)
         const cevaplar: Cevap[] = detaylar.map((d) => ({
           id: d.id,
-          cevap: next.get(d.id) ?? '',
+          cevap: d.kelime1 ?? '',
         }));
         setTimeout(() => onComplete(cevaplar), 400);
       }
@@ -55,7 +61,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
     }
   }
 
-  const usedValues = new Set(matched.values());
+  const usedRids = new Set(matched.values());
   const progressPct = (matched.size / detaylar.length) * 100;
 
   return (
@@ -100,12 +106,12 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
 
         {/* Right column */}
         <div className="space-y-3">
-          {rightOptions.map((val) => {
-            const isUsed = usedValues.has(val);
+          {rightOptions.map((opt) => {
+            const isUsed = usedRids.has(opt.rid);
             return (
               <button
-                key={val}
-                onClick={() => handleRight(val)}
+                key={opt.rid}
+                onClick={() => handleRight(opt.rid, opt.value)}
                 disabled={isUsed}
                 className={cn(
                   'w-full p-4 rounded-xl border-2 text-sm font-medium text-left transition-all',
@@ -114,7 +120,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
                 )}
                 style={isUsed ? { borderColor: 'var(--correct)', color: 'var(--correct)' } : undefined}
               >
-                {val}
+                {opt.value}
               </button>
             );
           })}

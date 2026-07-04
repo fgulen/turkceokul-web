@@ -55,13 +55,15 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
       (w, i) => w.trim().toLowerCase() === (answers[i] ?? '').trim().toLowerCase(),
     );
     play(isCorrect ? 'correct' : 'wrong');
+    let newKalp = localKalp;
     if (isCorrect) {
       const newCombo = combo + 1;
       setCombo(newCombo);
       if ([2, 3, 5, 10].includes(newCombo)) play('combo');
     } else {
       setCombo(0);
-      setLocalKalp((k) => Math.max(0, k - 1));
+      newKalp = Math.max(0, localKalp - 1);
+      setLocalKalp(newKalp);
     }
 
     setTimeout(() => {
@@ -69,7 +71,8 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
       setCevaplar(yeni);
       setFilledBlanks([]);
       setChecking(false);
-      if (index + 1 >= detaylar.length) {
+      // 0 kalpte erken bitir — diğer player'larla (quiz/dogru-yanlis/bosluk-doldurma) tutarlı
+      if (newKalp === 0 || index + 1 >= detaylar.length) {
         onComplete(yeni);
       } else {
         setIndex((i) => i + 1);

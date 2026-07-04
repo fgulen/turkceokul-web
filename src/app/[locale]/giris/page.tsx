@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
+import { safeRedirect } from '@/lib/safe-redirect';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 
 export default function GirisPage() {
@@ -31,8 +32,8 @@ export default function GirisPage() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       // Redirect param'ı kontrol et (QR tarama, korumalı sayfa yönlendirmesi için)
       const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect');
-      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      const redirect = safeRedirect(params.get('redirect'));
+      if (redirect) {
         window.location.href = redirect;
         return;
       }

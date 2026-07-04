@@ -79,6 +79,17 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
+  // Unmount'ta çalan sesi durdur — aksi halde player'dan çıkınca ses arka planda devam eder.
+  // audioRef doğrudan kullanılır (stable ref) → dependency sorunu yok.
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
   const handleTextMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Önce seçili metin var mı bak (mobil long-press / desktop drag)
     const selection = window.getSelection();

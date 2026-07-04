@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/lib/api";
+import { safeRedirect } from "@/lib/safe-redirect";
 
 type Tab = "kurumsal" | "bireysel";
 
@@ -76,8 +77,9 @@ function KayitForm() {
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken, data.refreshToken);
-      if (tab === "bireysel" && redirectAfter && redirectAfter.startsWith("/") && !redirectAfter.startsWith("//")) {
-        window.location.href = redirectAfter;
+      const safeAfter = safeRedirect(redirectAfter);
+      if (tab === "bireysel" && safeAfter) {
+        window.location.href = safeAfter;
         return;
       }
       router.push(tab === "kurumsal" ? "/ogretmen" : "/seviye-testi", { locale });
@@ -284,12 +286,12 @@ function KayitForm() {
                         <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
                         <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
                       </div>
-                      <a
+                      <Link
                         href="/sinif/katil"
                         style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", whiteSpace: "nowrap", textDecoration: "none", borderBottom: "1px solid #93c5fd" }}
                       >
                         Sınıfa Katıl →
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 
 export type TranslationSource = 'cache' | 'deepl' | 'google' | 'stale';
@@ -26,15 +26,23 @@ export function useWordTranslation(bookId: string) {
     activeWord: null,
   });
 
+  // activeWord'ü ref'te tut → translate deps'i [bookId]'e iner ve KİMLİĞİ SABİT kalır.
+  // Aksi halde her çeviride state.activeWord değişip translate yeniden oluşuyor, bu da
+  // tüketicilerde (PdfFlipbook onWordClick) gereksiz yeniden render/loader flash yaratıyordu.
+  const activeWordRef = useRef<string | null>(null);
+
   const translate = useCallback(async (word: string) => {
     const clean = word.trim().toLowerCase().replace(/[.,!?;:"'()]/g, '');
     if (!clean) return;
 
     // Toggle off if same word tapped again
-    if (clean === state.activeWord) {
+    if (clean === activeWordRef.current) {
+      activeWordRef.current = null;
       setState({ loading: false, result: null, activeWord: null });
       return;
     }
+
+    activeWordRef.current = clean;
 
     setState({ loading: true, result: null, activeWord: clean });
 
@@ -59,9 +67,10 @@ export function useWordTranslation(bookId: string) {
         },
       });
     }
-  }, [bookId, state.activeWord]);
+  }, [bookId]);
 
   const close = useCallback(() => {
+    activeWordRef.current = null;
     setState({ loading: false, result: null, activeWord: null });
   }, []);
 

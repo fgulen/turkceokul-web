@@ -29,7 +29,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -40,7 +40,21 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken, refreshToken }),
       updateUser: (patch) =>
         set((s) => ({ user: s.user ? { ...s.user, ...patch } : null })),
-      logout: () => set({ user: null, accessToken: null, refreshToken: null }),
+      logout: () => {
+        // Best-effort server-side revoke — refresh token'ı sunucuda geçersiz kıl.
+        // keepalive: hemen ardından yönlendirme olsa bile istek tamamlanır.
+        // Plain fetch (api.ts değil) → circular import yok; hata yutulur.
+        const { refreshToken } = get();
+        if (refreshToken && typeof window !== 'undefined') {
+          fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+        set({ user: null, accessToken: null, refreshToken: null });
+      },
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
