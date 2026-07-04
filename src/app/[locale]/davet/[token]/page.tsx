@@ -31,7 +31,8 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
 
   const [bilgi, setBilgi] = useState<DavetBilgi | null>(null);
   const [bilgiYukleniyor, setBilgiYukleniyor] = useState(true);
-  const [form, setForm] = useState({ ad: '', soyad: '', sifre: '', email: '', kurumAdi: '' });
+  const [form, setForm] = useState({ ad: '', soyad: '', sifre: '', email: '', kurumAdi: '', ulkeId: '' });
+  const [ulkeler, setUlkeler] = useState<{ id: number; name: string }[]>([]);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [tamamlandi, setTamamlandi] = useState(false);
@@ -48,6 +49,12 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
       .finally(() => setBilgiYukleniyor(false));
   }, [token]);
 
+  useEffect(() => {
+    if (bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi.kurumAdi) {
+      api.get('/api/davet/ulkeler').then(r => setUlkeler(r.data));
+    }
+  }, [bilgi]);
+
   const field = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -62,6 +69,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
         sifre: form.sifre,
         email: form.email || undefined,
         kurumAdi: bilgi?.hedefRol === 'KurumYoneticisi' ? form.kurumAdi : undefined,
+        ulkeId: bilgi?.hedefRol === 'KurumYoneticisi' ? form.ulkeId || undefined : undefined,
       };
       const { data } = await api.post(`/api/davet/${token}/kabul`, body);
       setAuth(data.user, data.accessToken, data.refreshToken);
@@ -179,6 +187,21 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
                       placeholder="Okulunuzun / kurumunuzun adı"
                       className="w-full px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
                     />
+                  </div>
+                )}
+
+                {bilgi.hedefRol === 'KurumYoneticisi' && ulkeler.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1">Ülke *</label>
+                    <select
+                      required
+                      value={form.ulkeId}
+                      onChange={(e) => setForm(f => ({ ...f, ulkeId: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                    >
+                      <option value="">Seçiniz</option>
+                      {ulkeler.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
                   </div>
                 )}
 
