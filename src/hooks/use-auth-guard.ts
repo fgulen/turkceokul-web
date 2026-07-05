@@ -41,10 +41,12 @@ export function useAuthGuard(
         router.replace('/super-admin');
       } else if (user.role === 'KurumYoneticisi') {
         router.replace('/kurum-yoneticisi');
+      } else if (user.role === 'UlkeTemsilcisi') {
+        router.replace('/ulke-temsilcisi');
       } else if (user.role === 'Koordinator') {
         router.replace('/admin'); // URL /admin kalıyor, sadece rol ismi değişti
       }
-      // Ogretmen, UlkeTemsilcisi, Editor /pano'ya erişebilir
+      // Ogretmen, Editor /pano'ya erişebilir
     }
   }, [hydrated, user, router, locale, requiredRole, noRoleRedirect]);
 
