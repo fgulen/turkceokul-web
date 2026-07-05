@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen } from 'lucide-react';
+import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { PerdeGiris } from '@/components/perde-giris';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { type EtkinlikData, type Cevap } from '@/types/etkinlik';
 import { AkilliKartPlayer } from '@/components/players/akilli-kart';
 import { QuizPlayer } from '@/components/players/quiz';
@@ -44,6 +44,7 @@ interface CevapSonuc {
   combo: number;
   kalpAzaldi: boolean;
   kalanKalp: number;
+  detaylar?: { id: string; dogruCevap: string | null; sonuc: boolean }[];
 }
 
 interface EtkinlikListItem {
@@ -131,11 +132,13 @@ function AnimatedScore({ puan }: { puan: number }) {
 
 function ResultScreen({
   sonuc,
+  etkinlik,
   onRetry,
   returnUrl,
   sonrakiUrl,
 }: {
   sonuc: CevapSonuc;
+  etkinlik: EtkinlikData;
   onRetry: () => void;
   returnUrl: string | null;
   sonrakiUrl: string | null;
@@ -143,6 +146,7 @@ function ResultScreen({
   const router = useRouter();
   const updateUser = useAuthStore((s) => s.updateUser);
   const { play } = useGameSound();
+  const [dokumAcik, setDokumAcik] = useState(false);
 
   useEffect(() => {
     // Puan + kalp anında güncelle — Tekrar Dene erken basılsa bile veri kaybolmaz
@@ -221,6 +225,50 @@ function ResultScreen({
             <p className="font-bold text-foreground">{sonuc.kalanKalp} / 5</p>
           </div>
         </div>
+
+        {/* Cevap dökümü — sunucunun soru bazlı sonucu (bkz. kalp/renk anında gösterilemeyen
+            DogruYanlis ailesi gibi tipler; veri her tipte var ama en çok onlarda gerekli) */}
+        {sonuc.detaylar && sonuc.detaylar.length > 0 && (
+          <div className="w-full mb-4">
+            <button
+              type="button"
+              onClick={() => setDokumAcik((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              Cevap Dökümü
+              <ChevronDown className={cn('size-3.5 transition-transform', dokumAcik && 'rotate-180')} />
+            </button>
+            {dokumAcik && (
+              <div className="mt-2 max-h-48 overflow-y-auto space-y-2 pr-1">
+                {sonuc.detaylar.map((d) => {
+                  const detay = etkinlik.detaylar.find((x) => x.id === d.id);
+                  const imgUrl = detay ? toMediaUrl(detay.resimLink) : null;
+                  return (
+                    <div
+                      key={d.id}
+                      className={cn(
+                        'flex items-center gap-2.5 p-2 rounded-lg border text-left',
+                        d.sonuc ? 'border-[--correct]/30 bg-[--correct]/5' : 'border-destructive/30 bg-destructive/5',
+                      )}
+                    >
+                      {imgUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={imgUrl} alt="" className="size-9 rounded-md object-cover shrink-0" />
+                      ) : (
+                        <div className="size-9 rounded-md bg-muted shrink-0" />
+                      )}
+                      <p className="flex-1 min-w-0 text-xs text-foreground truncate">{detay?.description}</p>
+                      {d.sonuc
+                        ? <CheckCircle2 className="size-5 shrink-0" style={{ color: 'var(--correct)' }} />
+                        : <XCircle className="size-5 shrink-0 text-destructive" />
+                      }
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Butonlar */}
         <div className="result-a5 flex flex-col gap-2 w-full">
@@ -462,7 +510,7 @@ export default function EtkinlikPage({
             onGeriDon={() => returnUrl ? router.push(returnUrl) : router.back()}
           />
         ) : sonuc && etkinlik ? (
-          <ResultScreen sonuc={sonuc} onRetry={handleRetry} returnUrl={returnUrl} sonrakiUrl={sonrakiUrl} />
+          <ResultScreen sonuc={sonuc} etkinlik={etkinlik} onRetry={handleRetry} returnUrl={returnUrl} sonrakiUrl={sonrakiUrl} />
         ) : etkinlik ? (
           <>
             {/* "Perdeye Bak" floating butonu — yalnızca perde verisi olan etkinliklerde */}
