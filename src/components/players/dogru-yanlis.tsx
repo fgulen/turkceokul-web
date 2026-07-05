@@ -1,89 +1,98 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2 } from 'lucide-react';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
-import { useAuthStore } from '@/stores/auth';
-import { useGameSound } from '@/hooks/use-game-sound';
-import { GameHUD } from '@/components/game/game-hud';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
+import { PlayingBars } from './ui';
 
-function comboMult(combo: number) {
-  if (combo >= 10) return 10;
-  if (combo >= 5) return 5;
-  if (combo >= 3) return 3;
-  if (combo >= 2) return 2;
-  return 1;
-}
-
+// NOT: bu tipte doğru cevap (current.cevap) güvenlik gereği öğrenciye API'den hiç
+// gönderilmiyor (DersController.GetEtkinlik — "Doğru"/"Yanlış" doğrudan sorunun cevabı
+// olduğu için ogretmenTier dışına sızdırılmaz). Bu yüzden anlık doğru/yanlış geri
+// bildirimi İMKANSIZ — KelimeleriEslestir gibi "toplu" modda cevaplar biriktirilip tek
+// seferde onComplete ile gönderilir, kalp/puan sonucu yalnızca sunucu yanıtından gelir.
 export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
-  const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
-  const { play } = useGameSound();
+  const { playing: audioPlaying, play: playWord } = usePlayerAudio();
 
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [combo, setCombo] = useState(0);
-  const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const correct = current.cevap ?? current.kelime1 ?? '';
+  const imgUrl = toMediaUrl(current.resimLink);
+  const sesUrl = toMediaUrl(current.sesLink);
+  const progress = (index / detaylar.length) * 100;
 
   function handleSelect(val: 'Doğru' | 'Yanlış') {
     if (selected !== null) return;
     setSelected(val);
-    const isCorrect = val === correct;
-    play(isCorrect ? 'correct' : 'wrong');
-
-    let newKalp = localKalp;
-    if (isCorrect) {
-      const newCombo = combo + 1;
-      setCombo(newCombo);
-      if ([2, 3, 5, 10].includes(newCombo)) play('combo');
-    } else {
-      setCombo(0);
-      newKalp = Math.max(0, localKalp - 1);
-      setLocalKalp(newKalp);
-    }
 
     setTimeout(() => {
       const yeni = [...cevaplar, { id: current.id, cevap: val }];
       setCevaplar(yeni);
-      if (newKalp === 0 || index + 1 >= detaylar.length) {
+      if (index + 1 >= detaylar.length) {
         onComplete(yeni);
       } else {
         setIndex(index + 1);
         setSelected(null);
       }
-    }, 600);
+    }, 350);
   }
 
   return (
     <div className="max-w-sm md:max-w-lg mx-auto">
-      <GameHUD
-        soruNo={index}
-        toplamSoru={detaylar.length}
-        kalp={localKalp}
-        combo={combo}
-        etiket="Doğru / Yanlış"
-      />
+      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>Soru {index + 1} / {detaylar.length}</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full mb-5">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
+      {imgUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgUrl}
+          alt=""
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-2xl mb-4 block"
+        />
+      )}
 
-      <motion.div
-        key={current.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-2xl p-8 mb-8 text-center min-h-[120px] flex items-center justify-center"
-      >
-        <p className="text-xl font-semibold leading-relaxed">
-          {current.description}
-        </p>
-      </motion.div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={current.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.22 }}
+          className="bg-card border border-border rounded-2xl p-8 mb-8 text-center min-h-[120px] flex items-center justify-center gap-3"
+        >
+          <p className="text-xl font-semibold leading-relaxed">
+            {current.description}
+          </p>
+          {sesUrl && (
+            <button
+              type="button"
+              onClick={() => playWord(sesUrl)}
+              className="shrink-0 size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+              aria-label="Sesi çal"
+            >
+              {audioPlaying
+                ? <PlayingBars size="sm" color="bg-primary" />
+                : <Volume2 className="size-4 text-primary" />
+              }
+            </button>
+          )}
+        </motion.div>
+      </AnimatePresence>
 
       <div className="grid grid-cols-2 gap-4">
         {(['Doğru', 'Yanlış'] as const).map((val) => {
-          const isCorrect = val === correct;
           const isSelected = val === selected;
           return (
             <button
@@ -92,12 +101,9 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
               disabled={selected !== null}
               className={cn(
                 'py-5 rounded-2xl border-2 text-lg font-bold transition-all',
-                selected === null && val === 'Doğru' && 'border-border hover:border-[--correct] hover:bg-[--correct]/10 hover:text-[--correct]',
-                selected === null && val === 'Yanlış' && 'border-border hover:border-destructive hover:bg-destructive/10 hover:text-destructive',
-                isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
-                !isSelected && selected !== null && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                !isSelected && selected !== null && !isCorrect && 'opacity-30',
+                selected === null && 'border-border hover:border-primary hover:bg-primary/5',
+                isSelected && 'border-primary bg-primary/10 text-primary',
+                selected !== null && !isSelected && 'opacity-30',
               )}
             >
               {val === 'Doğru' ? '✓ Doğru' : '✗ Yanlış'}

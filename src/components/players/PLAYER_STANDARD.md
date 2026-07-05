@@ -93,6 +93,14 @@ onComplete(cevaplar);
 
 // Pasif geçiş (okuma/dinleme tipler — her zaman doğru):
 onComplete(detaylar.map((d) => ({ id: d.id, cevap: '1' })));
+
+// Sıralı ama cevabı istemciye hiç gelmeyen tipler (DogruYanlis ailesi — cevap
+// doğrudan sorunun cevabı olduğu için API bunu öğrenciye ASLA göndermez, bkz.
+// DersController.GetEtkinlik "ogretmenTier ? d.Cevap : null"): adım adım gibi
+// görünür ama anlık doğru/yanlış YOK — sadece seçimi kaydet, "toplu" gibi biriktir:
+const yeni = [...cevaplar, { id: current.id, cevap: val }];
+if (index + 1 >= detaylar.length) onComplete(yeni); else setIndex(index + 1);
+// GameHUD/kalp/combo KULLANMA — client'ın bilmediği bir şeyi bilmiş gibi gösterme.
 ```
 
 ---
@@ -117,8 +125,15 @@ src={toMediaUrl(x) ?? ''}
 // Kart içi (kırpma yok — AkilliKart gibi):
 <img src={imgUrl} className="w-full h-auto block" />
 
-// Sabit yükseklik, içerik resmi:
-<img src={imgUrl} className="w-full max-h-56 object-contain rounded-2xl" />
+// Sabit yükseklik, içerik resmi (dar/uzun resimlerde yapay yan boşluk bırakmaz —
+// div resmin gerçek oranına göre daralır, w-full + object-contain KULLANMA):
+<img src={imgUrl} className="h-56 w-auto max-w-full mx-auto object-contain rounded-2xl block" />
+
+// Üzerinde mutlak konumlu buton/overlay varsa (ör. ses ikonu), img'i wrapper'a sar:
+<div className="relative w-fit max-w-full mx-auto">
+  <img src={imgUrl} className="h-56 w-auto max-w-full object-contain block" />
+  <button className="absolute bottom-2 right-2">...</button>
+</div>
 
 // Resim yoksa fallback:
 {imgUrl ? <img ... /> : <div className="...bg-muted"><ImageOff .../></div>}
@@ -207,7 +222,7 @@ olmaz — çünkü fazla kolon satır yüksekliğini azaltır, dokunma zorlaşı
 | quiz | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | Referans implementasyon |
 | akilli-kart | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | coktan-secmeli | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
-| dogru-yanlis | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| dogru-yanlis | sm→lg ✅ | X/Y bar (cevap gizli, GameHUD yok) | yok (bilinemez) | ✅ | 2026-07-05: toplu moda çevrildi, resim+ses eklendi |
 | bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | scrollIntoView eklendi |
 | coktan-secmeli-bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | kelimeleri-eslestir | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |
