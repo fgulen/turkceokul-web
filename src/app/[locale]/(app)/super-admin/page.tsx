@@ -6,7 +6,7 @@ import {
   BookOpen, Users, Globe, BarChart3, Shield,
   Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
   RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
-  Megaphone, TrendingDown, ScrollText, ChevronRight
+  Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus
 } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
@@ -15,8 +15,9 @@ import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
+import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 
-type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'ulkeler' | 'kurumsal' | 'raporlar' | 'loglar';
+type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'kullanici-olustur' | 'ulkeler' | 'kurumsal' | 'raporlar' | 'loglar';
 type UlkeTab = 'temsilciler' | 'kurumlar' | 'kitaplar' | 'siniflar';
 
 const ROL_RENKLERI: Record<string, string> = {
@@ -58,6 +59,7 @@ export default function SuperAdminPage() {
             ['genel', BarChart3, 'Genel Bakış'],
             ['kitaplar', BookOpen, 'Kitaplar'],
             ['kullanicilar', Users, 'Kullanıcılar'],
+            ['kullanici-olustur', UserPlus, 'Kullanıcı Oluştur'],
             ['ulkeler', Globe, 'Ülkeler & Okullar'],
             ['kurumsal', Package, 'Kurumsal Satış'],
             ['raporlar', BarChart3, 'Raporlar'],
@@ -81,6 +83,7 @@ export default function SuperAdminPage() {
         {tab === 'genel' && <GenelBakis />}
         {tab === 'kitaplar' && <KitaplarTab />}
         {tab === 'kullanicilar' && <KullanicilarTab />}
+        {tab === 'kullanici-olustur' && <KullaniciOlusturTab />}
         {tab === 'ulkeler' && <UlkelerTab />}
         {tab === 'kurumsal' && <KurumsalSatisTab />}
         {tab === 'raporlar' && <RaporlarTab />}
@@ -529,6 +532,25 @@ function KitapEditForm({ kitap, onSave }: { kitap: any; onSave: (d: any) => void
         ))}
       </div>
     </form>
+  );
+}
+
+// ─── Kullanıcı Oluştur ──────────────────────────────────────────────────────
+
+function KullaniciOlusturTab() {
+  return (
+    <div className="max-w-xl">
+      <RoleScopedUserForm
+        baslik="Kullanıcı Oluştur"
+        aciklama="Koordinatör, ülke temsilcisi, kurum yöneticisi veya öğretmen davet et."
+        hedefRolSecenekleri={[
+          { value: 'Koordinator', label: 'Koordinatör' },
+          { value: 'UlkeTemsilcisi', label: 'Ülke Temsilcisi' },
+          { value: 'KurumYoneticisi', label: 'Kurum Yöneticisi' },
+          { value: 'Ogretmen', label: 'Öğretmen' },
+        ]}
+      />
+    </div>
   );
 }
 
