@@ -339,7 +339,7 @@ export default function OgretmenlerPage() {
                     <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                   ))}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>// AI İçerik Stüdyosu</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>{'// AI İçerik Stüdyosu'}</div>
                 <div style={{ background: 'rgba(87,223,254,0.05)', border: '1px solid rgba(87,223,254,0.12)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>KONU</div>
                   <div style={{ fontSize: 13, color: '#fff' }}>Türkiye&apos;nin coğrafyası, B1 seviyesi, 10 soru</div>

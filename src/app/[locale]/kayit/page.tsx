@@ -361,7 +361,7 @@ function KayitForm() {
 
           <p style={{ textAlign: "center", fontSize: 15, color: "#9ca3af", marginTop: 22 }}>
             Zaten hesabın var mı?{" "}
-            <a
+            <Link
               href="/giris"
               onClick={(e) => {
                 e.preventDefault();
@@ -373,7 +373,7 @@ function KayitForm() {
               style={{ color: "#1b75bc", fontWeight: 600, textDecoration: "none", cursor: "pointer" }}
             >
               Giriş yap
-            </a>
+            </Link>
           </p>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "#c0c7d2", marginTop: 16, lineHeight: "19px" }}>

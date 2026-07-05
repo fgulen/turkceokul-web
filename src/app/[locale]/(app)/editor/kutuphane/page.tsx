@@ -91,7 +91,7 @@ export default function EditorKutuphaneListPage() {
             <div className="text-center py-16">
               <BookOpen className="size-10 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-500 font-medium">Henüz kitap eklenmedi.</p>
-              <p className="text-slate-400 text-sm mt-1">İlk kitabı eklemek için "Kitap Ekle" butonuna tıkla.</p>
+              <p className="text-slate-400 text-sm mt-1">İlk kitabı eklemek için &quot;Kitap Ekle&quot; butonuna tıkla.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">

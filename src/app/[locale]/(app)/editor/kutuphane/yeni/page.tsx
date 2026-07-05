@@ -109,7 +109,7 @@ export default function EditorKitapEklePage() {
               placeholder="cirkin-ordek-yavrusu"
               className={inputCls}
             />
-            <p className="text-[11px] text-slate-400 mt-1">Küçük harf, tire ile ayır. URL'de görünür: /okuma/<strong>{form.id || '...'}</strong></p>
+            <p className="text-[11px] text-slate-400 mt-1">Küçük harf, tire ile ayır. URL&apos;de görünür: /okuma/<strong>{form.id || '...'}</strong></p>
           </div>
 
           <div>

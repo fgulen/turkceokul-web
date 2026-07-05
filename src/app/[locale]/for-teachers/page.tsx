@@ -323,7 +323,7 @@ export default function ForTeachersPage() {
                 <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                   {['#ef4444', '#facc15', '#22c55e'].map((c) => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>// AI Content Studio</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>{'// AI Content Studio'}</div>
                 <div style={{ background: 'rgba(87,223,254,0.05)', border: '1px solid rgba(87,223,254,0.12)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>TOPIC</div>
                   <div style={{ fontSize: 13, color: '#fff' }}>Turkish geography, B1 level, 10 questions</div>

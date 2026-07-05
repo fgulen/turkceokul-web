@@ -92,7 +92,7 @@ function EtkinlikSecimEkrani({
         <div>
           <h2 className="text-lg font-bold text-foreground">Etkinlik Seç</h2>
           <p className="text-sm text-muted-foreground">
-            Kahoot'ta oynamak istediğin quiz etkinliklerini seç.
+            Kahoot&apos;ta oynamak istediğin quiz etkinliklerini seç.
           </p>
         </div>
         {secili.size > 0 && (

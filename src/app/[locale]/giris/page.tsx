@@ -121,7 +121,7 @@ export default function GirisPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Hesabın yok mu?{' '}
-          <a
+          <Link
             href="/kayit"
             onClick={(e) => {
               e.preventDefault();
@@ -132,7 +132,7 @@ export default function GirisPage() {
             className="text-primary font-medium hover:underline cursor-pointer"
           >
             Ücretsiz kayıt ol
-          </a>
+          </Link>
         </p>
       </div>
     </div>

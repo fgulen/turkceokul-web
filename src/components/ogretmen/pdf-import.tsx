@@ -121,7 +121,10 @@ export function PdfImport() {
       setKayitHata(prev => { const n = { ...prev }; delete n[idx]; return n; });
     } catch (err: unknown) {
       setKayitSonuc(prev => ({ ...prev, [idx]: 'hata' }));
-      const msg = err instanceof Error ? err.message : err && typeof err === 'object' && 'response' in err ? String((err as any).response?.data ?? err) : 'Bilinmeyen hata';
+      const responseData = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: unknown } }).response?.data
+        : undefined;
+      const msg = err instanceof Error ? err.message : responseData !== undefined ? String(responseData) : 'Bilinmeyen hata';
       setKayitHata(prev => ({ ...prev, [idx]: msg }));
     } finally {
       setKayitYapiliyor(null);

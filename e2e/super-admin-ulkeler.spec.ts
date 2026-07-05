@@ -429,11 +429,12 @@ test.describe('Ülkeler Tab — Country Management', () => {
       headers: { Authorization: `Bearer ${await getStoredToken(page)}` },
     });
 
-    const body = await response.json();
-    const liste: any[] = body.liste;
+    type UlkeListeItem = { createdDate?: string; CreatedDate?: string };
+    const body = await response.json() as { liste: UlkeListeItem[] };
+    const liste = body.liste;
 
     if (liste.length >= 2) {
-      const dates = liste.map((u: any) => new Date(u.createdDate ?? u.CreatedDate ?? 0).getTime());
+      const dates = liste.map((u) => new Date(u.createdDate ?? u.CreatedDate ?? 0).getTime());
       // Azalan sırada olmalı
       for (let i = 0; i < dates.length - 1; i++) {
         expect(dates[i]).toBeGreaterThanOrEqual(dates[i + 1]);
