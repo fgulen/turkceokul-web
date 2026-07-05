@@ -62,6 +62,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
     mutationFn: () => api.post('/api/davet/olustur', {
       hedefRol,
       kurumId: kurumSabit?.id ?? (seciliKurumId ? Number(seciliKurumId) : undefined),
+      ulkeId: hedefRol === 'UlkeTemsilcisi' && seciliUlkeId ? Number(seciliUlkeId) : undefined,
     }),
     onSuccess: (res) => {
       setDavetUrl(res.data.url);
