@@ -199,6 +199,7 @@ export function AppNav() {
             {user.role === 'KurumYoneticisi' && <>
               <NL href="/kurum-yoneticisi"  label="Kurum Paneli"     active={!!pathname?.startsWith('/kurum-yoneticisi')} icon={<Building2 className="size-3.5" />} />
               <NL href="/ogretmen"          label="Öğretmen Panelim" active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
               <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'UlkeTemsilcisi' && <>
@@ -286,6 +287,7 @@ export function AppNav() {
       <MobileBar items={[
         { href: '/kurum-yoneticisi',   Icon: Building2,       label: 'Kurum',       active: !!pathname?.startsWith('/kurum-yoneticisi') },
         { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
         { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
