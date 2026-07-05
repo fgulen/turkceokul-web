@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Plus, Users, Building2, Clock, CheckCircle, XCircle, ChevronRight, Share2, Mail } from 'lucide-react';
+import { GraduationCap, Plus, Users, Building2, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { api } from '@/lib/api';
@@ -33,21 +34,13 @@ export default function AdminPage() {
   const qc = useQueryClient();
 
   const [sekme, setSekme] = useState<Sekme>('ogretmenler');
-  const [form, setForm] = useState({ email: '', name: '', surname: '' });
-  const [kurumForm, setKurumForm] = useState({ name: '', sehir: '' });
-  const [mesaj, setMesaj] = useState('');
-  const [davetUrl, setDavetUrl] = useState<string | null>(null);
-  const [davetYukleniyor, setDavetYukleniyor] = useState(false);
+  const [kurumForm, setKurumForm] = useState({ name: '', sehir: '', ulkeId: '' });
 
-  async function davetOlustur() {
-    setDavetYukleniyor(true);
-    try {
-      const res = await api.post('/api/davet/olustur', { hedefRol: 'Ogretmen' });
-      setDavetUrl(res.data.url);
-    } finally {
-      setDavetYukleniyor(false);
-    }
-  }
+  const { data: ulkeler } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['davet-ulkeler'],
+    queryFn: () => api.get('/api/davet/ulkeler').then(r => r.data),
+    enabled: !!user,
+  });
 
   const { data: ogretmenler, isLoading: ogLoading } = useQuery<Ogretmen[]>({
     queryKey: ['admin-ogretmenler-hepsi'],
@@ -67,21 +60,15 @@ export default function AdminPage() {
     enabled: !!user,
   });
 
-  const olusturMutation = useMutation({
-    mutationFn: () => api.post('/api/admin/ogretmen-olustur', form),
-    onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
-      setMesaj(`Öğretmen oluşturuldu. Geçici şifre: ${res.data.tempSifre}`);
-      setForm({ email: '', name: '', surname: '' });
-    },
-    onError: (e: Error) => setMesaj('Hata: ' + e.message),
-  });
-
   const kurumOlusturMutation = useMutation({
-    mutationFn: () => api.post('/api/admin/kurum-olustur', kurumForm),
+    mutationFn: () => api.post('/api/admin/kurum-olustur', {
+      name: kurumForm.name,
+      sehir: kurumForm.sehir || undefined,
+      ulkeId: kurumForm.ulkeId ? Number(kurumForm.ulkeId) : undefined,
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
-      setKurumForm({ name: '', sehir: '' });
+      setKurumForm({ name: '', sehir: '', ulkeId: '' });
     },
   });
 
@@ -167,96 +154,12 @@ export default function AdminPage() {
         {/* ÖĞRETMENLER TAB */}
         {sekme === 'ogretmenler' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Plus className="size-4 text-primary" />
-                Yeni Öğretmen Oluştur
-              </h2>
-              <div className="space-y-3">
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                  placeholder="E-posta *"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Ad *"
-                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <input
-                    type="text"
-                    value={form.surname}
-                    onChange={e => setForm(p => ({ ...p, surname: e.target.value }))}
-                    placeholder="Soyad"
-                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-                <button
-                  onClick={() => olusturMutation.mutate()}
-                  disabled={!form.email || !form.name || olusturMutation.isPending}
-                  className="w-full px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Plus className="size-4" />
-                  Öğretmen Oluştur
-                </button>
-                {mesaj && (
-                  <p className="text-xs p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">{mesaj}</p>
-                )}
-              </div>
-            </div>
-
-            {/* WhatsApp / E-posta davet */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
-                <Share2 className="size-4 text-primary" />
-                Davet Linki Oluştur
-              </h2>
-              <p className="text-xs text-slate-400 mb-4">Öğretmeni sisteme davet etmek için link oluştur, WhatsApp veya e-posta ile paylaş.</p>
-              {!davetUrl ? (
-                <button
-                  onClick={davetOlustur}
-                  disabled={davetYukleniyor}
-                  className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
-                >
-                  {davetYukleniyor ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 break-all font-mono border border-slate-200">
-                    {davetUrl}
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(`Merhaba! TürkçeOkulu platformuna öğretmen olarak davet edildiniz. Kayıt için: ${davetUrl}`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white rounded-xl text-xs font-semibold hover:bg-green-600 transition-colors"
-                    >
-                      <Share2 className="size-3.5" />
-                      WhatsApp
-                    </a>
-                    <a
-                      href={`mailto:?subject=TürkçeOkulu Öğretmen Daveti&body=${encodeURIComponent(`Merhaba!\n\nTürkçeOkulu platformuna öğretmen olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}\n\nİyi çalışmalar!`)}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
-                    >
-                      <Mail className="size-3.5" />
-                      E-posta
-                    </a>
-                    <button
-                      onClick={() => { setDavetUrl(null); }}
-                      className="px-3 py-2 text-xs text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <RoleScopedUserForm
+              baslik="Öğretmen Davet Et"
+              aciklama="Öğretmeni sisteme davet etmek için link oluştur, WhatsApp veya e-posta ile paylaş."
+              hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
+              onOlusturuldu={() => qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] })}
+            />
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -376,9 +279,17 @@ export default function AdminPage() {
                   placeholder="Şehir"
                   className="w-36 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
+                <select
+                  value={kurumForm.ulkeId}
+                  onChange={e => setKurumForm(p => ({ ...p, ulkeId: e.target.value }))}
+                  className="w-40 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">Ülke seçiniz *</option>
+                  {(ulkeler ?? []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
                 <button
                   onClick={() => kurumOlusturMutation.mutate()}
-                  disabled={!kurumForm.name || kurumOlusturMutation.isPending}
+                  disabled={!kurumForm.name || !kurumForm.ulkeId || kurumOlusturMutation.isPending}
                   className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                 >
                   <Plus className="size-4" />
