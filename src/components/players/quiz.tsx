@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { useAuthStore } from '@/stores/auth';
@@ -49,6 +49,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   }, [index]);
 
   const correct = current.cevap ?? current.kelime1 ?? '';
+  const imgUrl = toMediaUrl(current.resimLink);
 
   function handleSelect(opt: string) {
     if (selected !== null) return;
@@ -92,20 +93,30 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
         etiket="Quiz"
       />
 
+      {imgUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgUrl}
+          alt=""
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-2xl mb-4 block"
+        />
+      )}
 
-      {/* Soru kartı — her soru değişiminde fade+slide */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          className="bg-card border border-border rounded-2xl p-8 mb-5 text-center min-h-[120px] flex items-center justify-center"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.22 }}
-        >
-          <p className="text-2xl font-bold">{current.description}</p>
-        </motion.div>
-      </AnimatePresence>
+      {/* Soru kartı — açıklama yoksa gösterme (resim tek başına soru görevi görür) */}
+      {current.description && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            className="bg-card border border-border rounded-2xl p-8 mb-5 text-center min-h-[120px] flex items-center justify-center"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.22 }}
+          >
+            <p className="text-2xl font-bold">{current.description}</p>
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* XP burst — doğru cevapta yükseliyor */}
       <div className="relative h-0 overflow-visible">

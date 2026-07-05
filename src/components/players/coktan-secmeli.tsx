@@ -90,7 +90,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
         <img
           src={toMediaUrl(etkinlik.resimLink) ?? ''}
           alt=""
-          className="w-full max-h-56 object-contain rounded-2xl mb-4 bg-muted"
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-2xl mb-4 block"
         />
       )}
 

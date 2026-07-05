@@ -193,12 +193,12 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
         >
           {imgUrl && (
             imgError ? null : (
-              <div className="relative">
+              <div className="relative w-fit max-w-full mx-auto">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imgUrl}
                   alt=""
-                  className="w-full max-h-72 object-contain bg-muted"
+                  className="h-72 w-auto max-w-full object-contain block"
                   onError={() => setImgError(true)}
                 />
                 {sesUrl && (
