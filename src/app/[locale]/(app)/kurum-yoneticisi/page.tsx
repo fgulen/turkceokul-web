@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, GraduationCap, Users, CheckCircle, XCircle,
-  Clock, BookOpen, Share2, Mail, ChevronRight
+  Clock, BookOpen, ChevronRight
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 
 interface PanelOgretmen {
   id: number;
@@ -40,8 +41,6 @@ export default function KurumYoneticisiPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const qc = useQueryClient();
   const [sekme, setSekme] = useState<Sekme>('ozet');
-  const [davetUrl, setDavetUrl] = useState<string | null>(null);
-  const [davetYukleniyor, setDavetYukleniyor] = useState(false);
 
   const { data: panel, isLoading } = useQuery<KurumPanel>({
     queryKey: ['kurum-yoneticisi-panel'],
@@ -58,16 +57,6 @@ export default function KurumYoneticisiPage() {
     mutationFn: (id: number) => api.put(`/api/kurum-yoneticisi/ogretmen/${id}/reddet`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] }),
   });
-
-  async function davetOlustur() {
-    setDavetYukleniyor(true);
-    try {
-      const res = await api.post('/api/davet/olustur', { hedefRol: 'Ogretmen' });
-      setDavetUrl(res.data.url);
-    } finally {
-      setDavetYukleniyor(false);
-    }
-  }
 
   if (!ready) return (
     <div className="min-h-[100dvh] flex items-center justify-center">
@@ -179,53 +168,12 @@ export default function KurumYoneticisiPage() {
               </div>
             )}
 
-            {/* Davet linki */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
-                <Share2 className="size-4 text-primary" />
-                Öğretmen Davet Et
-              </h2>
-              <p className="text-xs text-slate-400 mb-4">Kurumunuza öğretmen eklemek için davet linki oluşturun.</p>
-              {!davetUrl ? (
-                <button
-                  onClick={davetOlustur}
-                  disabled={davetYukleniyor}
-                  className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
-                >
-                  {davetYukleniyor ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 break-all font-mono border border-slate-200">
-                    {davetUrl}
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(`Merhaba! Kurumunuza öğretmen olarak davet edildiniz. Kayıt için: ${davetUrl}`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white rounded-xl text-xs font-semibold hover:bg-green-600 transition-colors"
-                    >
-                      <Share2 className="size-3.5" />
-                      WhatsApp
-                    </a>
-                    <a
-                      href={`mailto:?subject=Öğretmen Daveti&body=${encodeURIComponent(`Merhaba!\n\nKurumunuza öğretmen olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
-                    >
-                      <Mail className="size-3.5" />
-                      E-posta
-                    </a>
-                    <button
-                      onClick={() => setDavetUrl(null)}
-                      className="px-3 py-2 text-xs text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <RoleScopedUserForm
+              baslik="Öğretmen Davet Et"
+              aciklama="Kurumunuza öğretmen eklemek için davet linki oluşturun."
+              hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
+              onOlusturuldu={() => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] })}
+            />
 
             {/* Son sınıflar */}
             {(panel?.siniflar.length ?? 0) > 0 && (
