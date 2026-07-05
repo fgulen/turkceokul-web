@@ -205,6 +205,7 @@ export function AppNav() {
             {user.role === 'UlkeTemsilcisi' && <>
               <NL href="/ulke-temsilcisi"   label="Ülke Paneli"      active={!!pathname?.startsWith('/ulke-temsilcisi')} icon={<Globe className="size-3.5" />} />
               <NL href="/ogretmen"          label="Öğretmen Panelim" active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
               <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'Ogrenci' && <>
@@ -295,6 +296,7 @@ export function AppNav() {
       <MobileBar items={[
         { href: '/ulke-temsilcisi',    Icon: Globe,           label: 'Ülke',        active: !!pathname?.startsWith('/ulke-temsilcisi') },
         { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
         { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}

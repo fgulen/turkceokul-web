@@ -68,7 +68,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
         soyad: form.soyad || undefined,
         sifre: form.sifre,
         email: form.email || undefined,
-        kurumAdi: bilgi?.hedefRol === 'KurumYoneticisi' ? form.kurumAdi : undefined,
+        kurumAdi: bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi?.kurumAdi ? form.kurumAdi : undefined,
         ulkeId: bilgi?.hedefRol === 'KurumYoneticisi' ? form.ulkeId || undefined : undefined,
       };
       const { data } = await api.post(`/api/davet/${token}/kabul`, body);
@@ -76,7 +76,8 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
       setTamamlandi(true);
       setTimeout(() => {
         const role = data.user?.role;
-        if (role === 'KurumYoneticisi') router.push('/ogretmen', { locale });
+        if (role === 'KurumYoneticisi') router.push('/kurum-yoneticisi', { locale });
+        else if (role === 'UlkeTemsilcisi') router.push('/ulke-temsilcisi', { locale });
         else if (role === 'Ogretmen') router.push('/ogretmen', { locale });
         else router.push('/pano', { locale });
       }, 1500);
@@ -177,7 +178,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
                   />
                 </div>
 
-                {bilgi.hedefRol === 'KurumYoneticisi' && (
+                {bilgi.hedefRol === 'KurumYoneticisi' && !bilgi.kurumAdi && (
                   <div>
                     <label className="block text-xs font-medium mb-1">Kurum Adı *</label>
                     <input
