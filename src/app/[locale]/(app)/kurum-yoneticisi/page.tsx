@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, GraduationCap, Users, CheckCircle, XCircle,
-  Clock, BookOpen, ChevronRight
+  Clock, BookOpen, ChevronRight, KeyRound
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
@@ -35,7 +35,43 @@ interface KurumPanel {
   ogrenciSayisi: number;
 }
 
-type Sekme = 'ozet' | 'ogretmenler' | 'siniflar';
+interface LisansKarti {
+  id: string;
+  name: string;
+  seviye: string;
+  thumbnailPicture: string | null;
+  lisansTipi: 'Deneme' | 'Ucretli' | 'Sponsorlu' | null;
+  toplamLisans: number;
+  kullanilanLisans: number;
+  buton: 'SatinAl' | 'Inceleniyor' | 'EkLisans' | 'UcretsizDene';
+}
+
+// buton degeri API'den gelir: SatinAl | Inceleniyor | EkLisans | UcretsizDene
+const BUTON_METIN: Record<string, string> = {
+  SatinAl: 'Satın Al',
+  Inceleniyor: 'Talebiniz İnceleniyor',
+  EkLisans: 'Ek Lisans Al / Kapasiteyi Artır',
+  UcretsizDene: 'Ücretsiz Dene',
+};
+
+const LISANS_TIPI_METIN: Record<string, string> = {
+  Deneme: 'Deneme',
+  Ucretli: 'Ücretli',
+  Sponsorlu: 'Sponsorlu',
+};
+
+const LISANS_TIPI_ROZET: Record<string, string> = {
+  Deneme: 'bg-amber-100 text-amber-700',
+  Ucretli: 'bg-emerald-100 text-emerald-700',
+  Sponsorlu: 'bg-sky-100 text-sky-700',
+};
+
+function apiHataMesaji(err: unknown): string {
+  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
+    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
+}
+
+type Sekme = 'ozet' | 'ogretmenler' | 'siniflar' | 'lisanslar';
 
 export default function KurumYoneticisiPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
@@ -58,6 +94,40 @@ export default function KurumYoneticisiPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] }),
   });
 
+  // Lisanslar — SuperAdmin policy'yi geçer ama kurumu yoksa API 400 döner; hata inline gösterilir.
+  const {
+    data: lisanslar,
+    isLoading: lisanslarYukleniyor,
+    error: lisanslarHatasi,
+  } = useQuery<LisansKarti[]>({
+    queryKey: ['kurum-yoneticisi-lisanslar'],
+    queryFn: () => api.get('/api/kurum-yoneticisi/lisanslar').then(r => r.data),
+    enabled: !!user && (user.role === 'KurumYoneticisi' || user.role === 'SuperAdmin'),
+    retry: false,
+  });
+
+  const [lisansMesaj, setLisansMesaj] = useState<{ id: string; mesaj: string; tip: 'hata' | 'basari' } | null>(null);
+
+  const satinAlMutation = useMutation({
+    mutationFn: (dersKitabiId: string) => api.post('/api/kurum-yoneticisi/satin-al', { dersKitabiId }),
+    onMutate: () => setLisansMesaj(null),
+    onSuccess: (res, dersKitabiId) => {
+      setLisansMesaj({ id: dersKitabiId, mesaj: res.data?.mesaj ?? 'Talebiniz alındı.', tip: 'basari' });
+      qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-lisanslar'] });
+    },
+    onError: (err, dersKitabiId) => setLisansMesaj({ id: dersKitabiId, mesaj: apiHataMesaji(err), tip: 'hata' }),
+  });
+
+  const denemeMutation = useMutation({
+    mutationFn: (dersKitabiId: string) => api.post('/api/kurum-yoneticisi/deneme-baslat', { dersKitabiId }),
+    onMutate: () => setLisansMesaj(null),
+    onSuccess: (res, dersKitabiId) => {
+      setLisansMesaj({ id: dersKitabiId, mesaj: res.data?.mesaj ?? 'Deneme başlatıldı.', tip: 'basari' });
+      qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-lisanslar'] });
+    },
+    onError: (err, dersKitabiId) => setLisansMesaj({ id: dersKitabiId, mesaj: apiHataMesaji(err), tip: 'hata' }),
+  });
+
   if (!ready) return (
     <div className="min-h-[100dvh] flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
@@ -71,6 +141,7 @@ export default function KurumYoneticisiPage() {
     { key: 'ozet', label: 'Özet', icon: <Building2 className="size-4" /> },
     { key: 'ogretmenler', label: 'Öğretmenler', icon: <GraduationCap className="size-4" />, badge: bekleyenSayisi },
     { key: 'siniflar', label: 'Sınıflar', icon: <BookOpen className="size-4" /> },
+    { key: 'lisanslar', label: 'Lisanslar', icon: <KeyRound className="size-4" /> },
   ];
 
   return (
@@ -99,14 +170,14 @@ export default function KurumYoneticisiPage() {
           </div>
         </div>
 
-        {/* Tab navigasyonu */}
-        <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6">
+        {/* Tab navigasyonu — 4 sekme dar ekrana sığmıyor, yatay kaydırılabilir */}
+        <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6 overflow-x-auto scrollbar-none">
           {tabs.map(t => (
             <button
               key={t.key}
               onClick={() => setSekme(t.key)}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-colors',
+                'flex-1 shrink-0 sm:shrink flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
                 sekme === t.key
                   ? 'bg-primary text-white'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
@@ -300,6 +371,106 @@ export default function KurumYoneticisiPage() {
                     </div>
                   </a>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* LİSANSLAR TAB */}
+        {sekme === 'lisanslar' && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <KeyRound className="size-4 text-slate-400" />
+              <h2 className="font-semibold text-slate-900">Lisanslar</h2>
+            </div>
+            {lisanslarYukleniyor ? (
+              <div className="p-6 space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+            ) : lisanslarHatasi ? (
+              <p className="text-slate-500 text-sm text-center py-12 px-6">
+                {apiHataMesaji(lisanslarHatasi)}
+              </p>
+            ) : !lisanslar?.length ? (
+              <p className="text-slate-400 text-sm text-center py-12">Kitap bulunamadı.</p>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {lisanslar.map(k => {
+                  const beklemede = k.buton === 'Inceleniyor';
+                  const gonderiliyor =
+                    (satinAlMutation.isPending && satinAlMutation.variables === k.id) ||
+                    (denemeMutation.isPending && denemeMutation.variables === k.id);
+                  const kartMesaj = lisansMesaj?.id === k.id ? lisansMesaj : null;
+
+                  return (
+                    <div key={k.id} className="px-6 py-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {k.thumbnailPicture ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={k.thumbnailPicture}
+                              alt={k.name}
+                              className="w-12 h-16 object-cover rounded-md shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-16 bg-slate-100 rounded-md shrink-0 flex items-center justify-center">
+                              <BookOpen className="size-5 text-slate-400" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm text-slate-800 truncate">{k.name}</span>
+                              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                                {k.seviye}
+                              </span>
+                              {k.lisansTipi && (
+                                <span className={cn(
+                                  'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                                  LISANS_TIPI_ROZET[k.lisansTipi],
+                                )}>
+                                  {LISANS_TIPI_METIN[k.lisansTipi]}
+                                </span>
+                              )}
+                            </div>
+                            {k.lisansTipi && (
+                              <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                                <Users className="size-3.5" />
+                                <span className="tabular-nums">{k.kullanilanLisans}/{k.toplamLisans}</span>
+                                <span>lisans kullanımda</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          disabled={beklemede || gonderiliyor}
+                          onClick={() =>
+                            k.buton === 'UcretsizDene'
+                              ? denemeMutation.mutate(k.id)
+                              : satinAlMutation.mutate(k.id)
+                          }
+                          className={cn(
+                            'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors',
+                            beklemede
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : k.buton === 'UcretsizDene'
+                                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                : 'bg-primary text-white hover:bg-primary/90',
+                            gonderiliyor && 'opacity-60 cursor-wait',
+                          )}
+                        >
+                          {gonderiliyor ? 'Gönderiliyor…' : BUTON_METIN[k.buton] ?? k.buton}
+                        </button>
+                      </div>
+                      {kartMesaj && (
+                        <p className={cn(
+                          'text-xs mt-2',
+                          kartMesaj.tip === 'hata' ? 'text-red-500' : 'text-emerald-600',
+                        )}>
+                          {kartMesaj.mesaj}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

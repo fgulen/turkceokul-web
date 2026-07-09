@@ -11,6 +11,7 @@ import {
   Book, List, ChevronLeft,
 } from 'lucide-react';
 import { PlusBanner } from '@/components/plus-banner';
+import { LisansKilidiUyari } from '@/components/LisansKilidiUyari';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { cn, etkinlikLabel, bolumSirasi, getBolumZigzagColor } from '@/lib/utils';
@@ -23,6 +24,7 @@ interface Unite {
   toplamEtkinlik: number;
   tamamlananEtkinlik: number;
   kilitli: boolean;
+  lisansKilidi?: boolean;
 }
 
 interface Etkinlik {
@@ -288,10 +290,12 @@ function UniteSidebarItem({
   const isLocked = unite.kilitli;
   const isUnlocked = !unite.kilitli && !selected && !allDone;
 
+  // Lisans kilidi: buton tıklanabilir kalır → ana alanda LisansKilidiUyari gösterilir.
+  // İlerleme kilidi: mevcut davranış (disabled) korunur.
   return (
     <button
       onClick={onClick}
-      disabled={isLocked}
+      disabled={isLocked && !unite.lisansKilidi}
       className={cn(
         'w-full text-left px-4 py-3 rounded-xl transition-all group',
         isActive && 'bg-primary/10',
@@ -445,10 +449,17 @@ export default function DersPage({
     enabled: ready && !!user,
   });
 
+  const isEditor = !!user && ['Editor', 'SuperAdmin', 'Koordinator'].includes(user.role);
+
+  // Lisans kilitli ünite artık sidebar'dan seçilebiliyor (uyarı göstermek için) —
+  // etkinlikleri boşuna çekme (editör kilitleri zaten baypas eder).
+  const seciliUniteLisansKilitli =
+    uniteler?.find(u => u.id === selectedUniteId)?.lisansKilidi === true;
+
   const { data: etkinlikler } = useQuery<Etkinlik[]>({
     queryKey: ['etkinlikler', selectedUniteId],
     queryFn: () => api.get(`/api/etkinlikler/${selectedUniteId}`).then((r) => r.data),
-    enabled: ready && !!user && !!selectedUniteId,
+    enabled: ready && !!user && !!selectedUniteId && !(seciliUniteLisansKilitli && !isEditor),
   });
 
   useEffect(() => {
@@ -499,8 +510,6 @@ export default function DersPage({
   );
   if (!user) return null;
 
-  const isEditor = ['Editor', 'SuperAdmin', 'Koordinator'].includes(user.role);
-
   return (
     <div className="bg-background">
 
@@ -526,7 +535,7 @@ export default function DersPage({
                     key={u.id}
                     unite={u}
                     selected={selectedUniteId === u.id}
-                    onClick={() => (isEditor || !u.kilitli) && setSelectedUniteId(u.id)}
+                    onClick={() => (isEditor || !u.kilitli || u.lisansKilidi) && setSelectedUniteId(u.id)}
                   />
                 ))}
               </div>
@@ -578,9 +587,15 @@ export default function DersPage({
                   <UniteHero unite={selectedUnite} kitapName={kitap?.name} kitapId={kitapId} />
 
                   {selectedUnite.kilitli && !isEditor ? (
-                    <p className="text-sm text-muted-foreground text-center py-10">
-                      Önceki üniteyi tamamlayarak bu üniteye erişebilirsin.
-                    </p>
+                    selectedUnite.lisansKilidi ? (
+                      <div className="max-w-md mx-auto py-10 px-4">
+                        <LisansKilidiUyari rol={user.role} />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-10">
+                        Önceki üniteyi tamamlayarak bu üniteye erişebilirsin.
+                      </p>
+                    )
                   ) : !etkinlikler?.length ? (
                     <p className="text-sm text-muted-foreground text-center py-10">
                       Bu üniteye ait etkinlik bulunamadı.
