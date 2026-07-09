@@ -139,8 +139,15 @@ function eylemRenk(eylem: string): string {
   return 'bg-blue-100 text-blue-700';
 }
 
+// Backend hata gövdesi iki biçimde gelebilir: düz string (BadRequest("..."))
+// veya { hata: "..." } nesnesi — ikisini de kullanıcıya göster.
+function apiHataMesaji(err: any): string {
+  const data = err?.response?.data;
+  if (typeof data === 'string' && data) return data;
+  return data?.hata ?? 'İşlem başarısız.';
+}
+
 function GenelBakis() {
-  const qc = useQueryClient();
   const { data: stats } = useQuery({
     queryKey: ['sa-istatistikler'],
     queryFn: () => api.get('/api/super-admin/istatistikler').then(r => r.data),
@@ -148,18 +155,6 @@ function GenelBakis() {
   const { data: bekleyenSiparisler = [] } = useQuery({
     queryKey: ['sa-siparisler-bekleyen'],
     queryFn: () => api.get('/api/super-admin/siparisler?durum=Beklemede').then(r => r.data),
-  });
-
-  const onaylaMutation = useMutation({
-    mutationFn: (id: number) => api.put(`/api/super-admin/siparis/${id}/onayla`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sa-siparisler-bekleyen'] });
-      qc.invalidateQueries({ queryKey: ['sa-istatistikler'] });
-    },
-  });
-  const iptalMutation = useMutation({
-    mutationFn: (id: number) => api.put(`/api/super-admin/siparis/${id}/iptal`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sa-siparisler-bekleyen'] }),
   });
 
   return (
@@ -205,22 +200,118 @@ function GenelBakis() {
           </div>
           <div className="divide-y divide-slate-50">
             {(bekleyenSiparisler as any[]).map((s: any) => (
-              <div key={s.id} className="px-5 py-3 flex items-center gap-3 text-sm">
-                <span className="font-medium text-slate-800 flex-1">{s.kurumAdi}</span>
-                <span className="text-xs text-slate-500">{s.dersKitabiId} · {s.ogrenciKapasite} lisans</span>
-                <span className="text-xs text-slate-400">{new Date(s.tarih).toLocaleDateString('tr')}</span>
-                <button onClick={() => onaylaMutation.mutate(s.id)}
-                  className="px-2 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
-                  Onayla
-                </button>
-                <button onClick={() => iptalMutation.mutate(s.id)}
-                  className="px-2 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition-colors">
-                  İptal
-                </button>
-              </div>
+              <BekleyenSiparisRow key={s.id} siparis={s} />
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
+  const qc = useQueryClient();
+  const [hata, setHata] = useState<string | null>(null);
+  const [duzenle, setDuzenle] = useState(false);
+  const [kapasite, setKapasite] = useState('');
+  const [tutar, setTutar] = useState('');
+
+  const lead = s.kurumId == null; // lead: henüz kuruma dönüştürülmemiş talep
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: ['sa-siparisler-bekleyen'] });
+    qc.invalidateQueries({ queryKey: ['sa-istatistikler'] });
+  }
+
+  const onaylaMutation = useMutation({
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/onayla`),
+    onMutate: () => setHata(null),
+    onSuccess: invalidate,
+    onError: (err: any) => setHata(apiHataMesaji(err)),
+  });
+  const iptalMutation = useMutation({
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/iptal`),
+    onMutate: () => setHata(null),
+    onSuccess: invalidate,
+    onError: (err: any) => setHata(apiHataMesaji(err)),
+  });
+  const kaydetMutation = useMutation({
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}`, {
+      ogrenciKapasite: Number(kapasite),
+      toplamTutar: Number(tutar),
+    }),
+    onMutate: () => setHata(null),
+    onSuccess: () => { setDuzenle(false); invalidate(); },
+    onError: (err: any) => setHata(apiHataMesaji(err)),
+  });
+
+  function toggleDuzenle() {
+    if (!duzenle) {
+      // Her açılışta satırın güncel değerleriyle doldur
+      setKapasite(String(s.ogrenciKapasite ?? ''));
+      setTutar(String(s.toplamTutar ?? ''));
+    }
+    setDuzenle(v => !v);
+  }
+
+  return (
+    <div className="px-5 py-3 text-sm">
+      <div className="flex items-center gap-3">
+        <span className="font-medium text-slate-800 flex-1 min-w-0 truncate">{s.kurumAdi}</span>
+        <span className="text-xs text-slate-500 whitespace-nowrap">{s.dersKitabiId} · {s.ogrenciKapasite} lisans · {s.toplamTutar} EUR cent</span>
+        <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.tarih).toLocaleDateString('tr')}</span>
+        <button onClick={toggleDuzenle}
+          className={`px-2 py-1 text-xs rounded-lg border transition-colors ${duzenle ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+          {duzenle ? 'Kapat' : 'Düzenle'}
+        </button>
+        {lead ? (
+          <span className="text-xs text-slate-400 italic whitespace-nowrap" title="Lead siparişler onaylanamaz">
+            Önce kuruma dönüştürülmeli (ülke temsilcisi paneli)
+          </span>
+        ) : (
+          <button onClick={() => onaylaMutation.mutate()} disabled={onaylaMutation.isPending}
+            className="px-2 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+            Onayla
+          </button>
+        )}
+        <button onClick={() => iptalMutation.mutate()} disabled={iptalMutation.isPending}
+          className="px-2 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50">
+          İptal
+        </button>
+      </div>
+
+      {/* Bağlam bilgileri — temsilcinin onay öncesi ihtiyaç duyduğu alanlar (spec adım 7) */}
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
+        <span>Yetkili: {s.yetkiliAdi ?? '—'}{s.yetkiliEmail ? ` (${s.yetkiliEmail})` : ''}</span>
+        <span>Eğitim yılı: {s.egitimYili || '—'}</span>
+        <span>Sınıf: {s.sinifSayisi}</span>
+        <span>Aktif öğrenci: {s.aktifOgrenci}</span>
+        <span>Mevcut lisans: {s.mevcutLisansTipi ?? '—'}</span>
+      </div>
+
+      {duzenle && (
+        <div className="mt-2 flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Öğrenci Kapasitesi</label>
+            <input type="number" min={1} value={kapasite} onChange={e => setKapasite(e.target.value)}
+              className="w-28 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Tutar (EUR cent)</label>
+            <input type="number" min={0} value={tutar} onChange={e => setTutar(e.target.value)}
+              className="w-32 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+          </div>
+          <button
+            onClick={() => kaydetMutation.mutate()}
+            disabled={kaydetMutation.isPending || kapasite === '' || tutar === ''}
+            className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50">
+            {kaydetMutation.isPending ? 'Kaydediliyor…' : 'Kaydet'}
+          </button>
+        </div>
+      )}
+
+      {hata && (
+        <p role="alert" className="mt-1.5 text-xs text-red-600">{hata}</p>
       )}
     </div>
   );
