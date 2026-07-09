@@ -1,5 +1,9 @@
 // web/src/components/satis/KitapKarti.tsx
+'use client';
+
+import { useState } from 'react';
 import type { KatalogKitap } from '@/lib/katalog-api';
+import { DemoTalepModal } from '@/components/satis/DemoTalepModal';
 
 interface Props {
   kitap: KatalogKitap;
@@ -7,8 +11,15 @@ interface Props {
   locale: string;
 }
 
+const C = {
+  tr: { cta: 'Demo / Teklif Talep Et' },
+  en: { cta: 'Request Demo / Quote' },
+};
+
 export function KitapKarti({ kitap, birimFiyatEurCent, locale }: Props) {
   const isEn = locale === 'en';
+  const c = isEn ? C.en : C.tr;
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div
@@ -66,6 +77,34 @@ export function KitapKarti({ kitap, birimFiyatEurCent, locale }: Props) {
           / {isEn ? 'student / year' : 'öğrenci / yıl'}
         </span>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setModalOpen(true)}
+        style={{
+          marginTop: 12,
+          width: '100%',
+          padding: '9px 12px',
+          borderRadius: 10,
+          border: '1px solid #1b75bc',
+          background: '#fff',
+          color: '#1b75bc',
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
+        {c.cta}
+      </button>
+
+      {modalOpen && (
+        <DemoTalepModal
+          kitapId={kitap.id}
+          kitapAdi={kitap.ad}
+          locale={locale}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
