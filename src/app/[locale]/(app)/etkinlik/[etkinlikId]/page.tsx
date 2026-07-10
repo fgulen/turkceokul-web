@@ -410,7 +410,9 @@ export default function EtkinlikPage({
       case 'ResimSesEslestirme': return <ResimSesEslestirmePlayer key={key} {...props} />;
       case 'OkuGec': return <OkuGecPlayer key={key} {...props} />;
       case 'MetinDogruYanlis':
-      case 'ResimMetinEslestirmeDogruYanlis': return <DogruYanlisPlayer key={key} {...props} />;
+      case 'ResimMetinEslestirmeDogruYanlis':
+      case 'ResimSesEslestirmeDogruYanlis':
+      case 'MetinSesEslestirmeDogruYanlis': return <DogruYanlisPlayer key={key} {...props} />;
       case 'MetinCheckBox': return <MetinCheckBoxPlayer key={key} {...props} />;
       case 'BoslukDoldurma': return <BoslukDoldurmaPlayer key={key} {...props} />;
       case 'ResmeTiklaDinle': return <ResmeTiklaDinlePlayer key={key} {...props} />;
@@ -427,8 +429,6 @@ export default function EtkinlikPage({
       case 'ResimliSoruCevap':
       case 'SoruCevap': return <ResimliSoruCevapPlayer key={key} {...props} />;
       case 'KelimeleriAyristir': return <KelimeleriAyristirPlayer key={key} {...props} />;
-      case 'ResimSesEslestirmeDogruYanlis': return <ResimSesEslestirmePlayer key={key} {...props} />;
-      case 'MetinSesEslestirmeDogruYanlis': return <MetinSesEslestirmePlayer key={key} {...props} />;
       default:
         return (
           <div className="text-center py-12">
