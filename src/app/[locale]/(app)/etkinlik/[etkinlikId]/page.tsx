@@ -21,6 +21,7 @@ import { CoktanSecmeliBoslukDoldurmaPlayer } from '@/components/players/coktan-s
 import { ResimSesEslestirmePlayer } from '@/components/players/resim-ses-eslestirme';
 import { OkuGecPlayer } from '@/components/players/oku-gec';
 import { DogruYanlisPlayer } from '@/components/players/dogru-yanlis';
+import { MetinCheckBoxPlayer } from '@/components/players/metin-checkbox';
 import { BoslukDoldurmaPlayer } from '@/components/players/bosluk-doldurma';
 import { ResmeTiklaDinlePlayer } from '@/components/players/resme-tikla-dinle';
 import { YaziyaTiklaDinlePlayer } from '@/components/players/yaziya-tikla-dinle';
@@ -409,8 +410,8 @@ export default function EtkinlikPage({
       case 'ResimSesEslestirme': return <ResimSesEslestirmePlayer key={key} {...props} />;
       case 'OkuGec': return <OkuGecPlayer key={key} {...props} />;
       case 'MetinDogruYanlis':
-      case 'MetinCheckBox':
       case 'ResimMetinEslestirmeDogruYanlis': return <DogruYanlisPlayer key={key} {...props} />;
+      case 'MetinCheckBox': return <MetinCheckBoxPlayer key={key} {...props} />;
       case 'BoslukDoldurma': return <BoslukDoldurmaPlayer key={key} {...props} />;
       case 'ResmeTiklaDinle': return <ResmeTiklaDinlePlayer key={key} {...props} />;
       case 'YaziyaTiklaDinle': return <YaziyaTiklaDinlePlayer key={key} {...props} />;

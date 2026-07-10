@@ -223,6 +223,7 @@ olmaz — çünkü fazla kolon satır yüksekliğini azaltır, dokunma zorlaşı
 | akilli-kart | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | coktan-secmeli | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | dogru-yanlis | sm→lg ✅ | X/Y bar (cevap gizli, GameHUD yok) | yok (bilinemez) | ✅ | 2026-07-05: toplu moda çevrildi, resim+ses eklendi |
+| metin-checkbox | sm→lg ✅ | X/Y bar (cevap gizli, GameHUD yok) | yok (bilinemez) | ✅ | 2026-07-10: yeni — çoklu-seçim, kelime1-9 pozisyonel mask ile |
 | bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | scrollIntoView eklendi |
 | coktan-secmeli-bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | kelimeleri-eslestir | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |

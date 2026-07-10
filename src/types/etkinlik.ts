@@ -50,3 +50,15 @@ export function getKelimeler(d: EtkinlikDetay): string[] {
     d.kelime6, d.kelime7, d.kelime8, d.kelime9, d.kelime10,
   ].filter(Boolean) as string[];
 }
+
+// MetinCheckBox: kelime1-9 şıklar, DB'deki Cevap mask'i (ör. "1,0,1,...") pozisyoneldir
+// (mask[i] ↔ kelimeN, N=i+1) — kelime10 bu tipte hiç kullanılmıyor (DB'de doğrulandı).
+// Boş şıkları elerken orijinal index korunmalı, aksi halde gönderilen mask kayar.
+export function getKelimelerIndexed(d: EtkinlikDetay): { index: number; text: string }[] {
+  return [
+    d.kelime1, d.kelime2, d.kelime3, d.kelime4, d.kelime5,
+    d.kelime6, d.kelime7, d.kelime8, d.kelime9,
+  ]
+    .map((text, index) => ({ index, text }))
+    .filter((o): o is { index: number; text: string } => !!o.text && o.text.trim() !== '');
+}

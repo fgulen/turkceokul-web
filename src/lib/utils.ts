@@ -14,7 +14,7 @@ const ETKINLIK_LABELS: Record<string, string> = {
   OkuGec: 'Oku & Geç',
   BoslukDoldurma: 'Boşluk Doldurma',
   MetinDogruYanlis: 'Doğru / Yanlış',
-  MetinCheckBox: 'Doğru / Yanlış',
+  MetinCheckBox: 'Çoktan Seçmeli',
   ResimMetinEslestirmeDogruYanlis: 'Doğru / Yanlış',
   ResmeTiklaDinle: 'Resme Tıkla & Dinle',
   YaziyaTiklaDinle: 'Yazıya Tıkla & Dinle',
