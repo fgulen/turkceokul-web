@@ -256,8 +256,8 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
 
   return (
     <div className="px-5 py-3 text-sm">
-      <div className="flex items-center gap-3">
-        <span className="font-medium text-slate-800 flex-1 min-w-0 truncate">{s.kurumAdi}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium text-slate-800 flex-1 min-w-[140px] truncate">{s.kurumAdi}</span>
         <span className="text-xs text-slate-500 whitespace-nowrap">{s.dersKitabiId} · {s.ogrenciKapasite} lisans · {s.toplamTutar} EUR cent</span>
         <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.tarih).toLocaleDateString('tr')}</span>
         <button onClick={toggleDuzenle}
@@ -265,7 +265,7 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
           {duzenle ? 'Kapat' : 'Düzenle'}
         </button>
         {lead ? (
-          <span className="text-xs text-slate-400 italic whitespace-nowrap" title="Lead siparişler onaylanamaz">
+          <span className="text-xs text-slate-400 italic" title="Lead siparişler onaylanamaz">
             Önce kuruma dönüştürülmeli (ülke temsilcisi paneli)
           </span>
         ) : (
@@ -283,6 +283,13 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
       {/* Bağlam bilgileri — temsilcinin onay öncesi ihtiyaç duyduğu alanlar (spec adım 7) */}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
         <span>Yetkili: {s.yetkiliAdi ?? '—'}{s.yetkiliEmail ? ` (${s.yetkiliEmail})` : ''}</span>
+        <span>Ülke: {s.ulkeAdi ?? '—'}</span>
+        <span>
+          Telefon:{' '}
+          {s.telefon
+            ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
+            : '—'}
+        </span>
         <span>Eğitim yılı: {s.egitimYili || '—'}</span>
         <span>Sınıf: {s.sinifSayisi}</span>
         <span>Aktif öğrenci: {s.aktifOgrenci}</span>
