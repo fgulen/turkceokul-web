@@ -24,6 +24,7 @@ interface Sinif {
 
 interface IdName { id: number; name: string }
 interface OgretmenItem { id: number; ad: string }
+interface KitapItem { id: string; name: string; seviye: string }
 
 interface FormData {
   rol: string;
@@ -42,12 +43,14 @@ export default function OgretmenDashboard() {
   const [duzenleFormAcik, setDuzenleFormAcik] = useState(false);
   const [duzenleSinifId, setDuzenleSinifId] = useState<number | null>(null);
   const [duzenleSinifAdi, setDuzenleSinifAdi] = useState('');
+  const [duzenleKitapId, setDuzenleKitapId] = useState('');
 
   // Form state
   const [sinifAdi, setSinifAdi] = useState('');
   const [seciliUlkeId, setSeciliUlkeId] = useState<number | null>(null);
   const [seciliKurumId, setSeciliKurumId] = useState<number | null>(null);
   const [seciliOgretmenId, setSeciliOgretmenId] = useState<number | null>(null);
+  const [seciliKitapId, setSeciliKitapId] = useState('');
 
   const { data: siniflar, isLoading } = useQuery<Sinif[]>({
     queryKey: ['siniflarim'],
@@ -58,7 +61,21 @@ export default function OgretmenDashboard() {
   const { data: formData } = useQuery<FormData>({
     queryKey: ['sinif-form-data'],
     queryFn: () => api.get('/api/ogretmen/sinif-form-data').then(r => r.data),
-    enabled: !!user && formAcik,
+    enabled: !!user && (formAcik || duzenleFormAcik),
+  });
+
+  // Sınıfa atanabilecek kitaplar: kurum lisansı + paket açılımı + ülke varsayılanı
+  // (backend tarafında hesaplanıyor). SuperAdmin/UlkeTemsilcisi icin kurum secilmeden
+  // liste cekilmez — o rollerde kurum baglami olmadan "atanabilir kitap" tanimsizdir.
+  const kitapKurumId = (formData?.rol === 'SuperAdmin' || formData?.rol === 'UlkeTemsilcisi') ? seciliKurumId : null;
+  const kitapListesiHazir = !!formData && (formData.rol === 'Ogretmen' || formData.rol === 'KurumYoneticisi' || !!kitapKurumId);
+
+  const { data: kitaplar } = useQuery<KitapItem[]>({
+    queryKey: ['sinif-kitaplar', kitapKurumId],
+    queryFn: () => api
+      .get('/api/ogretmen/sinif-kitaplar', kitapKurumId ? { params: { kurumId: kitapKurumId } } : undefined)
+      .then(r => r.data),
+    enabled: (formAcik || duzenleFormAcik) && kitapListesiHazir,
   });
 
   // Cascade: SuperAdmin ülke seçince kurumları çek
@@ -81,7 +98,10 @@ export default function OgretmenDashboard() {
   });
 
   const sinifGuncellemeMutation = useMutation({
-    mutationFn: () => api.put(`/api/ogretmen/sinif/${duzenleSinifId}`, { name: duzenleSinifAdi }),
+    mutationFn: () => api.put(`/api/ogretmen/sinif/${duzenleSinifId}`, {
+      name: duzenleSinifAdi,
+      dersKitabiId: duzenleKitapId,
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['siniflarim'] });
       setDuzenleFormAcik(false);
@@ -92,7 +112,7 @@ export default function OgretmenDashboard() {
   const olusturMutation = useMutation({
     mutationFn: () => {
       const rol = formData?.rol;
-      const body: Record<string, unknown> = { name: sinifAdi };
+      const body: Record<string, unknown> = { name: sinifAdi, dersKitabiId: seciliKitapId };
       if (rol === 'SuperAdmin') {
         if (seciliKurumId) body.kurumId = seciliKurumId;
         if (seciliOgretmenId) body.ogretmenUserId = seciliOgretmenId;
@@ -110,6 +130,7 @@ export default function OgretmenDashboard() {
   function startDuzenle(sinif: Sinif) {
     setDuzenleSinifId(sinif.id);
     setDuzenleSinifAdi(sinif.name);
+    setDuzenleKitapId(sinif.dersKitabiId ?? '');
     setDuzenleFormAcik(true);
     setFormAcik(false);
   }
@@ -124,6 +145,7 @@ export default function OgretmenDashboard() {
     setSeciliUlkeId(null);
     setSeciliKurumId(null);
     setSeciliOgretmenId(null);
+    setSeciliKitapId('');
     setFormAcik(false);
   }
 
@@ -136,12 +158,13 @@ export default function OgretmenDashboard() {
   function handleKurumChange(kurumId: number) {
     setSeciliKurumId(kurumId);
     setSeciliOgretmenId(null);
+    setSeciliKitapId('');
   }
 
 
   // "Oluştur" butonu ne zaman aktif?
   const rol = formData?.rol ?? '';
-  const olusturAktif = sinifAdi.trim().length > 0 && !olusturMutation.isPending;
+  const olusturAktif = sinifAdi.trim().length > 0 && !!seciliKitapId && !olusturMutation.isPending;
 
   if (!ready) return (
     <div className="min-h-[100dvh] flex items-center justify-center">
@@ -290,6 +313,17 @@ export default function OgretmenDashboard() {
                   onKeyDown={e => e.key === 'Enter' && olusturAktif && olusturMutation.mutate()}
                 />
 
+                {/* Kitap — sınıfın atandığı ders kitabı, zorunlu */}
+                {kitapListesiHazir && (
+                  kitaplar === undefined ? (
+                    <p className="text-xs text-slate-400">Kitaplar yükleniyor...</p>
+                  ) : kitaplar.length === 0 ? (
+                    <UyariMesaji text="Kurumunuz için henüz bir kitap tanımlanmamış. Kurum yöneticinizden veya ülke temsilcinizden lisans/varsayılan kitap talep edin." />
+                  ) : (
+                    <KitapSelectField value={seciliKitapId} onChange={setSeciliKitapId} kitaplar={kitaplar} />
+                  )
+                )}
+
                 {olusturMutation.isError && (
                   <p className="text-red-500 text-sm">{(olusturMutation.error as Error).message}</p>
                 )}
@@ -325,15 +359,27 @@ export default function OgretmenDashboard() {
                 onChange={e => setDuzenleSinifAdi(e.target.value)}
                 placeholder="Sınıf adı"
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                onKeyDown={e => e.key === 'Enter' && duzenleSinifAdi.trim() && sinifGuncellemeMutation.mutate()}
+                onKeyDown={e => e.key === 'Enter' && duzenleSinifAdi.trim() && duzenleKitapId && sinifGuncellemeMutation.mutate()}
               />
+
+              {/* Kitap — sınıfın atandığı ders kitabı, zorunlu */}
+              {kitapListesiHazir && (
+                kitaplar === undefined ? (
+                  <p className="text-xs text-slate-400">Kitaplar yükleniyor...</p>
+                ) : kitaplar.length === 0 ? (
+                  <UyariMesaji text="Kurumunuz için henüz bir kitap tanımlanmamış. Kurum yöneticinizden veya ülke temsilcinizden lisans/varsayılan kitap talep edin." />
+                ) : (
+                  <KitapSelectField value={duzenleKitapId} onChange={setDuzenleKitapId} kitaplar={kitaplar} />
+                )
+              )}
+
               {sinifGuncellemeMutation.isError && (
                 <p className="text-red-500 text-sm">{(sinifGuncellemeMutation.error as Error).message}</p>
               )}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => sinifGuncellemeMutation.mutate()}
-                  disabled={!duzenleSinifAdi.trim() || sinifGuncellemeMutation.isPending}
+                  disabled={!duzenleSinifAdi.trim() || !duzenleKitapId || sinifGuncellemeMutation.isPending}
                   className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-opacity"
                 >
                   {sinifGuncellemeMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
@@ -500,6 +546,33 @@ function OgretmenSelect({
         <option value="">Kendiniz için (siz)</option>
         {ogretmenler.map(o => (
           <option key={o.id} value={o.id}>{o.ad}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function KitapSelectField({
+  value, onChange, kitaplar,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  kitaplar: KitapItem[];
+}) {
+  return (
+    <div className="relative">
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400 pointer-events-none">
+        <BookOpen className="size-3.5" />
+        <span className="text-xs font-medium">Kitap*</span>
+      </div>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full pl-20 pr-4 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+      >
+        <option value="">Kitap seçin</option>
+        {kitaplar.map(k => (
+          <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>
         ))}
       </select>
     </div>
