@@ -201,10 +201,12 @@ export default function KahootKatilPage() {
               )}
             </div>
 
-            {/* Cevap butonları — kalan alanı doldurur */}
+            {/* Cevap butonları — kalan alanı doldurur; boş şıklar (2-3 seçenekli soru,
+                Doğru/Yanlış) hiç render edilmez */}
             <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
               {CEVAP_RENKLERI.map(({ harf, bg, hover }) => {
                 const metin = kahoot.soruBilgisi?.[`sec${harf}` as keyof typeof kahoot.soruBilgisi] as string | undefined;
+                if (!metin) return null;
                 return (
                   <motion.button
                     key={harf}
