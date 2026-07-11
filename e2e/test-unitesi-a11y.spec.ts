@@ -16,11 +16,12 @@ import { loginAsSuperAdmin } from './helpers/auth';
 const tsv = fs.readFileSync(path.join(__dirname, 'test-unitesi-idler.tsv'), 'utf8');
 const tipBasinaIlk = new Map<string, string>();
 for (const satir of tsv.split('\n').filter(Boolean)) {
-  const [id, tip] = satir.split('\t');
+  // CRLF TSV: satir sonundaki \r'i at (yoksa tip adlari gizli \r tasir, --grep eslesmez)
+  const [id, tip] = satir.replace(/\r$/, '').split('\t');
   if (id && tip && id !== 'Id' && !tipBasinaIlk.has(tip)) tipBasinaIlk.set(tip, id);
 }
 
-const bulgular: { etkinlikId: string; ruleId: string; impact: string; aciklama: string }[] = [];
+const bulgular: { etkinlikId: string; ruleId: string; impact: string; nodeIndex: number; aciklama: string }[] = [];
 
 test.describe('Test ünitesi a11y', () => {
   test.beforeEach(async ({ page }) => { await loginAsSuperAdmin(page); });
@@ -36,8 +37,8 @@ test.describe('Test ünitesi a11y', () => {
         .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
         .analyze();
       for (const v of sonuc.violations)
-        for (const n of v.nodes.slice(0, 3))
-          bulgular.push({ etkinlikId: id, ruleId: v.id, impact: v.impact ?? 'minor',
+        for (const [nodeIndex, n] of v.nodes.slice(0, 3).entries())
+          bulgular.push({ etkinlikId: id, ruleId: v.id, impact: v.impact ?? 'minor', nodeIndex,
                           aciklama: `${v.help} — ${n.target.join(' ')}` });
       const kritik = sonuc.violations.filter(v => v.impact === 'critical');
       expect.soft(kritik, `kritik a11y ihlali: ${kritik.map(v => v.id).join(',')}`).toHaveLength(0);
@@ -48,10 +49,11 @@ test.describe('Test ünitesi a11y', () => {
     const out = path.join(__dirname, '../test-results/a11y-bulgular.json');
     fs.mkdirSync(path.dirname(out), { recursive: true });
     // Worker crash/retry durumunda ezme: mevcut dosyayla birlestir + tekille.
+    // Key SELECTOR ICERMEZ (axe selector'u denemeler arasi degisebiliyor, ayni node cift yazilirdi).
     let mevcut: typeof bulgular = [];
     try { mevcut = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* ilk yazim */ }
     const tekil = new Map(
-      [...mevcut, ...bulgular].map(b => [`${b.etkinlikId}|${b.ruleId}|${b.aciklama}`, b]),
+      [...mevcut, ...bulgular].map(b => [`${b.etkinlikId}|${b.ruleId}|${b.nodeIndex}`, b]),
     );
     fs.writeFileSync(out, JSON.stringify([...tekil.values()], null, 2));
   });
