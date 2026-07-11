@@ -17,6 +17,17 @@ const KELIME_KEYS = [
 ] as const;
 type KelimeKey = typeof KELIME_KEYS[number];
 
+// Bu tiplerde skorlama EtkinlikDetay.Cevap alanından yapılır (EtkinlikService.HesaplaSonuclar)
+const CEVAP_TIPLERI: Record<string, string> = {
+  MetinDogruYanlis: 'Doğru / Yanlış',
+  ResimMetinEslestirmeDogruYanlis: 'Doğru / Yanlış',
+  ResimSesEslestirmeDogruYanlis: 'Doğru / Yanlış',
+  MetinSesEslestirmeDogruYanlis: 'Doğru / Yanlış',
+  MetinCheckBox: 'şık maskesi, kelime sırasıyla: 1,0,1,...',
+  SoruCevap: 'doğru cevap metni',
+  CoktanSecmeli: 'doğru cevap metni',
+};
+
 function MediaPreview({ url }: { url: string }) {
   const resolved = toMediaUrl(url);
   if (!resolved || !url.trim()) return null;
@@ -84,6 +95,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
 
   const [perdeAlanlar, setPerdeAlanlar] = useState({
     soruYonergesi: '',
+    description: '',
     resimLink: '',
     sesLink: '',
     videoLink: '',
@@ -110,6 +122,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
       setDetaylar(etkinlik.detaylar);
       setPerdeAlanlar({
         soruYonergesi: etkinlik.soruYonergesi || '',
+        description: etkinlik.description || '',
         resimLink: etkinlik.resimLink || '',
         sesLink: etkinlik.sesLink || '',
         videoLink: etkinlik.videoLink || '',
@@ -121,6 +134,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
     mutationFn: async () => {
       const payload = {
         soruYonergesi: perdeAlanlar.soruYonergesi || null,
+        description: perdeAlanlar.description || null,
         resimLink: perdeAlanlar.resimLink || null,
         sesLink: perdeAlanlar.sesLink || null,
         videoLink: perdeAlanlar.videoLink || null,
@@ -129,6 +143,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
         detaylar: detaylar.map(d => ({
           id: d.id.startsWith('__new_') ? null : d.id,
           description: d.description,
+          cevap: d.cevap || null,
           resimLink: d.resimLink || null,
           sesLink: d.sesLink || null,
           kelime1: d.kelime1 || null,
@@ -266,11 +281,11 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Perde Metni
-                  <span className="ml-2 text-xs text-slate-400 font-normal">diyalog, yönerge, ipucu</span>
+                  <span className="ml-2 text-xs text-slate-400 font-normal">giriş ekranında gösterilir — diyalog, ipucu</span>
                 </label>
                 <textarea
-                  value={perdeAlanlar.soruYonergesi}
-                  onChange={(e) => handlePerdeChange('soruYonergesi', e.target.value)}
+                  value={perdeAlanlar.description}
+                  onChange={(e) => handlePerdeChange('description', e.target.value)}
                   rows={5}
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono leading-7 tracking-wide"
                   placeholder={"Arzu  :  Günaydın Taner!\nTaner :  Günaydın Arzu!\n\nHizalama için boşluk kullanın."}
@@ -283,7 +298,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                       const end = ta.selectionEnd;
                       const val = ta.value;
                       const newVal = val.substring(0, start) + '  ' + val.substring(end);
-                      handlePerdeChange('soruYonergesi', newVal);
+                      handlePerdeChange('description', newVal);
                       requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = start + 2; });
                     }
                   }}
@@ -291,6 +306,20 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                 <p className="text-xs text-slate-400 mt-1">
                   Monospace font — Tab 2 boşluk ekler. Satır sonları korunur.
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Soru Yönergesi
+                  <span className="ml-2 text-xs text-slate-400 font-normal">iç not — player&apos;da gösterilmez</span>
+                </label>
+                <textarea
+                  value={perdeAlanlar.soruYonergesi}
+                  onChange={(e) => handlePerdeChange('soruYonergesi', e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+                  placeholder="Örn: Boşlukları uygun kelimelerle doldurunuz."
+                />
               </div>
 
               <UrlField label="Resim Linki" value={perdeAlanlar.resimLink} onChange={(v) => handlePerdeChange('resimLink', v)} />
@@ -391,6 +420,25 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                         }}
                       />
                     </div>
+
+                    {/* Cevap — sadece Cevap alanından skorlanan tiplerde */}
+                    {CEVAP_TIPLERI[etkinlik.etkinlikTuru] && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Cevap
+                          <span className="ml-1.5 text-xs text-amber-600 font-normal">
+                            {CEVAP_TIPLERI[etkinlik.etkinlikTuru]} — boş bırakılırsa soru hep yanlış sayılır
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          value={detay.cevap || ''}
+                          onChange={(e) => handleDetayChange(detay.id, 'cevap', e.target.value || null)}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder={CEVAP_TIPLERI[etkinlik.etkinlikTuru]}
+                        />
+                      </div>
+                    )}
 
                     {/* Resim + Ses */}
                     <div className="grid grid-cols-2 gap-3">

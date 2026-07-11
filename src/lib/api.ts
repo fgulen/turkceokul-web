@@ -10,9 +10,18 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore.getState();
-  if (accessToken && !config.url?.startsWith('/api/auth/')) {
+api.interceptors.request.use(async (config) => {
+  if (config.url?.startsWith('/api/auth/')) return config;
+
+  let { accessToken } = useAuthStore.getState();
+  // Soğuk sayfa yüklemesinde accessToken sadece bellekte (persist edilmiyor) —
+  // refresh tamamlanmadan atılan istek anonim gider. Anonime açık endpoint'ler
+  // (örn. GET /api/etkinlik/{id}) 401 dönmediği için response interceptor'ın
+  // retry'ı da devreye girmez ve role-gated alanlar (Cevap) sessizce null gelir.
+  if (!accessToken && useAuthStore.getState().refreshToken) {
+    try { accessToken = await doRefresh(); } catch { /* anonim devam */ }
+  }
+  if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
