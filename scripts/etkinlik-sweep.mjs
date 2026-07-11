@@ -66,6 +66,7 @@ await page.getByRole('button', { name: 'Giriş Yap' }).click();
 await page.waitForURL(/\/(tr|en)\/(pano|super-admin|ogretmen)/, { timeout: 15_000 });
 
 for (const { id, tip, sebepler } of kuyruk) {
+  let hataOldu = false;
   const konsolHatalari = [];
   const errHandler = (m) => { if (m.type() === 'error') konsolHatalari.push(m.text()); };
   const pageErrHandler = (e) => konsolHatalari.push(String(e));
@@ -83,8 +84,15 @@ for (const { id, tip, sebepler } of kuyruk) {
       await page.screenshot({ path: path.join(SS_DIR, `${id}-perde.png`) });
       // DOM'daki medyayi baslat (video/audio), sonra Basla'ya bas -> hepsi durmali
       await page.evaluate(() => document.querySelectorAll('video,audio').forEach(m => m.play().catch(() => {})));
-      const sesBtn = page.locator('button:has(svg)').filter({ has: page.locator('.lucide-volume-2, .lucide-play') }).first();
-      if (await sesBtn.isVisible().catch(() => false)) await sesBtn.click().catch(() => {});
+      const perdeRoot = page.locator('div.fixed.z-50').first();
+      const sesBtn = perdeRoot.locator('button').filter({ has: page.locator('.lucide-volume-2, .lucide-play') }).first();
+      if (await sesBtn.isVisible().catch(() => false)) await sesBtn.click({ timeout: 2000 }).catch(() => {});
+      const kayitliMedya = await page.evaluate(() => (window.__media ?? []).length + document.querySelectorAll('video,audio').length);
+      const perdeMedyaBekleniyor = await page.evaluate(() =>
+        !!document.querySelector('div.fixed.z-50 video, div.fixed.z-50 audio') ||
+        !!document.querySelector('div.fixed.z-50 .lucide-volume-2, div.fixed.z-50 .lucide-play'));
+      if (perdeMedyaBekleniyor && kayitliMedya === 0)
+        bulgu(id, 'assert-enstrumantasyon', 'dusuk', 'Perdede medya var ama enstrumantasyon hicbir medya yakalamadi (kor assert riski)');
       await page.waitForTimeout(600);
       await page.getByRole('button', { name: /^(Başla|Etkinliğe Dön)$/ }).click();
       await page.waitForTimeout(800);
@@ -110,10 +118,13 @@ for (const { id, tip, sebepler } of kuyruk) {
       bulgu(id, 'console-hatasi', 'orta', h.slice(0, 300));
   } catch (e) {
     bulgu(id, 'sweep-hatasi', 'orta', String(e).slice(0, 300));
+    hataOldu = true;
   } finally {
     page.off('console', errHandler); page.off('pageerror', pageErrHandler);
-    done.add(id); kaydet();
+    done.add(id);
+    if (hataOldu || done.size % 20 === 0) kaydet();
   }
 }
+kaydet();
 await browser.close();
 console.log(`Bitti. ${done.size} sayfa gezildi, ${bulgular.length} bulgu -> ${BULGULAR}`);
