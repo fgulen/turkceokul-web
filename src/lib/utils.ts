@@ -6,16 +6,32 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function cokSatirMi(text: string | null | undefined): boolean {
-  return !!text && (text.includes('\n') || /<br\s*\/?>/i.test(text));
+  return !!text && (
+    text.includes('\n') || /<br\s*\/?>/i.test(text) || /<\/(div|p|li)>/i.test(text)
+  );
 }
 // Cok satirli diyalog metni icin CoktanSecmeliBoslukDoldurma stili (mono+pre+sola, normal font).
 // Tek satir icin null -> player kendi ortali stilini korur.
 export function diyalogMetinClass(text: string | null | undefined): string | null {
   return cokSatirMi(text) ? 'text-left font-mono whitespace-pre-wrap text-lg font-semibold' : null;
 }
-// Plain-text player'larda goster: literal <br> -> gercek satir sonu.
-export function metniSatirlara(text: string | null | undefined): string {
-  return (text ?? '').replace(/<br\s*\/?>/gi, '\n');
+// Duz-metin player'lar (quiz/dogru-yanlis/resimlerden-birini-secme) legacy icerikte
+// ham HTML (<br>, <b>, <u>, <div>, &nbsp; ...) tasiyan description'i literal basiyor.
+// Bu helper render aninda temiz duz metne indirger — blok tag'leri satir sonuna cevirir,
+// kalan tum tag'leri siler, HTML entity'lerini cozer. YALNIZ render; veriye dokunmaz.
+// (metin-checkbox.tsx bunu KULLANMAZ — orada sanitizeHtml HTML'i zaten yorumluyor.)
+export function duzMetneCevir(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(div|p|li)>/gi, '\n')
+    .replace(/<\/?[a-zA-Z][^>]*>/g, '')   // kalan tum tag'ler (yalniz gecerli tag pattern; "3 < 5" gibi metni yemez)
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"').replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
 }
 
 const ETKINLIK_LABELS: Record<string, string> = {

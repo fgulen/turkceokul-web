@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2 } from 'lucide-react';
-import { cn, toMediaUrl, cokSatirMi, diyalogMetinClass, metniSatirlara } from '@/lib/utils';
+import { cn, toMediaUrl, cokSatirMi, diyalogMetinClass, duzMetneCevir } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { PlayingBars } from './ui';
@@ -76,7 +76,7 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
           )}
         >
           <p className={cn('text-xl font-semibold leading-relaxed', diyalogMetinClass(current.description))}>
-            {metniSatirlara(current.description)}
+            {duzMetneCevir(current.description)}
           </p>
           {sesUrl && (
             <button
