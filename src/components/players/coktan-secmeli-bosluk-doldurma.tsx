@@ -159,6 +159,7 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
                     type="button"
                     onClick={() => handleBlankClick(i)}
                     disabled={!filled || submitted}
+                    aria-label={filled ? undefined : `Boşluk ${i + 1}, doldurulmadı`}
                     style={{ minWidth: blankMinW }}
                     className={cn(
                       'inline-block mx-1.5 px-2 py-0.5 rounded-lg border-b-2 align-middle text-center transition-all',

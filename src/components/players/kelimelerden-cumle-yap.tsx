@@ -103,7 +103,7 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
         className="bg-card border-2 border-dashed border-border rounded-2xl p-3 mb-4 min-h-[56px] flex flex-wrap gap-2 content-start"
       >
         {arranged.length === 0 ? (
-          <p className="text-muted-foreground/40 text-sm select-none py-1 w-full text-center">
+          <p className="text-muted-foreground text-sm select-none py-1 w-full text-center">
             Kelime seç…
           </p>
         ) : (

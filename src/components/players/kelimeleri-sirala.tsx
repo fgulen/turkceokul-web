@@ -103,7 +103,7 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
         className="bg-card border-2 border-dashed border-border rounded-2xl p-3 mb-4 min-h-[80px] flex flex-col gap-2"
       >
         {arranged.length === 0 ? (
-          <p className="text-muted-foreground/40 text-sm text-center py-3 select-none">
+          <p className="text-muted-foreground text-sm text-center py-3 select-none">
             Aşağıdan cümle seç…
           </p>
         ) : (

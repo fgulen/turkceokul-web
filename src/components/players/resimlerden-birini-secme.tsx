@@ -153,7 +153,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
         className="grid gap-3"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
-        {options.map((imgPath) => {
+        {options.map((imgPath, optIndex) => {
           const url = toMediaUrl(imgPath);
           const isCorrect = imgPath === correct;
           const isSelected = selected === imgPath;
@@ -164,6 +164,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
               key={imgPath}
               onClick={() => handleSelect(imgPath)}
               disabled={revealed}
+              aria-label={`Seçenek ${optIndex + 1}`}
               animate={
                 isSelected && isCorrect
                   ? { scale: [1, 1.06, 0.97, 1] }

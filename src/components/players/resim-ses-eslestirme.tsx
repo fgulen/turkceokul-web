@@ -77,7 +77,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
 
       {/* Images */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        {detaylar.map((d) => {
+        {detaylar.map((d, index) => {
           const isAssigned = !!assignments[d.id];
           const isWrong = wrongId === d.id;
           const imgUrl = toMediaUrl(d.resimLink);
@@ -86,6 +86,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
               key={d.id}
               onClick={() => handleImage(d.id)}
               disabled={isAssigned}
+              aria-label={d.description || `Seçenek ${index + 1}`}
               className={cn(
                 'relative aspect-square rounded-2xl overflow-hidden border-2 transition-all',
                 isAssigned && 'cursor-default opacity-60',
@@ -98,7 +99,7 @@ export function ResimSesEslestirmePlayer({ etkinlik, onComplete }: PlayerProps) 
             >
               {imgUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={imgUrl} alt={d.description ?? ''} className="w-full h-full object-cover" />
+                <img src={imgUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted text-sm text-muted-foreground p-2 text-center">
                   {d.description}
