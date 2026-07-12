@@ -6,12 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function cokSatirMi(text: string | null | undefined): boolean {
-  return !!text && text.includes('\n');
+  return !!text && (text.includes('\n') || /<br\s*\/?>/i.test(text));
 }
 // Cok satirli diyalog metni icin CoktanSecmeliBoslukDoldurma stili (mono+pre+sola, normal font).
 // Tek satir icin null -> player kendi ortali stilini korur.
 export function diyalogMetinClass(text: string | null | undefined): string | null {
   return cokSatirMi(text) ? 'text-left font-mono whitespace-pre-wrap text-lg font-semibold' : null;
+}
+// Plain-text player'larda goster: literal <br> -> gercek satir sonu.
+export function metniSatirlara(text: string | null | undefined): string {
+  return (text ?? '').replace(/<br\s*\/?>/gi, '\n');
 }
 
 const ETKINLIK_LABELS: Record<string, string> = {
