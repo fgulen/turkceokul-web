@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2 } from 'lucide-react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, toMediaUrl, cokSatirMi, diyalogMetinClass } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { PlayingBars } from './ui';
@@ -70,9 +70,12 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.22 }}
-          className="bg-card border border-border rounded-2xl p-8 mb-8 text-center min-h-[120px] flex items-center justify-center gap-3"
+          className={cn(
+            'bg-card border border-border rounded-2xl p-8 mb-8 min-h-[120px] flex items-center gap-3',
+            cokSatirMi(current.description) ? 'justify-start text-left' : 'justify-center text-center',
+          )}
         >
-          <p className="text-xl font-semibold leading-relaxed">
+          <p className={cn('text-xl font-semibold leading-relaxed', diyalogMetinClass(current.description))}>
             {current.description}
           </p>
           {sesUrl && (

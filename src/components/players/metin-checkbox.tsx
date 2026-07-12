@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Volume2 } from 'lucide-react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, toMediaUrl, cokSatirMi, diyalogMetinClass } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, getKelimelerIndexed } from '@/types/etkinlik';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
@@ -97,9 +97,12 @@ export function MetinCheckBoxPlayer({ etkinlik, onComplete }: PlayerProps) {
           transition={{ duration: 0.22 }}
         >
           {!soruBos && (
-            <div className="bg-card border border-border rounded-2xl p-6 mb-5 text-center min-h-[100px] flex items-center justify-center gap-3">
+            <div className={cn(
+              'bg-card border border-border rounded-2xl p-6 mb-5 min-h-[100px] flex items-center gap-3',
+              cokSatirMi(current.description) ? 'justify-start text-left' : 'justify-center text-center',
+            )}>
               <p
-                className="text-lg font-semibold leading-relaxed"
+                className={cn('text-lg font-semibold leading-relaxed', diyalogMetinClass(current.description))}
                 dangerouslySetInnerHTML={{ __html: soruHtml }}
               />
               {sesUrl && (

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Zap } from 'lucide-react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, toMediaUrl, diyalogMetinClass } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -108,7 +108,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
           transition={{ duration: 0.22 }}
           className="bg-card border border-border rounded-2xl p-5 mb-5 flex items-center justify-center gap-4 min-h-[72px]"
         >
-          <p className="text-2xl font-bold flex-1 text-center">{current.description}</p>
+          <p className={cn('text-2xl font-bold flex-1', diyalogMetinClass(current.description) ?? 'text-center')}>{current.description}</p>
           {sesUrl && (
             <button
               onClick={() => playWord(sesUrl)}

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, toMediaUrl, diyalogMetinClass } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { useAuthStore } from '@/stores/auth';
@@ -113,7 +113,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.22 }}
           >
-            <p className="text-2xl font-bold">{current.description}</p>
+            <p className={cn('text-2xl font-bold w-full', diyalogMetinClass(current.description) ?? 'text-center')}>{current.description}</p>
           </motion.div>
         </AnimatePresence>
       )}

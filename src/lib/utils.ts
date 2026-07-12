@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function cokSatirMi(text: string | null | undefined): boolean {
+  return !!text && text.includes('\n');
+}
+// Cok satirli diyalog metni icin CoktanSecmeliBoslukDoldurma stili (mono+pre+sola, normal font).
+// Tek satir icin null -> player kendi ortali stilini korur.
+export function diyalogMetinClass(text: string | null | undefined): string | null {
+  return cokSatirMi(text) ? 'text-left font-mono whitespace-pre-wrap text-lg font-semibold' : null;
+}
+
 const ETKINLIK_LABELS: Record<string, string> = {
   AkilliKart: 'Akıllı Kart',
   Quiz: 'Quiz',
