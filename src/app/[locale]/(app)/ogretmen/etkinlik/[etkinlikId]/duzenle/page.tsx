@@ -17,6 +17,21 @@ const KELIME_KEYS = [
 ] as const;
 type KelimeKey = typeof KELIME_KEYS[number];
 
+// MetinCheckBox: sadece kelime1-9 şık olarak kullanılır (kelime10 bu tipte hiç
+// dolmaz — bkz. web/src/types/etkinlik.ts getKelimelerIndexed). Cevap maskesi
+// player'daki (metin-checkbox.tsx) ile BİREBİR aynı formatta olmalı: sabit 9
+// elemanlı "1,0,1,..." — dolu şık sayısına göre kısaltılırsa skorlama
+// (EtkinlikService.SonucCheckboxMask, uzunluk eşitliği + SequenceEqual ister)
+// hep yanlış döner.
+const MCB_KELIME_KEYS = KELIME_KEYS.slice(0, 9);
+
+function parseCevapMask(cevap: string | null | undefined): Set<number> {
+  const secili = new Set<number>();
+  if (!cevap) return secili;
+  cevap.split(',').forEach((p, i) => { if (p.trim() === '1') secili.add(i); });
+  return secili;
+}
+
 // Bu tiplerde skorlama EtkinlikDetay.Cevap alanından yapılır (EtkinlikService.HesaplaSonuclar)
 const CEVAP_TIPLERI: Record<string, string> = {
   MetinDogruYanlis: 'Doğru / Yanlış',
@@ -175,6 +190,14 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
 
   function handleDetayChange(detayId: string, key: string, value: string | null) {
     setDetaylar(prev => prev.map(d => d.id === detayId ? { ...d, [key]: value } : d));
+  }
+
+  // MetinCheckBox: checkbox toggle → sabit 9'lu maskeyi yeniden kur (bkz. MCB_KELIME_KEYS notu).
+  function handleMcbToggle(detayId: string, mevcutCevap: string | null | undefined, idx: number) {
+    const secili = parseCevapMask(mevcutCevap);
+    if (secili.has(idx)) secili.delete(idx); else secili.add(idx);
+    const yeniMask = Array.from({ length: 9 }, (_, i) => (secili.has(i) ? '1' : '0')).join(',');
+    handleDetayChange(detayId, 'cevap', yeniMask);
   }
 
   function handleDetayEkle() {
@@ -342,6 +365,14 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                 .map((key) => ({ key, val: detay[key] }))
                 .filter((k): k is { key: KelimeKey; val: string } => !!k.val);
 
+              const isMcb = etkinlik.etkinlikTuru === 'MetinCheckBox';
+              const mcbSecenekler = isMcb
+                ? MCB_KELIME_KEYS
+                    .map((key, idx) => ({ idx, key, val: detay[key] }))
+                    .filter((o): o is { idx: number; key: KelimeKey; val: string } => !!o.val && o.val.trim() !== '')
+                : [];
+              const mcbSecili = parseCevapMask(detay.cevap);
+
               const isNew = detay.id.startsWith('__new_');
               const isSiliniyor = siliniyor === detay.id;
 
@@ -430,13 +461,40 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                             {CEVAP_TIPLERI[etkinlik.etkinlikTuru]} — boş bırakılırsa soru hep yanlış sayılır
                           </span>
                         </label>
-                        <input
-                          type="text"
-                          value={detay.cevap || ''}
-                          onChange={(e) => handleDetayChange(detay.id, 'cevap', e.target.value || null)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                          placeholder={CEVAP_TIPLERI[etkinlik.etkinlikTuru]}
-                        />
+                        {isMcb && mcbSecenekler.length > 0 ? (
+                          <>
+                            <p className="text-xs text-slate-400 mb-2">Doğru şıkları işaretle (maske otomatik oluşur)</p>
+                            <div className="space-y-1.5">
+                              {mcbSecenekler.map(({ idx, key, val }) => {
+                                const secili = mcbSecili.has(idx);
+                                return (
+                                  <label
+                                    key={key}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={secili}
+                                      onChange={() => handleMcbToggle(detay.id, detay.cevap, idx)}
+                                      className="size-4 accent-primary shrink-0"
+                                    />
+                                    <span className="text-xs text-slate-400 w-6 shrink-0">{key.replace('kelime', 'K')}</span>
+                                    <span className="flex-1">{val}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            <p className="text-[11px] text-slate-300 mt-1.5 font-mono">maske: {detay.cevap || '(boş)'}</p>
+                          </>
+                        ) : (
+                          <input
+                            type="text"
+                            value={detay.cevap || ''}
+                            onChange={(e) => handleDetayChange(detay.id, 'cevap', e.target.value || null)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            placeholder={CEVAP_TIPLERI[etkinlik.etkinlikTuru]}
+                          />
+                        )}
                       </div>
                     )}
 
