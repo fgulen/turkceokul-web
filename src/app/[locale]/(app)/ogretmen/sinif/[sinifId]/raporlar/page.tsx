@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Info } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
@@ -134,7 +134,15 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
                   {uniteId ? (
                     <>
                       <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Durum</th>
-                      <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ünite Puanı</th>
+                      <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <span
+                          className="inline-flex items-center gap-1 cursor-help"
+                          title="Öğrencinin bu ünitede denediği etkinliklerin ortalama başarı yüzdesi (doğruluk). Ünitenin ne kadarının bitirildiğini göstermez — İlerleme sütununa bakın."
+                        >
+                          Ünite Puanı
+                          <Info className="size-3 text-slate-300" />
+                        </span>
+                      </th>
                     </>
                   ) : (
                     <>
@@ -143,7 +151,19 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
                     </>
                   )}
                   <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Son Aktivite</th>
-                  <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">İlerleme</th>
+                  <th className="text-center px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <span
+                      className="inline-flex items-center gap-1 cursor-help"
+                      title={
+                        uniteId
+                          ? 'Bu ünitedeki etkinliklerin yüzde kaçının tamamlandığı (kapsam). Tamamlanan etkinliklerin ne kadar başarılı olduğunu göstermez — Ünite Puanı sütununa bakın.'
+                          : 'Sınıftaki en çok ünite tamamlayan öğrenciye göre bu öğrencinin tamamladığı ünite oranı.'
+                      }
+                    >
+                      İlerleme
+                      <Info className="size-3 text-slate-300" />
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
