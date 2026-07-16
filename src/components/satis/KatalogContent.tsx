@@ -9,6 +9,10 @@ import { KampanyaBanner } from '@/components/satis/KampanyaBanner';
 import { KitapKarti } from '@/components/satis/KitapKarti';
 import { PaketKarti } from '@/components/satis/PaketKarti';
 
+// Raf sıralaması — kullanıcı tarafından belirlenen sabit vitrin sırası. Listede
+// olmayan seriler (yeni eklenirse) sona, tr locale alfabetik sırayla eklenir.
+const SERI_SIRA = ['Can', 'Yağmur', 'Harmoni', 'Anadolu', 'Lale', 'Açılım', 'Bizim'];
+
 const C = {
   tr: {
     error: 'Katalog şu anda yüklenemedi. Lütfen daha sonra tekrar deneyin.',
@@ -105,7 +109,16 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
   const dersKitaplari = katalog.kitaplar.filter((k) => k.kitapTuru !== 'OkumaKitabi');
   const okumaKitaplari = katalog.kitaplar.filter((k) => k.kitapTuru === 'OkumaKitabi');
 
-  const seriler = Array.from(new Set(dersKitaplari.map((k) => k.seri).filter(Boolean))) as string[];
+  const seriler = (Array.from(new Set(dersKitaplari.map((k) => k.seri).filter(Boolean))) as string[]).sort(
+    (a, b) => {
+      const ia = SERI_SIRA.indexOf(a);
+      const ib = SERI_SIRA.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a.localeCompare(b, 'tr');
+    },
+  );
   const seriGrouplu = dersKitaplari.filter((k) => k.seri);
   const seriGruplusuz = dersKitaplari.filter((k) => !k.seri);
 

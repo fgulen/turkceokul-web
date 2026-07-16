@@ -40,7 +40,7 @@ export function KitapKarti({ kitap, birimFiyatEurCent, locale }: Props) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-primary/40">
-      <div className="relative mb-3 aspect-[4/3] w-full overflow-hidden rounded-xl bg-slate-100">
+      <div className="relative mb-3 aspect-[4/3] w-full overflow-hidden rounded-xl bg-slate-50">
         {coverSrc ? (
           // Kapak görselleri eski ASP.NET CDN'inde ya da öğretmenin girdiği serbest URL'de
           // olabilir — next.config.ts remotePatterns'e alınmadı, unoptimized ile next/image
@@ -51,7 +51,7 @@ export function KitapKarti({ kitap, birimFiyatEurCent, locale }: Props) {
             fill
             unoptimized
             sizes="200px"
-            className="object-cover"
+            className="object-contain p-2"
           />
         ) : (
           <div

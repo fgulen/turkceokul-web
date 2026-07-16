@@ -298,10 +298,10 @@ export default async function LandingPage(
                           key={i}
                           src={src}
                           alt={`${b.name} ${i + 1}`}
-                          width={44}
-                          height={62}
+                          width={60}
+                          height={84}
                           unoptimized
-                          className="h-[62px] w-11 rounded-md object-cover shadow-sm"
+                          className="h-[84px] w-auto rounded-md object-contain shadow-sm"
                         />
                       ))}
                     </div>
