@@ -289,7 +289,15 @@ export default function AIIcerikPage() {
         setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: JSON.stringify(data, null, 2), resimUrls } }));
       }
     },
-    onError: (err: Error) => setHata(err.message || 'Bilinmeyen hata'),
+    onError: (err: Error) => {
+      // Backend aylık kredi limiti: 403 { kod: "limit_asili" } (ücretsizde 10 üretim/ay)
+      const resp = (err as { response?: { status?: number; data?: { kod?: string } } }).response;
+      if (resp?.status === 403 && resp.data?.kod === 'limit_asili') {
+        setHata('Aylık AI üretim limitine ulaştın (ücretsiz planda 10 üretim/ay, tüm AI araçları için ortak). Limit her ayın başında yenilenir — sınırsız üretim için Kurumsal Pro\'ya geçebilirsin.');
+        return;
+      }
+      setHata(err.message || 'Bilinmeyen hata');
+    },
   });
 
   function soruGuncelle(idx: number, updates: Partial<Soru>) {
@@ -482,7 +490,7 @@ export default function AIIcerikPage() {
                 ? 'text-amber-500'
                 : 'text-red-500'
           )}>
-            AI Deneme Kredisi: {krediData.kalan} / {krediData.toplam}
+            AI Kredisi (aylık): {krediData.kalan} / {krediData.toplam} — her ay yenilenir
           </div>
         )}
 
