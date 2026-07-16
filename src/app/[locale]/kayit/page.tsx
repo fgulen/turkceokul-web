@@ -30,8 +30,9 @@ const KURUMSAL_BENEFITS: Benefit[] = [
   { Icon: Brain,    text: "Sınıf analitiği ve ilerleme takibi" },
 ];
 
+// "AI ile kişisel seviye testi" maddesi bilinçli olarak yok — bireysel kullanım
+// henüz kapalı, vaadimiz olmayan özellik vitrine yazılmaz (kullanıcı kararı, 2026-07-16).
 const BIREYSEL_BENEFITS: Benefit[] = [
-  { Icon: Brain,    text: "AI ile kişisel seviye testi" },
   { Icon: BookOpen, text: "Seviyene uygun kitap ve etkinlikler" },
   { Icon: Zap,      text: "XP kazan, liglerde yüksel" },
   { Icon: Users,    text: "Diğer öğrencilerle düello ve rekabet" },
@@ -176,7 +177,7 @@ function KayitForm() {
             {tab === "kurumsal"
               ? "1 öğretmen, 10 öğrenci — kredi kartı gerekmez, 5 dakikada kurulum."
               : tab === "bireysel"
-              ? "AI destekli seviye testi, CEFR müfredatı ve gamification ile Türkçe öğrenin."
+              ? "CEFR müfredatı ve gamification ile Türkçe öğrenin."
               : "3 kısa adımda hesabını oluştur, hemen başla."}
           </p>
 
