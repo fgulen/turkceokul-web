@@ -276,6 +276,7 @@ body {
 
 /* Semantik tip skalası */
 @layer utilities {
+  .type-hero     { font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; }
   .type-display  { font-size: 2.25rem;   line-height: 2.5rem;   font-weight: 800; letter-spacing: -0.02em; }
   .type-heading  { font-size: 1.5rem;    line-height: 2rem;     font-weight: 600; letter-spacing: -0.01em; }
   .type-title    { font-size: 1.25rem;   line-height: 1.75rem;  font-weight: 600; letter-spacing: -0.01em; }
