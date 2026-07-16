@@ -1,15 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Link } from "@/navigation";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Zap, BookOpen } from "lucide-react";
 import { SegmentSwitcher, useSegment, type Segment } from "./landing/segment-switcher";
 
-const HERO_VIDEO_SRC = "/hero.mp4";
-// TODO: Task 5 — gerçek poster kare üretilip /public/hero-poster.jpg'e eklenince
-// bu path gerçek bir dosyaya işaret edecek (LCP: video ilk kare yerine poster gösterir).
-const HERO_POSTER_SRC = "/hero-poster.jpg";
+// Statik hero görseli (video yerine — Irak/Kazakistan mobil ağlarında LCP koruması).
+// Kaynak: kullanıcının ürettiği hero.png (2 MB) → ffmpeg ile 1600px/133 KB'a indirildi.
+const HERO_IMAGE_SRC = "/hero-optimized.jpg";
 
 const HERO_TEXT = {
   tr: {
@@ -161,15 +161,14 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
           className="relative px-5 py-11 md:pl-6 md:pr-5"
         >
           <div className="relative overflow-hidden rounded-[20px] shadow-[0_8px_48px_rgba(27,117,188,0.18)]">
-            <video
-              src={HERO_VIDEO_SRC}
-              poster={HERO_POSTER_SRC}
-              preload="metadata"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="block h-[280px] w-full object-cover"
+            <Image
+              src={HERO_IMAGE_SRC}
+              alt="Öğretmen ve iki öğrenci sınıfta tabletle çalışıyor"
+              width={1600}
+              height={1066}
+              priority
+              sizes="(min-width: 1024px) 560px, 100vw"
+              className="block h-auto w-full"
             />
           </div>
 
