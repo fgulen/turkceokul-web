@@ -3,47 +3,83 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useLocale, useRouter } from "@/navigation";
-import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Eye, EyeOff, ArrowRight,
+  Eye, EyeOff, ArrowRight, ArrowLeft, Check,
   Building2, GraduationCap, Zap, Users, BookOpen, Brain,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/lib/api";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { cn } from "@/lib/utils";
 
 type Tab = "kurumsal" | "bireysel";
+type Step = 1 | 2 | 3;
+type NativeLangValue = "ku" | "ru" | "ar" | "en" | "none";
+type Benefit = { Icon: React.ComponentType<{ className?: string }>; text: string };
 
-const KURUMSAL_BENEFITS = [
-  { Icon: Zap,       text: "AI stüdyo ile 30 saniyede quiz üret" },
-  { Icon: Users,     text: "1 öğretmen + 10 öğrenci ücretsiz" },
-  { Icon: BookOpen,  text: "CEFR A1–C1 tam müfredat erişimi" },
-  { Icon: Brain,     text: "Sınıf analitiği ve ilerleme takibi" },
+const KURUMSAL_BENEFITS: Benefit[] = [
+  { Icon: Zap,      text: "AI stüdyo ile 30 saniyede quiz üret" },
+  { Icon: Users,    text: "1 öğretmen + 10 öğrenci ücretsiz" },
+  { Icon: BookOpen, text: "CEFR A1–C1 tam müfredat erişimi" },
+  { Icon: Brain,    text: "Sınıf analitiği ve ilerleme takibi" },
 ];
 
-const BIREYSEL_BENEFITS = [
-  { Icon: Brain,     text: "AI ile kişisel seviye testi" },
-  { Icon: BookOpen,  text: "Seviyene uygun kitap ve etkinlikler" },
-  { Icon: Zap,       text: "XP kazan, liglerde yüksel" },
-  { Icon: Users,     text: "Diğer öğrencilerle düello ve rekabet" },
+const BIREYSEL_BENEFITS: Benefit[] = [
+  { Icon: Brain,    text: "AI ile kişisel seviye testi" },
+  { Icon: BookOpen, text: "Seviyene uygun kitap ve etkinlikler" },
+  { Icon: Zap,      text: "XP kazan, liglerde yüksel" },
+  { Icon: Users,    text: "Diğer öğrencilerle düello ve rekabet" },
 ];
+
+const GENEL_BENEFITS: Benefit[] = [
+  { Icon: Zap,      text: "3 kısa adımda ücretsiz hesap" },
+  { Icon: BookOpen, text: "CEFR A1–C1 tam müfredat" },
+  { Icon: Brain,    text: "Bireysel veya kurumsal kullanım" },
+];
+
+const NATIVE_LANGS: { code: NativeLangValue; nativeName: string; label: string; flag: string }[] = [
+  { code: "ku", nativeName: "کوردی",   label: "Kürtçe",    flag: "🏔️" },
+  { code: "ru", nativeName: "Русский", label: "Rusça",     flag: "🇷🇺" },
+  { code: "ar", nativeName: "العربية", label: "Arapça",    flag: "🇮🇶" },
+  { code: "en", nativeName: "English", label: "İngilizce", flag: "🇬🇧" },
+];
+
+const DIL_SECENEKLERI = [
+  ...NATIVE_LANGS,
+  { code: "none" as const, nativeName: "Türkçe / Diğer", label: "Belirtmek istemiyorum", flag: "🇹🇷" },
+];
+
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 28 : -28, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -28 : 28, opacity: 0 }),
+};
 
 function KayitForm() {
   const searchParams = useSearchParams();
-  const initialTab: Tab = searchParams.get("tip") === "bireysel" ? "bireysel" : "kurumsal";
+  const tipParam = searchParams.get("tip");
+  const initialTab: Tab | null =
+    tipParam === "bireysel" ? "bireysel"
+    : (tipParam === "kurumsal" || tipParam === "kurumsal-pro") ? "kurumsal"
+    : null;
   const redirectAfter = searchParams.get("redirect") ?? "";
 
   const router = useRouter();
   const locale = useLocale();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [step, setStep] = useState<Step>(initialTab ? 3 : 1);
+  const [direction, setDirection] = useState(1);
+  const [tab, setTab] = useState<Tab | null>(initialTab);
+  const [nativeLanguage, setNativeLanguage] = useState<NativeLangValue | null>(null);
   const [form, setForm] = useState({ name: "", surname: "", email: "", password: "", kurumAdi: "", kurumKodu: "" });
-  const [nativeLanguage, setNativeLanguage] = useState<string | null>(null);
+  const [kurumOpen, setKurumOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -59,8 +95,27 @@ function KayitForm() {
     return [p1, p2, p3].filter(Boolean).join("-");
   }
 
+  function goToStep(next: Step) {
+    if (next === 3 && !tab) return; // rol seçilmeden bilgi adımına geçilemez
+    setDirection(next > step ? 1 : -1);
+    setStep(next);
+  }
+
+  function selectLanguage(code: NativeLangValue) {
+    setNativeLanguage(code);
+    setDirection(1);
+    setStep(tab ? 3 : 2);
+  }
+
+  function selectRole(role: Tab) {
+    setTab(role);
+    setDirection(1);
+    setStep(3);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!tab) return;
     if (form.password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); return; }
     setError("");
     setLoading(true);
@@ -73,7 +128,7 @@ function KayitForm() {
         role: tab === "kurumsal" ? "teacher" : "student",
         ...(tab === "kurumsal" && form.kurumAdi ? { kurumAdi: form.kurumAdi } : {}),
         ...(tab === "kurumsal" && form.kurumKodu ? { kurumKodu: form.kurumKodu.toUpperCase() } : {}),
-        ...(nativeLanguage ? { nativeLanguage } : {}),
+        ...(nativeLanguage && nativeLanguage !== "none" ? { nativeLanguage } : {}),
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken, data.refreshToken);
@@ -91,275 +146,125 @@ function KayitForm() {
     }
   }
 
-  const benefits = tab === "kurumsal" ? KURUMSAL_BENEFITS : BIREYSEL_BENEFITS;
+  const leftBenefits = tab === "kurumsal" ? KURUMSAL_BENEFITS : tab === "bireysel" ? BIREYSEL_BENEFITS : GENEL_BENEFITS;
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex" }}>
+    <div className="flex min-h-dvh">
 
       {/* Sol panel — marka */}
-      <div
-        style={{
-          width: "42%",
-          background: "linear-gradient(155deg,#1e3a5f 0%,#1b75bc 55%,#0ea5e9 100%)",
-          padding: "48px 48px",
-          flexDirection: "column",
-          position: "relative",
-          overflow: "hidden",
-        }}
-        className="hidden lg:flex"
-      >
-        <div style={{ position: "absolute", top: -80, right: -80, width: 320, height: 320, background: "radial-gradient(circle,rgba(255,255,255,0.07),transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -40, width: 260, height: 260, background: "radial-gradient(circle,rgba(87,223,254,0.1),transparent 65%)", pointerEvents: "none" }} />
-
-        <Link href="/" style={{ textDecoration: "none", marginBottom: 56 }}>
-          <span style={{ display: "inline-flex", alignItems: "baseline", userSelect: "none" }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: "rgba(255,255,255,0.7)" }}>[</span>
-            <span style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>TÜRKÇEOKULU</span>
-            <span style={{ fontSize: 22, fontWeight: 900, color: "rgba(255,255,255,0.7)" }}>]</span>
-          </span>
+      <div className="hidden lg:flex w-[42%] flex-col relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-primary to-[#0ea5e9] p-12">
+        <Link href="/" className="mb-14 inline-flex items-baseline select-none">
+          <span className="text-[22px] font-black leading-none text-white/70">[</span>
+          <span className="text-[17px] font-extrabold leading-none tracking-tight text-white">TÜRKÇEOKULU</span>
+          <span className="text-[22px] font-black leading-none text-white/70">]</span>
         </Link>
 
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.55)", marginBottom: 12 }}>
-            {tab === "kurumsal" ? "KURUMSAL HESAP" : "BİREYSEL HESAP"}
+        <div className="flex-1">
+          <div className="mb-3 text-xs font-bold tracking-widest text-white/55">
+            {tab === "kurumsal" ? "KURUMSAL HESAP" : tab === "bireysel" ? "BİREYSEL HESAP" : "HESAP OLUŞTUR"}
           </div>
-          <h2 style={{ fontSize: "clamp(26px,2.8vw,40px)", fontWeight: 900, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.02em", marginBottom: 14 }}>
+          <h2 className="type-display tracking-tight text-white mb-3.5">
             {tab === "kurumsal"
               ? <>Okulunuz için<br />ücretsiz başlayın.</>
-              : <>Türkçenizi<br />geliştirin.</>}
+              : tab === "bireysel"
+              ? <>Türkçenizi<br />geliştirin.</>
+              : <>Türkçe öğrenme<br />yolculuğunuz başlıyor.</>}
           </h2>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", lineHeight: "25px", marginBottom: 36, maxWidth: 280 }}>
+          <p className="mb-9 max-w-[280px] text-base leading-relaxed text-white/65">
             {tab === "kurumsal"
               ? "1 öğretmen, 10 öğrenci — kredi kartı gerekmez, 5 dakikada kurulum."
-              : "AI destekli seviye testi, CEFR müfredatı ve gamification ile Türkçe öğrenin."}
+              : tab === "bireysel"
+              ? "AI destekli seviye testi, CEFR müfredatı ve gamification ile Türkçe öğrenin."
+              : "3 kısa adımda hesabını oluştur, hemen başla."}
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {benefits.map(({ Icon, text }) => (
-              <div key={text} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon style={{ width: 16, height: 16, color: "#57dffe" }} />
+          <div className="flex flex-col gap-4">
+            {leftBenefits.map(({ Icon, text }) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-white/10">
+                  <Icon className="h-4 w-4 text-[#57dffe]" />
                 </div>
-                <span style={{ fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: "22px" }}>{text}</span>
+                <span className="text-[15px] leading-snug text-white/85">{text}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 24, display: "flex", gap: 28 }}>
+        <div className="flex gap-7 border-t border-white/10 pt-6">
           {[{ val: "53k+", label: "Mezun" }, { val: "30+", label: "Ülke" }, { val: "A1–C1", label: "CEFR" }].map((s) => (
             <div key={s.label}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{s.val}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{s.label}</div>
+              <div className="text-[22px] font-black leading-none text-white">{s.val}</div>
+              <div className="mt-1 text-xs text-white/50">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Sağ panel — form */}
-      <div style={{ flex: 1, background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-gray-50 px-6 py-10">
         <TurkishLetterBackdrop variant="kayit" fixed={false} />
 
-        <div style={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}>
+        <div className="relative z-10 w-full max-w-[460px]">
 
-          <div className="lg:hidden" style={{ marginBottom: 20, textAlign: "center" }}>
-            <Link href="/" style={{ textDecoration: "none" }}>
+          <div className="mb-6 text-center lg:hidden">
+            <Link href="/">
               <Logo size="md" />
             </Link>
           </div>
 
-          <MobileBenefitsBanner tab={tab} benefits={benefits} />
+          <StepIndicator step={step} onJump={goToStep} />
 
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#1e1b1c", marginBottom: 6, letterSpacing: "-0.02em" }}>Hesap Oluştur</h1>
-          <p style={{ fontSize: 17, color: "#717882", marginBottom: 24 }}>Ücretsiz başla, hemen kullanmaya başla.</p>
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => goToStep((step - 1) as Step)}
+              className="mb-4 inline-flex h-9 items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-700"
+            >
+              <ArrowLeft className="h-4 w-4" /> Geri
+            </button>
+          )}
 
-          {/* Tab seçimi */}
-          <div style={{ display: "flex", background: "#f0f2f5", borderRadius: 10, padding: 4, gap: 4, marginBottom: 28 }}>
-            {([
-              { key: "kurumsal", Icon: Building2,    label: "Öğretmenim",  sub: "Kurumsal" },
-              { key: "bireysel", Icon: GraduationCap, label: "Öğrenciyim", sub: "Bireysel" },
-            ] as const).map(({ key, Icon, label, sub }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  padding: "12px 14px",
-                  borderRadius: 7,
-                  border: "none",
-                  cursor: "pointer",
-                  background: tab === key ? "#fff" : "transparent",
-                  boxShadow: tab === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                  transition: "all 0.15s",
-                }}
+          <div className="relative min-h-[480px] overflow-hidden">
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={step}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <Icon style={{ width: 17, height: 17, color: tab === key ? "#1b75bc" : "#9ca3af", flexShrink: 0 }} />
-                <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: tab === key ? "#1e1b1c" : "#9ca3af", lineHeight: 1 }}>{label}</div>
-                  <div style={{ fontSize: 12, color: tab === key ? "#1b75bc" : "#c0c7d2", marginTop: 2 }}>{sub}</div>
-                </div>
-              </button>
-            ))}
+                {step === 1 && (
+                  <StepDil value={nativeLanguage} onSelect={selectLanguage} />
+                )}
+
+                {step === 2 && (
+                  <StepRol value={tab} onSelect={selectRole} />
+                )}
+
+                {step === 3 && tab && (
+                  <StepBilgi
+                    tab={tab}
+                    form={form}
+                    field={field}
+                    setForm={setForm}
+                    formatKurumKodu={formatKurumKodu}
+                    showPass={showPass}
+                    setShowPass={setShowPass}
+                    kurumOpen={kurumOpen}
+                    setKurumOpen={setKurumOpen}
+                    error={error}
+                    loading={loading}
+                    redirectAfter={redirectAfter}
+                    onSubmit={handleSubmit}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            <div style={{ display: "grid" }}>
-              {/* Kurumsal panel */}
-              <div style={{
-                gridArea: "1/1",
-                visibility: tab === "kurumsal" ? "visible" : "hidden",
-                pointerEvents: tab === "kurumsal" ? "auto" : "none",
-              }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>
-                      Kurum Adı
-                      <span style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>isteğe bağlı</span>
-                    </label>
-                    <Input
-                      type="text"
-                      value={form.kurumAdi}
-                      onChange={field("kurumAdi")}
-                      placeholder="Ankara Türkçe Dil Okulu"
-                      autoComplete="organization"
-                      tabIndex={tab === "kurumsal" ? undefined : -1}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>
-                      Kurum Kodu
-                      <span style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginLeft: 5 }}>lisans varsa</span>
-                    </label>
-                    <Input
-                      type="text"
-                      value={form.kurumKodu}
-                      onChange={(e) => setForm((f) => ({ ...f, kurumKodu: formatKurumKodu(e.target.value) }))}
-                      placeholder="TR-ANKA-X4K9"
-                      maxLength={11}
-                      style={{ letterSpacing: "0.06em", fontFamily: "monospace" }}
-                      tabIndex={tab === "kurumsal" ? undefined : -1}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Bireysel panel */}
-              <div style={{
-                gridArea: "1/1",
-                visibility: tab === "bireysel" ? "visible" : "hidden",
-                pointerEvents: tab === "bireysel" ? "auto" : "none",
-              }}>
-                {redirectAfter.startsWith('/') && !redirectAfter.startsWith('//') && redirectAfter.includes('/sinif/katil') ? (
-                  <div style={{
-                    background: "linear-gradient(135deg,#1e3a5f 0%,#1b75bc 100%)",
-                    borderRadius: 12,
-                    padding: "16px 18px",
-                    display: "flex",
-                    gap: 14,
-                    alignItems: "flex-start",
-                  }}>
-                    <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>🎉</span>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 4 }}>
-                        Sınıf kodunu başarıyla girdin!
-                      </div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: "19px" }}>
-                        Son bir adım kaldı — ismin, e-posta ve şifreni gir, artık sınıftasın.
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 9 }}>
-                      <Brain style={{ width: 15, height: 15, color: "#16a34a", flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: "#15803d", lineHeight: "20px" }}>Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
-                    </div>
-                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                        <Users style={{ width: 15, height: 15, color: "#2563eb", flexShrink: 0 }} />
-                        <span style={{ fontSize: 14, color: "#1d4ed8", lineHeight: "20px" }}>Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
-                      </div>
-                      <Link
-                        href="/sinif/katil"
-                        style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", whiteSpace: "nowrap", textDecoration: "none", borderBottom: "1px solid #93c5fd" }}
-                      >
-                        Sınıfa Katıl →
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Ortak alanlar */}
-            <div className="grid grid-cols-2" style={{ gap: 12 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>Ad</label>
-                <Input type="text" value={form.name} onChange={field("name")} required placeholder="Ahmet" autoComplete="given-name" />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>Soyad</label>
-                <Input type="text" value={form.surname} onChange={field("surname")} required placeholder="Yılmaz" autoComplete="family-name" />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>E-posta</label>
-              <Input type="email" value={form.email} onChange={field("email")} required placeholder="ornek@email.com" autoComplete="email" />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 6 }}>Şifre</label>
-              <div style={{ position: "relative" }}>
-                <Input
-                  type={showPass ? "text" : "password"}
-                  value={form.password}
-                  onChange={field("password")}
-                  required
-                  placeholder="En az 6 karakter"
-                  autoComplete="new-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass((v) => !v)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }}
-                  tabIndex={-1}
-                >
-                  {showPass ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
-                </button>
-              </div>
-            </div>
-
-            <NativeLanguagePicker value={nativeLanguage} onChange={setNativeLanguage} />
-
-            {error && (
-              <p style={{ fontSize: 14, color: "#dc2626", background: "#fee2e2", padding: "10px 14px", borderRadius: 7, border: "1px solid #fecaca" }}>{error}</p>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 text-base font-bold"
-              style={{ background: "#1b75bc", color: "#fff", borderRadius: 9, marginTop: 2, gap: 6 }}
-            >
-              {loading ? "Kaydediliyor…" : (
-                <>
-                  {tab === "kurumsal" ? "Kurumsal Hesap Oluştur" : "Ücretsiz Kaydol"}
-                  <ArrowRight style={{ width: 17, height: 17 }} />
-                </>
-              )}
-            </Button>
-          </form>
-
-          <p style={{ textAlign: "center", fontSize: 15, color: "#9ca3af", marginTop: 22 }}>
+          <p className="mt-6 text-center text-[15px] text-slate-400">
             Zaten hesabın var mı?{" "}
             <Link
               href="/giris"
@@ -370,17 +275,17 @@ function KayitForm() {
                   : '/giris';
                 router.push(href, { locale });
               }}
-              style={{ color: "#1b75bc", fontWeight: 600, textDecoration: "none", cursor: "pointer" }}
+              className="cursor-pointer font-semibold text-primary"
             >
               Giriş yap
             </Link>
           </p>
 
-          <p style={{ textAlign: "center", fontSize: 13, color: "#c0c7d2", marginTop: 16, lineHeight: "19px" }}>
+          <p className="mt-4 text-center text-[13px] leading-snug text-slate-300">
             Kayıt olarak{" "}
-            <a href="#" style={{ color: "#9ca3af", textDecoration: "underline" }}>Kullanım Koşulları</a>
+            <a href="#" className="text-slate-400 underline">Kullanım Koşulları</a>
             {" "}ve{" "}
-            <a href="#" style={{ color: "#9ca3af", textDecoration: "underline" }}>Gizlilik Politikası</a>
+            <a href="#" className="text-slate-400 underline">Gizlilik Politikası</a>
             {" "}kabul edilmiş sayılır.
           </p>
         </div>
@@ -389,111 +294,79 @@ function KayitForm() {
   );
 }
 
-function MobileBenefitsBanner({ tab, benefits }: { tab: Tab; benefits: { Icon: React.ComponentType<{ style?: React.CSSProperties }>; text: string }[] }) {
-  const [open, setOpen] = useState(false);
-  const title = tab === "kurumsal" ? "Kurumsal Hesap Avantajları" : "Bireysel Hesap Avantajları";
-  const sub = tab === "kurumsal" ? "1 öğretmen, 10 öğrenci — ücretsiz" : "AI seviye testi ve CEFR müfredatı";
-
+function StepIndicator({ step, onJump }: { step: Step; onJump: (s: Step) => void }) {
+  const items: { n: Step; label: string }[] = [
+    { n: 1, label: "Anadil" },
+    { n: 2, label: "Rol" },
+    { n: 3, label: "Bilgi" },
+  ];
   return (
-    <div
-      className="lg:hidden"
-      style={{
-        borderRadius: 12,
-        overflow: "hidden",
-        marginBottom: 24,
-        background: "linear-gradient(135deg,#1e3a5f 0%,#1b75bc 60%,#0ea5e9 100%)",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "14px 16px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          color: "#fff",
-        }}
-      >
-        <Zap style={{ width: 15, height: 15, fill: "#fff", flexShrink: 0 }} />
-        <div style={{ flex: 1, textAlign: "left" }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>{sub}</div>
-        </div>
-        {open
-          ? <ChevronUp style={{ width: 17, height: 17, color: "rgba(255,255,255,0.7)", flexShrink: 0 }} />
-          : <ChevronDown style={{ width: 17, height: 17, color: "rgba(255,255,255,0.7)", flexShrink: 0 }} />
-        }
-      </button>
-
-      {open && (
-        <div style={{ padding: "4px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", flexDirection: "column", gap: 12 }}>
-          {benefits.map(({ Icon, text }) => (
-            <div key={text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 6, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Icon style={{ width: 14, height: 14, color: "#57dffe" }} />
-              </div>
-              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: "20px" }}>{text}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <ol className="mb-6 flex items-center" aria-label="Kayıt adımları">
+      {items.map(({ n, label }, i) => {
+        const isCurrent = step === n;
+        const isDone = n < step;
+        return (
+          <li key={n} className={cn("flex items-center", i < items.length - 1 && "flex-1")}>
+            <button
+              type="button"
+              onClick={() => onJump(n)}
+              aria-current={isCurrent ? "step" : undefined}
+              className={cn(
+                "flex h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors",
+                isCurrent ? "bg-primary text-white"
+                  : isDone ? "bg-primary/10 text-primary"
+                  : "bg-slate-100 text-slate-400"
+              )}
+            >
+              <span className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs",
+                isCurrent ? "bg-white/25" : isDone ? "bg-primary/20" : "bg-slate-200"
+              )}>
+                {isDone ? <Check className="h-3 w-3" /> : n}
+              </span>
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+            {i < items.length - 1 && (
+              <span className={cn("mx-2 h-px flex-1", n < step ? "bg-primary/30" : "bg-slate-200")} />
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
-const NATIVE_LANGS = [
-  { code: "ku", nativeName: "کوردی",       label: "Kürtçe",   flag: "🏔️" },
-  { code: "ru", nativeName: "Русский",     label: "Rusça",    flag: "🇷🇺" },
-  { code: "ar", nativeName: "العربية",     label: "Arapça",   flag: "🇮🇶" },
-  { code: "en", nativeName: "English",     label: "İngilizce",flag: "🇬🇧" },
-] as const;
-
-function NativeLanguagePicker({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect: (code: NativeLangValue) => void }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: 15, fontWeight: 600, color: "#414751", marginBottom: 8 }}>
-        Ana diliniz nedir?
-        <span style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginLeft: 6 }}>isteğe bağlı</span>
-      </label>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-        {NATIVE_LANGS.map(({ code, nativeName, label, flag }) => {
+      <h1 className="type-title tracking-tight text-slate-900 mb-1">Ana diliniz nedir?</h1>
+      <p className="type-body text-slate-500 mb-6">Size en uygun rehberliği sunmamıza yardımcı olur.</p>
+      <div className="grid grid-cols-3 gap-3">
+        {DIL_SECENEKLERI.map(({ code, nativeName, label, flag }) => {
           const selected = value === code;
+          const rtl = code === "ar" || code === "ku";
           return (
             <button
               key={code}
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onChange(selected ? null : code)}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 4,
-                padding: "10px 6px",
-                borderRadius: 8,
-                border: selected ? "2px solid #1b75bc" : "1.5px solid #e5e7eb",
-                background: selected ? "#eff6ff" : "#fff",
-                cursor: "pointer",
-                transition: "all 0.12s",
-              }}
+              onClick={() => onSelect(code)}
+              className={cn(
+                "flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-4 text-center transition-colors",
+                selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white hover:border-slate-300"
+              )}
             >
-              <span style={{ fontSize: 22, lineHeight: 1 }}>{flag}</span>
-              <span style={{
-                fontSize: code === "ar" || code === "ku" ? 13 : 12,
-                fontWeight: 700,
-                color: selected ? "#1b75bc" : "#374151",
-                lineHeight: 1.2,
-                textAlign: "center",
-                direction: code === "ar" || code === "ku" ? "rtl" : "ltr",
-              }}>
+              <span className="text-2xl leading-none">{flag}</span>
+              <span
+                dir={rtl ? "rtl" : "ltr"}
+                className={cn(
+                  "font-bold leading-tight",
+                  rtl ? "text-[15px]" : "text-[13px]",
+                  selected ? "text-primary" : "text-slate-700"
+                )}
+              >
                 {nativeName}
               </span>
-              <span style={{ fontSize: 11, color: selected ? "#3b82f6" : "#9ca3af" }}>{label}</span>
+              <span className="text-[11px] text-slate-400">{label}</span>
             </button>
           );
         })}
@@ -502,9 +375,206 @@ function NativeLanguagePicker({ value, onChange }: { value: string | null; onCha
   );
 }
 
+function StepRol({ value, onSelect }: { value: Tab | null; onSelect: (t: Tab) => void }) {
+  const cards: { key: Tab; Icon: React.ComponentType<{ className?: string }>; title: string; sub: string; benefits: Benefit[] }[] = [
+    { key: "bireysel", Icon: GraduationCap, title: "Öğrenciyim",         sub: "Türkçemi geliştirmek istiyorum", benefits: BIREYSEL_BENEFITS },
+    { key: "kurumsal", Icon: Building2,     title: "Öğretmenim / Kurum", sub: "Sınıfım için içerik ve takip istiyorum", benefits: KURUMSAL_BENEFITS },
+  ];
+  return (
+    <div>
+      <h1 className="type-title tracking-tight text-slate-900 mb-1">Nasıl kullanacaksınız?</h1>
+      <p className="type-body text-slate-500 mb-6">Deneyiminizi buna göre kişiselleştirelim.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {cards.map(({ key, Icon, title, sub, benefits }) => {
+          const selected = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(key)}
+              className={cn(
+                "flex min-h-[220px] flex-col items-start gap-3 rounded-2xl border-2 p-5 text-left transition-colors",
+                selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white hover:border-slate-300"
+              )}
+            >
+              <span className={cn(
+                "flex h-11 w-11 items-center justify-center rounded-xl",
+                selected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
+              )}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="text-lg font-extrabold leading-tight text-slate-900">{title}</div>
+                <div className="mt-0.5 text-sm text-slate-500">{sub}</div>
+              </div>
+              <ul className="mt-1 w-full space-y-1.5">
+                {benefits.slice(0, 3).map(({ text }) => (
+                  <li key={text} className="flex items-start gap-2 text-xs text-slate-500">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepBilgi({
+  tab, form, field, setForm, formatKurumKodu,
+  showPass, setShowPass, kurumOpen, setKurumOpen,
+  error, loading, redirectAfter, onSubmit,
+}: {
+  tab: Tab;
+  form: { name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string };
+  field: (k: "name" | "surname" | "email" | "password" | "kurumAdi" | "kurumKodu") => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setForm: React.Dispatch<React.SetStateAction<{ name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string }>>;
+  formatKurumKodu: (raw: string) => string;
+  showPass: boolean;
+  setShowPass: React.Dispatch<React.SetStateAction<boolean>>;
+  kurumOpen: boolean;
+  setKurumOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  error: string;
+  loading: boolean;
+  redirectAfter: string;
+  onSubmit: (e: React.FormEvent) => void;
+}) {
+  const sinifKatilRedirect = redirectAfter.startsWith('/') && !redirectAfter.startsWith('//') && redirectAfter.includes('/sinif/katil');
+
+  return (
+    <div>
+      <h1 className="type-title tracking-tight text-slate-900 mb-1">Hesap bilgileriniz</h1>
+      <p className="type-body text-slate-500 mb-6">
+        {tab === "kurumsal" ? "Kurumsal hesabınızı oluşturun." : "Ücretsiz hesabınızı oluşturun."}
+      </p>
+
+      {tab === "bireysel" && (
+        sinifKatilRedirect ? (
+          <div className="mb-4 flex items-start gap-3.5 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-primary p-4">
+            <span className="shrink-0 text-2xl leading-none">🎉</span>
+            <div>
+              <div className="mb-1 text-sm font-extrabold text-white">Sınıf kodunu başarıyla girdin!</div>
+              <div className="text-xs leading-relaxed text-white/80">Son bir adım kaldı — ismin, e-posta ve şifreni gir, artık sınıftasın.</div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 flex flex-col gap-2.5">
+            <div className="flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5">
+              <Brain className="h-[15px] w-[15px] shrink-0 text-green-600" />
+              <span className="text-sm leading-tight text-green-700">Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
+            </div>
+            <div className="flex items-center justify-between gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Users className="h-[15px] w-[15px] shrink-0 text-blue-600" />
+                <span className="text-sm leading-tight text-blue-700">Sınıf kodun var mı? Kayıt sonrası sınıfına katılabilirsin.</span>
+              </div>
+              <Link href="/sinif/katil" className="whitespace-nowrap border-b border-blue-300 text-[13px] font-bold text-blue-700">
+                Sınıfa Katıl →
+              </Link>
+            </div>
+          </div>
+        )
+      )}
+
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600">Ad</label>
+            <Input type="text" value={form.name} onChange={field("name")} required placeholder="Ahmet" autoComplete="given-name" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600">Soyad</label>
+            <Input type="text" value={form.surname} onChange={field("surname")} required placeholder="Yılmaz" autoComplete="family-name" />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600">E-posta</label>
+          <Input type="email" value={form.email} onChange={field("email")} required placeholder="ornek@email.com" autoComplete="email" />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600">Şifre</label>
+          <div className="relative">
+            <Input
+              type={showPass ? "text" : "password"}
+              value={form.password}
+              onChange={field("password")}
+              required
+              placeholder="En az 6 karakter"
+              autoComplete="new-password"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 flex -translate-y-1/2 text-slate-400"
+              tabIndex={-1}
+            >
+              {showPass ? <EyeOff className="h-[17px] w-[17px]" /> : <Eye className="h-[17px] w-[17px]" />}
+            </button>
+          </div>
+        </div>
+
+        {tab === "kurumsal" && (
+          <div className="rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setKurumOpen((v) => !v)}
+              className="flex h-11 w-full items-center justify-between gap-2 px-4"
+            >
+              <span className="text-sm font-semibold text-slate-600">
+                Kurum bilgileri <span className="font-normal text-slate-400">İsteğe bağlı</span>
+              </span>
+              {kurumOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+            </button>
+            {kurumOpen && (
+              <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-600">Kurum Adı</label>
+                  <Input type="text" value={form.kurumAdi} onChange={field("kurumAdi")} placeholder="Ankara Türkçe Dil Okulu" autoComplete="organization" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-600">
+                    Kurum Kodu <span className="font-normal text-slate-400">lisans varsa</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={form.kurumKodu}
+                    onChange={(e) => setForm((f) => ({ ...f, kurumKodu: formatKurumKodu(e.target.value) }))}
+                    placeholder="TR-ANKA-X4K9"
+                    maxLength={11}
+                    className="font-mono tracking-wider"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">{error}</p>
+        )}
+
+        <Button type="submit" disabled={loading} className="h-12 w-full gap-1.5 rounded-lg text-base font-bold">
+          {loading ? "Kaydediliyor…" : (
+            <>
+              {tab === "kurumsal" ? "Kurumsal Hesap Oluştur" : "Ücretsiz Kaydol"}
+              <ArrowRight className="h-[17px] w-[17px]" />
+            </>
+          )}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
 export default function KayitPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100dvh", background: "#f9fafb" }} />}>
+    <Suspense fallback={<div className="min-h-dvh bg-gray-50" />}>
       <KayitForm />
     </Suspense>
   );
