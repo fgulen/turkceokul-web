@@ -43,16 +43,18 @@ const GENEL_BENEFITS: Benefit[] = [
   { Icon: Brain,    text: "Bireysel veya kurumsal kullanım" },
 ];
 
-const NATIVE_LANGS: { code: NativeLangValue; nativeName: string; label: string; flag: string }[] = [
-  { code: "ku", nativeName: "کوردی",   label: "Kürtçe",    flag: "🏔️" },
-  { code: "ru", nativeName: "Русский", label: "Rusça",     flag: "🇷🇺" },
-  { code: "ar", nativeName: "العربية", label: "Arapça",    flag: "🇮🇶" },
-  { code: "en", nativeName: "English", label: "İngilizce", flag: "🇬🇧" },
+// Bayrak/emoji bilinçli olarak yok: Windows'ta emoji bayraklar harf koduna düşüyor
+// ve kart üç görsel katmanla karmaşıklaşıyordu (kullanıcı kararı, 2026-07-16).
+const NATIVE_LANGS: { code: NativeLangValue; nativeName: string; label: string }[] = [
+  { code: "ku", nativeName: "کوردی",   label: "Kürtçe" },
+  { code: "ru", nativeName: "Русский", label: "Rusça" },
+  { code: "ar", nativeName: "العربية", label: "Arapça" },
+  { code: "en", nativeName: "English", label: "İngilizce" },
 ];
 
 const DIL_SECENEKLERI = [
   ...NATIVE_LANGS,
-  { code: "none" as const, nativeName: "Türkçe / Diğer", label: "Belirtmek istemiyorum", flag: "🇹🇷" },
+  { code: "none" as const, nativeName: "Türkçe / Diğer", label: "Belirtmek istemiyorum" },
 ];
 
 const slideVariants = {
@@ -346,8 +348,8 @@ function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect:
     <div>
       <h1 className="type-title tracking-tight text-slate-900 mb-1">Ana diliniz nedir?</h1>
       <p className="type-body text-slate-500 mb-6">Size en uygun rehberliği sunmamıza yardımcı olur.</p>
-      <div className="grid grid-cols-3 gap-3">
-        {DIL_SECENEKLERI.map(({ code, nativeName, label, flag }) => {
+      <div className="flex flex-col gap-2.5">
+        {DIL_SECENEKLERI.map(({ code, nativeName, label }) => {
           const selected = value === code;
           const rtl = code === "ar" || code === "ku";
           return (
@@ -356,22 +358,17 @@ function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect:
               type="button"
               onClick={() => onSelect(code)}
               className={cn(
-                "flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-4 text-center transition-colors",
+                "flex min-h-[56px] items-center justify-between rounded-xl border-2 px-5 py-3 transition-colors",
                 selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white hover:border-slate-300"
               )}
             >
-              <span className="text-2xl leading-none">{flag}</span>
               <span
                 dir={rtl ? "rtl" : "ltr"}
-                className={cn(
-                  "font-bold leading-tight",
-                  rtl ? "text-[15px]" : "text-[13px]",
-                  selected ? "text-primary" : "text-slate-700"
-                )}
+                className={cn("text-base font-bold leading-tight", selected ? "text-primary" : "text-slate-800")}
               >
                 {nativeName}
               </span>
-              <span className="text-[11px] text-slate-400">{label}</span>
+              <span className="text-sm text-slate-400">{label}</span>
             </button>
           );
         })}
