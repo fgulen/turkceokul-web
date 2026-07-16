@@ -140,7 +140,9 @@ function KayitForm() {
         window.location.href = safeAfter;
         return;
       }
-      router.push(tab === "kurumsal" ? "/ogretmen" : "/seviye-testi", { locale });
+      // Bireysel öğrenci panoya gider — bireysel kullanım kapalı, öğrenci içeriği
+      // öğretmenin sınıfa atadığı kitap üzerinden görür (kullanıcı kararı, 2026-07-16).
+      router.push(tab === "kurumsal" ? "/ogretmen" : "/pano", { locale });
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
       setError(typeof d === "string" ? d : "Kayıt başarısız. Lütfen tekrar dene.");

@@ -287,9 +287,9 @@ export default async function LandingPage(
                   <Link
                     key={b.name}
                     href="/kurumsal-satis"
-                    className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-primary/40"
+                    className="flex flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-white p-6 text-center transition-colors hover:border-primary/40"
                   >
-                    <div className="flex flex-shrink-0 gap-1.5">
+                    <div className="flex items-end gap-2">
                       {b.imgs.slice(0, 3).map((src, i) => (
                         // Kapak görselleri eski ASP.NET CDN'inde (turkceokulu.com/UserFiles),
                         // next.config.ts remotePatterns'e alınmadı — unoptimized ile next/image
@@ -298,10 +298,10 @@ export default async function LandingPage(
                           key={i}
                           src={src}
                           alt={`${b.name} ${i + 1}`}
-                          width={60}
-                          height={84}
+                          width={100}
+                          height={140}
                           unoptimized
-                          className="h-[84px] w-auto rounded-md object-contain shadow-sm"
+                          className="h-[140px] w-auto rounded-md object-contain shadow-md"
                         />
                       ))}
                     </div>
