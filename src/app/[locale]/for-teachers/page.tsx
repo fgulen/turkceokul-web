@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
+import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
   ArrowRight, CheckCircle2, Zap, Users, Brain,
-  BarChart3, QrCode, FileDown, Sparkles, Star,
+  BarChart3, QrCode, FileDown, Sparkles,
   MonitorPlay, BookOpen, Clock, Shield,
 } from 'lucide-react';
 
@@ -393,28 +394,11 @@ export default function ForTeachersPage() {
         {/* Testimonials */}
         <section style={{ background: '#fff', padding: '72px 0' }}>
           <div className="px-4 md:px-10" style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 44 }}>
-              <div style={{ display: 'inline-flex', background: '#fefce8', color: '#ca8a04', fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', padding: '4px 12px', borderRadius: 999, marginBottom: 12 }}>TEACHER REVIEWS</div>
-              <h2 style={{ fontSize: 'clamp(22px,3vw,36px)', fontWeight: 800, letterSpacing: '-0.025em' }}>What teachers say</h2>
+            <div className="mb-11 text-center">
+              <div className="mb-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold tracking-wide text-amber-600">TEACHER REVIEWS</div>
+              <h2 className="type-display tracking-tight text-slate-900">What teachers say</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16 }}>
-              {[
-                { name: 'Fatma H.', country: 'Türkiye — Ankara', text: 'The AI quiz generator is incredible. A 40-question exam ready in 2 minutes. Students absolutely love Kahoot mode.', role: 'Turkish Teacher' },
-                { name: 'Layla M.', country: 'UAE — Dubai', text: 'The Excel report is perfect for presenting to management. I can see at a glance where each student is struggling.', role: 'Language Coordinator' },
-                { name: 'Dmitri K.', country: 'Kazakhstan — Almaty', text: 'The QR code join system transformed classroom management. No setup — we used it straight away.', role: 'Turkish Teacher' },
-              ].map((r) => (
-                <div key={r.name} style={{ background: '#f9fafb', borderRadius: 12, padding: '22px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
-                    {[1, 2, 3, 4, 5].map((i) => <Star key={i} style={{ width: 13, height: 13, fill: '#facc15', color: '#facc15' }} />)}
-                  </div>
-                  <p style={{ fontSize: 13, color: '#414751', lineHeight: '20px', marginBottom: 16 }}>&ldquo;{r.text}&rdquo;</p>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{r.name}</div>
-                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.role} — {r.country}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <BrainstormPlaceholder alan="Real user testimonials (to be collected from beta users)" />
           </div>
         </section>
 

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
+import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
-  CheckCircle2, BookOpen, Zap, Users, ArrowRight, Star,
+  CheckCircle2, BookOpen, Zap, ArrowRight,
   Flame, Heart, Trophy, Layers, ListChecks, PencilLine,
   Mic, Brain, MessageCircle,
 } from 'lucide-react';
@@ -74,11 +75,11 @@ const activityTypes = [
 const faqs = [
   {
     q: 'Türkçe Okulu ücretsiz mi?',
-    a: 'Evet, temel içerikler ücretsizdir. A1 ve A2 seviyelerindeki etkinliklere ücretsiz erişebilirsiniz. Premium plan ile tüm seviyelerin kilidini açabilirsiniz.',
+    a: 'Evet, temel içerikler ücretsizdir. A1 ve A2 seviyelerindeki etkinliklere ücretsiz erişebilirsiniz. B1 ve üzeri seviyeler şu an okul/sınıf lisansıyla açılıyor; bireysel premium satın alma yakında eklenecek.',
   },
   {
     q: 'Hangi seviyeden başlamalıyım?',
-    a: 'Türkçeye hiç başlamadıysanız A1\'den başlayın. Platforma kayıt olduktan sonra kısa bir seviye testi ile size en uygun noktadan başlayabilirsiniz.',
+    a: 'Türkçeye hiç başlamadıysanız A1\'den başlayın. Otomatik seviye testi özelliği yakında eklenecek; şimdilik A1\'den başlamanızı öneririz.',
   },
   {
     q: 'Türkçe Okulu CEFR sertifikası veriyor mu?',
@@ -209,8 +210,8 @@ export default function TurkceOgrenPage() {
               {[
                 {
                   step: '1',
-                  title: 'Kayıt ol, seviyeni belirle',
-                  desc: 'Ücretsiz kaydol ve kısa bir seviye testi yap. Sistem seni doğru noktadan başlatır.',
+                  title: 'Kayıt ol, A1\'den başla',
+                  desc: 'Ücretsiz kaydol. Otomatik seviye testi yakında eklenecek — şimdilik A1\'den başlaman önerilir.',
                   color: '#1b75bc',
                 },
                 {
@@ -297,37 +298,13 @@ export default function TurkceOgrenPage() {
         {/* Kullanıcı Yorumları */}
         <section style={{ background: '#fff', padding: '72px 0' }}>
           <div className="px-4 md:px-10" style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 44 }}>
-              <div style={{ display: 'inline-flex', background: '#fefce8', color: '#ca8a04', fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', padding: '4px 12px', borderRadius: 999, marginBottom: 12 }}>KULLANICI GÖRÜŞLERİ</div>
-              <h2 style={{ fontSize: 'clamp(22px,3vw,36px)', fontWeight: 800, letterSpacing: '-0.025em' }}>
+            <div className="mb-11 text-center">
+              <div className="mb-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold tracking-wide text-amber-600">KULLANICI GÖRÜŞLERİ</div>
+              <h2 className="type-display tracking-tight text-slate-900">
                 Türkçe öğrenenler ne diyor?
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16 }}>
-              {[
-                { name: 'Ahmed K.', country: 'Irak', text: 'Her gün 15 dakika çalışıyorum, 3 ayda A2 bitti. Ses ve resimli etkinlikler çok faydalı.', level: 'A2' },
-                { name: 'Dmitri S.', country: 'Kazakistan', text: 'Streak sistemi beni her gün çalıştırıyor. Uygulama da olsa süper olur.', level: 'B1' },
-                { name: 'Layla M.', country: 'BAE', text: 'Öğretmen olarak AI quiz üretimi inanılmaz zaman kazandırıyor. Öğrencilerim de çok sevdi.', level: 'Öğretmen' },
-              ].map((r) => (
-                <div key={r.name} style={{ background: '#f9fafb', borderRadius: 12, padding: '22px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} style={{ width: 14, height: 14, fill: '#facc15', color: '#facc15' }} />
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 13, color: '#414751', lineHeight: '20px', marginBottom: 16 }}>&ldquo;{r.text}&rdquo;</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700 }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.country}</div>
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 700, background: '#eff6ff', color: '#1b75bc', padding: '3px 8px', borderRadius: 999 }}>
-                      {r.level}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <BrainstormPlaceholder alan="Gerçek kullanıcı yorumları (beta kullanıcılarından toplanacak)" />
           </div>
         </section>
 

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
+import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
-  CheckCircle2, BookOpen, Zap, ArrowRight, Star,
+  CheckCircle2, BookOpen, Zap, ArrowRight,
   Flame, Heart, Trophy, Layers, ListChecks, PencilLine,
   Mic, Brain, MessageCircle,
 } from 'lucide-react';
@@ -75,11 +76,11 @@ const activityTypes = [
 const faqs = [
   {
     q: 'Is Türkçe Okulu free?',
-    a: 'Yes, the core content is free. A1 and A2 level activities are fully accessible without payment. A Premium plan unlocks all levels and features.',
+    a: 'Yes, the core content is free. A1 and A2 level activities are fully accessible without payment. B1 and above are currently unlocked through a school/class licence; individual premium purchase is coming soon.',
   },
   {
     q: 'What level should I start at?',
-    a: 'If you\'re completely new to Turkish, start at A1. After registering, a short placement test will suggest the right level for you.',
+    a: 'If you\'re completely new to Turkish, start at A1. An automatic placement test is coming soon — for now we recommend starting at A1.',
   },
   {
     q: 'How long does it take to learn Turkish?',
@@ -207,7 +208,7 @@ export default function LearnTurkishOnlinePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 24 }}>
               {[
-                { step: '1', title: 'Sign up, take the test', desc: 'Register for free and complete a short placement test. The system starts you at the right level.', color: '#1b75bc' },
+                { step: '1', title: 'Sign up, start at A1', desc: 'Register for free. An automatic placement test is coming soon — for now, starting at A1 is recommended.', color: '#1b75bc' },
                 { step: '2', title: 'Study 10–15 min daily', desc: 'Small daily activities build real fluency. Hearts keep you careful. XP chains keep you motivated.', color: '#7c3aed' },
                 { step: '3', title: 'Level up, earn certificates', desc: 'Pass the unit final exam, download your certificate. Real progress with a real curriculum.', color: '#16a34a' },
               ].map((s) => (
@@ -281,37 +282,13 @@ export default function LearnTurkishOnlinePage() {
         {/* Testimonials */}
         <section style={{ background: '#fff', padding: '72px 0' }}>
           <div className="px-4 md:px-10" style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 44 }}>
-              <div style={{ display: 'inline-flex', background: '#fefce8', color: '#ca8a04', fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', padding: '4px 12px', borderRadius: 999, marginBottom: 12 }}>LEARNER REVIEWS</div>
-              <h2 style={{ fontSize: 'clamp(22px,3vw,36px)', fontWeight: 800, letterSpacing: '-0.025em' }}>
+            <div className="mb-11 text-center">
+              <div className="mb-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold tracking-wide text-amber-600">LEARNER REVIEWS</div>
+              <h2 className="type-display tracking-tight text-slate-900">
                 What learners say
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16 }}>
-              {[
-                { name: 'Ahmed K.', country: 'Iraq', text: '15 minutes a day, A2 done in 3 months. The audio and picture activities are really helpful.', level: 'A2' },
-                { name: 'Dmitri S.', country: 'Kazakhstan', text: 'The streak system keeps me coming back every day. Would love a mobile app too.', level: 'B1' },
-                { name: 'Sarah M.', country: 'Germany', text: 'As a teacher, the AI quiz generator saves me hours every week. My students love it.', level: 'Teacher' },
-              ].map((r) => (
-                <div key={r.name} style={{ background: '#f9fafb', borderRadius: 12, padding: '22px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} style={{ width: 14, height: 14, fill: '#facc15', color: '#facc15' }} />
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 13, color: '#414751', lineHeight: '20px', marginBottom: 16 }}>&ldquo;{r.text}&rdquo;</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700 }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.country}</div>
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 700, background: '#eff6ff', color: '#1b75bc', padding: '3px 8px', borderRadius: 999 }}>
-                      {r.level}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <BrainstormPlaceholder alan="Real user testimonials (to be collected from beta users)" />
           </div>
         </section>
 
