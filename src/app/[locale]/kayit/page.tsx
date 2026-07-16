@@ -283,9 +283,9 @@ function KayitForm() {
 
           <p className="mt-4 text-center text-[13px] leading-snug text-slate-300">
             Kayıt olarak{" "}
-            <a href="#" className="text-slate-400 underline">Kullanım Koşulları</a>
+            <Link href="/kullanim-kosullari" className="text-slate-400 underline">Kullanım Koşulları</Link>
             {" "}ve{" "}
-            <a href="#" className="text-slate-400 underline">Gizlilik Politikası</a>
+            <Link href="/gizlilik" className="text-slate-400 underline">Gizlilik Politikası</Link>
             {" "}kabul edilmiş sayılır.
           </p>
         </div>
