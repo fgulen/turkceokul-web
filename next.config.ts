@@ -132,7 +132,6 @@ const nextConfig: NextConfig = {
       '/(tr|en)/etkinlik/:path*',
       '/(tr|en)/okuma/:path*',
       '/(tr|en)/kahoot/:path*',
-      '/(tr|en)/seviye-testi',
       '/(tr|en)/davet/:path*',
       '/(tr|en)/qr-login/:path*',
       '/(tr|en)/pin-login',
