@@ -156,6 +156,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: alt('/iletisim'),
     },
 
+    // ── Nasıl Çalışır (Rehber) ─────────────────────────────────
+    {
+      url: tr('/nasil-calisir'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+      alternates: alt('/nasil-calisir'),
+    },
+    {
+      url: en('/nasil-calisir'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+      alternates: alt('/nasil-calisir'),
+    },
+
     // ── Yasal Sayfalar ───────────────────────────────────────────
     {
       url: tr('/gizlilik'),

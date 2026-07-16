@@ -23,12 +23,14 @@ const MAIN_LINKS: Record<string, NavLink[]> = {
     { label: 'Platform', href: '#platform' },
     { label: 'Kitaplar', href: '#kitaplar' },
     { label: 'Fiyatlar', href: '#fiyatlar' },
+    { label: 'Nasıl Çalışır?', href: '/nasil-calisir' },
     { label: 'Öğretmenler', href: '/ogretmenler' },
   ],
   en: [
     { label: 'Platform', href: '#platform' },
     { label: 'Books', href: '#kitaplar' },
     { label: 'Pricing', href: '#fiyatlar' },
+    { label: 'How It Works', href: '/nasil-calisir' },
     { label: 'Teachers', href: '/for-teachers' },
   ],
 };

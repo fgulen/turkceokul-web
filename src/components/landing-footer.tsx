@@ -20,6 +20,7 @@ const CONTENT = {
       { label: 'Gamification', href: '/turkce-ogren' },
       { label: 'Analitik', href: '/ogretmenler' },
       { label: 'Multiplayer', href: '/#platform' },
+      { label: 'Nasıl Çalışır?', href: '/nasil-calisir' },
     ] as FooterLink[],
     institutional: 'KURUMSAL',
     institutionalLinks: [
@@ -44,6 +45,7 @@ const CONTENT = {
       { label: 'Gamification', href: '/learn-turkish-online' },
       { label: 'Analytics', href: '/for-teachers' },
       { label: 'Multiplayer', href: '/#platform' },
+      { label: 'How It Works', href: '/nasil-calisir' },
     ] as FooterLink[],
     institutional: 'INSTITUTIONAL',
     institutionalLinks: [
