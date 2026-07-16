@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 const BASE = 'https://turkceokulu.com';
-const NOW = new Date('2026-06-17');
+const NOW = new Date('2026-07-16');
 
 function tr(path: string) { return `${BASE}/tr${path}`; }
 function en(path: string) { return `${BASE}/en${path}`; }
@@ -64,9 +64,48 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: { languages: { tr: tr('/ogretmenler'), en: en('/for-teachers') } },
     },
 
+    // ── Kurumsal Satış ─────────────────────────────────────────
+    {
+      url: tr('/kurumsal-satis'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: alt('/kurumsal-satis'),
+    },
+    {
+      url: en('/kurumsal-satis'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: alt('/kurumsal-satis'),
+    },
+
+    // ── Seviye Testi ───────────────────────────────────────────
+    {
+      url: tr('/seviye-testi'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+      alternates: alt('/seviye-testi'),
+    },
+    {
+      url: en('/seviye-testi'),
+      lastModified: NOW,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+      alternates: alt('/seviye-testi'),
+    },
+
     // ── Auth Sayfaları ─────────────────────────────────────────
     {
       url: tr('/kayit'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.8,
+      alternates: alt('/kayit'),
+    },
+    {
+      url: en('/kayit'),
       lastModified: NOW,
       changeFrequency: 'yearly',
       priority: 0.8,
@@ -78,6 +117,73 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.6,
       alternates: alt('/giris'),
+    },
+    {
+      url: en('/giris'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.6,
+      alternates: alt('/giris'),
+    },
+
+    // ── Kurumsal / Statik Sayfalar ───────────────────────────────
+    {
+      url: tr('/hakkimizda'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.5,
+      alternates: alt('/hakkimizda'),
+    },
+    {
+      url: en('/hakkimizda'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.5,
+      alternates: alt('/hakkimizda'),
+    },
+    {
+      url: tr('/iletisim'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.5,
+      alternates: alt('/iletisim'),
+    },
+    {
+      url: en('/iletisim'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.5,
+      alternates: alt('/iletisim'),
+    },
+
+    // ── Yasal Sayfalar ───────────────────────────────────────────
+    {
+      url: tr('/gizlilik'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: alt('/gizlilik'),
+    },
+    {
+      url: en('/gizlilik'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: alt('/gizlilik'),
+    },
+    {
+      url: tr('/kullanim-kosullari'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: alt('/kullanim-kosullari'),
+    },
+    {
+      url: en('/kullanim-kosullari'),
+      lastModified: NOW,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: alt('/kullanim-kosullari'),
     },
   ];
 }
