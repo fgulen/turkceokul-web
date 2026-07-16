@@ -214,15 +214,20 @@ function KayitForm() {
 
           <StepIndicator step={step} onJump={goToStep} />
 
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={() => goToStep((step - 1) as Step)}
-              className="mb-4 inline-flex h-9 items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-700"
-            >
-              <ArrowLeft className="h-4 w-4" /> Geri
-            </button>
-          )}
+          {/* Geri butonu her adımda yer kaplar (adım 1'de görünmez) — koşullu render
+              adım geçişlerinde altındaki tüm içeriği ~52px zıplatıyordu (flicker). */}
+          <button
+            type="button"
+            onClick={() => goToStep((step - 1) as Step)}
+            aria-hidden={step === 1}
+            tabIndex={step === 1 ? -1 : 0}
+            className={cn(
+              "mb-4 inline-flex h-9 items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-700",
+              step === 1 && "invisible"
+            )}
+          >
+            <ArrowLeft className="h-4 w-4" /> Geri
+          </button>
 
           <div className="relative min-h-[480px] overflow-hidden">
             <AnimatePresence mode="wait" custom={direction} initial={false}>
@@ -462,10 +467,13 @@ function StepBilgi({
           </div>
         ) : (
           <div className="mb-4 flex flex-col gap-2.5">
+            {/* Bireysel kullanım henüz açık olmadığından AI seviye testi vaadi şimdilik gizli —
+                bireysel plan canlıya çıkınca geri açılacak (kullanıcı kararı, 2026-07-16).
             <div className="flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5">
               <Brain className="h-[15px] w-[15px] shrink-0 text-green-600" />
               <span className="text-sm leading-tight text-green-700">Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
             </div>
+            */}
             <div className="flex items-center justify-between gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5">
               <div className="flex items-center gap-2.5">
                 <Users className="h-[15px] w-[15px] shrink-0 text-blue-600" />
