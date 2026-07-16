@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Link } from "@/navigation";
 import {
   Sparkles, Heart, Flame, Zap, Trophy, Award, Users, BarChart3,
@@ -148,17 +149,15 @@ export function BentoGrid({ locale = "tr" }: { locale?: string }) {
               <h3 className="relative type-heading mb-2 tracking-tight text-white">{t.ai.title}</h3>
               <p className="relative mb-5 max-w-sm text-sm leading-6 text-white/50">{t.ai.desc}</p>
 
-              {/* TODO: Task 5 screenshot — web/public/landing/ai-studio.png hazır olunca
-                  next/image ile burada gösterilecek; o güne kadar CSS mockup (tag pilleri). */}
-              <div className="relative mb-6 flex flex-1 flex-wrap items-start gap-1.5">
-                {t.ai.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[#57dffe]/15 bg-[#57dffe]/[0.08] px-2.5 py-1 text-[10px] font-semibold text-[#57dffe]"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              <div className="relative mb-6 flex flex-1 items-start">
+                <Image
+                  src="/landing/ai-studio.png"
+                  alt={t.ai.title}
+                  width={1280}
+                  height={800}
+                  sizes="(min-width:1024px) 560px, 100vw"
+                  className="w-full h-auto rounded-xl border border-white/10"
+                />
               </div>
 
               <Link
