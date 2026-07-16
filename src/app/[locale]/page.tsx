@@ -219,8 +219,7 @@ const orgJsonLd = {
   url: BASE,
   foundingDate: '2013',
   offers: [
-    { '@type': 'Offer', name: 'Bireysel Ücretsiz', price: '0', priceCurrency: 'GBP' },
-    { '@type': 'Offer', name: 'Premium Bireysel', price: '9.99', priceCurrency: 'GBP' },
+    { '@type': 'Offer', name: 'Kurumsal Ücretsiz', price: '0', priceCurrency: 'EUR' },
     { '@type': 'Offer', name: 'Kurumsal Pro', price: '20', priceCurrency: 'EUR' },
   ],
 };
