@@ -88,7 +88,7 @@ export default function AdminPage() {
     },
   });
 
-  if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (!ready) return <div className="py-24 flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
   const tabs: { key: Sekme; label: string; icon: React.ReactNode; badge?: number }[] = [
@@ -98,7 +98,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
+    <div className="bg-[#F3F4F6]">
       <TurkishLetterBackdrop variant="admin" opacity={0.04} />
       <main className="max-w-[1200px] mx-auto px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-6">

@@ -63,8 +63,7 @@ export default function SuperAdminHacimIndirimleriPage() {
   if (!ready || !user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-slate-50">
-      <TurkishLetterBackdrop variant="super-admin" opacity={0.04} />
+    <div>
       <main className="max-w-[800px] mx-auto px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
         <div className="flex items-center gap-3 mb-6">
           <div className="size-9 rounded-xl bg-purple-100 flex items-center justify-center">

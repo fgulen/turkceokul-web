@@ -148,7 +148,8 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
         {!fullscreen && (
           <aside
             className={cn(
-              'hidden md:flex flex-col shrink-0 sticky top-14 h-[calc(100dvh-3.5rem)]',
+              // 57px = h-14 header + 1px border-b; 56 kullanılırsa 1px taşma → hep scroll çıkar
+              'hidden md:flex flex-col shrink-0 sticky top-[57px] h-[calc(100dvh-57px)]',
               'bg-white border-r border-slate-100 transition-[width] duration-200',
               collapsed ? 'w-16' : 'w-60',
             )}

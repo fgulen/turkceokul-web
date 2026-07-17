@@ -18,8 +18,9 @@ const WIDTHS = { sm: 'w-80', md: 'w-[420px]', lg: 'w-[560px]' };
 export function SlideOver({ open, onClose, title, subtitle, width = 'md', footer, children, noDim }: Props) {
   if (!open) return null;
 
+  // z-[80]: sticky header (z-70) üstünde kalmalı — paneli navbar kesmesin
   return (
-    <div className={`fixed z-50 flex justify-end ${noDim ? 'inset-y-0 right-0' : 'inset-0'}`}>
+    <div className={`fixed z-[80] flex justify-end ${noDim ? 'inset-y-0 right-0' : 'inset-0'}`}>
       {!noDim && <div className="absolute inset-0 bg-black/30" onClick={onClose} />}
       <div className={`relative bg-white h-full ${WIDTHS[width]} shadow-2xl flex flex-col`}>
         <div className="flex items-start justify-between px-6 py-5 border-b border-slate-200 shrink-0">

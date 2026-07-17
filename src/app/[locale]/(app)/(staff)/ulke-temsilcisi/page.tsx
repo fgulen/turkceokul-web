@@ -88,14 +88,14 @@ export default function UlkeTemsilcisiPage() {
   });
 
   if (!ready) return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
+    <div className="bg-[#F3F4F6]">
       <Toaster richColors position="top-center" />
       <main className="max-w-[1200px] mx-auto px-4 py-8">
         <div className="mb-6">

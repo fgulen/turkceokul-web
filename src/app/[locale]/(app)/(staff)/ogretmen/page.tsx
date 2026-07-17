@@ -167,7 +167,7 @@ export default function OgretmenDashboard() {
   const olusturAktif = sinifAdi.trim().length > 0 && !!seciliKitapId && !olusturMutation.isPending;
 
   if (!ready) return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );

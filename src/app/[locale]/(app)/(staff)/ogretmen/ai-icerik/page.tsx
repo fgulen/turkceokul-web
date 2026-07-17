@@ -392,14 +392,14 @@ export default function AIIcerikPage() {
       : !!kaynak?.uniteId;
 
   if (!ready) return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
+    <div className="bg-[#F3F4F6]">
       <main className="max-w-[1200px] mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">

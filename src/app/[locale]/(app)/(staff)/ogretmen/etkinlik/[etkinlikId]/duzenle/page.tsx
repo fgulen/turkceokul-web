@@ -73,7 +73,7 @@ function UrlField({ label, value, onChange, placeholder = '/Medya/...' }: {
 
 function Spinner() {
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
@@ -261,13 +261,13 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
   if (!user) return null;
   if (isLoading) return <Spinner />;
   if (!etkinlik) return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <p className="text-slate-500">Etkinlik bulunamadı.</p>
     </div>
   );
 
   return (
-    <div className="bg-[#F3F4F6] min-h-[100dvh]">
+    <div className="bg-[#F3F4F6]">
       <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
 
         {/* Header */}

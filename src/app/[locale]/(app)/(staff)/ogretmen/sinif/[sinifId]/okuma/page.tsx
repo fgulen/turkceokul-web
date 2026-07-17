@@ -211,7 +211,7 @@ export default function OkumaIlerlemePage({
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] bg-[#F3F4F6]">
+      <div className="bg-[#F3F4F6]">
         <div className="max-w-[1000px] mx-auto px-4 py-8">
           <div className="p-8 text-muted-foreground">Yükleniyor...</div>
         </div>
@@ -221,7 +221,7 @@ export default function OkumaIlerlemePage({
 
   if (isError) {
     return (
-      <div className="min-h-[100dvh] bg-[#F3F4F6]">
+      <div className="bg-[#F3F4F6]">
         <div className="max-w-[1000px] mx-auto px-4 py-8">
           <div className="p-8 text-red-600">
             Sınıf verisi yüklenemedi.{' '}
@@ -238,7 +238,7 @@ export default function OkumaIlerlemePage({
 
   if (!data.atama) {
     return (
-      <div className="min-h-[100dvh] bg-[#F3F4F6]">
+      <div className="bg-[#F3F4F6]">
         <div className="max-w-[1000px] mx-auto px-4 py-8">
           <Link
             href={`/ogretmen/sinif/${sinifId}`}
@@ -284,7 +284,7 @@ export default function OkumaIlerlemePage({
     data.atama.teslimTarihi && new Date(data.atama.teslimTarihi) < new Date();
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
+    <div className="bg-[#F3F4F6]">
       <div className="max-w-[1000px] mx-auto px-4 py-8 space-y-6">
         {/* Geri + Başlık */}
         <div>
