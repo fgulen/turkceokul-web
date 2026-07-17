@@ -83,7 +83,7 @@ const faqs = [
   },
   {
     q: 'Türkçe Okulu CEFR sertifikası veriyor mu?',
-    a: 'Her ünite tamamlandığında sertifika indirebilirsiniz. Bu sertifikalar resmi CEFR belgesi değil, öğrenme kaydınızın dijital kanıtıdır. Resmi CEFR sınavları için Yunus Emre Enstitüsü\'ne yönlendirilirsiniz.',
+    a: 'Her ünite tamamlandığında sertifika indirebilirsiniz. Bu sertifikalar resmi CEFR belgesi değil, öğrenme kaydınızın dijital kanıtıdır. Resmi CEFR sınavları için yetkili kurumlara yönlendirilirsiniz.',
   },
   {
     q: 'Hangi dillerde arayüz var?',
