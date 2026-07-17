@@ -15,6 +15,7 @@ import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
+import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
 
 function KullanicilarTab() {
   const qc = useQueryClient();
@@ -97,12 +98,7 @@ function KullanicilarTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
-          <input value={arama} onChange={e => { setArama(e.target.value); setSayfa(1); }}
-            placeholder="Ad, e-posta ara..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        </div>
+        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
         <select value={rolFilter} onChange={e => { setRolFilter(e.target.value); setSayfa(1); }}
           className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
           <option value="">Tüm Roller</option>
@@ -189,15 +185,9 @@ function KullanicilarTab() {
             )}
           </tbody>
         </table>
-        {toplam > 50 && (
-          <div className="px-5 py-3 border-t border-slate-100 flex gap-2">
-            <button disabled={sayfa === 1} onClick={() => setSayfa(p => p - 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-40">Önceki</button>
-            <button disabled={sayfa * 50 >= toplam} onClick={() => setSayfa(p => p + 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-40">Sonraki</button>
-          </div>
-        )}
       </div>
+
+      <Sayfalama sayfa={sayfa} totalPages={Math.max(1, Math.ceil(toplam / 50))} toplam={toplam} sayfaBoyutu={50} onSayfa={setSayfa} />
 
       <SlideOver
         open={!!editUser}

@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Package, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SlideOver } from '@/components/slide-over';
-import { SortTh, Sayfalama, trSirala, csvIndir } from '@/components/staff/table-kit';
+import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir } from '@/components/staff/table-kit';
 import { apiHataMesaji } from '../shared';
 
 const SAYFA_BOYUTU = 20;
@@ -89,6 +89,7 @@ export default function KurumsalSatisPage() {
   }
 
   return (
+    <>
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
       {/* Toolbar */}
       <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
@@ -100,20 +101,7 @@ export default function KurumsalSatisPage() {
           </span>
         </div>
 
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-2.5 top-2 size-3.5 text-slate-400" />
-          <input
-            value={arama}
-            onChange={e => { setArama(e.target.value); setSayfa(1); }}
-            placeholder="Kurum, yetkili, ülke ara..."
-            className="w-full pl-8 pr-7 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-          {arama && (
-            <button onClick={() => { setArama(''); setSayfa(1); }}
-              className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
+        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Kurum, yetkili, ülke ara..." />
 
         <button
           onClick={exportCsv}
@@ -187,10 +175,12 @@ export default function KurumsalSatisPage() {
         </table>
       </div>
 
-      <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={gorunen.length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
-
-      <SiparisDetaySlideOver siparis={seciliSiparis} onClose={() => setSeciliSiparis(null)} />
     </div>
+
+    <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={gorunen.length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+
+    <SiparisDetaySlideOver siparis={seciliSiparis} onClose={() => setSeciliSiparis(null)} />
+    </>
   );
 }
 

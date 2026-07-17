@@ -15,10 +15,12 @@ import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
+import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
 
 function KitaplarTab() {
   const qc = useQueryClient();
   const [arama, setArama] = useState('');
+  const [sayfa, setSayfa] = useState(1);
   const [editKitap, setEditKitap] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [secili, setSecili] = useState<Set<string>>(new Set());
@@ -27,6 +29,11 @@ function KitaplarTab() {
     queryKey: ['sa-kitaplar', arama],
     queryFn: () => api.get('/api/super-admin/kitaplar', { params: { arama } }).then(r => r.data),
   });
+
+  const SAYFA_BOYUTU = 20;
+  const totalPages = Math.max(1, Math.ceil((kitaplar as any[]).length / SAYFA_BOYUTU));
+  const guvenliSayfa = Math.min(sayfa, totalPages);
+  const sayfadakiler = (kitaplar as any[]).slice((guvenliSayfa - 1) * SAYFA_BOYUTU, guvenliSayfa * SAYFA_BOYUTU);
 
   const guncelleMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
@@ -51,12 +58,7 @@ function KitaplarTab() {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
-          <input value={arama} onChange={e => setArama(e.target.value)}
-            placeholder="Ders kitabı ara..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        </div>
+        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
         {secili.size > 0 && (
           <button onClick={() => topluSilMutation.mutate([...secili])}
             className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
@@ -88,7 +90,7 @@ function KitaplarTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {kitaplar.map((k: any) => (
+            {sayfadakiler.map((k: any) => (
               <tr key={k.id} className="odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/30">
                 <td className="px-4 py-2">
                   <input type="checkbox" checked={secili.has(k.id)} onChange={() => toggleSecili(k.id)} />
@@ -141,6 +143,8 @@ function KitaplarTab() {
           </tbody>
         </table>
       </div>
+
+      <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={(kitaplar as any[]).length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
 
       <SlideOver
         open={!!editKitap}

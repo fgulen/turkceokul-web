@@ -3,7 +3,36 @@
 // DataTable şablonunun ortak parçaları (4 Şablon Kuralı: Liste).
 // Küçük veri setleri için client-side sıralama/sayfalama desenini standartlaştırır.
 
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
+
+// Standart arama kutusu (referans: Ülkeler "Ülke ara..."): kompakt, ikonlu,
+// doluyken X ile temizlenir. Tüm staff listelerinde bu kullanılır.
+interface AramaInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}
+
+export function AramaInput({ value, onChange, placeholder = 'Ara...' }: AramaInputProps) {
+  return (
+    <div className="relative flex-1 min-w-[180px] max-w-xs">
+      <Search className="absolute left-2.5 top-2 size-3.5 text-slate-400" />
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full pl-8 pr-7 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+          aria-label="Aramayı temizle">
+          <X className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function buildPageRange(current: number, total: number): (number | '...')[] {
   if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
@@ -76,7 +105,10 @@ interface SayfalamaProps {
 export function Sayfalama({ sayfa, totalPages, toplam, sayfaBoyutu, onSayfa }: SayfalamaProps) {
   if (totalPages <= 1) return null;
   return (
-    <div className="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between">
+    // Kartın DIŞINA, kardeş olarak yerleştirilir (kartın overflow-hidden'ı
+    // sticky'yi etkisizleştirir). Uzun listede viewport altına yapışır —
+    // sayfa değiştirmek için en alta kaydırmak gerekmez.
+    <div className="sticky bottom-0 z-10 mt-2 bg-white border border-slate-200 rounded-xl shadow-sm px-4 py-2 flex items-center justify-between">
       <span className="text-xs text-slate-400 tabular-nums">
         {(sayfa - 1) * sayfaBoyutu + 1}–{Math.min(sayfa * sayfaBoyutu, toplam)} / {toplam}
       </span>

@@ -11,7 +11,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, Download, Globe, Pencil, Plus, Search,
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
-import { buildPageRange } from '../shared';
+import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
 import { UlkeDuzenleSlideOver, type UlkeOzet } from './ulke-duzenle';
 
 const SAYFA_BOYUTU = 20;
@@ -119,6 +119,7 @@ export default function UlkelerListePage() {
   }
 
   return (
+    <>
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
       {/* Toolbar */}
       <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
@@ -130,20 +131,7 @@ export default function UlkelerListePage() {
           </span>
         </div>
 
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-2.5 top-2 size-3.5 text-slate-400" />
-          <input
-            value={arama}
-            onChange={e => { setArama(e.target.value); setSayfa(1); }}
-            placeholder="Ülke ara..."
-            className="w-full pl-8 pr-7 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-          {arama && (
-            <button onClick={() => { setArama(''); setSayfa(1); }}
-              className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
+        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ülke ara..." />
 
         <div className="flex items-center gap-2 ml-auto">
           <button
@@ -237,51 +225,19 @@ export default function UlkelerListePage() {
           </tbody>
         </table>
       </div>
-
-      {/* Sayfalama */}
-      {totalPages > 1 && (
-        <div className="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between">
-          <span className="text-xs text-slate-400 tabular-nums">
-            {(guvenliSayfa - 1) * SAYFA_BOYUTU + 1}–{Math.min(guvenliSayfa * SAYFA_BOYUTU, gorunen.length)} / {gorunen.length}
-          </span>
-          <div className="flex items-center gap-0.5">
-            <button
-              disabled={guvenliSayfa === 1}
-              onClick={() => setSayfa(p => p - 1)}
-              className="size-7 flex items-center justify-center rounded text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              ‹
-            </button>
-            {buildPageRange(guvenliSayfa, totalPages).map((p, i) =>
-              p === '...'
-                ? <span key={`d${i}`} className="px-1 text-slate-400 text-xs">…</span>
-                : <button
-                    key={p}
-                    onClick={() => setSayfa(Number(p))}
-                    className={`size-7 flex items-center justify-center rounded text-xs transition-colors ${
-                      guvenliSayfa === p ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'
-                    }`}>
-                    {p}
-                  </button>
-            )}
-            <button
-              disabled={guvenliSayfa === totalPages}
-              onClick={() => setSayfa(p => p + 1)}
-              className="size-7 flex items-center justify-center rounded text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              ›
-            </button>
-          </div>
-        </div>
-      )}
-
-      <UlkeDuzenleSlideOver ulke={editUlke} onClose={() => setEditUlke(null)} />
-
-      <DeleteConfirmModal
-        open={!!deleteTarget}
-        entityName={deleteTarget?.name ?? ''}
-        onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
-        onCancel={() => setDeleteTarget(null)}
-        loading={silMutation.isPending}
-      />
     </div>
+
+    <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={gorunen.length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+
+    <UlkeDuzenleSlideOver ulke={editUlke} onClose={() => setEditUlke(null)} />
+
+    <DeleteConfirmModal
+      open={!!deleteTarget}
+      entityName={deleteTarget?.name ?? ''}
+      onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
+      onCancel={() => setDeleteTarget(null)}
+      loading={silMutation.isPending}
+    />
+    </>
   );
 }
