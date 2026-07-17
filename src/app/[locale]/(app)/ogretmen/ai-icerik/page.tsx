@@ -133,6 +133,9 @@ export default function AIIcerikPage() {
   const [yonergeDili, setYonergeDili] = useState<'' | 'EN' | 'AR' | 'RU'>('');
   const [resimli, setResimli] = useState(false);
   const [bultenSinifId, setBultenSinifId] = useState<number | ''>('');
+  const [bultenKapsam, setBultenKapsam] = useState<'sinif' | 'ogrenci'>('sinif');
+  const [bultenOgrenciId, setBultenOgrenciId] = useState<number | ''>('');
+  const [bultenPeriyot, setBultenPeriyot] = useState<'haftalik' | 'donemlik'>('haftalik');
 
   // Sonuçlar: sekme başına saklanır
   const [sonuclar, setSonuclar] = useState<Partial<Record<TabId, TabSonuc>>>({});
@@ -146,6 +149,17 @@ export default function AIIcerikPage() {
     queryKey: ['siniflarim'],
     queryFn: () => api.get('/api/ogretmen/siniflarim').then(r => r.data),
     enabled: !!user,
+  });
+
+  interface OgrenciOzet {
+    userId: number;
+    ad: string;
+  }
+
+  const { data: bultenOgrenciler = [] } = useQuery<OgrenciOzet[]>({
+    queryKey: ['bulten-ogrenciler', bultenSinifId],
+    queryFn: () => api.get(`/api/ogretmen/sinif/${bultenSinifId}/rapor`).then(r => r.data.ogrenciler),
+    enabled: !!bultenSinifId && aktifTab === 'bulten',
   });
 
   const { data: gecmisData, refetch: gecmisYenile } = useQuery<{
@@ -197,7 +211,11 @@ export default function AIIcerikPage() {
   const uretMutation = useMutation({
     mutationFn: async () => {
       if (aktifTab === 'bulten')
-        return aiApi.post('/api/ai/sinif-bulteni', { sinifId: bultenSinifId }).then(r => r.data);
+        return aiApi.post('/api/ai/sinif-bulteni', {
+          sinifId: bultenSinifId,
+          ogrenciId: bultenKapsam === 'ogrenci' ? bultenOgrenciId : undefined,
+          periyot: bultenPeriyot,
+        }).then(r => r.data);
       return aiApi.post('/api/ai/icerik-uret', {
         tip: aktifTab,                       // 'kahoot' dahil
         soruSayisi,
@@ -226,7 +244,8 @@ export default function AIIcerikPage() {
     },
     onError: (err: Error) => {
       // Backend hata kodları: limit_asili (aylık kredi bitti), premium_gerekli (>5 soru
-      // ücretsiz planda), ai_hata (AI sağlayıcı/parse hatası, 2 denemede de başarısız)
+      // ücretsiz planda), ai_hata (AI sağlayıcı/parse hatası, 2 denemede de başarısız),
+      // ogrenci_sinifta_degil (bülten için seçilen öğrenci sınıfta değil)
       const resp = (err as { response?: { status?: number; data?: { kod?: string; mesaj?: string } } }).response;
       if (resp?.status === 403 && resp.data?.kod === 'limit_asili') {
         setHata('Aylık AI üretim limitine ulaştın (ücretsiz planda 10 üretim/ay, tüm AI araçları için ortak). Limit her ayın başında yenilenir — sınırsız üretim için Kurumsal Pro\'ya geçebilirsin.');
@@ -234,6 +253,10 @@ export default function AIIcerikPage() {
       }
       if (resp?.status === 403 && resp.data?.kod === 'premium_gerekli') {
         setHata('5\'ten fazla soru üretmek için Kurumsal Pro lisansı gerekir. Ücretsiz planda soru sayısı 5 ile sınırlıdır.');
+        return;
+      }
+      if (resp?.status === 400 && resp.data?.kod === 'ogrenci_sinifta_degil') {
+        setHata('Seçilen öğrenci bu sınıfta değil. Lütfen öğrenci listesini yenileyin veya başka bir öğrenci seçin.');
         return;
       }
       if (resp?.status === 502 && resp.data?.kod === 'ai_hata') {
@@ -358,7 +381,7 @@ export default function AIIcerikPage() {
   const canKaydet = uretimTabAktif && !!kaynak?.uniteId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
 
   const canUret = aktifTab === 'bulten'
-    ? !!bultenSinifId
+    ? !!bultenSinifId && (bultenKapsam === 'sinif' ? true : !!bultenOgrenciId)
     : aktifTab === 'pdf_import'
       ? false
       : !!kaynak?.uniteId;
@@ -532,6 +555,13 @@ export default function AIIcerikPage() {
                 siniflar={siniflar}
                 seciliSinifId={bultenSinifId}
                 onChange={setBultenSinifId}
+                kapsam={bultenKapsam}
+                onKapsamChange={setBultenKapsam}
+                ogrenciler={bultenOgrenciler}
+                seciliOgrenciId={bultenOgrenciId}
+                onOgrenciChange={setBultenOgrenciId}
+                periyot={bultenPeriyot}
+                onPeriyotChange={setBultenPeriyot}
               />
             ) : aktifTab === 'pdf_import' ? (
               <MdImport />
@@ -909,14 +939,30 @@ function IcerikForm({
   );
 }
 
+interface BultenOgrenci {
+  userId: number;
+  ad: string;
+}
+
 function BultenForm({
   siniflar, seciliSinifId, onChange,
+  kapsam, onKapsamChange,
+  ogrenciler, seciliOgrenciId, onOgrenciChange,
+  periyot, onPeriyotChange,
 }: {
   siniflar: Sinif[]; seciliSinifId: number | '';
   onChange: (v: number | '') => void;
+  kapsam: 'sinif' | 'ogrenci';
+  onKapsamChange: (v: 'sinif' | 'ogrenci') => void;
+  ogrenciler: BultenOgrenci[];
+  seciliOgrenciId: number | '';
+  onOgrenciChange: (v: number | '') => void;
+  periyot: 'haftalik' | 'donemlik';
+  onPeriyotChange: (v: 'haftalik' | 'donemlik') => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Sınıf Seçimi */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           Sınıf
@@ -926,7 +972,10 @@ function BultenForm({
         ) : (
           <select
             value={seciliSinifId}
-            onChange={e => onChange(e.target.value ? Number(e.target.value) : '')}
+            onChange={e => {
+              onChange(e.target.value ? Number(e.target.value) : '');
+              onOgrenciChange('');
+            }}
             className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
           >
             <option value="">Sınıf seçin...</option>
@@ -934,8 +983,83 @@ function BultenForm({
           </select>
         )}
       </div>
+
+      {/* Kapsam Segmenti */}
+      {seciliSinifId && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            Kapsam
+          </label>
+          <div className="flex gap-2">
+            {(['sinif', 'ogrenci'] as const).map(k => (
+              <button
+                key={k}
+                onClick={() => {
+                  onKapsamChange(k);
+                  if (k === 'sinif') onOgrenciChange('');
+                }}
+                className={cn(
+                  'flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border',
+                  kapsam === k
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-primary/40',
+                )}
+              >
+                {k === 'sinif' ? 'Tüm Sınıf Özeti' : 'Tek Öğrenci'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Öğrenci Seçimi (sadece öğrenci modunda) */}
+      {seciliSinifId && kapsam === 'ogrenci' && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            Öğrenci
+          </label>
+          {ogrenciler.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">Bu sınıfta öğrenci bulunmuyor.</p>
+          ) : (
+            <select
+              value={seciliOgrenciId}
+              onChange={e => onOgrenciChange(e.target.value ? Number(e.target.value) : '')}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+            >
+              <option value="">Öğrenci seçin...</option>
+              {ogrenciler.map(o => <option key={o.userId} value={o.userId}>{o.ad}</option>)}
+            </select>
+          )}
+        </div>
+      )}
+
+      {/* Periyot Segmenti */}
+      {seciliSinifId && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            Periyot
+          </label>
+          <div className="flex gap-2">
+            {(['haftalik', 'donemlik'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => onPeriyotChange(p)}
+                className={cn(
+                  'flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border',
+                  periyot === p
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-primary/40',
+                )}
+              >
+                {p === 'haftalik' ? 'Haftalık' : 'Dönemlik'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-slate-400 leading-relaxed">
-        Seçili sınıfın aktivite verilerine göre velilere gönderilecek haftalık bülten oluşturulur.
+        Seçili sınıfın aktivite verilerine göre velilere gönderilecek bülten oluşturulur.
       </p>
     </div>
   );
