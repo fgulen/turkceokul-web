@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react';
+import { ExternalLink, Menu, PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react';
 import { Link, usePathname } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { navForRole, type NavGroup } from '@/config/navigation';
@@ -62,7 +62,10 @@ function NavList({ groups, pathname, collapsed, onNavigate }: NavListProps) {
                   )}
                 >
                   <Icon className="size-4.5 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+                  {!collapsed && item.external && (
+                    <ExternalLink className="size-3 text-slate-300 shrink-0" aria-label="Öğrenci görünümünde açılır" />
+                  )}
                 </Link>
               );
             })}

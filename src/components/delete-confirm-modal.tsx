@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface Props {
@@ -27,8 +28,10 @@ export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, load
     onCancel();
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+  // Portal + z-[80]: SlideOver ile aynı sebep — üst öğelerin stacking
+  // context'i modalı sticky header'ın altında bırakmasın.
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -77,6 +80,7 @@ export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, load
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

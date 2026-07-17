@@ -15,6 +15,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   roles: UserRole[];
+  /** Staff kabuğundan çıkıp öğrenci görünümüne (learn shell) götüren linkler */
+  external?: boolean;
 }
 
 export interface NavGroup {
@@ -70,7 +72,7 @@ export const STAFF_NAV: NavGroup[] = [
     label: 'İçerik',
     items: [
       { href: '/ogretmen/ai-icerik', label: 'AI İçerik Stüdyosu', icon: Sparkles, roles: OGRETMENLIK },
-      { href: '/kutuphane',          label: 'Kütüphane',          icon: BookOpen, roles: STAFF },
+      { href: '/kutuphane',          label: 'Kütüphane',          icon: BookOpen, roles: STAFF, external: true },
     ],
   },
   {

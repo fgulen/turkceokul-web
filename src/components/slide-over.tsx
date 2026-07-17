@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface Props {
@@ -18,8 +19,10 @@ const WIDTHS = { sm: 'w-80', md: 'w-[420px]', lg: 'w-[560px]' };
 export function SlideOver({ open, onClose, title, subtitle, width = 'md', footer, children, noDim }: Props) {
   if (!open) return null;
 
-  // z-[80]: sticky header (z-70) üstünde kalmalı — paneli navbar kesmesin
-  return (
+  // Portal + z-[80]: sayfa ağacında kalsa üst öğelerin stacking context'i
+  // (örn. layout main'inin position:relative + zIndex:1'i) paneli sticky
+  // header'ın (z-70) altına iter — body'ye taşınınca her sayfada üstte kalır.
+  return createPortal(
     <div className={`fixed z-[80] flex justify-end ${noDim ? 'inset-y-0 right-0' : 'inset-0'}`}>
       {!noDim && <div className="absolute inset-0 bg-black/30" onClick={onClose} />}
       <div className={`relative bg-white h-full ${WIDTHS[width]} shadow-2xl flex flex-col`}>
@@ -41,6 +44,7 @@ export function SlideOver({ open, onClose, title, subtitle, width = 'md', footer
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

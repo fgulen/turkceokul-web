@@ -400,7 +400,7 @@ export default function AIIcerikPage() {
 
   return (
     <div className="bg-[#F3F4F6]">
-      <main className="max-w-[1200px] mx-auto px-4 py-8">
+      <main className="max-w-[1200px] px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Sparkles className="size-6 text-primary" />
