@@ -3,6 +3,7 @@
 // DataTable şablonunun ortak parçaları (4 Şablon Kuralı: Liste).
 // Küçük veri setleri için client-side sıralama/sayfalama desenini standartlaştırır.
 
+import { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
 
 // Standart arama kutusu (referans: Ülkeler "Ülke ara..."): kompakt, ikonlu,
@@ -69,6 +70,75 @@ export function csvIndir(dosyaAdi: string, basliklar: string[], satirlar: (strin
   URL.revokeObjectURL(url);
 }
 
+// Toplu seçim + toplu silme standardı (referans: Ülkeler). Set<ID> tabanlı seçim
+// state'i + header/row checkbox'ları + "Toplu Sil (n)" butonu. Her listede tekrar
+// yazılan Set<number> boilerplate'inin yerini alır.
+export function useTopluSecim<ID extends string | number>() {
+  const [secili, setSecili] = useState<Set<ID>>(new Set());
+
+  function toggleBir(id: ID) {
+    setSecili(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  }
+
+  function toggleHepsi(gorunenIdler: ID[]) {
+    setSecili(prev => (prev.size === gorunenIdler.length && gorunenIdler.length > 0) ? new Set() : new Set(gorunenIdler));
+  }
+
+  function temizle() {
+    setSecili(new Set());
+  }
+
+  return { secili, toggleBir, toggleHepsi, temizle };
+}
+
+interface TopluSecimThProps<ID extends string | number> {
+  gorunenIdler: ID[];
+  secili: Set<ID>;
+  onToggleHepsi: (idler: ID[]) => void;
+}
+
+export function TopluSecimTh<ID extends string | number>({ gorunenIdler, secili, onToggleHepsi }: TopluSecimThProps<ID>) {
+  return (
+    <th className="w-10 px-4 py-2.5">
+      <input type="checkbox"
+        checked={secili.size === gorunenIdler.length && gorunenIdler.length > 0}
+        onChange={() => onToggleHepsi(gorunenIdler)} />
+    </th>
+  );
+}
+
+interface TopluSecimTdProps<ID extends string | number> {
+  id: ID;
+  secili: Set<ID>;
+  onToggle: (id: ID) => void;
+}
+
+export function TopluSecimTd<ID extends string | number>({ id, secili, onToggle }: TopluSecimTdProps<ID>) {
+  return (
+    <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
+      <input type="checkbox" checked={secili.has(id)} onChange={() => onToggle(id)} />
+    </td>
+  );
+}
+
+export function TopluSilButton({ sayi, onClick }: { sayi: number; onClick: () => void }) {
+  if (sayi === 0) return null;
+  return (
+    <button onClick={onClick}
+      className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
+      Toplu Sil ({sayi})
+    </button>
+  );
+}
+
+// Bulk endpoint yoksa: tekil DELETE'leri paralel çalıştırır, başarısız sayısını
+// döner (referans: Ülkeler toplu silme — "bağlı kurum/kayıt" gibi sebeplerle
+// bazı silmeler reddedilebilir, hepsi başarısız olmadan diğerleri uygulanır).
+export async function topluSilParalel<ID>(ids: ID[], silFn: (id: ID) => Promise<any>): Promise<number> {
+  const sonuclar = await Promise.allSettled(ids.map(id => silFn(id)));
+  return sonuclar.filter(s => s.status === 'rejected').length;
+}
+
 interface SortThProps<K extends string> {
   colKey: K;
   sortKey: K;
@@ -76,14 +146,15 @@ interface SortThProps<K extends string> {
   onSort: (key: K) => void;
   children: React.ReactNode;
   align?: 'left' | 'center' | 'right';
+  className?: string;
 }
 
-export function SortTh<K extends string>({ colKey, sortKey, sortDir, onSort, children, align = 'left' }: SortThProps<K>) {
+export function SortTh<K extends string>({ colKey, sortKey, sortDir, onSort, children, align = 'left', className = '' }: SortThProps<K>) {
   const aktif = sortKey === colKey;
   const Icon = !aktif ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown;
   const hiza = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left';
   return (
-    <th className={`px-4 py-2.5 font-medium text-slate-600 ${hiza}`}>
+    <th className={`px-4 py-2.5 font-medium text-slate-600 ${hiza} ${className}`}>
       <button
         onClick={() => onSort(colKey)}
         className={`inline-flex items-center gap-1 hover:text-slate-900 transition-colors ${aktif ? 'text-slate-900' : ''}`}>

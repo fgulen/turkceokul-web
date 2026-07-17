@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Users, Globe, BarChart3, Shield,
@@ -15,7 +15,11 @@ import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
-import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
+import {
+  AramaInput, Sayfalama, SortTh, trSirala, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton,
+} from '@/components/staff/table-kit';
+
+type SortKey = 'name' | 'seviye' | 'uniteSayisi' | 'visible' | 'onaylandi';
 
 function KitaplarTab() {
   const qc = useQueryClient();
@@ -23,13 +27,23 @@ function KitaplarTab() {
   const [sayfa, setSayfa] = useState(1);
   const [editKitap, setEditKitap] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [secili, setSecili] = useState<Set<string>>(new Set());
+  const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<string>();
   const [topluOnay, setTopluOnay] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const { data: kitaplar = [] } = useQuery({
+  const { data: kitaplarHam = [] } = useQuery({
     queryKey: ['sa-kitaplar', arama],
     queryFn: () => api.get('/api/super-admin/kitaplar', { params: { arama } }).then(r => r.data),
   });
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+    setSayfa(1);
+  }
+
+  const kitaplar = useMemo(() => trSirala(kitaplarHam as any[], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
 
   const SAYFA_BOYUTU = 20;
   const totalPages = Math.max(1, Math.ceil((kitaplar as any[]).length / SAYFA_BOYUTU));
@@ -49,12 +63,8 @@ function KitaplarTab() {
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: string[]) => api.post('/api/super-admin/kitaplar/toplu-sil', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setSecili(new Set()); setTopluOnay(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); temizle(); setTopluOnay(false); },
   });
-
-  function toggleSecili(id: string) {
-    setSecili(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
-  }
 
   return (
     <div className="space-y-4">
@@ -68,12 +78,7 @@ function KitaplarTab() {
           </div>
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
           <div className="flex items-center gap-2 ml-auto">
-            {secili.size > 0 && (
-              <button onClick={() => setTopluOnay(true)}
-                className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
-                Toplu Sil ({secili.size})
-              </button>
-            )}
+            <TopluSilButton sayi={secili.size} onClick={() => setTopluOnay(true)} />
             {/* Ders kitabı üretimi AI Stüdyosu'nda yapılır — manuel oluşturma endpoint'i yok */}
             <Link href="/ogretmen/ai-icerik"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
@@ -84,25 +89,19 @@ function KitaplarTab() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="w-10 px-4 py-2.5">
-                <input type="checkbox"
-                  checked={secili.size === kitaplar.length && kitaplar.length > 0}
-                  onChange={() => setSecili(secili.size === kitaplar.length ? new Set() : new Set(kitaplar.map((k: any) => k.id)))} />
-              </th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Kitap</th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Seviye</th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Ünite</th>
-              <th className="px-4 py-2.5 text-center font-medium text-slate-600">Yayın</th>
-              <th className="px-4 py-2.5 text-center font-medium text-slate-600">Onay</th>
+              <TopluSecimTh gorunenIdler={kitaplar.map((k: any) => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+              <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
+              <SortTh colKey="seviye" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Seviye</SortTh>
+              <SortTh colKey="uniteSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ünite</SortTh>
+              <SortTh colKey="visible" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Yayın</SortTh>
+              <SortTh colKey="onaylandi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Onay</SortTh>
               <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {sayfadakiler.map((k: any) => (
               <tr key={k.id} className="odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/30">
-                <td className="px-4 py-2">
-                  <input type="checkbox" checked={secili.has(k.id)} onChange={() => toggleSecili(k.id)} />
-                </td>
+                <TopluSecimTd id={k.id} secili={secili} onToggle={toggleBir} />
                 <td className="px-4 py-2">
                   <Link
                     href={`/ders/${k.id}`}

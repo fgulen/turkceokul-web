@@ -3,7 +3,7 @@
 // Okuma Kitapları (kütüphane yönetimi) — Liste şablonu (4 Şablon Kuralı: DataTable).
 // Ekleme/düzenleme Tam Sayfa Form şablonu: /editor/kutuphane/yeni ve [id]/duzenle.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Eye, Library, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -12,7 +12,12 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
+import {
+  SortTh, trSirala, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton, topluSilParalel,
+} from '@/components/staff/table-kit';
 import { KitapDuzenleSlideOver } from './kitap-duzenle-slideover';
+
+type SortKey = 'baslik' | 'yazar' | 'seviye' | 'tur' | 'durum';
 
 interface KutuphaneKitap {
   id: string;
@@ -42,17 +47,37 @@ export default function EditorKutuphaneListPage() {
   const [silOnay, setSilOnay] = useState<KutuphaneKitap | null>(null);
   // ?duzenle=<id> derin linki: eski /duzenle route'u buraya yönlendirir
   const [duzenleId, setDuzenleId] = useState<string | null>(() => searchParams?.get('duzenle') ?? null);
+  const [sortKey, setSortKey] = useState<SortKey>('baslik');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<string>();
+  const [topluOnay, setTopluOnay] = useState(false);
 
-  const { data: kitaplar, isLoading } = useQuery<KutuphaneKitap[]>({
+  const { data: kitaplarHam, isLoading } = useQuery<KutuphaneKitap[]>({
     queryKey: ['editor-kutuphane-kitaplar'],
     queryFn: () => api.get('/api/kutuphane/kitaplar').then(r => r.data),
     enabled: !!user,
   });
 
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  }
+
+  const kitaplar = useMemo(() => trSirala(kitaplarHam ?? [], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
+
   const sil = useMutation({
     mutationFn: (id: string) => api.delete(`/api/kutuphane/kitaplar/${id}`),
     onSuccess: () => {
       setSilOnay(null);
+      queryClient.invalidateQueries({ queryKey: ['editor-kutuphane-kitaplar'] });
+    },
+  });
+
+  const topluSil = useMutation({
+    mutationFn: (ids: string[]) => topluSilParalel(ids, id => api.delete(`/api/kutuphane/kitaplar/${id}`)),
+    onSuccess: () => {
+      temizle();
+      setTopluOnay(false);
       queryClient.invalidateQueries({ queryKey: ['editor-kutuphane-kitaplar'] });
     },
   });
@@ -68,12 +93,15 @@ export default function EditorKutuphaneListPage() {
             {kitaplar?.length ?? 0}
           </span>
         </div>
-        <Link
-          href="/editor/kutuphane/yeni"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors ml-auto"
-        >
-          <Plus className="size-3.5" /> Kitap Ekle
-        </Link>
+        <div className="flex items-center gap-2 ml-auto">
+          <TopluSilButton sayi={secili.size} onClick={() => setTopluOnay(true)} />
+          <Link
+            href="/editor/kutuphane/yeni"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="size-3.5" /> Kitap Ekle
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -93,17 +121,19 @@ export default function EditorKutuphaneListPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-2.5 text-left font-medium text-slate-600">Kitap</th>
-                <th className="px-4 py-2.5 text-left font-medium text-slate-600">Yazar</th>
-                <th className="px-4 py-2.5 text-center font-medium text-slate-600">Seviye</th>
-                <th className="px-4 py-2.5 text-center font-medium text-slate-600">Tür</th>
-                <th className="px-4 py-2.5 text-center font-medium text-slate-600">Durum</th>
+                <TopluSecimTh gorunenIdler={kitaplar.map(k => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+                <SortTh colKey="baslik" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
+                <SortTh colKey="yazar" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Yazar</SortTh>
+                <SortTh colKey="seviye" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Seviye</SortTh>
+                <SortTh colKey="tur" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Tür</SortTh>
+                <SortTh colKey="durum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Durum</SortTh>
                 <th className="px-4 py-2.5 w-40" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {kitaplar.map(k => (
                 <tr key={k.id} className="group odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/50 transition-colors">
+                  <TopluSecimTd id={k.id} secili={secili} onToggle={toggleBir} />
                   <td className="px-4 py-2.5">
                     <div className="font-medium text-slate-800">{k.baslik}</div>
                     <div className="text-[11px] text-slate-400 font-mono">{k.id}</div>
@@ -158,6 +188,14 @@ export default function EditorKutuphaneListPage() {
         onConfirm={() => silOnay && sil.mutate(silOnay.id)}
         onCancel={() => setSilOnay(null)}
         loading={sil.isPending}
+      />
+
+      <DeleteConfirmModal
+        open={topluOnay}
+        entityName={`${secili.size} kitap`}
+        onConfirm={() => topluSil.mutate([...secili])}
+        onCancel={() => setTopluOnay(false)}
+        loading={topluSil.isPending}
       />
 
       <KitapDuzenleSlideOver kitapId={duzenleId} onClose={() => setDuzenleId(null)} />

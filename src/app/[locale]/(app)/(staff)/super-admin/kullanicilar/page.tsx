@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   BookOpen, Users, Globe, BarChart3, Shield,
   Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
@@ -15,7 +15,9 @@ import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
-import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
+import { AramaInput, Sayfalama, SortTh, useTopluSecim, TopluSecimTh, TopluSecimTd } from '@/components/staff/table-kit';
+
+type SortKey = 'name' | 'rol' | 'kurum' | 'durum';
 
 function KullanicilarTab() {
   const qc = useQueryClient();
@@ -26,14 +28,23 @@ function KullanicilarTab() {
   const [sayfa, setSayfa] = useState(1);
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [secili, setSecili] = useState<Set<number>>(new Set());
+  const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+    setSayfa(1);
+  }
 
   const { data } = useQuery({
-    queryKey: ['sa-kullanicilar', rolFilter, arama, sayfa],
+    queryKey: ['sa-kullanicilar', rolFilter, arama, sayfa, sortKey, sortDir],
     queryFn: () => api.get('/api/super-admin/kullanicilar', {
-      params: { rol: rolFilter || undefined, arama: arama || undefined, sayfa, sayfaBoyutu: 50 }
+      params: { rol: rolFilter || undefined, arama: arama || undefined, sayfa, sayfaBoyutu: 50, sortKey, sortDir }
     }).then(r => r.data),
+    placeholderData: keepPreviousData,
   });
 
   const kullanicilar: any[] = data?.liste ?? [];
@@ -60,12 +71,12 @@ function KullanicilarTab() {
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-sil', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setSecili(new Set()); setTopluOnay(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); setTopluOnay(false); },
   });
 
   const topluOnaylaMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-onayla', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setSecili(new Set()); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); },
   });
 
   const askiyaMutation = useMutation({
@@ -91,10 +102,6 @@ function KullanicilarTab() {
       router.push(roleRoutes[data.user.role] ?? '/pano');
     },
   });
-
-  function toggleSecili(id: number) {
-    setSecili(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
-  }
 
   return (
     <div className="space-y-4">
@@ -134,24 +141,18 @@ function KullanicilarTab() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="w-10 px-4 py-2.5">
-                <input type="checkbox"
-                  checked={secili.size === kullanicilar.length && kullanicilar.length > 0}
-                  onChange={() => setSecili(secili.size === kullanicilar.length ? new Set() : new Set(kullanicilar.map((u: any) => u.id)))} />
-              </th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Kullanıcı</th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Rol</th>
-              <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden md:table-cell">Kurum</th>
-              <th className="px-4 py-2.5 text-center font-medium text-slate-600">Durum</th>
+              <TopluSecimTh gorunenIdler={kullanicilar.map((u: any) => u.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+              <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kullanıcı</SortTh>
+              <SortTh colKey="rol" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Rol</SortTh>
+              <SortTh colKey="kurum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kurum</SortTh>
+              <SortTh colKey="durum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Durum</SortTh>
               <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {kullanicilar.map((u: any) => (
               <tr key={u.id} className="odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/30">
-                <td className="px-4 py-2">
-                  <input type="checkbox" checked={secili.has(u.id)} onChange={() => toggleSecili(u.id)} />
-                </td>
+                <TopluSecimTd id={u.id} secili={secili} onToggle={toggleBir} />
                 <td className="px-4 py-2">
                   <div className="font-medium text-slate-900">{u.name} {u.surname}</div>
                   <div className="text-xs text-slate-400">{u.email}</div>
