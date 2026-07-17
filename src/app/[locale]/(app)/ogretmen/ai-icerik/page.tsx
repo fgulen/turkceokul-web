@@ -79,6 +79,7 @@ interface Soru {
   hint?: string;
   explanation?: string;
   image_id?: string | null;
+  imageUrl?: string | null;
   // Eski format (backward compat)
   description?: string;
   kelime1?: string;
@@ -307,6 +308,7 @@ export default function AIIcerikPage() {
         question: s.question ?? s.description ?? '',
         options: s.options ?? [s.kelime1, s.kelime2, s.kelime3, s.kelime4].filter(Boolean) as string[],
         answer: s.answer ?? s.kelime1 ?? '',
+        imageId: s.image_id ?? undefined,
       }));
       return api.post('/api/ai/sinifa-kaydet', {
         tip: aktifTab,
@@ -802,7 +804,6 @@ function BultenForm({
 
 function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: string[] }) {
   const harfler = ['A', 'B', 'C', 'D'];
-  const resimli = resimUrls && resimUrls.length > 0;
 
   return (
     <div className="space-y-4">
@@ -818,12 +819,14 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
         const seçenekler: string[] = soru.options?.length
           ? soru.options
           : [soru.kelime1, soru.kelime2, soru.kelime3, soru.kelime4].filter(Boolean) as string[];
+        const resimUrl = soru.imageUrl ?? resimUrls?.[i];
+        const hasImage = !!resimUrl;
 
         return (
-          <div key={i} className={cn('bg-slate-50 rounded-xl p-4', resimli && 'flex gap-3 items-start')}>
-            {resimUrls?.[i] && (
+          <div key={i} className={cn('bg-slate-50 rounded-xl p-4', hasImage && 'flex gap-3 items-start')}>
+            {resimUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={resimUrls[i]} alt="" className="w-24 h-24 object-cover rounded-lg shrink-0" />
+              <img src={resimUrl} alt="" className="w-24 h-24 object-cover rounded-lg shrink-0" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 mb-3">
@@ -832,7 +835,7 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
               </p>
 
               {/* Seçenekler */}
-              {!resimli && seçenekler.length > 0 && (
+              {!hasImage && seçenekler.length > 0 && (
                 <div className="grid grid-cols-2 gap-1.5 mb-3">
                   {seçenekler.map((opt, j) => (
                     <div
@@ -851,7 +854,7 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
                 </div>
               )}
 
-              {resimli && (
+              {hasImage && (
                 <span className="inline-block px-3 py-1 rounded-lg text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium mb-3">
                   {dogruCevap}
                 </span>
