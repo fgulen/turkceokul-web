@@ -32,16 +32,6 @@ export default function SuperAdminPaketlerPage() {
   return (
     <div>
       <main>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="size-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-            <Package className="size-5 text-indigo-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Paketler</h1>
-            <p className="text-xs text-slate-500">Kurumsal katalogdaki kitap paketleri — salt okunur (Faz 1)</p>
-          </div>
-        </div>
-
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
           <strong>Paket nedir?</strong> Kurumsal alıcıya birlikte sunulan kitap grubu. Tematik paket (farklı
           serilerden seçme) veya seri tamamlama paketi olabilir. En iyi uygulama: 2–4 kitap, net tema

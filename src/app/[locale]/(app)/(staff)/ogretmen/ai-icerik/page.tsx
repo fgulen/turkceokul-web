@@ -400,17 +400,7 @@ export default function AIIcerikPage() {
 
   return (
     <div className="bg-[#F3F4F6]">
-      <main className="max-w-[1200px] px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Sparkles className="size-6 text-primary" />
-            AI İçerik Stüdyosu
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Claude AI ile saniyeler içinde Türkçe öğretim materyalleri üretin
-          </p>
-        </div>
-
+      <main className="px-4 py-8">
         {/* Tab bar */}
         <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-4">
           <div className="flex gap-1">

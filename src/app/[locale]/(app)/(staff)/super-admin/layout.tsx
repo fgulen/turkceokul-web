@@ -15,7 +15,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   return (
     <>
       <TurkishLetterBackdrop variant="super-admin" opacity={0.04} />
-      <main className="max-w-[1200px] px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
+      <main className="px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
         <div className="min-h-[calc(100dvh-8rem)]">
           {children}
         </div>

@@ -64,18 +64,9 @@ export default function SuperAdminHacimIndirimleriPage() {
 
   return (
     <div>
-      <main className="max-w-[800px] mx-auto px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="size-9 rounded-xl bg-purple-100 flex items-center justify-center">
-            <TrendingDown className="size-5 text-purple-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Hacim İndirimleri</h1>
-            <p className="text-xs text-slate-500">Öğrenci sayısı bu eşiği geçince otomatik uygulanan kademeli indirim</p>
-          </div>
-        </div>
-
+      <main className="max-w-[800px]">
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
+          Öğrenci sayısı eşiği geçince otomatik uygulanan kademeli indirim.{' '}
           <strong>Örnek:</strong> 50–99 öğrenci → %5, 100–299 → %10, 300–499 → %15, 500+ → %20.
           Kaydet, tüm kademeleri baştan yazar (sipariş geçmişini etkilemez, sadece yeni fiyat hesaplamalarına yansır).
         </div>

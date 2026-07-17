@@ -59,15 +59,7 @@ export default function SuperAdminKampanyalarPage() {
     <div>
       <main>
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Megaphone className="size-5 text-purple-600" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Kampanyalar</h1>
-              <p className="text-xs text-slate-500">Zaman sınırlı indirim kampanyaları — katalog fiyatlamasına otomatik yansır</p>
-            </div>
-          </div>
+          <p className="text-xs text-slate-500">Zaman sınırlı indirim kampanyaları — katalog fiyatlamasına otomatik yansır</p>
           <button
             onClick={() => setEditKampanya('new')}
             className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"

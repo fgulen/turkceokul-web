@@ -176,7 +176,7 @@ export default function OgretmenDashboard() {
   return (
     <div className="min-h-[calc(100dvh-7.5rem)] bg-[#F3F4F6]">
       <TurkishLetterBackdrop variant="ogretmen" opacity={0.04} />
-      <main className="max-w-[1200px] px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
+      <main className="px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
         {/* Başlık */}
         <div className="mb-8 flex items-center justify-between">
           <div>

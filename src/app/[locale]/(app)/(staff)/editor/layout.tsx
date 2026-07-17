@@ -9,7 +9,7 @@ export default function EditorLayout({ children }: { children: React.ReactNode }
   if (!ready || !user) return null;
 
   return (
-    <main className="max-w-[1200px] px-4 py-8">
+    <main className="px-4 py-8">
       <div className="min-h-[calc(100dvh-8rem)]">
         {children}
       </div>

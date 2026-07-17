@@ -63,7 +63,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
 
   return (
     <div className="bg-[#F3F4F6]">
-      <main className="max-w-[800px] mx-auto px-4 py-8">
+      <main className="max-w-[800px] px-4 py-8">
         <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="size-4" />
           Admin paneline dön
