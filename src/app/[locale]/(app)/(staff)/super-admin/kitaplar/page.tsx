@@ -63,6 +63,11 @@ function KitaplarTab() {
             Toplu Sil ({secili.size})
           </button>
         )}
+        {/* Ders kitabı üretimi AI Stüdyosu'nda yapılır — manuel oluşturma endpoint'i yok */}
+        <Link href="/ogretmen/ai-icerik"
+          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+          <Plus className="size-4" /> Yeni Kitap (AI Stüdyosu)
+        </Link>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -90,7 +95,7 @@ function KitaplarTab() {
                 </td>
                 <td className="px-4 py-2">
                   <Link
-                    href={`/super-admin/icerik-studyosu/${k.id}`}
+                    href={`/ders/${k.id}`}
                     className="font-medium text-slate-900 hover:text-indigo-700 hover:underline underline-offset-2 transition-colors"
                   >
                     {k.name}
@@ -113,9 +118,9 @@ function KitaplarTab() {
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-1 justify-end">
-                    <Link href={`/super-admin/icerik-studyosu/${k.id}`}
+                    <Link href={`/ders/${k.id}`}
                       className="size-6 flex items-center justify-center rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                      title="İçeriği Düzenle">
+                      title="İçeriği Aç (ünite ve etkinlikler)">
                       <ExternalLink className="size-3" />
                     </Link>
                     <button onClick={() => setEditKitap(k)}

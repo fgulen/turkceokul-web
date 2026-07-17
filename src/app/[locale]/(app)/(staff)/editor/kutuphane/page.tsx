@@ -4,6 +4,7 @@
 // Ekleme/düzenleme Tam Sayfa Form şablonu: /editor/kutuphane/yeni ve [id]/duzenle.
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Eye, Library, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Link } from '@/navigation';
@@ -11,6 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
+import { KitapDuzenleSlideOver } from './kitap-duzenle-slideover';
 
 interface KutuphaneKitap {
   id: string;
@@ -36,7 +38,10 @@ export default function EditorKutuphaneListPage() {
   const user = useAuthStore(s => s.user);
   const isSuperAdmin = user?.role === 'SuperAdmin';
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [silOnay, setSilOnay] = useState<KutuphaneKitap | null>(null);
+  // ?duzenle=<id> derin linki: eski /duzenle route'u buraya yönlendirir
+  const [duzenleId, setDuzenleId] = useState<string | null>(() => searchParams?.get('duzenle') ?? null);
 
   const { data: kitaplar, isLoading } = useQuery<KutuphaneKitap[]>({
     queryKey: ['editor-kutuphane-kitaplar'],
@@ -128,11 +133,11 @@ export default function EditorKutuphaneListPage() {
                           <Eye className="size-3.5" />
                         </Link>
                       )}
-                      <Link
-                        href={`/editor/kutuphane/${k.id}/duzenle`}
+                      <button
+                        onClick={() => setDuzenleId(k.id)}
                         className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-blue-500 transition-colors">
                         <Pencil className="size-3.5" />
-                      </Link>
+                      </button>
                       <button
                         onClick={() => setSilOnay(k)}
                         className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition-colors">
@@ -154,6 +159,8 @@ export default function EditorKutuphaneListPage() {
         onCancel={() => setSilOnay(null)}
         loading={sil.isPending}
       />
+
+      <KitapDuzenleSlideOver kitapId={duzenleId} onClose={() => setDuzenleId(null)} />
     </div>
   );
 }
