@@ -176,7 +176,17 @@ export default function AIIcerikPage() {
 
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
-    onSuccess: () => gecmisYenile(),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['ai-gecmis'] });
+      const onceki = queryClient.getQueryData<{ toplam: number; liste: GecmisItem[] }>(['ai-gecmis']);
+      queryClient.setQueryData(['ai-gecmis'], (eski: typeof onceki) => eski && ({
+        toplam: eski.toplam - 1,
+        liste: eski.liste.filter(g => g.id !== id),
+      }));
+      return { onceki };
+    },
+    onError: (_e, _id, ctx) => ctx?.onceki && queryClient.setQueryData(['ai-gecmis'], ctx.onceki),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['ai-gecmis'] }),
   });
 
   const onaylaMutation = useMutation({
@@ -711,17 +721,60 @@ export default function AIIcerikPage() {
               <h2 className="font-semibold text-slate-700">Üretim Geçmişi</h2>
               <span className="text-xs text-slate-400 ml-1">({gecmisData!.toplam} kayıt)</span>
             </div>
-            <div className="grid grid-cols-1 gap-2">
-              {gecmisData!.liste.map(item => (
-                <GecmisKart
-                  key={item.id}
-                  item={item}
-                  onSil={() => silMutation.mutate(item.id)}
-                  onOnayla={() => onaylaMutation.mutate(item.id)}
-                  silIsPending={silMutation.isPending}
-                  onaylaIsPending={onaylaMutation.isPending}
-                />
-              ))}
+            <div className="space-y-6">
+              {/* Kütüphanem (Onaylı) */}
+              {(() => {
+                const kutuphanem = gecmisData!.liste.filter(g => g.onaylandi).sort((a, b) =>
+                  new Date(b.insertDate).getTime() - new Date(a.insertDate).getTime()
+                );
+                return kutuphanem.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-slate-600 text-sm mb-2 flex items-center gap-1.5">
+                      <span>📁 Kütüphanem</span>
+                      <span className="text-xs text-slate-400">({kutuphanem.length})</span>
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {kutuphanem.map(item => (
+                        <GecmisKart
+                          key={item.id}
+                          item={item}
+                          onSil={() => silMutation.mutate(item.id)}
+                          onOnayla={() => onaylaMutation.mutate(item.id)}
+                          silIsPending={silMutation.isPending}
+                          onaylaIsPending={onaylaMutation.isPending}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Son Üretimler (Onay Bekliyor) */}
+              {(() => {
+                const sonUretimler = gecmisData!.liste.filter(g => !g.onaylandi).sort((a, b) =>
+                  new Date(b.insertDate).getTime() - new Date(a.insertDate).getTime()
+                );
+                return sonUretimler.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-slate-600 text-sm mb-2 flex items-center gap-1.5">
+                      <span>🕐 Son Üretimler</span>
+                      <span className="text-xs text-slate-400">({sonUretimler.length})</span>
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {sonUretimler.map(item => (
+                        <GecmisKart
+                          key={item.id}
+                          item={item}
+                          onSil={() => silMutation.mutate(item.id)}
+                          onOnayla={() => onaylaMutation.mutate(item.id)}
+                          silIsPending={silMutation.isPending}
+                          onaylaIsPending={onaylaMutation.isPending}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </section>
         )}
@@ -1125,67 +1178,69 @@ function GecmisKart({
     enabled: acik,
   });
 
-  const etiket = TIP_ETIKETLER[item.tip] ?? { label: item.tip, renk: 'bg-slate-50 text-slate-600 border-slate-200' };
   const tarih = new Date(item.insertDate).toLocaleDateString('tr-TR', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
-  const seviyeMetin = item.zorluk === 1 ? 'A1–A2' : item.zorluk === 2 ? 'B1–B2' : 'C1–C2';
 
   return (
     <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
-      {/* Kart başlığı */}
-      <div className="flex items-center gap-4 px-4 py-3 group">
-        <div className={cn('shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border', etiket.renk)}>
-          {etiket.label}
+      {/* Accordion başlığı — tek satır: Başlık · Ünite · Tarih */}
+      <button
+        onClick={() => setAcik(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group text-left"
+      >
+        {/* Chevron */}
+        <div className="shrink-0">
+          {acik ? <ChevronUp className="size-4 text-slate-400" /> : <ChevronDown className="size-4 text-slate-400" />}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
-          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1.5">
-            <span className="text-primary/70">{item.kitapAdi ?? '—'}</span>
-            <span className="text-slate-300">·</span>
-            <span>{item.unite}</span>
-            {item.bolum && (
-              <>
-                <span className="text-slate-300">·</span>
-                <span className="bg-slate-100 px-1 py-0.5 rounded text-[10px] font-medium">{item.bolum}</span>
-              </>
-            )}
-          </p>
+
+        {/* İçerik: Başlık · Ünite · Tarih */}
+        <div className="flex-1 min-w-0 text-sm text-slate-700">
+          <span className="font-medium text-slate-900">{item.name}</span>
+          <span className="text-slate-400 mx-2">·</span>
+          <span className="text-slate-600">{item.unite}</span>
+          <span className="text-slate-400 mx-2">·</span>
+          <span className="text-slate-500">{tarih}</span>
         </div>
-        <div className="shrink-0 flex items-center gap-2 text-xs text-slate-400">
-          <span className="hidden sm:inline">{item.soruSayisi} soru</span>
-          <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">{seviyeMetin}</span>
-          <span className="flex items-center gap-1">
-            <Clock className="size-3" />
-            {tarih}
-          </span>
-          {item.onaylandi ? (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium">
-              <ShieldCheck className="size-3" />
-              Onaylı
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-medium">
-              Onay bekliyor
-            </span>
+
+        {/* Sağ taraf butonlar: Onayla (if not onaylandi) + Sil */}
+        <div className="shrink-0 flex items-center gap-1.5">
+          {!item.onaylandi && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOnayla();
+              }}
+              disabled={onaylaIsPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60"
+              title="Onayla"
+            >
+              {onaylaIsPending ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" />
+                  Onaylanıyor...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="size-3.5" />
+                  <span className="hidden sm:inline">Onayla</span>
+                </>
+              )}
+            </button>
           )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSil();
+            }}
+            disabled={silIsPending}
+            title="Sil"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 transition-colors disabled:opacity-30"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
-        <button
-          onClick={() => setAcik(v => !v)}
-          className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
-          title={acik ? 'Kapat' : 'Soruları gör'}
-        >
-          {acik ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </button>
-        <button
-          onClick={onSil}
-          disabled={silIsPending}
-          title="Sil"
-          className="shrink-0 p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30"
-        >
-          <Trash2 className="size-4" />
-        </button>
-      </div>
+      </button>
 
       {/* Açılır detay paneli */}
       {acik && (
