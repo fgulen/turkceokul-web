@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react';
 import { Link, usePathname } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { navForRole, type NavGroup } from '@/config/navigation';
@@ -9,6 +9,7 @@ import { Logo } from '@/components/logo';
 import { UserMenu } from '@/components/app-nav';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 import { Breadcrumb } from '@/components/staff/breadcrumb';
+import { CommandPalette } from '@/components/staff/command-palette';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE = 'staff-sidebar';
@@ -79,11 +80,24 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   // Route değişince mobil drawer kapanır
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  // Ctrl+K / Cmd+K → Command Palette
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen(v => !v);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   function toggleCollapsed() {
     const next = !collapsed;
@@ -113,6 +127,17 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
           <div className="hidden md:block w-px h-6 bg-slate-200 mx-1" />
           <Breadcrumb />
           <div className="flex-1" />
+          {ready && (
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs text-slate-400 border border-slate-200 rounded-lg hover:border-slate-300 hover:text-slate-500 transition-colors"
+              aria-label="Hızlı gezinme"
+            >
+              <Search className="size-3.5" />
+              <span>Ara...</span>
+              <kbd className="px-1 py-0.5 text-[10px] border border-slate-200 rounded">Ctrl K</kbd>
+            </button>
+          )}
           {ready && <UserMenu user={user} onLogout={logout} />}
         </div>
         <ImpersonationBanner />
@@ -177,6 +202,8 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
         {/* İçerik */}
         <main className="flex-1 min-w-0">{children}</main>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }

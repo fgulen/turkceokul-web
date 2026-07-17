@@ -65,7 +65,10 @@ function GenelBakis() {
         <div className="bg-white border border-amber-200 rounded-xl">
           <div className="px-5 py-4 border-b border-amber-100 flex items-center gap-2">
             <Package className="size-4 text-amber-600" />
-            <h3 className="text-sm font-semibold text-amber-700">Bekleyen Siparişler ({(bekleyenSiparisler as any[]).length})</h3>
+            <h3 className="text-sm font-semibold text-amber-700 flex-1">Bekleyen Siparişler ({(bekleyenSiparisler as any[]).length})</h3>
+            <Link href="/super-admin/kurumsal" className="text-xs font-medium text-amber-700 hover:text-amber-900">
+              Tüm siparişler →
+            </Link>
           </div>
           <div className="divide-y divide-slate-50">
             {(bekleyenSiparisler as any[]).map((s: any) => (
