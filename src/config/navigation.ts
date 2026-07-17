@@ -39,7 +39,8 @@ export const STAFF_NAV: NavGroup[] = [
   {
     label: 'Okul',
     items: [
-      { href: '/super-admin/kitaplar', label: 'Kitaplar', icon: BookOpen, roles: ['SuperAdmin'] },
+      { href: '/super-admin/kitaplar', label: 'Ders Kitapları',  icon: BookOpen, roles: ['SuperAdmin'] },
+      { href: '/editor/kutuphane',     label: 'Okuma Kitapları', icon: Library,  roles: ['SuperAdmin', 'Koordinator', 'Editor'] },
     ],
   },
   {
@@ -69,8 +70,6 @@ export const STAFF_NAV: NavGroup[] = [
     label: 'İçerik',
     items: [
       { href: '/ogretmen/ai-icerik', label: 'AI İçerik Stüdyosu', icon: Sparkles, roles: OGRETMENLIK },
-      { href: '/admin/kutuphane',    label: 'Kütüphane Yönetimi', icon: Library,  roles: ['SuperAdmin', 'Koordinator'] },
-      { href: '/editor/kutuphane',   label: 'Kütüphane Yönetimi', icon: Library,  roles: ['Editor'] },
       { href: '/kutuphane',          label: 'Kütüphane',          icon: BookOpen, roles: STAFF },
     ],
   },
@@ -95,13 +94,13 @@ export const SEGMENT_LABELS: Record<string, string> = {
   'super-admin': 'Super Admin',
   'admin': 'Admin',
   'ogretmen': 'Öğretmen',
-  'editor': 'Editör',
   'ulke-temsilcisi': 'Ülke Paneli',
   'kurum-yoneticisi': 'Kurum Paneli',
   'paketler': 'Paketler',
   'kampanyalar': 'Kampanyalar',
   'hacim-indirimleri': 'Hacim İndirimleri',
-  'kitaplar': 'Kitaplar',
+  'kitaplar': 'Ders Kitapları',
+  'editor': 'Okuma Kitapları',
   'kullanicilar': 'Kullanıcı Listesi',
   'kullanici-olustur': 'Kullanıcı Oluştur',
   'ulkeler': 'Ülkeler & Okullar',

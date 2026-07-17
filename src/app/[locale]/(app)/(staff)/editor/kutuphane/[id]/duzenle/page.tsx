@@ -123,15 +123,14 @@ export default function EditorKitapDuzenlePage({ params }: { params: Promise<{ i
   const labelCls = 'block text-xs font-semibold text-slate-500 mb-1';
 
   if (!ready || yukluyor) return (
-    <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
-      <main className="max-w-[680px] mx-auto px-4 py-10">
+    <div className="max-w-[680px] mx-auto">
         <div className="mb-6 flex items-center gap-3">
           <Link href="/editor/kutuphane" className="p-2 rounded-xl hover:bg-white border border-slate-200 transition-colors">
             <ArrowLeft className="size-4 text-slate-500" />
@@ -315,7 +314,6 @@ export default function EditorKitapDuzenlePage({ params }: { params: Promise<{ i
             {guncelle.isPending ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
           </button>
         </div>
-      </main>
     </div>
   );
 }

@@ -50,17 +50,6 @@ function KitaplarTab() {
 
   return (
     <div className="space-y-4">
-      {/* Kütüphane yönetimi linki */}
-      <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-indigo-900">Kütüphane Kitapları</p>
-          <p className="text-xs text-indigo-600 mt-0.5">PDF/EPUB okuma kitaplarını ekle, düzenle, önizle</p>
-        </div>
-        <Link href="/editor/kutuphane" className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
-          Kütüphane Yönetimi →
-        </Link>
-      </div>
-
       <div className="flex gap-3 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
