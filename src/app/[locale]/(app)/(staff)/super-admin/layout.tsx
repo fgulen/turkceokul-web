@@ -23,7 +23,11 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             <p className="text-xs text-slate-500">Sistem yönetimi — {user.name} {user.surname}</p>
           </div>
         </div>
-        {children}
+        {/* Tüm alt sayfalar aynı minimum yükseklikte görünür — menü geçişlerinde
+            sayfa boyu zıplamasın (kısa içerikli sayfalar da tam alan kaplar) */}
+        <div className="min-h-[calc(100dvh-15rem)]">
+          {children}
+        </div>
       </main>
     </div>
   );

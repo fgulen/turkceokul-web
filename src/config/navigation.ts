@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Shield, LayoutDashboard, Building2, Globe, Users, Sparkles,
   Library, BookOpen, Package, Megaphone, TrendingDown,
-  BarChart3, ScrollText, UserPlus,
+  BarChart3, ScrollText,
 } from 'lucide-react';
 import type { UserRole } from '@/stores/auth';
 
@@ -51,8 +51,9 @@ export const STAFF_NAV: NavGroup[] = [
   {
     label: 'Kullanıcılar',
     items: [
-      { href: '/super-admin/kullanicilar',      label: 'Kullanıcı Listesi', icon: Users,    roles: ['SuperAdmin'] },
-      { href: '/super-admin/kullanici-olustur', label: 'Kullanıcı Oluştur', icon: UserPlus, roles: ['SuperAdmin'] },
+      // "Kullanıcı Oluştur" bilinçli olarak menüde değil: oluşturma eylemi
+      // DataTable şablonu gereği liste sayfasının toolbar'ında (Yeni Kullanıcı)
+      { href: '/super-admin/kullanicilar', label: 'Kullanıcılar', icon: Users, roles: ['SuperAdmin'] },
     ],
   },
   {

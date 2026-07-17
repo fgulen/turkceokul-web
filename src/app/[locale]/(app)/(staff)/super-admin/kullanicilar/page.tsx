@@ -108,6 +108,10 @@ function KullanicilarTab() {
           <option value="">Tüm Roller</option>
           {TUM_ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
+        <Link href="/super-admin/kullanici-olustur"
+          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
+          <UserPlus className="size-4" /> Yeni Kullanıcı
+        </Link>
         {secili.size > 0 && (
           <>
             <button onClick={() => topluOnaylaMutation.mutate([...secili])}

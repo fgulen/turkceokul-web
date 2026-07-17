@@ -34,7 +34,15 @@ export function CommandPalette({ open, onClose }: Props) {
   const [query, setQuery] = useState('');
   const [aktifIndex, setAktifIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [recent, setRecent] = useState<string[]>([]);
+
+  // Ok tuşlarıyla gezinirken seçili öğe görünür alanda kalsın
+  useEffect(() => {
+    listRef.current
+      ?.querySelector(`[data-palette-idx="${aktifIndex}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [aktifIndex]);
 
   const tumSayfalar = useMemo(() => {
     if (!user) return [];
@@ -113,7 +121,7 @@ export function CommandPalette({ open, onClose }: Props) {
           <kbd className="px-1.5 py-0.5 text-[10px] text-slate-400 border border-slate-200 rounded">esc</kbd>
         </div>
 
-        <div className="max-h-80 overflow-y-auto py-1.5">
+        <div ref={listRef} className="max-h-80 overflow-y-auto py-1.5">
           {sonuclar.length === 0 && (
             <p className="px-4 py-6 text-center text-xs text-slate-400">Sonuç bulunamadı</p>
           )}
@@ -129,6 +137,7 @@ export function CommandPalette({ open, onClose }: Props) {
                   </div>
                 )}
                 <button
+                  data-palette-idx={i}
                   onClick={() => git(s.href)}
                   onMouseEnter={() => setAktifIndex(i)}
                   className={cn(

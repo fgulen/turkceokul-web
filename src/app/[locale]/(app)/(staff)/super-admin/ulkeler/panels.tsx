@@ -25,6 +25,13 @@ export function TemsilcilerPanel({ ulkeId }: { ulkeId: number }) {
 
   return (
     <div>
+      {/* Standart panel toolbar'ı: sağda mor "Yeni X" eylemi */}
+      <div className="px-5 py-2.5 border-b border-slate-100 flex items-center justify-end">
+        <Link href="/super-admin/kullanici-olustur"
+          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors">
+          <Plus className="size-3" /> Yeni Temsilci
+        </Link>
+      </div>
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -63,6 +70,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
   onDeleteKurum: (id: number, name: string) => void;
 }) {
   const qc = useQueryClient();
+  const [showAdd, setShowAdd] = useState(false);
   const [yeniKurum, setYeniKurum] = useState({ name: '', sehir: '' });
 
   const { data: kurumlar = [] } = useQuery({
@@ -72,26 +80,42 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
 
   const kurumOlusturMutation = useMutation({
     mutationFn: (d: any) => api.post('/api/super-admin/kurum', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kurumlar', ulkeId] }); setYeniKurum({ name: '', sehir: '' }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sa-kurumlar', ulkeId] });
+      setYeniKurum({ name: '', sehir: '' });
+      setShowAdd(false);
+    },
   });
+
+  const kaydet = () => yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId });
 
   return (
     <div className="flex flex-col h-full">
-      {/* Okul Ekle formu — her zaman görünür, tablonun üstünde */}
-      <div className="border-b border-slate-100 px-5 py-3 flex gap-2 bg-slate-50/50 shrink-0">
-        <input value={yeniKurum.name} onChange={e => setYeniKurum(f => ({ ...f, name: e.target.value }))}
-          onKeyDown={e => e.key === 'Enter' && yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
-          placeholder="Okul adı..." className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        <input value={yeniKurum.sehir} onChange={e => setYeniKurum(f => ({ ...f, sehir: e.target.value }))}
-          onKeyDown={e => e.key === 'Enter' && yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
-          placeholder="Şehir..." className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-        <button
-          onClick={() => yeniKurum.name && kurumOlusturMutation.mutate({ name: yeniKurum.name, sehir: yeniKurum.sehir || null, ulkeId })}
-          disabled={!yeniKurum.name || kurumOlusturMutation.isPending}
-          className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg hover:bg-slate-700 disabled:opacity-50">
-          <Plus className="size-3" /> Okul Ekle
+      {/* Standart panel toolbar'ı: sağda mor "Yeni X" eylemi */}
+      <div className="px-5 py-2.5 border-b border-slate-100 flex items-center justify-end shrink-0">
+        <button onClick={() => setShowAdd(v => !v)}
+          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors">
+          <Plus className="size-3" /> Yeni Kurum
         </button>
       </div>
+
+      {showAdd && (
+        <div className="border-b border-slate-100 px-5 py-3 flex gap-2 bg-purple-50/40 shrink-0">
+          <input value={yeniKurum.name} onChange={e => setYeniKurum(f => ({ ...f, name: e.target.value }))}
+            onKeyDown={e => e.key === 'Enter' && kaydet()}
+            placeholder="Okul adı..." autoFocus
+            className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+          <input value={yeniKurum.sehir} onChange={e => setYeniKurum(f => ({ ...f, sehir: e.target.value }))}
+            onKeyDown={e => e.key === 'Enter' && kaydet()}
+            placeholder="Şehir..." className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
+          <button
+            onClick={kaydet}
+            disabled={!yeniKurum.name || kurumOlusturMutation.isPending}
+            className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
+            {kurumOlusturMutation.isPending ? 'Ekleniyor…' : 'Ekle'}
+          </button>
+        </div>
+      )}
 
       <table className="w-full text-sm flex-1">
         <thead className="bg-slate-50 border-b border-slate-200">
@@ -131,6 +155,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
 
 export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
   const qc = useQueryClient();
+  const [showAdd, setShowAdd] = useState(false);
   const [seciliKitap, setSeciliKitap] = useState('');
   const [isDefault, setIsDefault] = useState(false);
 
@@ -145,7 +170,11 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
 
   const ataMutation = useMutation({
     mutationFn: () => api.post(`/api/super-admin/ulke/${ulkeId}/kitap`, { dersKitabiId: seciliKitap, isDefault }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-ulke-kitaplar', ulkeId] }); setSeciliKitap(''); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sa-ulke-kitaplar', ulkeId] });
+      setSeciliKitap('');
+      setShowAdd(false);
+    },
   });
   const kaldirMutation = useMutation({
     mutationFn: (kitapId: string) => api.delete(`/api/super-admin/ulke/${ulkeId}/kitap/${kitapId}`),
@@ -161,6 +190,34 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
 
   return (
     <div>
+      {/* Standart panel toolbar'ı: sağda mor "Yeni X" eylemi */}
+      <div className="px-5 py-2.5 border-b border-slate-100 flex items-center justify-end">
+        <button onClick={() => setShowAdd(v => !v)}
+          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors">
+          <Plus className="size-3" /> Kitap Ata
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="border-b border-slate-100 px-5 py-3 flex gap-2 bg-purple-50/40">
+          <select value={seciliKitap} onChange={e => setSeciliKitap(e.target.value)} autoFocus
+            className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300">
+            <option value="">Kitap seç...</option>
+            {(tumKitaplar as any[]).filter((k: any) => !atanamaz.has(k.id))
+              .map((k: any) => <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>)}
+          </select>
+          <label className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap cursor-pointer">
+            <input type="checkbox" checked={isDefault} onChange={e => setIsDefault(e.target.checked)} />
+            Varsayılan
+          </label>
+          <button onClick={() => seciliKitap && ataMutation.mutate()}
+            disabled={!seciliKitap || ataMutation.isPending}
+            className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
+            {ataMutation.isPending ? 'Atanıyor…' : 'Ekle'}
+          </button>
+        </div>
+      )}
+
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -192,25 +249,6 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
           )}
         </tbody>
       </table>
-
-      {/* Inline add */}
-      <div className="border-t border-slate-100 px-5 py-3 flex gap-2 bg-slate-50/50">
-        <select value={seciliKitap} onChange={e => setSeciliKitap(e.target.value)}
-          className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300">
-          <option value="">Kitap seç...</option>
-          {(tumKitaplar as any[]).filter((k: any) => !atanamaz.has(k.id))
-            .map((k: any) => <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>)}
-        </select>
-        <label className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap cursor-pointer">
-          <input type="checkbox" checked={isDefault} onChange={e => setIsDefault(e.target.checked)} />
-          Varsayılan
-        </label>
-        <button onClick={() => seciliKitap && ataMutation.mutate()}
-          disabled={!seciliKitap || ataMutation.isPending}
-          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50">
-          <Plus className="size-3" /> Ata
-        </button>
-      </div>
     </div>
   );
 }
