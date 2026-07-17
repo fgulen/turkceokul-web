@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { HelpChat } from '@/components/ogretmen/HelpChat';
 import { MdImport } from '@/components/ogretmen/md-import';
@@ -187,6 +187,11 @@ export default function AIIcerikPage() {
     : false;
 
   const freemium = !!krediData && krediData.lisansli === false && krediData.sinirsiz !== true;
+
+  // Clamp soruSayisi to 5 for freemium users once kredi data arrives
+  useEffect(() => {
+    if (freemium && soruSayisi !== 5) setSoruSayisi(5);
+  }, [freemium, soruSayisi]);
 
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
@@ -1309,9 +1314,12 @@ function GecmisKart({
   return (
     <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
       {/* Accordion başlığı — tek satır: Başlık · Ünite · Tarih */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setAcik(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group text-left"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAcik(v => !v); } }}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group text-left cursor-pointer"
       >
         {/* Chevron */}
         <div className="shrink-0">
@@ -1364,7 +1372,7 @@ function GecmisKart({
             <Trash2 className="size-4" />
           </button>
         </div>
-      </button>
+      </div>
 
       {/* Açılır detay paneli */}
       {acik && (
