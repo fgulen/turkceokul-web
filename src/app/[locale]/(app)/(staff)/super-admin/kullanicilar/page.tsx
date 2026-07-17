@@ -27,6 +27,7 @@ function KullanicilarTab() {
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [secili, setSecili] = useState<Set<number>>(new Set());
+  const [topluOnay, setTopluOnay] = useState(false);
 
   const { data } = useQuery({
     queryKey: ['sa-kullanicilar', rolFilter, arama, sayfa],
@@ -59,7 +60,7 @@ function KullanicilarTab() {
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-sil', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setSecili(new Set()); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setSecili(new Set()); setTopluOnay(false); },
   });
 
   const topluOnaylaMutation = useMutation({
@@ -118,7 +119,7 @@ function KullanicilarTab() {
                   className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
                   Onayla ({secili.size})
                 </button>
-                <button onClick={() => topluSilMutation.mutate([...secili])}
+                <button onClick={() => setTopluOnay(true)}
                   className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
                   Toplu Sil ({secili.size})
                 </button>
@@ -229,6 +230,14 @@ function KullanicilarTab() {
           />
         )}
       </SlideOver>
+
+      <DeleteConfirmModal
+        open={topluOnay}
+        entityName={`${secili.size} kullanıcı`}
+        onConfirm={() => topluSilMutation.mutate([...secili])}
+        onCancel={() => setTopluOnay(false)}
+        loading={topluSilMutation.isPending}
+      />
 
       <DeleteConfirmModal
         open={!!deleteTarget}

@@ -24,6 +24,7 @@ function KitaplarTab() {
   const [editKitap, setEditKitap] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [secili, setSecili] = useState<Set<string>>(new Set());
+  const [topluOnay, setTopluOnay] = useState(false);
 
   const { data: kitaplar = [] } = useQuery({
     queryKey: ['sa-kitaplar', arama],
@@ -48,7 +49,7 @@ function KitaplarTab() {
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: string[]) => api.post('/api/super-admin/kitaplar/toplu-sil', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setSecili(new Set()); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setSecili(new Set()); setTopluOnay(false); },
   });
 
   function toggleSecili(id: string) {
@@ -68,7 +69,7 @@ function KitaplarTab() {
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
           <div className="flex items-center gap-2 ml-auto">
             {secili.size > 0 && (
-              <button onClick={() => topluSilMutation.mutate([...secili])}
+              <button onClick={() => setTopluOnay(true)}
                 className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
                 Toplu Sil ({secili.size})
               </button>
@@ -186,6 +187,14 @@ function KitaplarTab() {
         onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
         loading={silMutation.isPending}
+      />
+
+      <DeleteConfirmModal
+        open={topluOnay}
+        entityName={`${secili.size} kitap`}
+        onConfirm={() => topluSilMutation.mutate([...secili])}
+        onCancel={() => setTopluOnay(false)}
+        loading={topluSilMutation.isPending}
       />
     </div>
   );

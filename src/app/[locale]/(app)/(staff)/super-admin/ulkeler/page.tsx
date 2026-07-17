@@ -53,6 +53,9 @@ export default function UlkelerListePage() {
   const [yeniAd, setYeniAd] = useState('');
   const [editUlke, setEditUlke] = useState<UlkeOzet | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [secili, setSecili] = useState<Set<number>>(new Set());
+  const [topluOnay, setTopluOnay] = useState(false);
+  const [topluHata, setTopluHata] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['sa-ulkeler', 'tumu'],
@@ -76,6 +79,20 @@ export default function UlkelerListePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sa-ulkeler'] });
       setDeleteTarget(null);
+    },
+  });
+
+  // Bulk endpoint yok — tekil DELETE'ler paralel; başarısızlar (bağlı kayıt vb.) raporlanır
+  const topluSilMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const sonuclar = await Promise.allSettled(ids.map(id => api.delete(`/api/super-admin/ulke/${id}`)));
+      return sonuclar.filter(s => s.status === 'rejected').length;
+    },
+    onSuccess: (hataliSayisi) => {
+      qc.invalidateQueries({ queryKey: ['sa-ulkeler'] });
+      setSecili(new Set());
+      setTopluOnay(false);
+      setTopluHata(hataliSayisi > 0 ? `${hataliSayisi} ülke silinemedi (bağlı kurum/kayıt olabilir).` : '');
     },
   });
 
@@ -134,6 +151,13 @@ export default function UlkelerListePage() {
         <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ülke ara..." />
 
         <div className="flex items-center gap-2 ml-auto">
+          {secili.size > 0 && (
+            <button
+              onClick={() => setTopluOnay(true)}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
+              Toplu Sil ({secili.size})
+            </button>
+          )}
           <button
             onClick={() => csvIndir(gorunen)}
             disabled={gorunen.length === 0}
@@ -173,6 +197,11 @@ export default function UlkelerListePage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
+              <th className="w-10 px-4 py-2.5">
+                <input type="checkbox"
+                  checked={secili.size === gorunen.length && gorunen.length > 0}
+                  onChange={() => setSecili(secili.size === gorunen.length ? new Set() : new Set(gorunen.map((u: any) => u.id)))} />
+              </th>
               <SortHeader colKey="name">Ülke</SortHeader>
               <SortHeader colKey="ogretmenAdi">Sorumlu Öğretmen</SortHeader>
               <SortHeader colKey="kurumSayisi" align="center">Kurumlar</SortHeader>
@@ -187,6 +216,11 @@ export default function UlkelerListePage() {
                 key={u.id}
                 onClick={() => router.push(`/super-admin/ulkeler/${u.id}`)}
                 className="group cursor-pointer odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/50 transition-colors">
+                <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
+                  <input type="checkbox"
+                    checked={secili.has(u.id)}
+                    onChange={() => setSecili(prev => { const s = new Set(prev); s.has(u.id) ? s.delete(u.id) : s.add(u.id); return s; })} />
+                </td>
                 <td className="px-4 py-2.5 font-medium text-slate-800">{u.name}</td>
                 <td className="px-4 py-2.5 text-xs text-slate-500">{u.ogretmenAdi ?? '—'}</td>
                 <td className="px-4 py-2.5 text-center tabular-nums text-slate-700">{u.kurumSayisi}</td>
@@ -217,7 +251,7 @@ export default function UlkelerListePage() {
             ))}
             {!isLoading && sayfadakiler.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-xs text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-xs text-slate-400">
                   {arama ? `"${arama}" için sonuç bulunamadı` : 'Henüz ülke yok'}
                 </td>
               </tr>
@@ -227,9 +261,22 @@ export default function UlkelerListePage() {
       </div>
     </div>
 
+    {topluHata && (
+      <p role="alert" className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{topluHata}</p>
+    )}
+
     <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={gorunen.length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
 
     <UlkeDuzenleSlideOver ulke={editUlke} onClose={() => setEditUlke(null)} />
+
+    {/* Toplu silme onayı — DELETE yazma şartı DeleteConfirmModal'dan geliyor */}
+    <DeleteConfirmModal
+      open={topluOnay}
+      entityName={`${secili.size} ülke`}
+      onConfirm={() => topluSilMutation.mutate([...secili])}
+      onCancel={() => setTopluOnay(false)}
+      loading={topluSilMutation.isPending}
+    />
 
     <DeleteConfirmModal
       open={!!deleteTarget}
