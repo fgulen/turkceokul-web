@@ -6,7 +6,7 @@ import {
   BookOpen, Users, Globe, BarChart3, Shield,
   Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
   RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
-  Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus
+  Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus, Sparkles
 } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
@@ -16,8 +16,9 @@ import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
+import { AiAyarlarPanel } from '@/components/super-admin/AiAyarlarPanel';
 
-type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'kullanici-olustur' | 'ulkeler' | 'kurumsal' | 'raporlar' | 'loglar';
+type Tab = 'genel' | 'kitaplar' | 'kullanicilar' | 'kullanici-olustur' | 'ulkeler' | 'kurumsal' | 'raporlar' | 'loglar' | 'ai-ayarlar';
 type UlkeTab = 'temsilciler' | 'kurumlar' | 'kitaplar' | 'siniflar';
 
 const ROL_RENKLERI: Record<string, string> = {
@@ -64,6 +65,7 @@ export default function SuperAdminPage() {
             ['kurumsal', Package, 'Kurumsal Satış'],
             ['raporlar', BarChart3, 'Raporlar'],
             ['loglar', ScrollText, 'Loglar'],
+            ['ai-ayarlar', Sparkles, 'AI Yapılandırma'],
           ] as [Tab, typeof BarChart3, string][]).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -88,6 +90,7 @@ export default function SuperAdminPage() {
         {tab === 'kurumsal' && <KurumsalSatisTab />}
         {tab === 'raporlar' && <RaporlarTab />}
         {tab === 'loglar' && <LoglarTab />}
+        {tab === 'ai-ayarlar' && <AiAyarlarPanel />}
       </main>
     </div>
   );
