@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Copy, Check, Loader2, AlertCircle, X } from 'lucide-react';
+import { Loader2, AlertCircle, Check, X } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -30,9 +30,6 @@ export function KahootBaslatModal({
 }) {
   const router = useRouter();
   const [seciliSinifId, setSeciliSinifId] = useState<number | null>(null);
-  const [kopyalandi, setKopyalandi] = useState(false);
-  const [olusturulanKod, setOlusturulanKod] = useState<string | null>(null);
-  const [olusturulanSinifsiz, setOlusturulanSinifsiz] = useState(false);
 
   const { data: siniflar = [] } = useQuery<Sinif[]>({
     queryKey: ['siniflarim-modal'],
@@ -49,16 +46,18 @@ export function KahootBaslatModal({
       return res.data;
     },
     onSuccess: (data) => {
-      // Sınıflı oyun: sessionStorage'a kaydet ve navigate
-      if (data.sinifId !== null && typeof data.sinifId === 'number') {
+      // Sınıfsız oyun (sinifId === null): sinifId=0 ile route et
+      if (data.sinifId === null) {
+        const storageKey = 'kahoot_canli_0';
+        sessionStorage.setItem(storageKey, data.oyunKodu);
+        sessionStorage.removeItem(`${storageKey}_started`);
+        router.push('/ogretmen/sinif/0/canli');
+      } else {
+        // Sınıflı oyun: sessionStorage'a kaydet ve navigate
         const storageKey = `kahoot_canli_${data.sinifId}`;
         sessionStorage.setItem(storageKey, data.oyunKodu);
         sessionStorage.removeItem(`${storageKey}_started`);
         router.push(`/ogretmen/sinif/${data.sinifId}/canli`);
-      } else {
-        // Sınıfsız oyun: PIN'i göster
-        setOlusturulanKod(data.oyunKodu);
-        setOlusturulanSinifsiz(true);
       }
     },
   });
@@ -67,83 +66,12 @@ export function KahootBaslatModal({
     olusturMutation.mutate(seciliSinifId);
   }
 
-  function kopiala() {
-    if (olusturulanKod) {
-      navigator.clipboard.writeText(olusturulanKod);
-      setKopyalandi(true);
-      setTimeout(() => setKopyalandi(false), 2000);
-    }
-  }
-
   function kapat() {
     setSeciliSinifId(null);
-    setOlusturulanKod(null);
-    setOlusturulanSinifsiz(false);
-    setKopyalandi(false);
     onKapat();
   }
 
   if (!acik) return null;
-
-  // Sınıfsız oyun PIN'i gösteriliyor
-  if (olusturulanSinifsiz && olusturulanKod) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-lg max-w-sm w-full p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900">Kahoot PIN</h3>
-            <button
-              onClick={kapat}
-              className="p-1 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 text-center">
-              <p className="text-xs font-semibold text-primary/70 mb-2 uppercase tracking-wider">
-                Oyun Kodu
-              </p>
-              <div className="text-5xl font-black tracking-[0.2em] text-primary leading-none mb-4">
-                {olusturulanKod}
-              </div>
-              <button
-                onClick={kopiala}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
-              >
-                {kopyalandi ? (
-                  <>
-                    <Check className="size-4" />
-                    Kopyalandı!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-4" />
-                    Kopyala
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-              <AlertCircle className="size-4 mt-0.5 shrink-0" />
-              <span>
-                Öğrenciler <strong>Kahoot</strong> sayfasından bu kodla katılır.
-              </span>
-            </div>
-
-            <button
-              onClick={kapat}
-              className="w-full px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Normal seçim ekranı
   return (

@@ -238,7 +238,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
   const { data: sinif } = useQuery({
     queryKey: ['sinif', id],
     queryFn: () => api.get(`/api/ogretmen/sinif/${id}`).then(r => r.data),
-    enabled: !!user,
+    enabled: id > 0 && !!user,
   });
 
   useEffect(() => {
@@ -286,7 +286,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
   }, [kahoot.oyunDurumuBaslatildi]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function oyunOlustur(etkinlikIdleri: string[]) {
-    const res = await api.post('/api/kahoot/olustur', { sinifId: id, etkinlikIdleri });
+    const res = await api.post('/api/kahoot/olustur', { sinifId: id === 0 ? null : id, etkinlikIdleri });
     sessionStorage.setItem(storageKey, res.data.oyunKodu);
     sessionStorage.removeItem(`${storageKey}_started`);
     setOyunBaslatildi(false);
@@ -362,7 +362,9 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
           </div>
           <div>
             <h1 className="text-lg font-bold text-foreground">Canlı Kahoot</h1>
-            <p className="text-sm text-muted-foreground">{sinif?.name ?? '...'}</p>
+            <p className="text-sm text-muted-foreground">
+              {id === 0 ? 'Hızlı Oyun (sınıfsız)' : (sinif?.name ?? '...')}
+            </p>
           </div>
         </div>
 
