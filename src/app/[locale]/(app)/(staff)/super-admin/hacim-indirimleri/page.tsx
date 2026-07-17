@@ -64,7 +64,7 @@ export default function SuperAdminHacimIndirimleriPage() {
 
   return (
     <div>
-      <main className="max-w-[800px]">
+      <main>
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
           Öğrenci sayısı eşiği geçince otomatik uygulanan kademeli indirim.{' '}
           <strong>Örnek:</strong> 50–99 öğrenci → %5, 100–299 → %10, 300–499 → %15, 500+ → %20.
@@ -83,12 +83,12 @@ export default function SuperAdminHacimIndirimleriPage() {
         )}
 
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-2.5 text-left font-medium text-slate-600">Min. Öğrenci</th>
                 <th className="px-4 py-2.5 text-left font-medium text-slate-600">İndirim (%)</th>
-                <th className="px-4 py-2.5"></th>
+                <th className="px-4 py-2.5 w-14"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -122,13 +122,13 @@ export default function SuperAdminHacimIndirimleriPage() {
           </table>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex items-center justify-between gap-3">
           <button onClick={addRow}
             className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
             <Plus className="size-4" /> Kademe Ekle
           </button>
           <button onClick={handleSave} disabled={kaydetMutation.isPending}
-            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
             {kaydetMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
         </div>
