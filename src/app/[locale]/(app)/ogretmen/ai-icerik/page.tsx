@@ -6,6 +6,8 @@ import { HelpChat } from '@/components/ogretmen/HelpChat';
 import { MdImport } from '@/components/ogretmen/md-import';
 import { KaynakSecici, type KaynakSecim } from '@/components/ogretmen/ai-studio/KaynakSecici';
 import { YakindaKart } from '@/components/ogretmen/ai-studio/YakindaKart';
+import { KahootBaslatModal } from '@/components/ogretmen/ai-studio/KahootBaslatModal';
+import { KahootHavuz } from '@/components/ogretmen/ai-studio/KahootHavuz';
 import {
   Sparkles, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, Newspaper, Zap,
@@ -117,6 +119,9 @@ interface GecmisDetay {
 export default function AIIcerikPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const [aktifTab, setAktifTab] = useState<TabId>('quiz');
+  const [kahootSubTab, setKahootSubTab] = useState<'uret' | 'havuz'>('uret');
+  const [modalAcik, setModalAcik] = useState(false);
+  const [modalEtkinlikId, setModalEtkinlikId] = useState<string | null>(null);
 
   const mdAktarGorunur = user?.role === 'SuperAdmin' || user?.role === 'Editor';
   const TABS: TabTanim[] = mdAktarGorunur ? [...CORE_TABS, PDF_IMPORT_TAB] : CORE_TABS;
@@ -326,6 +331,17 @@ export default function AIIcerikPage() {
     onError: (e: Error) => setKaydetHata(e.message),
   });
 
+  async function hemenKahootBaslat() {
+    try {
+      // Eğer zaten kaydedildiyse, o etkinlikId'yi kullan
+      const etkinlikId = kaydedildi ?? (await kaydetMutation.mutateAsync()).etkinlikId;
+      setModalEtkinlikId(etkinlikId);
+      setModalAcik(true);
+    } catch (e) {
+      setKaydetHata(e instanceof Error ? e.message : 'Bir hata oluştu');
+    }
+  }
+
   const mevcutSonuc = sonuclar[aktifTab];
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
   const uretimTabAktif = aktifTab !== 'bulten' && aktifTab !== 'pdf_import';
@@ -363,7 +379,10 @@ export default function AIIcerikPage() {
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => tabDegistir(id)}
+                onClick={() => {
+                  tabDegistir(id);
+                  if (id === 'kahoot') setKahootSubTab('uret');
+                }}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   aktifTab === id
@@ -381,6 +400,35 @@ export default function AIIcerikPage() {
             ))}
           </div>
         </div>
+
+        {/* Kahoot sub-tabs */}
+        {aktifTab === 'kahoot' && (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setKahootSubTab('uret')}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                kahootSubTab === 'uret'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+              )}
+            >
+              <Sparkles className="size-4" />
+              ✨ Yeni Üret
+            </button>
+            <button
+              onClick={() => setKahootSubTab('havuz')}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                kahootSubTab === 'havuz'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+              )}
+            >
+              📚 Soru Havuzu
+            </button>
+          </div>
+        )}
 
         {/* Yakında kartları — tanıtım amaçlı, tıklanamaz */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
@@ -440,12 +488,26 @@ export default function AIIcerikPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 items-start">
-          {/* Form panel */}
-          <div className={cn(
-            'bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5',
-            aktifTab === 'pdf_import' && 'md:col-span-2',
-          )}>
+        {/* Kahoot havuz view — full width */}
+        {aktifTab === 'kahoot' && kahootSubTab === 'havuz' && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <KahootHavuz
+              onBaslat={(etkinlikId) => {
+                setModalEtkinlikId(etkinlikId);
+                setModalAcik(true);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Normal grid layout — form + result (for uret tab or other tabs) */}
+        {!(aktifTab === 'kahoot' && kahootSubTab === 'havuz') && (
+          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 items-start">
+            {/* Form panel */}
+            <div className={cn(
+              'bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5',
+              aktifTab === 'pdf_import' && 'md:col-span-2',
+            )}>
             <p className="text-xs font-medium text-slate-400">
               {TABS.find(t => t.id === aktifTab)?.aciklama}
             </p>
@@ -558,6 +620,17 @@ export default function AIIcerikPage() {
                           : <><Save className="size-3.5" />Kütüphaneye Kaydet</>}
                       </button>
                     )}
+                    {aktifTab === 'kahoot' && (kaydedildi || mevcutSonuc?.icerik?.sorular?.length) && (
+                      <button
+                        onClick={hemenKahootBaslat}
+                        disabled={kaydetMutation.isPending}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-40"
+                      >
+                        {kaydetMutation.isPending
+                          ? <><Loader2 className="size-4 animate-spin" />Kaydediliyor...</>
+                          : <>▶ Hemen Kahoot Başlat</>}
+                      </button>
+                    )}
                     <button
                       onClick={() => sonucuSil(aktifTab)}
                       title="Sonucu temizle"
@@ -616,6 +689,19 @@ export default function AIIcerikPage() {
             )}
           </div>}
         </div>
+        )}
+
+        {/* Modal ve Havuz */}
+        {modalEtkinlikId && (
+          <KahootBaslatModal
+            etkinlikId={modalEtkinlikId}
+            acik={modalAcik}
+            onKapat={() => {
+              setModalAcik(false);
+              setModalEtkinlikId(null);
+            }}
+          />
+        )}
 
         {/* Geçmiş kütüphanesi */}
         {(gecmisData?.liste?.length ?? 0) > 0 && (
