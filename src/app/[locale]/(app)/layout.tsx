@@ -1,11 +1,5 @@
-import { AppNav } from '@/components/app-nav';
-import { AppPageWrapper } from '@/components/app-page-wrapper';
-
+// Ortak (app) grubu: kabuk seçimi alt gruplara devredildi.
+// (staff) → StaffShell (sidebar), (learn) → AppNav (üst bar + mobil alt bar).
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <AppNav />
-      <AppPageWrapper>{children}</AppPageWrapper>
-    </>
-  );
+  return children;
 }

@@ -28,7 +28,7 @@ const ROL_BADGE: Record<string, string> = {
   Ogrenci: 'bg-slate-100 text-slate-600',
 };
 
-function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+export function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
