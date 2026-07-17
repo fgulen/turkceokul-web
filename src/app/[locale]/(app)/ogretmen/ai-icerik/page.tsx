@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api, aiApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 
 const SORU_SAYILARI = [5, 8, 10, 15, 20];
 
@@ -819,7 +819,8 @@ function SonucKartlari({ sonuc, resimUrls }: { sonuc: IcerikSonuc; resimUrls?: s
         const seçenekler: string[] = soru.options?.length
           ? soru.options
           : [soru.kelime1, soru.kelime2, soru.kelime3, soru.kelime4].filter(Boolean) as string[];
-        const resimUrl = soru.imageUrl ?? resimUrls?.[i];
+        // imageUrl DB'den göreli ResimLink gelir (/Medya/...) — R2 CDN prefix'i şart
+        const resimUrl = (soru.imageUrl ? toMediaUrl(soru.imageUrl) : null) ?? resimUrls?.[i];
         const hasImage = !!resimUrl;
 
         return (
