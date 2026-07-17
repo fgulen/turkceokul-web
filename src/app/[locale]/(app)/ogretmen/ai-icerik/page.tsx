@@ -1,103 +1,73 @@
-﻿'use client';
+'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { HelpChat } from '@/components/ogretmen/HelpChat';
 import { MdImport } from '@/components/ogretmen/md-import';
+import { KaynakSecici, type KaynakSecim } from '@/components/ogretmen/ai-studio/KaynakSecici';
+import { YakindaKart } from '@/components/ogretmen/ai-studio/YakindaKart';
 import {
-  Sparkles, FileText, Copy, Check, Download,
-  ListChecks, Shuffle, PenLine, MessageSquare, Newspaper,
-  Loader2, AlertTriangle, BookOpen, X, Image as ImageIcon, Upload, Save,
+  Sparkles, Copy, Check, Download,
+  ListChecks, Shuffle, PenLine, Newspaper, Zap,
+  Loader2, AlertTriangle, X, Save,
   Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp, FileUp,
+  Lock, FileText, MessageSquare,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { api } from '@/lib/api';
+import { api, aiApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-const SEVIYELER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const SORU_SAYILARI = [5, 8, 10, 15, 20];
-const KONULAR = [
-  'Aile ve Ev', 'Yiyecek ve İçecek', 'Seyahat', 'İş Hayatı',
-  'Eğitim', 'Sağlık', 'Alışveriş', 'Hava Durumu', 'Hobiler', 'Şehir Hayatı',
+
+type TabId = 'quiz' | 'kahoot' | 'eslestir' | 'bosluk_doldur' | 'bulten' | 'pdf_import';
+
+type TabTanim = { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; aciklama: string };
+
+const CORE_TABS: TabTanim[] = [
+  { id: 'quiz',          label: 'Quiz',            icon: ListChecks, aciklama: 'Çoktan seçmeli quiz soruları' },
+  { id: 'kahoot',        label: 'Kahoot Quizi',    icon: Zap,        aciklama: 'Canlı sınıf yarışması — kısa, projeksiyon dostu sorular' },
+  { id: 'eslestir',      label: 'Eşleştirme',      icon: Shuffle,    aciklama: 'Kelime veya cümle eşleştirme aktivitesi' },
+  { id: 'bosluk_doldur', label: 'Boşluk Doldurma', icon: PenLine,    aciklama: 'Boşluk doldurma alıştırmaları' },
+  { id: 'bulten',        label: 'Sınıf Bülteni',   icon: Newspaper,  aciklama: 'Sınıf veya öğrenci bazlı veli bülteni' },
 ];
 
-type TabId = 'quiz' | 'eslestir' | 'bosluk_doldur' | 'worksheet' | 'konusma' | 'bulten' | 'resim_analiz' | 'pdf_import';
+const PDF_IMPORT_TAB: TabTanim = {
+  id: 'pdf_import', label: 'MD Aktar', icon: FileUp,
+  aciklama: 'Kitap markdown dosyasını (books/*.md) AI ile çözümleyip üniteye toplu aktarın',
+};
 
-const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; aciklama: string }[] = [
-  { id: 'quiz',          label: 'Quiz',              icon: ListChecks,    aciklama: 'Çoktan seçmeli quiz soruları' },
-  { id: 'eslestir',      label: 'Eşleştirme',        icon: Shuffle,       aciklama: 'Kelime veya cümle eşleştirme aktivitesi' },
-  { id: 'bosluk_doldur', label: 'Boşluk Doldur',     icon: PenLine,       aciklama: 'Boşluk doldurma alıştırmaları' },
-  { id: 'worksheet',     label: 'Çalışma Kağıdı',    icon: FileText,      aciklama: 'Karma sorular — Word (.docx) export destekli' },
-  { id: 'konusma',       label: 'Konuşma Egzersizi', icon: MessageSquare, aciklama: 'Diyalog, kelimeler ve anlama soruları' },
-  { id: 'bulten',        label: 'Sınıf Bülteni',     icon: Newspaper,     aciklama: 'Sınıf istatistiklerine göre veli bülteni' },
-  { id: 'resim_analiz',  label: 'Resimli',            icon: ImageIcon,     aciklama: 'Resim yükleyin — AI her biri için Türkçe açıklama ve kelime üretsin' },
-  { id: 'pdf_import',    label: 'MD Aktar',           icon: FileUp,        aciklama: `Kitap markdown dosyasını (books/*.md) AI ile çözümleyip üniteye toplu aktarın` },
-];
-
-interface PromptSablon {
-  id: string;
-  label: string;
-  aciklama: string;
-  ekPrompt: string;
-  gizliTablar?: TabId[];
-}
-
-const PROMPT_SABLON: PromptSablon[] = [
+const ORNEK_YONERGELER: { kategori: string; ornekler: string[] }[] = [
   {
-    id: 'ing_ceviri',
-    label: '🇬🇧 İngilizce',
-    aciklama: 'Her soruya parantez içinde İngilizce çeviri ekler',
-    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde İngilizce karşılığını ekle.',
-    gizliTablar: ['bulten', 'resim_analiz'],
+    kategori: '🌐 Dil',
+    ornekler: [
+      'Instructions in English, explanations in Arabic.',
+      'Yönergeleri Almanca yaz, açıklamalar Türkçe olsun.',
+      'İpuçlarını yalnızca eş anlamlı kelimelerle sınırla.',
+    ],
   },
   {
-    id: 'alm_ceviri',
-    label: '🇩🇪 Almanca',
-    aciklama: 'Her soruya parantez içinde Almanca çeviri ekler',
-    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Almanca karşılığını ekle.',
-    gizliTablar: ['bulten', 'resim_analiz'],
+    kategori: '🖼 Görsel',
+    ornekler: [
+      'Soruların yarısını ünitedeki resimlerle ilişkilendir.',
+      'Her soru için öğrencinin hayal etmesini sağlayacak betimlemeler ekle.',
+      'Eşleştirmede resimdeki nesneler ile Türkçe karşılıklarını hedefle.',
+    ],
   },
   {
-    id: 'fransizca',
-    label: '🇫🇷 Fransızca',
-    aciklama: 'Parantez içinde Fransızca çeviri ekler',
-    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Fransızca karşılığını ekle.',
-    gizliTablar: ['bulten', 'resim_analiz'],
+    kategori: '🎭 Senaryo',
+    ornekler: [
+      "Tüm soruları bir 'İstanbul Turu' senaryosu içinde kurgula.",
+      'Soruları 10 yaşındaki bir çocuğun ilgi alanlarına (oyun, hayvanlar) göre özelleştir.',
+      'Karagöz ve Hacivat karakterlerini kullanan diyalog temelli sorular hazırla.',
+    ],
   },
   {
-    id: 'arapca',
-    label: '🇸🇦 Arapça',
-    aciklama: 'Parantez içinde Arapça çeviri ekler',
-    ekPrompt: 'Her soru veya seçeneğin yanına parantez içinde Arapça karşılığını ekle.',
-    gizliTablar: ['bulten', 'resim_analiz'],
-  },
-  {
-    id: 'gramer',
-    label: '📖 Gramer notu',
-    aciklama: 'Her sorunun altına kısa gramer açıklaması ekler',
-    ekPrompt: 'Her sorunun description alanının sonuna kısa bir gramer notu ekle (örn: "Not: -de/-da hal eki kullanılır").',
-    gizliTablar: ['bulten', 'eslestir', 'resim_analiz'],
-  },
-  {
-    id: 'kademeli',
-    label: '📈 Kolay→Zor',
-    aciklama: 'Sorular kolaydan zora doğru sıralanır',
-    ekPrompt: 'Soruları zorluk sırasına göre düzenle: ilk sorular çok basit, sonrakiler giderek zorlaşsın.',
-    gizliTablar: ['bulten', 'resim_analiz'],
-  },
-  {
-    id: 'gunluk',
-    label: '🏠 Günlük hayat',
-    aciklama: 'Sorular gerçek hayat senaryolarına dayandırılır',
-    ekPrompt: 'Soruları günlük hayattan somut senaryolara dayandır (alışveriş, yemek, seyahat, iş hayatı vb.).',
-    gizliTablar: ['bulten'],
-  },
-  {
-    id: 'kultur',
-    label: '🇹🇷 Kültürel not',
-    aciklama: 'Türk kültürüne kısa referanslar ekler',
-    ekPrompt: 'Uygun sorularda Türk kültürüne, geleneklerine veya güncel yaşamına kısa bir referans ekle.',
-    gizliTablar: ['bulten', 'resim_analiz'],
+    kategori: '🧠 Pedagoji',
+    ornekler: [
+      'Her yanlış şık için neden yanlış olduğunu İngilizce açıkla.',
+      "Soruları 'somuttan soyuta' doğru sırala, kolaydan zora değil.",
+      'Okuma metninden çıkarım (inference) gerektiren mantık soruları üret.',
+    ],
   },
 ];
 
@@ -126,8 +96,6 @@ interface IcerikSonuc {
 type TabSonuc = { icerik: IcerikSonuc | null; metin: string; resimUrls: string[] };
 
 interface Sinif       { id: number; name: string; }
-interface Kitap       { id: string; name: string; seviye?: string; }
-interface UniteDto    { id: string; name: string; }
 interface GecmisItem  {
   id: string; name: string; tip: string; unite: string;
   soruSayisi: number; insertDate: string; zorluk: number;
@@ -145,43 +113,20 @@ interface GecmisDetay {
   onaylandi: boolean;
 }
 
-function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AIIcerikPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const [aktifTab, setAktifTab] = useState<TabId>('quiz');
 
+  const mdAktarGorunur = user?.role === 'SuperAdmin' || user?.role === 'Editor';
+  const TABS: TabTanim[] = mdAktarGorunur ? [...CORE_TABS, PDF_IMPORT_TAB] : CORE_TABS;
+
   // Form state
-  const [seviye, setSeviye] = useState('A1');
   const [girdi, setGirdi] = useState('');
   const [soruSayisi, setSoruSayisi] = useState(10);
-  const [konu, setKonu] = useState('');
-  const [seciliSinifId, setSeciliSinifId] = useState<number | ''>('');
-  const [seciliSablonlar, setSeciliSablonlar] = useState<Set<string>>(new Set());
-
-  // Pedagogy parametreleri
-  const [supportLanguage, setSupportLanguage] = useState(''); // 'EN'|'DE'|'FR'|'AR'|''
-  const [focusMode, setFocusMode] = useState('');             // 'Grammar'|'Culture'|'DailyLife'|'EasyToHard'|''
-
-  // Kaynak ünite state
-  const [seciliKitapId, setSeciliKitapId] = useState('');
-  const [seciliUniteId, setSeciliUniteId] = useState('');
-  const [seciliUniteAdi, setSeciliUniteAdi] = useState('');
-
-  // Resim state
-  const [resimDosyalari, setResimDosyalari] = useState<File[]>([]);
-  const [resimOnizleme, setResimOnizleme] = useState<string[]>([]);
-  const capturedResimUrls = useRef<string[]>([]);
+  const [kaynak, setKaynak] = useState<KaynakSecim | null>(null);
+  const [yonergeDili, setYonergeDili] = useState<'' | 'EN' | 'AR' | 'RU'>('');
+  const [resimli, setResimli] = useState(false);
+  const [bultenSinifId, setBultenSinifId] = useState<number | ''>('');
 
   // Sonuçlar: sekme başına saklanır
   const [sonuclar, setSonuclar] = useState<Partial<Record<TabId, TabSonuc>>>({});
@@ -197,18 +142,6 @@ export default function AIIcerikPage() {
     enabled: !!user,
   });
 
-  const { data: kitaplar = [] } = useQuery<Kitap[]>({
-    queryKey: ['derskitaplari'],
-    queryFn: () => api.get('/api/derskitaplari').then(r => r.data),
-    enabled: !!user,
-  });
-
-  const { data: uniteler = [] } = useQuery<UniteDto[]>({
-    queryKey: ['uniteler', seciliKitapId],
-    queryFn: () => api.get(`/api/uniteler/${seciliKitapId}`).then(r => r.data),
-    enabled: !!seciliKitapId,
-  });
-
   const { data: gecmisData, refetch: gecmisYenile } = useQuery<{
     toplam: number; liste: GecmisItem[];
   }>({
@@ -221,6 +154,7 @@ export default function AIIcerikPage() {
     queryKey: ['ai-kredi'],
     queryFn: () => api.get('/api/ai/kredi').then(r => r.data as {
       kalan: number | null; toplam: number | null; lisansli: boolean;
+      sinirsiz: boolean; aylikHarcama: number | null;
     }),
     enabled: !!user,
     staleTime: 30_000,
@@ -232,6 +166,8 @@ export default function AIIcerikPage() {
     ? krediData.kalan === 0
     : false;
 
+  const freemium = !!krediData && krediData.lisansli === false && krediData.sinirsiz !== true;
+
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/ai/gecmis/${id}`),
     onSuccess: () => gecmisYenile(),
@@ -242,36 +178,20 @@ export default function AIIcerikPage() {
     onSuccess: () => gecmisYenile(),
   });
 
-  const ekYonlendirme = PROMPT_SABLON
-    .filter(s => seciliSablonlar.has(s.id))
-    .map(s => s.ekPrompt)
-    .join(' ');
-
   const uretMutation = useMutation({
     mutationFn: async () => {
-      if (aktifTab === 'resim_analiz') {
-        capturedResimUrls.current = [...resimOnizleme];
-        const base64ler = await Promise.all(resimDosyalari.map(toBase64));
-        const mediaTipleri = resimDosyalari.map(f => f.type || 'image/jpeg');
-        return api.post('/api/ai/resim-analiz', {
-          resimler: base64ler,
-          mediaTipleri,
-          duzey: seviye,
-        }).then(r => r.data);
-      }
       if (aktifTab === 'bulten')
-        return api.post('/api/ai/sinif-bulteni', { sinifId: seciliSinifId }).then(r => r.data);
-      if (aktifTab === 'konusma')
-        return api.post('/api/ai/konusma-egzersizi', {
-          seviye, konu, uniteId: seciliUniteId || undefined,
-        }).then(r => r.data);
-      return api.post('/api/ai/icerik-uret', {
-        tip: aktifTab, girdi, soruSayisi, duzey: seviye,
+        return aiApi.post('/api/ai/sinif-bulteni', { sinifId: bultenSinifId }).then(r => r.data);
+      return aiApi.post('/api/ai/icerik-uret', {
+        tip: aktifTab,                       // 'kahoot' dahil
+        soruSayisi,
+        duzey: kaynak!.seviye,
+        uniteId: kaynak!.uniteId,
+        kitapTuru: kaynak!.kitapTuru,
+        yonergeDili: yonergeDili || undefined,
+        girdi: girdi || undefined,           // Yönetmen Talimatı (backend'de ogretmenTalimati)
+        resimli,
         ciktiFormati: 'etkinlik',
-        uniteId: seciliUniteId || undefined,
-        ekYonlendirme: ekYonlendirme || undefined,
-        supportLanguage: supportLanguage || undefined,
-        focusMode: focusMode || undefined,
       }).then(r => r.data);
     },
     onSuccess: (data: unknown) => {
@@ -279,21 +199,29 @@ export default function AIIcerikPage() {
       setHata('');
       setDuzenlemeModuAktif(false);
       const tabId = aktifTab;
-      const resimUrls = tabId === 'resim_analiz' ? capturedResimUrls.current : [];
 
       if (typeof data === 'object' && data !== null && 'icerik' in data) {
-        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: (data as { icerik: string }).icerik, resimUrls } }));
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: (data as { icerik: string }).icerik, resimUrls: [] } }));
       } else if (typeof data === 'object' && data !== null && 'sorular' in data) {
-        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: data as IcerikSonuc, metin: '', resimUrls } }));
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: data as IcerikSonuc, metin: '', resimUrls: [] } }));
       } else {
-        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: JSON.stringify(data, null, 2), resimUrls } }));
+        setSonuclar(prev => ({ ...prev, [tabId]: { icerik: null, metin: JSON.stringify(data, null, 2), resimUrls: [] } }));
       }
     },
     onError: (err: Error) => {
-      // Backend aylık kredi limiti: 403 { kod: "limit_asili" } (ücretsizde 10 üretim/ay)
-      const resp = (err as { response?: { status?: number; data?: { kod?: string } } }).response;
+      // Backend hata kodları: limit_asili (aylık kredi bitti), premium_gerekli (>5 soru
+      // ücretsiz planda), ai_hata (AI sağlayıcı/parse hatası, 2 denemede de başarısız)
+      const resp = (err as { response?: { status?: number; data?: { kod?: string; mesaj?: string } } }).response;
       if (resp?.status === 403 && resp.data?.kod === 'limit_asili') {
         setHata('Aylık AI üretim limitine ulaştın (ücretsiz planda 10 üretim/ay, tüm AI araçları için ortak). Limit her ayın başında yenilenir — sınırsız üretim için Kurumsal Pro\'ya geçebilirsin.');
+        return;
+      }
+      if (resp?.status === 403 && resp.data?.kod === 'premium_gerekli') {
+        setHata('5\'ten fazla soru üretmek için Kurumsal Pro lisansı gerekir. Ücretsiz planda soru sayısı 5 ile sınırlıdır.');
+        return;
+      }
+      if (resp?.status === 502 && resp.data?.kod === 'ai_hata') {
+        setHata(resp.data?.mesaj || 'AI yanıt vermedi, lütfen tekrar deneyin.');
         return;
       }
       setHata(err.message || 'Bilinmeyen hata');
@@ -327,36 +255,9 @@ export default function AIIcerikPage() {
   function tabDegistir(id: TabId) {
     setAktifTab(id);
     setHata('');
-    setSeciliSablonlar(new Set());
-    setSupportLanguage('');
-    setFocusMode('');
+    setResimli(false);
     setDuzenlemeModuAktif(false);
-  }
-
-  function kitapDegistir(kitapId: string) {
-    setSeciliKitapId(kitapId);
-    setSeciliUniteId('');
-    setSeciliUniteAdi('');
-  }
-
-  function uniteDegistir(uniteId: string) {
-    setSeciliUniteId(uniteId);
-    const unite = uniteler.find(u => u.id === uniteId);
-    setSeciliUniteAdi(unite?.name ?? '');
-  }
-
-  function uniteTemizle() {
-    setSeciliKitapId('');
-    setSeciliUniteId('');
-    setSeciliUniteAdi('');
-  }
-
-  function sablonToggle(id: string) {
-    setSeciliSablonlar(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); } else { next.add(id); }
-      return next;
-    });
+    if (freemium) setSoruSayisi(5);
   }
 
   function sonucuSil(tabId: TabId) {
@@ -376,16 +277,21 @@ export default function AIIcerikPage() {
 
   async function wordIndir() {
     try {
-      const res = await api.post('/api/ai/icerik-uret', {
-        tip: aktifTab, girdi, soruSayisi, duzey: seviye, ciktiFormati: 'word',
-        uniteId: seciliUniteId || undefined,
-        supportLanguage: supportLanguage || undefined,
-        focusMode: focusMode || undefined,
+      const res = await aiApi.post('/api/ai/icerik-uret', {
+        tip: aktifTab,
+        soruSayisi,
+        duzey: kaynak!.seviye,
+        uniteId: kaynak!.uniteId,
+        kitapTuru: kaynak!.kitapTuru,
+        yonergeDili: yonergeDili || undefined,
+        girdi: girdi || undefined,
+        resimli,
+        ciktiFormati: 'word',
       }, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data as Blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `calisma-kagidi-${seviye}.docx`;
+      a.download = `calisma-kagidi-${kaynak?.seviye || 'AI'}.docx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
@@ -404,9 +310,8 @@ export default function AIIcerikPage() {
       }));
       return api.post('/api/ai/sinifa-kaydet', {
         tip: aktifTab,
-        uniteId: seciliUniteId,
-        sinifId: seciliSinifId || undefined,
-        duzey: seviye,
+        uniteId: kaynak?.uniteId,
+        duzey: kaynak?.seviye,
         baslik: sonuc.icerik.baslik ?? undefined,
         sorular,
       }).then(r => r.data);
@@ -421,19 +326,14 @@ export default function AIIcerikPage() {
 
   const mevcutSonuc = sonuclar[aktifTab];
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
-  const jsonTabAktif = aktifTab !== 'konusma' && aktifTab !== 'bulten' && aktifTab !== 'resim_analiz' && aktifTab !== 'pdf_import';
-  const kaynakTabAktif = aktifTab !== 'bulten' && aktifTab !== 'resim_analiz' && aktifTab !== 'pdf_import';
-  const canKaydet = jsonTabAktif && !!seciliUniteId && !!seciliSinifId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
+  const uretimTabAktif = aktifTab !== 'bulten' && aktifTab !== 'pdf_import';
+  const canKaydet = uretimTabAktif && !!kaynak?.uniteId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
 
   const canUret = aktifTab === 'bulten'
-    ? !!seciliSinifId
-    : aktifTab === 'konusma'
-      ? konu.trim().length > 0 || !!seciliUniteId
-      : aktifTab === 'resim_analiz'
-        ? resimDosyalari.length > 0
-        : aktifTab === 'pdf_import'
-          ? false
-        : girdi.trim().length > 0 || !!seciliUniteId;
+    ? !!bultenSinifId
+    : aktifTab === 'pdf_import'
+      ? false
+      : !!kaynak?.uniteId;
 
   if (!ready) return (
     <div className="min-h-[100dvh] flex items-center justify-center">
@@ -456,7 +356,7 @@ export default function AIIcerikPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-6">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-4">
           <div className="flex gap-1">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -480,18 +380,43 @@ export default function AIIcerikPage() {
           </div>
         </div>
 
+        {/* Yakında kartları — tanıtım amaçlı, tıklanamaz */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <YakindaKart
+            icon={FileText}
+            baslik="Çalışma Kağıdı"
+            aciklama="Karma sorular — Word (.docx) export destekli"
+          />
+          <YakindaKart
+            icon={MessageSquare}
+            baslik="Konuşma Egzersizi"
+            aciklama="Diyalog, kelimeler ve anlama soruları"
+          />
+        </div>
+
         {/* Kredi göstergesi */}
-        {krediData && !krediData.lisansli && krediData.kalan != null && krediData.toplam != null && (
-          <div className={cn(
-            'text-xs mb-3',
-            krediData.kalan > 5
-              ? 'text-slate-400'
-              : krediData.kalan > 0
-                ? 'text-amber-500'
-                : 'text-red-500'
-          )}>
-            AI Kredisi (aylık): {krediData.kalan} / {krediData.toplam} — her ay yenilenir
-          </div>
+        {krediData && (
+          krediData.sinirsiz ? (
+            <div className="flex items-center gap-2 mb-3 text-xs">
+              <span className="text-emerald-600 font-medium">AI Kredisi: ∞ Sınırsız</span>
+              {krediData.aylikHarcama != null && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium">
+                  ~${krediData.aylikHarcama.toFixed(2)} bu ay
+                </span>
+              )}
+            </div>
+          ) : (krediData.kalan != null && krediData.toplam != null && (
+            <div className={cn(
+              'text-xs mb-3',
+              krediData.kalan > 5
+                ? 'text-slate-400'
+                : krediData.kalan > 0
+                  ? 'text-amber-500'
+                  : 'text-red-500'
+            )}>
+              AI Kredisi (aylık): {krediData.kalan} / {krediData.toplam} — her ay yenilenir
+            </div>
+          ))
         )}
 
         {/* Lockout banner */}
@@ -523,89 +448,31 @@ export default function AIIcerikPage() {
               {TABS.find(t => t.id === aktifTab)?.aciklama}
             </p>
 
-            {/* Kaynak ünite seçici */}
-            {kaynakTabAktif && (
-              <UniteKaynakSecici
-                kitaplar={kitaplar}
-                uniteler={uniteler}
-                seciliKitapId={seciliKitapId}
-                seciliUniteId={seciliUniteId}
-                seciliUniteAdi={seciliUniteAdi}
-                onKitap={kitapDegistir}
-                onUnite={uniteDegistir}
-                onTemizle={uniteTemizle}
-              />
-            )}
-
-            {/* Hedef sınıf seçici — sadece kaydedilebilir sekmelerde */}
-            {jsonTabAktif && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Hedef Sınıf <span className="normal-case font-normal text-red-400">*</span>
-                </label>
-                {siniflar.length === 0 ? (
-                  <p className="text-xs text-slate-400">Henüz sınıf oluşturmadınız.</p>
-                ) : (
-                  <select
-                    value={seciliSinifId}
-                    onChange={e => setSeciliSinifId(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-                  >
-                    <option value="">Sınıf seçin...</option>
-                    {siniflar.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+            {/* Kaynak seçici — üretim gerektiren tüm sekmelerde zorunlu */}
+            {uretimTabAktif && (
+              <KaynakSecici secim={kaynak} onChange={setKaynak} />
             )}
 
             {aktifTab === 'bulten' ? (
               <BultenForm
                 siniflar={siniflar}
-                seciliSinifId={seciliSinifId}
-                onChange={setSeciliSinifId}
-              />
-            ) : aktifTab === 'konusma' ? (
-              <KonusmaForm
-                seviye={seviye}
-                konu={konu}
-                uniteSecili={!!seciliUniteId}
-                onSeviye={setSeviye}
-                onKonu={setKonu}
+                seciliSinifId={bultenSinifId}
+                onChange={setBultenSinifId}
               />
             ) : aktifTab === 'pdf_import' ? (
               <MdImport />
-            ) : aktifTab === 'resim_analiz' ? (
-              <ResimYuklemeFormu
-                seviye={seviye}
-                dosyalar={resimDosyalari}
-                onizlemeler={resimOnizleme}
-                onSeviye={setSeviye}
-                onDegisim={(d, o) => { setResimDosyalari(d); setResimOnizleme(o); }}
-              />
             ) : (
               <IcerikForm
-                seviye={seviye}
                 girdi={girdi}
                 soruSayisi={soruSayisi}
-                uniteSecili={!!seciliUniteId}
-                supportLanguage={supportLanguage}
-                focusMode={focusMode}
-                onSeviye={setSeviye}
+                yonergeDili={yonergeDili}
+                resimli={resimli}
+                showResimliToggle={aktifTab === 'quiz' || aktifTab === 'eslestir'}
+                freemium={freemium}
                 onGirdi={setGirdi}
                 onSoruSayisi={setSoruSayisi}
-                onSupportLanguage={setSupportLanguage}
-                onFocusMode={setFocusMode}
-              />
-            )}
-
-            {/* Ek yönlendirme şablonları — sadece metin tabları için */}
-            {(aktifTab === 'konusma') && (
-              <EkSecenekler
-                tabId={aktifTab}
-                secili={seciliSablonlar}
-                onToggle={sablonToggle}
+                onYonergeDili={setYonergeDili}
+                onResimli={setResimli}
               />
             )}
 
@@ -638,14 +505,14 @@ export default function AIIcerikPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="font-semibold text-slate-900">Üretilen İçerik</h2>
-                    {seciliUniteAdi && (
+                    {kaynak?.uniteAdi && (
                       <p className="text-xs text-primary mt-0.5">
-                        Kaynak: {seciliUniteAdi}
+                        Kaynak: {kaynak.uniteAdi}
                       </p>
                     )}
                   </div>
                   <div className="flex gap-2 items-center">
-                    {jsonTabAktif && mevcutSonuc?.icerik && (
+                    {uretimTabAktif && mevcutSonuc?.icerik && (
                       <button
                         onClick={() => setDuzenlemeModuAktif(p => !p)}
                         className={cn(
@@ -668,7 +535,7 @@ export default function AIIcerikPage() {
                         ? <><Check className="size-3.5 text-emerald-500" />Kopyalandı!</>
                         : <><Copy className="size-3.5" />Kopyala</>}
                     </button>
-                    {jsonTabAktif && mevcutSonuc?.icerik && (
+                    {uretimTabAktif && mevcutSonuc?.icerik && (
                       <button
                         onClick={wordIndir}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
@@ -677,20 +544,16 @@ export default function AIIcerikPage() {
                         Word İndir
                       </button>
                     )}
-                    {jsonTabAktif && mevcutSonuc?.icerik?.sorular?.length && !kaydedildi && (
+                    {uretimTabAktif && mevcutSonuc?.icerik?.sorular?.length && !kaydedildi && (
                       <button
                         onClick={() => kaydetMutation.mutate()}
-                        disabled={kaydetMutation.isPending || !seciliUniteId || !seciliSinifId}
+                        disabled={kaydetMutation.isPending || !canKaydet}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-40"
-                        title={
-                          !seciliUniteId ? 'Önce ünite seçin' :
-                          !seciliSinifId ? 'Önce sınıf seçin' :
-                          `"${siniflar.find(s => s.id === seciliSinifId)?.name}" sınıfına kaydet`
-                        }
+                        title={!kaynak?.uniteId ? 'Önce kaynak ünite seçin' : 'Kütüphaneye kaydet'}
                       >
                         {kaydetMutation.isPending
                           ? <><Loader2 className="size-3.5 animate-spin" />Kaydediliyor...</>
-                          : <><Save className="size-3.5" />Sınıfa Kaydet</>}
+                          : <><Save className="size-3.5" />Kütüphaneye Kaydet</>}
                       </button>
                     )}
                     <button
@@ -713,7 +576,7 @@ export default function AIIcerikPage() {
                 {kaydedildi && (
                   <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 mb-4">
                     <Check className="size-3.5 text-emerald-600 shrink-0" />
-                    <span>İçerik sınıfa kaydedildi! Öğrenciler onaylandıktan sonra görecek.</span>
+                    <span>İçerik kütüphaneye kaydedildi. Sınıf sayfanızdan atayabilir veya Kahoot havuzundan başlatabilirsiniz.</span>
                   </div>
                 )}
                 {kaydetHata && (
@@ -782,158 +645,27 @@ export default function AIIcerikPage() {
 
 // ── Alt bileşenler ────────────────────────────────────────────────────────────
 
-function UniteKaynakSecici({
-  kitaplar, uniteler, seciliKitapId, seciliUniteId, seciliUniteAdi,
-  onKitap, onUnite, onTemizle,
-}: {
-  kitaplar: Kitap[]; uniteler: UniteDto[];
-  seciliKitapId: string; seciliUniteId: string; seciliUniteAdi: string;
-  onKitap: (id: string) => void; onUnite: (id: string) => void; onTemizle: () => void;
-}) {
-  if (seciliUniteId) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-primary/8 border border-primary/20 rounded-lg">
-        <BookOpen className="size-3.5 text-primary shrink-0" />
-        <span className="text-xs text-primary font-medium flex-1 min-w-0 truncate">{seciliUniteAdi}</span>
-        <button onClick={onTemizle} className="text-primary/60 hover:text-primary transition-colors">
-          <X className="size-3.5" />
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Kaynak Ünite <span className="normal-case font-normal">(isteğe bağlı)</span>
-      </label>
-      <select
-        value={seciliKitapId}
-        onChange={e => onKitap(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-      >
-        <option value="">Kitap seçin...</option>
-        {kitaplar.map(k => (
-          <option key={k.id} value={k.id}>
-            {k.name}{k.seviye ? ` (${k.seviye})` : ''}
-          </option>
-        ))}
-      </select>
-      {seciliKitapId && (
-        <select
-          value={seciliUniteId}
-          onChange={e => onUnite(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-        >
-          <option value="">Ünite seçin...</option>
-          {uniteler.map(u => (
-            <option key={u.id} value={u.id}>{u.name}</option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
-}
-
-function SeviyeSecici({ seviye, onSeviye }: { seviye: string; onSeviye: (v: string) => void }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-        CEFR Seviyesi
-      </label>
-      <div className="flex gap-1.5 flex-wrap">
-        {SEVIYELER.map(s => (
-          <button
-            key={s}
-            onClick={() => onSeviye(s)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
-              seviye === s
-                ? 'bg-primary text-white border-primary'
-                : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
-            )}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const ORNEK_YONERGELER: { kategori: string; ornekler: string[] }[] = [
-  {
-    kategori: '🌐 Dil',
-    ornekler: [
-      'Instructions in English, explanations in Arabic.',
-      'Yönergeleri Almanca yaz, açıklamalar Türkçe olsun.',
-      'İpuçlarını yalnızca eş anlamlı kelimelerle sınırla.',
-    ],
-  },
-  {
-    kategori: '🖼 Görsel',
-    ornekler: [
-      'Soruların yarısını ünitedeki resimlerle ilişkilendir.',
-      'Her soru için öğrencinin hayal etmesini sağlayacak betimlemeler ekle.',
-      'Eşleştirmede resimdeki nesneler ile Türkçe karşılıklarını hedefle.',
-    ],
-  },
-  {
-    kategori: '🎭 Senaryo',
-    ornekler: [
-      "Tüm soruları bir 'İstanbul Turu' senaryosu içinde kurgula.",
-      'Soruları 10 yaşındaki bir çocuğun ilgi alanlarına (oyun, hayvanlar) göre özelleştir.',
-      'Karagöz ve Hacivat karakterlerini kullanan diyalog temelli sorular hazırla.',
-    ],
-  },
-  {
-    kategori: '🧠 Pedagoji',
-    ornekler: [
-      'Her yanlış şık için neden yanlış olduğunu İngilizce açıkla.',
-      "Soruları 'somuttan soyuta' doğru sırala, kolaydan zora değil.",
-      'Okuma metninden çıkarım (inference) gerektiren mantık soruları üret.',
-    ],
-  },
-];
-
-const SUPPORT_LANGS = [
-  { code: 'EN', label: '🇬🇧 EN' },
-  { code: 'DE', label: '🇩🇪 DE' },
-  { code: 'FR', label: '🇫🇷 FR' },
-  { code: 'AR', label: '🇸🇦 AR' },
-];
-
-const FOCUS_MODES = [
-  { code: 'Grammar',    label: '📖 Gramer' },
-  { code: 'Culture',    label: '🇹🇷 Kültür' },
-  { code: 'DailyLife',  label: '🏠 Günlük' },
-  { code: 'EasyToHard', label: '📈 Kolay→Zor' },
-];
-
 function IcerikForm({
-  seviye, girdi, soruSayisi, uniteSecili, supportLanguage, focusMode,
-  onSeviye, onGirdi, onSoruSayisi, onSupportLanguage, onFocusMode,
+  girdi, soruSayisi, yonergeDili, resimli, showResimliToggle, freemium,
+  onGirdi, onSoruSayisi, onYonergeDili, onResimli,
 }: {
-  seviye: string; girdi: string; soruSayisi: number; uniteSecili: boolean;
-  supportLanguage: string; focusMode: string;
-  onSeviye: (v: string) => void; onGirdi: (v: string) => void; onSoruSayisi: (v: number) => void;
-  onSupportLanguage: (v: string) => void; onFocusMode: (v: string) => void;
+  girdi: string; soruSayisi: number;
+  yonergeDili: '' | 'EN' | 'AR' | 'RU'; resimli: boolean; showResimliToggle: boolean; freemium: boolean;
+  onGirdi: (v: string) => void; onSoruSayisi: (v: number) => void;
+  onYonergeDili: (v: '' | 'EN' | 'AR' | 'RU') => void; onResimli: (v: boolean) => void;
 }) {
   const [ilhamAcik, setIlhamAcik] = useState(false);
 
   return (
     <div className="space-y-4">
-      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          Yönetmen Talimatı{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
+          Yönetmen Talimatı <span className="normal-case font-normal">(isteğe bağlı)</span>
         </label>
         <textarea
           value={girdi}
           onChange={e => onGirdi(e.target.value)}
-          placeholder={uniteSecili
-            ? 'Örn: Sadece fiil çekimlerine odaklan, yanlış şıklara neden yanlış olduklarını İngilizce ekle.'
-            : 'Örn: İstanbul turu senaryosu kur, ipuçlarını Almanca ver.'}
+          placeholder="Örn: Sadece fiil çekimlerine odaklan, yanlış şıklara neden yanlış olduklarını İngilizce ekle."
           rows={3}
           className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
         />
@@ -969,106 +701,69 @@ function IcerikForm({
           </div>
         )}
       </div>
+
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           Soru Sayısı
         </label>
-        <div className="flex gap-1.5">
-          {SORU_SAYILARI.map(n => (
-            <button
-              key={n}
-              onClick={() => onSoruSayisi(n)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
-                soruSayisi === n
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
-              )}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* İpucu Dili */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          İpucu Dili <span className="normal-case font-normal">(isteğe bağlı)</span>
-        </label>
         <div className="flex gap-1.5 flex-wrap">
-          {SUPPORT_LANGS.map(l => (
-            <button
-              key={l.code}
-              onClick={() => onSupportLanguage(supportLanguage === l.code ? '' : l.code)}
-              className={cn(
-                'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                supportLanguage === l.code
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
-              )}
-            >
-              {l.label}
-            </button>
-          ))}
+          {SORU_SAYILARI.map(n => {
+            const kilitli = freemium && n !== 5;
+            return (
+              <button
+                key={n}
+                disabled={kilitli}
+                onClick={() => !kilitli && onSoruSayisi(n)}
+                title={kilitli ? 'Sadece Premium' : undefined}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors relative',
+                  soruSayisi === n
+                    ? 'bg-primary text-white border-primary'
+                    : kilitli
+                      ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40',
+                )}
+              >
+                {n}
+                {kilitli && <Lock className="size-2.5 absolute -top-1 -right-1 text-amber-500" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Odak Modu */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          Odak <span className="normal-case font-normal">(isteğe bağlı)</span>
-        </label>
-        <div className="flex gap-1.5 flex-wrap">
-          {FOCUS_MODES.map(f => (
-            <button
-              key={f.code}
-              onClick={() => onFocusMode(focusMode === f.code ? '' : f.code)}
-              className={cn(
-                'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                focusMode === f.code
-                  ? 'bg-amber-500 text-white border-amber-500'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-amber-300',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function KonusmaForm({
-  seviye, konu, uniteSecili, onSeviye, onKonu,
-}: {
-  seviye: string; konu: string; uniteSecili: boolean;
-  onSeviye: (v: string) => void; onKonu: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          Konu{uniteSecili && <span className="normal-case font-normal ml-1">(isteğe bağlı)</span>}
+          Soru yönergeleri hangi dilde olsun?
         </label>
         <select
-          value={KONULAR.includes(konu) ? konu : ''}
-          onChange={e => onKonu(e.target.value)}
+          value={yonergeDili}
+          onChange={e => onYonergeDili(e.target.value as '' | 'EN' | 'AR' | 'RU')}
           className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
         >
-          <option value="">Konu seçin...</option>
-          {KONULAR.map(k => <option key={k} value={k}>{k}</option>)}
+          <option value="">Sadece Türkçe</option>
+          <option value="EN">Türkçe + İngilizce</option>
+          <option value="AR">Türkçe + Arapça</option>
+          <option value="RU">Türkçe + Rusça</option>
         </select>
-        <input
-          type="text"
-          value={konu}
-          onChange={e => onKonu(e.target.value)}
-          placeholder={uniteSecili ? 'veya kendi konunuzu yazın...' : 'veya kendi konunuzu yazın'}
-          className="w-full mt-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
       </div>
+
+      {showResimliToggle && (
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={resimli}
+              onChange={e => onResimli(e.target.checked)}
+              className="size-4 rounded border-slate-300 text-primary focus:ring-primary/30"
+            />
+            <span className="text-sm font-medium text-slate-700">Resimli Üret</span>
+          </label>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+            Sorular ünitedeki gerçek görsellerle ilişkilendirilir.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1101,137 +796,6 @@ function BultenForm({
       <p className="text-xs text-slate-400 leading-relaxed">
         Seçili sınıfın aktivite verilerine göre velilere gönderilecek haftalık bülten oluşturulur.
       </p>
-    </div>
-  );
-}
-
-function ResimYuklemeFormu({
-  seviye, dosyalar, onizlemeler, onSeviye, onDegisim,
-}: {
-  seviye: string;
-  dosyalar: File[];
-  onizlemeler: string[];
-  onSeviye: (v: string) => void;
-  onDegisim: (dosyalar: File[], onizlemeler: string[]) => void;
-}) {
-  const [surukleniyor, setSurukleniyor] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const MAX = 10;
-
-  function dosyaEkle(liste: FileList | null) {
-    if (!liste) return;
-    const kalan = MAX - dosyalar.length;
-    if (kalan <= 0) return;
-    const yeniDosyalar = Array.from(liste)
-      .filter(f => f.type.startsWith('image/'))
-      .slice(0, kalan);
-    const yeniOnizlemeler = yeniDosyalar.map(f => URL.createObjectURL(f));
-    onDegisim([...dosyalar, ...yeniDosyalar], [...onizlemeler, ...yeniOnizlemeler]);
-    if (inputRef.current) inputRef.current.value = '';
-  }
-
-  function resimSil(i: number) {
-    onDegisim(dosyalar.filter((_, j) => j !== i), onizlemeler.filter((_, j) => j !== i));
-  }
-
-  return (
-    <div className="space-y-4">
-      <SeviyeSecici seviye={seviye} onSeviye={onSeviye} />
-
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          Resimler{' '}
-          <span className="normal-case font-normal">({dosyalar.length}/{MAX})</span>
-        </label>
-
-        {dosyalar.length < MAX && (
-          <div
-            onDragOver={e => { e.preventDefault(); setSurukleniyor(true); }}
-            onDragLeave={() => setSurukleniyor(false)}
-            onDrop={e => { e.preventDefault(); setSurukleniyor(false); dosyaEkle(e.dataTransfer.files); }}
-            onClick={() => inputRef.current?.click()}
-            className={cn(
-              'border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors',
-              surukleniyor ? 'border-primary/60 bg-primary/5' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
-            )}
-          >
-            <Upload className="size-5 mx-auto mb-1.5 text-slate-300" />
-            <p className="text-xs text-slate-400">Sürükle veya tıkla</p>
-            <p className="text-[10px] text-slate-300 mt-0.5">JPG, PNG, WEBP</p>
-          </div>
-        )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          className="hidden"
-          onChange={e => dosyaEkle(e.target.files)}
-        />
-
-        {onizlemeler.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            {onizlemeler.map((url, i) => (
-              <div key={i} className="relative aspect-square rounded-lg overflow-hidden group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="w-full h-full object-cover" />
-                <button
-                  onClick={() => resimSil(i)}
-                  className="absolute top-1 right-1 size-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="size-3" />
-                </button>
-                <span className="absolute bottom-1 left-1 text-[10px] bg-black/50 text-white rounded px-1">
-                  {i + 1}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {dosyalar.length === 0 && (
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            AI her resim için ayrı bir Türkçe açıklama ve kelime üretir.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function EkSecenekler({
-  tabId, secili, onToggle,
-}: {
-  tabId: TabId;
-  secili: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  const gorunur = PROMPT_SABLON.filter(s => !s.gizliTablar?.includes(tabId));
-  if (gorunur.length === 0) return null;
-
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-        Ek Yönlendirme
-      </label>
-      <div className="flex flex-wrap gap-1.5">
-        {gorunur.map(s => (
-          <button
-            key={s.id}
-            title={s.aciklama}
-            onClick={() => onToggle(s.id)}
-            className={cn(
-              'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors',
-              secili.has(s.id)
-                ? 'bg-primary/10 text-primary border-primary/30'
-                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300',
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -1325,7 +889,7 @@ function SorularDuzenleyici({
   onSil: (idx: number) => void;
   onEkle: () => void;
 }) {
-  const distractorCount = tabId === 'quiz' ? 3 : tabId === 'eslestir' ? 2 : 0;
+  const distractorCount = tabId === 'quiz' || tabId === 'kahoot' ? 3 : tabId === 'eslestir' ? 2 : 0;
 
   return (
     <div className="space-y-3">
