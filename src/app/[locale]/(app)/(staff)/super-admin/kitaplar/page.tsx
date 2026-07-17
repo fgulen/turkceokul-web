@@ -57,22 +57,29 @@ function KitaplarTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 items-center">
-        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
-        {secili.size > 0 && (
-          <button onClick={() => topluSilMutation.mutate([...secili])}
-            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
-            Toplu Sil ({secili.size})
-          </button>
-        )}
-        {/* Ders kitabı üretimi AI Stüdyosu'nda yapılır — manuel oluşturma endpoint'i yok */}
-        <Link href="/ogretmen/ai-icerik"
-          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
-          <Plus className="size-4" /> Yeni Kitap (AI Stüdyosu)
-        </Link>
-      </div>
-
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Standart liste toolbar'ı (referans: Ülkeler): başlık+sayaç · arama · sağda eylemler */}
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="size-4 text-purple-600" />
+            <h2 className="text-sm font-semibold text-slate-800">Ders Kitapları</h2>
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{(kitaplar as any[]).length}</span>
+          </div>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
+          <div className="flex items-center gap-2 ml-auto">
+            {secili.size > 0 && (
+              <button onClick={() => topluSilMutation.mutate([...secili])}
+                className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
+                Toplu Sil ({secili.size})
+              </button>
+            )}
+            {/* Ders kitabı üretimi AI Stüdyosu'nda yapılır — manuel oluşturma endpoint'i yok */}
+            <Link href="/ogretmen/ai-icerik"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+              <Plus className="size-3.5" /> Yeni Kitap (AI Stüdyosu)
+            </Link>
+          </div>
+        </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>

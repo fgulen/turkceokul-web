@@ -97,34 +97,38 @@ function KullanicilarTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
-        <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
-        <select value={rolFilter} onChange={e => { setRolFilter(e.target.value); setSayfa(1); }}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-          <option value="">Tüm Roller</option>
-          {TUM_ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <Link href="/super-admin/kullanici-olustur"
-          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
-          <UserPlus className="size-4" /> Yeni Kullanıcı
-        </Link>
-        {secili.size > 0 && (
-          <>
-            <button onClick={() => topluOnaylaMutation.mutate([...secili])}
-              className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
-              Onayla ({secili.size})
-            </button>
-            <button onClick={() => topluSilMutation.mutate([...secili])}
-              className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
-              Toplu Sil ({secili.size})
-            </button>
-          </>
-        )}
-      </div>
-
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-2.5 border-b border-slate-100 text-xs text-slate-500">
-          Toplam {toplam} kullanıcı · Sayfa {sayfa}
+        {/* Standart liste toolbar'ı (referans: Ülkeler): başlık+sayaç · arama · sağda eylemler */}
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-purple-600" />
+            <h2 className="text-sm font-semibold text-slate-800">Kullanıcılar</h2>
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
+          </div>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
+          <select value={rolFilter} onChange={e => { setRolFilter(e.target.value); setSayfa(1); }}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300">
+            <option value="">Tüm Roller</option>
+            {TUM_ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <div className="flex items-center gap-2 ml-auto">
+            {secili.size > 0 && (
+              <>
+                <button onClick={() => topluOnaylaMutation.mutate([...secili])}
+                  className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
+                  Onayla ({secili.size})
+                </button>
+                <button onClick={() => topluSilMutation.mutate([...secili])}
+                  className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
+                  Toplu Sil ({secili.size})
+                </button>
+              </>
+            )}
+            <Link href="/super-admin/kullanici-olustur"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+              <UserPlus className="size-3.5" /> Yeni Kullanıcı
+            </Link>
+          </div>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
