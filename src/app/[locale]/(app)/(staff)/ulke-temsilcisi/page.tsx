@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, GraduationCap, Users, Clock, ArrowRightCircle } from 'lucide-react';
+import { Building2, GraduationCap, Users, Clock, ArrowRightCircle, BookOpen, ChevronRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
+import { SlideOver } from '@/components/slide-over';
 
 interface PanelKurum {
   id: number;
@@ -42,10 +44,46 @@ interface KatalogKitapAd {
   ad: string;
 }
 
+interface LisansKarti {
+  id: string;
+  name: string;
+  seviye: string;
+  thumbnailPicture: string | null;
+  lisansTipi: 'Deneme' | 'Ucretli' | 'Sponsorlu' | null;
+  toplamLisans: number;
+  kullanilanLisans: number;
+  buton: 'SatinAl' | 'Inceleniyor' | 'EkLisans' | 'UcretsizDene';
+}
+
+const LISANS_TIPI_METIN: Record<string, string> = {
+  Deneme: 'Deneme',
+  Ucretli: 'Ücretli',
+  Sponsorlu: 'Sponsorlu',
+};
+
+const LISANS_TIPI_ROZET: Record<string, string> = {
+  Deneme: 'bg-amber-100 text-amber-700',
+  Ucretli: 'bg-emerald-100 text-emerald-700',
+  Sponsorlu: 'bg-sky-100 text-sky-700',
+};
+
+const SALT_OKUNUR_BUTON_METIN: Record<string, string> = {
+  SatinAl: 'Satın Alma — kurum yöneticisi',
+  Inceleniyor: 'Talebi inceleniyor',
+  EkLisans: 'Ek lisans — kurum yöneticisi',
+};
+
+function apiHataMesaji(err: unknown): string {
+  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
+    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
+}
+
 export default function UlkeTemsilcisiPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const queryClient = useQueryClient();
   const [donusturuluyorId, setDonusturuluyorId] = useState<number | null>(null);
+  const [acikKurum, setAcikKurum] = useState<{ id: number; name: string } | null>(null);
+  const [lisansMesaj, setLisansMesaj] = useState<{ id: string; mesaj: string } | null>(null);
 
   const { data: panel, isLoading } = useQuery<UlkePanel>({
     queryKey: ['ulke-temsilcisi-panel'],
@@ -86,6 +124,34 @@ export default function UlkeTemsilcisiPage() {
     },
     onSettled: () => setDonusturuluyorId(null),
   });
+
+  const kurumLisanslarKey = ['ulke-temsilcisi-kurum-lisanslar', acikKurum?.id];
+
+  const { data: kurumLisanslari, isLoading: kurumLisanslariYukleniyor, error: kurumLisanslariHatasi } = useQuery<LisansKarti[]>({
+    queryKey: kurumLisanslarKey,
+    queryFn: () => api.get(`/api/ulke-temsilcisi/kurum/${acikKurum!.id}/lisanslar`).then(r => r.data),
+    enabled: !!acikKurum,
+  });
+
+  const denemeMutation = useMutation({
+    mutationFn: (dersKitabiId: string) =>
+      api.post(`/api/ulke-temsilcisi/kurum/${acikKurum!.id}/deneme-baslat`, { dersKitabiId }),
+    onMutate: () => setLisansMesaj(null),
+    onSuccess: (res) => {
+      toast.success(res.data?.mesaj ?? 'Deneme başlatıldı.');
+      queryClient.invalidateQueries({ queryKey: kurumLisanslarKey });
+    },
+    onError: (err, dersKitabiId) => {
+      const hata = apiHataMesaji(err);
+      setLisansMesaj({ id: dersKitabiId, mesaj: hata });
+      toast.error(hata);
+    },
+  });
+
+  function kapatKurumPaneli() {
+    setAcikKurum(null);
+    setLisansMesaj(null);
+  }
 
   if (!ready) return (
     <div className="py-24 flex items-center justify-center">
@@ -190,7 +256,11 @@ export default function UlkeTemsilcisiPage() {
           ) : (
             <div className="divide-y divide-slate-50">
               {panel.kurumlar.map(k => (
-                <div key={k.id} className="flex items-center justify-between px-6 py-4">
+                <button
+                  key={k.id}
+                  onClick={() => setAcikKurum({ id: k.id, name: k.name })}
+                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors"
+                >
                   <div>
                     <div className="font-medium text-sm text-slate-800">{k.name}</div>
                     <div className="text-xs text-slate-400">
@@ -204,13 +274,90 @@ export default function UlkeTemsilcisiPage() {
                     <span className="flex items-center gap-1 text-xs text-slate-400">
                       <Users className="size-3.5" /> {k.ogrenciSayisi}
                     </span>
+                    <ChevronRight className="size-4 text-slate-300" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      <SlideOver
+        open={!!acikKurum}
+        onClose={kapatKurumPaneli}
+        title={acikKurum?.name ?? ''}
+        subtitle="Lisans Durumu"
+        width="md"
+      >
+        {kurumLisanslariYukleniyor ? (
+          <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+        ) : kurumLisanslariHatasi ? (
+          <p className="text-slate-500 text-sm text-center py-12">{apiHataMesaji(kurumLisanslariHatasi)}</p>
+        ) : !kurumLisanslari?.length ? (
+          <p className="text-slate-400 text-sm text-center py-12">Kitap bulunamadı.</p>
+        ) : (
+          <div className="divide-y divide-slate-50 -mx-6">
+            {kurumLisanslari.map(k => {
+              const denemeBaslatilabilir = k.buton === 'UcretsizDene';
+              const gonderiliyor = denemeMutation.isPending && denemeMutation.variables === k.id;
+              const kartMesaj = lisansMesaj?.id === k.id ? lisansMesaj.mesaj : null;
+
+              return (
+                <div key={k.id} className="px-6 py-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {k.thumbnailPicture ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={toMediaUrl(k.thumbnailPicture)!} alt={k.name} className="w-10 h-14 object-cover rounded-md shrink-0" />
+                      ) : (
+                        <div className="w-10 h-14 bg-slate-100 rounded-md shrink-0 flex items-center justify-center">
+                          <BookOpen className="size-4 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm text-slate-800 truncate">{k.name}</span>
+                          <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{k.seviye}</span>
+                          {k.lisansTipi && (
+                            <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', LISANS_TIPI_ROZET[k.lisansTipi])}>
+                              {LISANS_TIPI_METIN[k.lisansTipi]}
+                            </span>
+                          )}
+                        </div>
+                        {k.lisansTipi && (
+                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                            <Users className="size-3.5" />
+                            <span className="tabular-nums">{k.kullanilanLisans}/{k.toplamLisans}</span>
+                            <span>lisans kullanımda</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {denemeBaslatilabilir ? (
+                      <button
+                        disabled={gonderiliyor}
+                        onClick={() => denemeMutation.mutate(k.id)}
+                        className={cn(
+                          'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-emerald-500 text-white hover:bg-emerald-600',
+                          gonderiliyor && 'opacity-60 cursor-wait',
+                        )}
+                      >
+                        {gonderiliyor ? 'Başlatılıyor…' : 'Ücretsiz Dene'}
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-slate-400 italic text-right">
+                        {SALT_OKUNUR_BUTON_METIN[k.buton]}
+                      </span>
+                    )}
+                  </div>
+                  {kartMesaj && <p className="text-xs mt-2 text-red-500">{kartMesaj}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </SlideOver>
     </div>
   );
 }

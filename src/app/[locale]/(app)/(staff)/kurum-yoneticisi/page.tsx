@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 
 interface PanelOgretmen {
@@ -407,7 +407,7 @@ export default function KurumYoneticisiPage() {
                           {k.thumbnailPicture ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={k.thumbnailPicture}
+                              src={toMediaUrl(k.thumbnailPicture)!}
                               alt={k.name}
                               className="w-12 h-16 object-cover rounded-md shrink-0"
                             />
