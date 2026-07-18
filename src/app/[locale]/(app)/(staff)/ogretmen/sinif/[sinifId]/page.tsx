@@ -7,11 +7,11 @@ import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
   Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { KatilimKoduDavet } from '@/components/katilim-kodu-davet';
 
 interface Sinif {
   id: number;
@@ -790,23 +790,8 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                 <X className="size-4" />
               </button>
             </div>
-            <div className="p-6 flex flex-col items-center gap-5">
-              <QRCodeSVG
-                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/sinif/katil?kod=${sinif.katilimKodu}`}
-                size={200}
-                bgColor="#ffffff"
-                fgColor="#1a1a2e"
-                level="M"
-              />
-              <div className="text-center">
-                <p className="text-xs text-slate-400 mb-1">Katılım Kodu</p>
-                <span className="font-mono font-bold text-3xl tracking-widest text-slate-800">
-                  {sinif.katilimKodu}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 text-center">
-                Öğrenciler bu QR kodu tarayarak veya kodu girerek sınıfa katılabilir.
-              </p>
+            <div className="p-6">
+              <KatilimKoduDavet katilimKodu={sinif.katilimKodu} locale={locale} />
             </div>
           </div>
         </div>

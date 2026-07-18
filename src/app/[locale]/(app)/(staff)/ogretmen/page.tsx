@@ -1,16 +1,16 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, GraduationCap, Plus, Users, ClipboardList, ArrowRight,
-  Building2, Globe, UserCheck, AlertCircle, Pencil, Trash2, Sparkles, Wifi,
+  Pencil, Trash2, Sparkles, Wifi,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
 
 interface Sinif {
   id: number;
@@ -22,35 +22,13 @@ interface Sinif {
   olusturmaTarihi: string;
 }
 
-interface IdName { id: number; name: string }
-interface OgretmenItem { id: number; ad: string }
-interface KitapItem { id: string; name: string; seviye: string }
-
-interface FormData {
-  rol: string;
-  ulkeler?: IdName[];
-  ulke?: IdName | null;
-  kurumlar?: IdName[];
-  kurum?: IdName | null;
-  ogretmenler?: OgretmenItem[];
-}
+type SlideOverState = { mod: 'olustur' } | { mod: 'duzenle'; sinifId: number } | null;
 
 export default function OgretmenDashboard() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const qc = useQueryClient();
   const router = useRouter();
-  const [formAcik, setFormAcik] = useState(false);
-  const [duzenleFormAcik, setDuzenleFormAcik] = useState(false);
-  const [duzenleSinifId, setDuzenleSinifId] = useState<number | null>(null);
-  const [duzenleSinifAdi, setDuzenleSinifAdi] = useState('');
-  const [duzenleKitapId, setDuzenleKitapId] = useState('');
-
-  // Form state
-  const [sinifAdi, setSinifAdi] = useState('');
-  const [seciliUlkeId, setSeciliUlkeId] = useState<number | null>(null);
-  const [seciliKurumId, setSeciliKurumId] = useState<number | null>(null);
-  const [seciliOgretmenId, setSeciliOgretmenId] = useState<number | null>(null);
-  const [seciliKitapId, setSeciliKitapId] = useState('');
+  const [slideOver, setSlideOver] = useState<SlideOverState>(null);
 
   const { data: siniflar, isLoading } = useQuery<Sinif[]>({
     queryKey: ['siniflarim'],
@@ -58,113 +36,15 @@ export default function OgretmenDashboard() {
     enabled: !!user,
   });
 
-  const { data: formData } = useQuery<FormData>({
-    queryKey: ['sinif-form-data'],
-    queryFn: () => api.get('/api/ogretmen/sinif-form-data').then(r => r.data),
-    enabled: !!user && (formAcik || duzenleFormAcik),
-  });
-
-  // Sınıfa atanabilecek kitaplar: kurum lisansı + paket açılımı + ülke varsayılanı
-  // (backend tarafında hesaplanıyor). SuperAdmin/UlkeTemsilcisi icin kurum secilmeden
-  // liste cekilmez — o rollerde kurum baglami olmadan "atanabilir kitap" tanimsizdir.
-  const kitapKurumId = (formData?.rol === 'SuperAdmin' || formData?.rol === 'UlkeTemsilcisi') ? seciliKurumId : null;
-  const kitapListesiHazir = !!formData && (formData.rol === 'Ogretmen' || formData.rol === 'KurumYoneticisi' || !!kitapKurumId);
-
-  const { data: kitaplar } = useQuery<KitapItem[]>({
-    queryKey: ['sinif-kitaplar', kitapKurumId],
-    queryFn: () => api
-      .get('/api/ogretmen/sinif-kitaplar', kitapKurumId ? { params: { kurumId: kitapKurumId } } : undefined)
-      .then(r => r.data),
-    enabled: (formAcik || duzenleFormAcik) && kitapListesiHazir,
-  });
-
-  // Cascade: SuperAdmin ülke seçince kurumları çek
-  const { data: cascadeKurumlar } = useQuery<IdName[]>({
-    queryKey: ['kurumlar-by-ulke', seciliUlkeId],
-    queryFn: () => api.get(`/api/ogretmen/kurumlar?ulkeId=${seciliUlkeId}`).then(r => r.data),
-    enabled: !!seciliUlkeId && (formData?.rol === 'SuperAdmin' || formData?.rol === 'UlkeTemsilcisi'),
-  });
-
-  // Cascade: kurum seçince öğretmenleri çek (SuperAdmin + UlkeTemsilcisi)
-  const { data: cascadeOgretmenler } = useQuery<OgretmenItem[]>({
-    queryKey: ['ogretmenler-by-kurum', seciliKurumId],
-    queryFn: () => api.get(`/api/ogretmen/ogretmenler?kurumId=${seciliKurumId}`).then(r => r.data),
-    enabled: !!seciliKurumId && (formData?.rol === 'SuperAdmin' || formData?.rol === 'UlkeTemsilcisi'),
-  });
-
   const sinifSilMutation = useMutation({
     mutationFn: (sinifId: number) => api.delete(`/api/ogretmen/sinif/${sinifId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['siniflarim'] }),
   });
 
-  const sinifGuncellemeMutation = useMutation({
-    mutationFn: () => api.put(`/api/ogretmen/sinif/${duzenleSinifId}`, {
-      name: duzenleSinifAdi,
-      dersKitabiId: duzenleKitapId,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['siniflarim'] });
-      setDuzenleFormAcik(false);
-      setDuzenleSinifId(null);
-    },
-  });
-
-  const olusturMutation = useMutation({
-    mutationFn: () => {
-      const rol = formData?.rol;
-      const body: Record<string, unknown> = { name: sinifAdi, dersKitabiId: seciliKitapId };
-      if (rol === 'SuperAdmin') {
-        if (seciliKurumId) body.kurumId = seciliKurumId;
-        if (seciliOgretmenId) body.ogretmenUserId = seciliOgretmenId;
-      } else if (rol === 'KurumYoneticisi') {
-        if (seciliOgretmenId) body.ogretmenUserId = seciliOgretmenId;
-      }
-      return api.post('/api/ogretmen/sinif', body);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['siniflarim'] });
-      resetForm();
-    },
-  });
-
-  function startDuzenle(sinif: Sinif) {
-    setDuzenleSinifId(sinif.id);
-    setDuzenleSinifAdi(sinif.name);
-    setDuzenleKitapId(sinif.dersKitabiId ?? '');
-    setDuzenleFormAcik(true);
-    setFormAcik(false);
-  }
-
   function handleSilSinif(sinifId: number, name: string) {
     if (confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`))
       sinifSilMutation.mutate(sinifId);
   }
-
-  function resetForm() {
-    setSinifAdi('');
-    setSeciliUlkeId(null);
-    setSeciliKurumId(null);
-    setSeciliOgretmenId(null);
-    setSeciliKitapId('');
-    setFormAcik(false);
-  }
-
-  function handleUlkeChange(ulkeId: number) {
-    setSeciliUlkeId(ulkeId);
-    setSeciliKurumId(null);
-    setSeciliOgretmenId(null);
-  }
-
-  function handleKurumChange(kurumId: number) {
-    setSeciliKurumId(kurumId);
-    setSeciliOgretmenId(null);
-    setSeciliKitapId('');
-  }
-
-
-  // "Oluştur" butonu ne zaman aktif?
-  const rol = formData?.rol ?? '';
-  const olusturAktif = sinifAdi.trim().length > 0 && !!seciliKitapId && !olusturMutation.isPending;
 
   if (!ready) return (
     <div className="py-24 flex items-center justify-center">
@@ -192,7 +72,7 @@ export default function OgretmenDashboard() {
               AI Stüdyo
             </Link>
             <button
-              onClick={() => setFormAcik(true)}
+              onClick={() => setSlideOver({ mod: 'olustur' })}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
             >
               <Plus className="size-4" />
@@ -200,200 +80,6 @@ export default function OgretmenDashboard() {
             </button>
           </div>
         </div>
-
-        {/* Yeni sınıf formu */}
-        {formAcik && (
-          <div className="mb-6 p-5 bg-white rounded-2xl border border-border shadow-sm">
-            <h3 className="font-semibold mb-4">Yeni Sınıf Oluştur</h3>
-
-            {!formData ? (
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
-                <div className="size-4 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
-                Yükleniyor...
-              </div>
-            ) : (
-              <div className="space-y-3">
-
-                {/* Öğretmen: salt-okunur ülke + kurum */}
-                {rol === 'Ogretmen' && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.ulke && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                        <Globe className="size-3.5" />
-                        {formData.ulke.name}
-                      </span>
-                    )}
-                    {formData.kurum && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg text-sm font-medium">
-                        <Building2 className="size-3.5" />
-                        {formData.kurum.name}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* KurumYoneticisi: salt-okunur kurum + öğretmen dropdown */}
-                {rol === 'KurumYoneticisi' && (
-                  <>
-                    {formData.kurum && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg text-sm font-medium">
-                        <Building2 className="size-3.5" />
-                        {formData.kurum.name}
-                      </span>
-                    )}
-                    <OgretmenSelect
-                      ogretmenler={formData.ogretmenler ?? []}
-                      value={seciliOgretmenId}
-                      onChange={setSeciliOgretmenId}
-                    />
-                    {(formData.ogretmenler ?? []).length === 0 && (
-                      <UyariMesaji text="Bu kurumda kayıtlı ve onaylı öğretmen bulunamadı." />
-                    )}
-                  </>
-                )}
-
-                {/* SuperAdmin + UlkeTemsilcisi: cascade dropdown'lar */}
-                {(rol === 'SuperAdmin' || rol === 'UlkeTemsilcisi') && (
-                  <>
-                    {/* Ülke */}
-                    {rol === 'SuperAdmin' ? (
-                      <SelectField
-                        label="Ülke"
-                        icon={<Globe className="size-3.5" />}
-                        placeholder="Ülke seçin"
-                        options={(formData.ulkeler ?? []).map(u => ({ value: u.id, label: u.name }))}
-                        value={seciliUlkeId}
-                        onChange={v => handleUlkeChange(v as number)}
-                      />
-                    ) : (
-                      formData.ulke && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                          <Globe className="size-3.5" />
-                          {formData.ulke.name}
-                        </span>
-                      )
-                    )}
-
-                    {/* Kurum */}
-                    <SelectField
-                      label="Kurum"
-                      icon={<Building2 className="size-3.5" />}
-                      placeholder={seciliUlkeId || rol === 'UlkeTemsilcisi' ? 'Kurum seçin' : 'Önce ülke seçin'}
-                      options={(cascadeKurumlar ?? formData.kurumlar ?? []).map(k => ({ value: k.id, label: k.name }))}
-                      value={seciliKurumId}
-                      onChange={v => handleKurumChange(v as number)}
-                      disabled={!seciliUlkeId && rol === 'SuperAdmin'}
-                    />
-
-                    {/* Öğretmen */}
-                    <SelectField
-                      label="Öğretmen"
-                      icon={<UserCheck className="size-3.5" />}
-                      placeholder={seciliKurumId ? 'Öğretmen seçin (opsiyonel)' : 'Önce kurum seçin'}
-                      options={(cascadeOgretmenler ?? []).map(o => ({ value: o.id, label: o.ad }))}
-                      value={seciliOgretmenId}
-                      onChange={v => setSeciliOgretmenId(v as number | null)}
-                      disabled={!seciliKurumId}
-                      optional
-                    />
-
-                    {seciliKurumId && cascadeOgretmenler?.length === 0 && (
-                      <UyariMesaji text="Bu kurumda kayıtlı ve onaylı öğretmen bulunamadı." />
-                    )}
-                  </>
-                )}
-
-                {/* Sınıf adı — her rolde */}
-                <input
-                  type="text"
-                  value={sinifAdi}
-                  onChange={e => setSinifAdi(e.target.value)}
-                  placeholder="Sınıf adı (örn: A1 Grubu)"
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  onKeyDown={e => e.key === 'Enter' && olusturAktif && olusturMutation.mutate()}
-                />
-
-                {/* Kitap — sınıfın atandığı ders kitabı, zorunlu */}
-                {kitapListesiHazir && (
-                  kitaplar === undefined ? (
-                    <p className="text-xs text-slate-400">Kitaplar yükleniyor...</p>
-                  ) : kitaplar.length === 0 ? (
-                    <UyariMesaji text="Kurumunuz için henüz bir kitap tanımlanmamış. Kurum yöneticinizden veya ülke temsilcinizden lisans/varsayılan kitap talep edin." />
-                  ) : (
-                    <KitapSelectField value={seciliKitapId} onChange={setSeciliKitapId} kitaplar={kitaplar} />
-                  )
-                )}
-
-                {olusturMutation.isError && (
-                  <p className="text-red-500 text-sm">{(olusturMutation.error as Error).message}</p>
-                )}
-
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => olusturMutation.mutate()}
-                    disabled={!olusturAktif}
-                    className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-opacity"
-                  >
-                    {olusturMutation.isPending ? 'Oluşturuluyor...' : 'Oluştur'}
-                  </button>
-                  <button
-                    onClick={resetForm}
-                    className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm hover:bg-slate-200 transition-colors"
-                  >
-                    İptal
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Sınıf düzenleme formu */}
-        {duzenleFormAcik && (
-          <div className="mb-6 p-5 bg-white rounded-2xl border border-primary/20 shadow-sm">
-            <h3 className="font-semibold mb-4">Sınıfı Düzenle</h3>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={duzenleSinifAdi}
-                onChange={e => setDuzenleSinifAdi(e.target.value)}
-                placeholder="Sınıf adı"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                onKeyDown={e => e.key === 'Enter' && duzenleSinifAdi.trim() && duzenleKitapId && sinifGuncellemeMutation.mutate()}
-              />
-
-              {/* Kitap — sınıfın atandığı ders kitabı, zorunlu */}
-              {kitapListesiHazir && (
-                kitaplar === undefined ? (
-                  <p className="text-xs text-slate-400">Kitaplar yükleniyor...</p>
-                ) : kitaplar.length === 0 ? (
-                  <UyariMesaji text="Kurumunuz için henüz bir kitap tanımlanmamış. Kurum yöneticinizden veya ülke temsilcinizden lisans/varsayılan kitap talep edin." />
-                ) : (
-                  <KitapSelectField value={duzenleKitapId} onChange={setDuzenleKitapId} kitaplar={kitaplar} />
-                )
-              )}
-
-              {sinifGuncellemeMutation.isError && (
-                <p className="text-red-500 text-sm">{(sinifGuncellemeMutation.error as Error).message}</p>
-              )}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => sinifGuncellemeMutation.mutate()}
-                  disabled={!duzenleSinifAdi.trim() || !duzenleKitapId || sinifGuncellemeMutation.isPending}
-                  className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-opacity"
-                >
-                  {sinifGuncellemeMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                </button>
-                <button
-                  onClick={() => setDuzenleFormAcik(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm hover:bg-slate-200 transition-colors"
-                >
-                  İptal
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Sınıf kartları */}
         {isLoading ? (
@@ -451,7 +137,7 @@ export default function OgretmenDashboard() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); startDuzenle(sinif); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSlideOver({ mod: 'duzenle', sinifId: sinif.id }); }}
                       className="size-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
                       title="Düzenle"
                     >
@@ -470,7 +156,7 @@ export default function OgretmenDashboard() {
             ))}
 
             <button
-              onClick={() => setFormAcik(true)}
+              onClick={() => setSlideOver({ mod: 'olustur' })}
               className="p-5 bg-white rounded-2xl border-2 border-dashed border-slate-200 hover:border-primary/40 transition-colors flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-primary min-h-[160px]"
             >
               <Plus className="size-8" />
@@ -479,111 +165,14 @@ export default function OgretmenDashboard() {
           </div>
         )}
       </main>
-    </div>
-  );
-}
 
-// ── Yardımcı bileşenler ────────────────────────────────────────────────────────
-
-interface SelectFieldProps {
-  label: string;
-  icon: React.ReactNode;
-  placeholder: string;
-  options: { value: number; label: string }[];
-  value: number | null;
-  onChange: (v: number | null) => void;
-  disabled?: boolean;
-  optional?: boolean;
-}
-
-function SelectField({ label, icon, placeholder, options, value, onChange, disabled, optional }: SelectFieldProps) {
-  return (
-    <div className="relative">
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400 pointer-events-none">
-        {icon}
-        <span className="text-xs font-medium">{label}{optional ? '' : '*'}</span>
-      </div>
-      <select
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value ? parseInt(e.target.value) : null)}
-        disabled={disabled || options.length === 0}
-        className={cn(
-          'w-full pl-24 pr-4 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none',
-          (disabled || options.length === 0) && 'bg-slate-50 text-slate-400 cursor-not-allowed',
-        )}
-      >
-        <option value="">{placeholder}</option>
-        {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function OgretmenSelect({
-  ogretmenler, value, onChange,
-}: {
-  ogretmenler: OgretmenItem[];
-  value: number | null;
-  onChange: (v: number | null) => void;
-}) {
-  return (
-    <div className="relative">
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400 pointer-events-none">
-        <UserCheck className="size-3.5" />
-        <span className="text-xs font-medium">Öğretmen</span>
-      </div>
-      <select
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value ? parseInt(e.target.value) : null)}
-        disabled={ogretmenler.length === 0}
-        className={cn(
-          'w-full pl-28 pr-4 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none',
-          ogretmenler.length === 0 && 'bg-slate-50 text-slate-400 cursor-not-allowed',
-        )}
-      >
-        <option value="">Kendiniz için (siz)</option>
-        {ogretmenler.map(o => (
-          <option key={o.id} value={o.id}>{o.ad}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function KitapSelectField({
-  value, onChange, kitaplar,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  kitaplar: KitapItem[];
-}) {
-  return (
-    <div className="relative">
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400 pointer-events-none">
-        <BookOpen className="size-3.5" />
-        <span className="text-xs font-medium">Kitap*</span>
-      </div>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full pl-20 pr-4 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
-      >
-        <option value="">Kitap seçin</option>
-        {kitaplar.map(k => (
-          <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function UyariMesaji({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm">
-      <AlertCircle className="size-4 shrink-0" />
-      {text}
+      <SinifFormSlideOver
+        open={!!slideOver}
+        onClose={() => setSlideOver(null)}
+        mod={slideOver?.mod ?? 'olustur'}
+        sinifId={slideOver?.mod === 'duzenle' ? slideOver.sinifId : undefined}
+        onBasarili={() => qc.invalidateQueries({ queryKey: ['siniflarim'] })}
+      />
     </div>
   );
 }

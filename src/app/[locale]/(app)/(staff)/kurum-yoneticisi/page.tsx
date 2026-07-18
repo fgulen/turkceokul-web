@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, GraduationCap, Users, CheckCircle, XCircle,
-  Clock, BookOpen, ChevronRight, KeyRound
+  Clock, BookOpen, ChevronRight, KeyRound, Pencil, Trash2
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
+import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
 
 interface PanelOgretmen {
   id: number;
@@ -77,12 +79,23 @@ export default function KurumYoneticisiPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
   const qc = useQueryClient();
   const [sekme, setSekme] = useState<Sekme>('ozet');
+  const [duzenlenecekSinifId, setDuzenlenecekSinifId] = useState<number | null>(null);
 
   const { data: panel, isLoading } = useQuery<KurumPanel>({
     queryKey: ['kurum-yoneticisi-panel'],
     queryFn: () => api.get('/api/kurum-yoneticisi/panel').then(r => r.data),
     enabled: !!user && user.role === 'KurumYoneticisi',
   });
+
+  const sinifSilMutation = useMutation({
+    mutationFn: (sinifId: number) => api.delete(`/api/ogretmen/sinif/${sinifId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] }),
+  });
+
+  function handleSinifSil(sinifId: number, name: string) {
+    if (confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`))
+      sinifSilMutation.mutate(sinifId);
+  }
 
   const onaylaMutation = useMutation({
     mutationFn: (id: number) => api.put(`/api/kurum-yoneticisi/ogretmen/${id}/onayla`),
@@ -348,10 +361,10 @@ export default function KurumYoneticisiPage() {
             ) : (
               <div className="divide-y divide-slate-50">
                 {panel.siniflar.map(s => (
-                  <a
+                  <Link
                     key={s.id}
                     href={`/ogretmen/sinif/${s.id}`}
-                    className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
+                    className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
@@ -367,9 +380,25 @@ export default function KurumYoneticisiPage() {
                         <Users className="size-3.5" />
                         {s.ogrenciSayisi}
                       </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDuzenlenecekSinifId(s.id); }}
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Düzenle"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSinifSil(s.id, s.name); }}
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                       <ChevronRight className="size-4 text-slate-300" />
                     </div>
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
@@ -476,6 +505,14 @@ export default function KurumYoneticisiPage() {
           </div>
         )}
       </main>
+
+      <SinifFormSlideOver
+        open={duzenlenecekSinifId !== null}
+        onClose={() => setDuzenlenecekSinifId(null)}
+        mod="duzenle"
+        sinifId={duzenlenecekSinifId ?? undefined}
+        onBasarili={() => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] })}
+      />
     </div>
   );
 }
