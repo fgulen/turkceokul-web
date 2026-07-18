@@ -7,11 +7,13 @@ import {
   Clock, BookOpen, ChevronRight, KeyRound, Pencil, Trash2
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useSinifSilMutation, sinifSilOnayi } from '@/hooks/use-sinif-sil-mutation';
 import { Link } from '@/navigation';
 import { api } from '@/lib/api';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
+import { LisansKart, type LisansKarti } from '@/components/lisans-kart';
 
 interface PanelOgretmen {
   id: number;
@@ -37,17 +39,6 @@ interface KurumPanel {
   ogrenciSayisi: number;
 }
 
-interface LisansKarti {
-  id: string;
-  name: string;
-  seviye: string;
-  thumbnailPicture: string | null;
-  lisansTipi: 'Deneme' | 'Ucretli' | 'Sponsorlu' | null;
-  toplamLisans: number;
-  kullanilanLisans: number;
-  buton: 'SatinAl' | 'Inceleniyor' | 'EkLisans' | 'UcretsizDene';
-}
-
 // buton degeri API'den gelir: SatinAl | Inceleniyor | EkLisans | UcretsizDene
 const BUTON_METIN: Record<string, string> = {
   SatinAl: 'Satın Al',
@@ -55,23 +46,6 @@ const BUTON_METIN: Record<string, string> = {
   EkLisans: 'Ek Lisans Al / Kapasiteyi Artır',
   UcretsizDene: 'Ücretsiz Dene',
 };
-
-const LISANS_TIPI_METIN: Record<string, string> = {
-  Deneme: 'Deneme',
-  Ucretli: 'Ücretli',
-  Sponsorlu: 'Sponsorlu',
-};
-
-const LISANS_TIPI_ROZET: Record<string, string> = {
-  Deneme: 'bg-amber-100 text-amber-700',
-  Ucretli: 'bg-emerald-100 text-emerald-700',
-  Sponsorlu: 'bg-sky-100 text-sky-700',
-};
-
-function apiHataMesaji(err: unknown): string {
-  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
-    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
-}
 
 type Sekme = 'ozet' | 'ogretmenler' | 'siniflar' | 'lisanslar';
 
@@ -87,14 +61,10 @@ export default function KurumYoneticisiPage() {
     enabled: !!user && user.role === 'KurumYoneticisi',
   });
 
-  const sinifSilMutation = useMutation({
-    mutationFn: (sinifId: number) => api.delete(`/api/ogretmen/sinif/${sinifId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['kurum-yoneticisi-panel'] }),
-  });
+  const sinifSilMutation = useSinifSilMutation(['kurum-yoneticisi-panel']);
 
   function handleSinifSil(sinifId: number, name: string) {
-    if (confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`))
-      sinifSilMutation.mutate(sinifId);
+    if (sinifSilOnayi(name)) sinifSilMutation.mutate(sinifId);
   }
 
   const onaylaMutation = useMutation({
@@ -427,48 +397,16 @@ export default function KurumYoneticisiPage() {
                   const gonderiliyor =
                     (satinAlMutation.isPending && satinAlMutation.variables === k.id) ||
                     (denemeMutation.isPending && denemeMutation.variables === k.id);
-                  const kartMesaj = lisansMesaj?.id === k.id ? lisansMesaj : null;
+                  const kartMesaj = lisansMesaj?.id === k.id
+                    ? { tip: lisansMesaj.tip, metin: lisansMesaj.mesaj }
+                    : null;
 
                   return (
-                    <div key={k.id} className="px-6 py-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {k.thumbnailPicture ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={toMediaUrl(k.thumbnailPicture)!}
-                              alt={k.name}
-                              className="w-12 h-16 object-cover rounded-md shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-16 bg-slate-100 rounded-md shrink-0 flex items-center justify-center">
-                              <BookOpen className="size-5 text-slate-400" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-sm text-slate-800 truncate">{k.name}</span>
-                              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                {k.seviye}
-                              </span>
-                              {k.lisansTipi && (
-                                <span className={cn(
-                                  'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
-                                  LISANS_TIPI_ROZET[k.lisansTipi],
-                                )}>
-                                  {LISANS_TIPI_METIN[k.lisansTipi]}
-                                </span>
-                              )}
-                            </div>
-                            {k.lisansTipi && (
-                              <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                                <Users className="size-3.5" />
-                                <span className="tabular-nums">{k.kullanilanLisans}/{k.toplamLisans}</span>
-                                <span>lisans kullanımda</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                    <LisansKart
+                      key={k.id}
+                      kitap={k}
+                      mesaj={kartMesaj}
+                      aksiyon={
                         <button
                           disabled={beklemede || gonderiliyor}
                           onClick={() =>
@@ -488,16 +426,8 @@ export default function KurumYoneticisiPage() {
                         >
                           {gonderiliyor ? 'Gönderiliyor…' : BUTON_METIN[k.buton] ?? k.buton}
                         </button>
-                      </div>
-                      {kartMesaj && (
-                        <p className={cn(
-                          'text-xs mt-2',
-                          kartMesaj.tip === 'hata' ? 'text-red-500' : 'text-emerald-600',
-                        )}>
-                          {kartMesaj.mesaj}
-                        </p>
-                      )}
-                    </div>
+                      }
+                    />
                   );
                 })}
               </div>

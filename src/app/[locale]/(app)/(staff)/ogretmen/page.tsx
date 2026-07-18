@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, GraduationCap, Plus, Users, ClipboardList, ArrowRight,
   Pencil, Trash2, Sparkles, Wifi,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useSinifSilMutation, sinifSilOnayi } from '@/hooks/use-sinif-sil-mutation';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
@@ -36,14 +37,10 @@ export default function OgretmenDashboard() {
     enabled: !!user,
   });
 
-  const sinifSilMutation = useMutation({
-    mutationFn: (sinifId: number) => api.delete(`/api/ogretmen/sinif/${sinifId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['siniflarim'] }),
-  });
+  const sinifSilMutation = useSinifSilMutation(['siniflarim']);
 
   function handleSilSinif(sinifId: number, name: string) {
-    if (confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`))
-      sinifSilMutation.mutate(sinifId);
+    if (sinifSilOnayi(name)) sinifSilMutation.mutate(sinifId);
   }
 
   if (!ready) return (

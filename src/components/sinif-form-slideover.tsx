@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Globe, Building2, UserCheck, BookOpen, AlertCircle } from 'lucide-react';
 import { useLocale } from '@/navigation';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
 import { SlideOver } from '@/components/slide-over';
 import { KatilimKoduDavet } from '@/components/katilim-kodu-davet';
 
@@ -48,8 +48,10 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
   const locale = useLocale();
   const qc = useQueryClient();
 
-  const [adim, setAdim] = useState<'form' | 'davet-basarili'>('form');
+  // adim ayri bir state degil — davetSinif'in null olup olmamasindan turetilir
+  // (ikisi her zaman ayni anda set ediliyordu, code review bulgu #7).
   const [davetSinif, setDavetSinif] = useState<{ name: string; katilimKodu: string } | null>(null);
+  const adim: 'form' | 'davet-basarili' = davetSinif ? 'davet-basarili' : 'form';
 
   const [sinifAdi, setSinifAdi] = useState('');
   const [seciliUlkeId, setSeciliUlkeId] = useState<number | null>(null);
@@ -60,7 +62,6 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
   // Panel her acilista temiz baslasin — onceki kapanistan kalan state sizmasin.
   useEffect(() => {
     if (open) {
-      setAdim('form');
       setDavetSinif(null);
       setSinifAdi('');
       setSeciliUlkeId(null);
@@ -85,23 +86,34 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
     enabled: open && mod === 'duzenle' && !!sinifId,
   });
 
+  // `open` deps'te SART: ayni sinif ikinci kez duzenlemek icin acilinca
+  // ['sinif-detay', sinifId] TanStack Query onbelleginden ayni referansi
+  // dondurur (yeniden fetch olsa bile structural sharing referansi korur),
+  // bu yuzden sinifDetay tek basina degismez ve effect tekrar tetiklenmez.
+  // `open` de dep olunca reset effect'in her acilista bosalttigi formu bu
+  // effect (React'ta ayni commit'te reset'ten SONRA calisir, cunku asagida
+  // tanimli) tekrar dolduruyor — bos form bug'i (code review bulgu #3).
   useEffect(() => {
-    if (mod === 'duzenle' && sinifDetay) {
+    if (open && mod === 'duzenle' && sinifDetay) {
       setSinifAdi(sinifDetay.name);
       setSeciliKitapId(sinifDetay.dersKitabiId ?? '');
       // Kitap listesini dogru kuruma gore yuklemek icin — bu roller icin dropdown
       // gosterilmez ama sorgu kurumId'ye ihtiyac duyar (bulgu #3/#4 fix).
       setSeciliKurumId(sinifDetay.kurumId ?? (rol === 'SuperAdmin' ? KURUMSUZ : null));
     }
-  }, [mod, sinifDetay, rol]);
+  }, [open, mod, sinifDetay, rol]);
 
-  const kitapKurumId: number | null = seciliKurumId === KURUMSUZ ? null : seciliKurumId;
+  // Tek yerde turetilir — "=== KURUMSUZ" karsilastirmasi bundan once 5 ayri
+  // yerde tekrarlaniyordu (code review bulgu #10: unutulan bir kontrol sessizce
+  // number-sekilli mantiga dusuyordu). Artik tek nokta, kacirilma riski dusuk.
+  const kurumsuzSecili = seciliKurumId === KURUMSUZ;
+  const kitapKurumId: number | null = kurumsuzSecili ? null : seciliKurumId;
   const kitapListesiHazir = !!formData && (
     rol === 'Ogretmen' || rol === 'KurumYoneticisi' || seciliKurumId !== null
   );
 
   const { data: kitaplar } = useQuery<KitapItem[]>({
-    queryKey: ['sinif-kitaplar', kitapKurumId, seciliKurumId === KURUMSUZ],
+    queryKey: ['sinif-kitaplar', kitapKurumId, kurumsuzSecili],
     queryFn: () => api
       .get('/api/ogretmen/sinif-kitaplar', kitapKurumId ? { params: { kurumId: kitapKurumId } } : undefined)
       .then(r => r.data),
@@ -119,7 +131,7 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
   // KURUMSUZ seçiliyse bagimsiz=true ile serbest öğretmenler çekilir.
   const { data: cascadeOgretmenler } = useQuery<OgretmenItem[]>({
     queryKey: ['ogretmenler-by-kurum', seciliKurumId],
-    queryFn: () => seciliKurumId === KURUMSUZ
+    queryFn: () => kurumsuzSecili
       ? api.get('/api/ogretmen/ogretmenler', { params: { bagimsiz: true } }).then(r => r.data)
       : api.get(`/api/ogretmen/ogretmenler?kurumId=${seciliKurumId}`).then(r => r.data),
     enabled: open && seciliKurumId !== null && (rol === 'SuperAdmin' || rol === 'UlkeTemsilcisi'),
@@ -139,7 +151,6 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
     onSuccess: (data: { id: number; name: string; katilimKodu: string }) => {
       onBasarili();
       setDavetSinif({ name: data.name, katilimKodu: data.katilimKodu });
-      setAdim('davet-basarili');
     },
   });
 
@@ -269,7 +280,7 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
                   ...(rol === 'SuperAdmin' ? [{ value: KURUMSUZ, label: '— Bağımsız / Kurumsuz Sınıf —' }] : []),
                   ...(cascadeKurumlar ?? formData.kurumlar ?? []).map(k => ({ value: String(k.id), label: k.name })),
                 ]}
-                value={seciliKurumId === KURUMSUZ ? KURUMSUZ : seciliKurumId ? String(seciliKurumId) : ''}
+                value={kurumsuzSecili ? KURUMSUZ : seciliKurumId ? String(seciliKurumId) : ''}
                 onChange={handleKurumChange}
                 disabled={!seciliUlkeId && rol === 'SuperAdmin'}
               />
@@ -287,7 +298,7 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
 
               {seciliKurumId !== null && cascadeOgretmenler?.length === 0 && (
                 <UyariMesaji text={
-                  seciliKurumId === KURUMSUZ
+                  kurumsuzSecili
                     ? 'Sistemde kayıtlı ve onaylı bağımsız öğretmen bulunamadı.'
                     : 'Bu kurumda kayıtlı ve onaylı öğretmen bulunamadı.'
                 } />
@@ -355,11 +366,6 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
       )}
     </SlideOver>
   );
-}
-
-function apiHataMesaji(err: unknown): string {
-  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
-    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
 }
 
 // ── Yardımcı bileşenler ────────────────────────────────────────────────────────

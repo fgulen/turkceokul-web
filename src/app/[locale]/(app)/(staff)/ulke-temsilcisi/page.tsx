@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, GraduationCap, Users, Clock, ArrowRightCircle, BookOpen, ChevronRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Clock, ArrowRightCircle, ChevronRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { SlideOver } from '@/components/slide-over';
+import { LisansKart, type LisansKarti } from '@/components/lisans-kart';
 
 interface PanelKurum {
   id: number;
@@ -44,39 +45,11 @@ interface KatalogKitapAd {
   ad: string;
 }
 
-interface LisansKarti {
-  id: string;
-  name: string;
-  seviye: string;
-  thumbnailPicture: string | null;
-  lisansTipi: 'Deneme' | 'Ucretli' | 'Sponsorlu' | null;
-  toplamLisans: number;
-  kullanilanLisans: number;
-  buton: 'SatinAl' | 'Inceleniyor' | 'EkLisans' | 'UcretsizDene';
-}
-
-const LISANS_TIPI_METIN: Record<string, string> = {
-  Deneme: 'Deneme',
-  Ucretli: 'Ücretli',
-  Sponsorlu: 'Sponsorlu',
-};
-
-const LISANS_TIPI_ROZET: Record<string, string> = {
-  Deneme: 'bg-amber-100 text-amber-700',
-  Ucretli: 'bg-emerald-100 text-emerald-700',
-  Sponsorlu: 'bg-sky-100 text-sky-700',
-};
-
 const SALT_OKUNUR_BUTON_METIN: Record<string, string> = {
   SatinAl: 'Satın Alma — kurum yöneticisi',
   Inceleniyor: 'Talebi inceleniyor',
   EkLisans: 'Ek lisans — kurum yöneticisi',
 };
-
-function apiHataMesaji(err: unknown): string {
-  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
-    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
-}
 
 export default function UlkeTemsilcisiPage() {
   const { user, ready } = useAuthGuard('Ogretmen');
@@ -301,58 +274,32 @@ export default function UlkeTemsilcisiPage() {
             {kurumLisanslari.map(k => {
               const denemeBaslatilabilir = k.buton === 'UcretsizDene';
               const gonderiliyor = denemeMutation.isPending && denemeMutation.variables === k.id;
-              const kartMesaj = lisansMesaj?.id === k.id ? lisansMesaj.mesaj : null;
+              const kartMesaj = lisansMesaj?.id === k.id
+                ? { tip: 'hata' as const, metin: lisansMesaj.mesaj }
+                : null;
 
               return (
-                <div key={k.id} className="px-6 py-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {k.thumbnailPicture ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={toMediaUrl(k.thumbnailPicture)!} alt={k.name} className="w-10 h-14 object-cover rounded-md shrink-0" />
-                      ) : (
-                        <div className="w-10 h-14 bg-slate-100 rounded-md shrink-0 flex items-center justify-center">
-                          <BookOpen className="size-4 text-slate-400" />
-                        </div>
+                <LisansKart
+                  key={k.id}
+                  kitap={k}
+                  mesaj={kartMesaj}
+                  aksiyon={denemeBaslatilabilir ? (
+                    <button
+                      disabled={gonderiliyor}
+                      onClick={() => denemeMutation.mutate(k.id)}
+                      className={cn(
+                        'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-emerald-500 text-white hover:bg-emerald-600',
+                        gonderiliyor && 'opacity-60 cursor-wait',
                       )}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm text-slate-800 truncate">{k.name}</span>
-                          <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{k.seviye}</span>
-                          {k.lisansTipi && (
-                            <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', LISANS_TIPI_ROZET[k.lisansTipi])}>
-                              {LISANS_TIPI_METIN[k.lisansTipi]}
-                            </span>
-                          )}
-                        </div>
-                        {k.lisansTipi && (
-                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                            <Users className="size-3.5" />
-                            <span className="tabular-nums">{k.kullanilanLisans}/{k.toplamLisans}</span>
-                            <span>lisans kullanımda</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {denemeBaslatilabilir ? (
-                      <button
-                        disabled={gonderiliyor}
-                        onClick={() => denemeMutation.mutate(k.id)}
-                        className={cn(
-                          'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-emerald-500 text-white hover:bg-emerald-600',
-                          gonderiliyor && 'opacity-60 cursor-wait',
-                        )}
-                      >
-                        {gonderiliyor ? 'Başlatılıyor…' : 'Ücretsiz Dene'}
-                      </button>
-                    ) : (
-                      <span className="shrink-0 text-xs text-slate-400 italic text-right">
-                        {SALT_OKUNUR_BUTON_METIN[k.buton]}
-                      </span>
-                    )}
-                  </div>
-                  {kartMesaj && <p className="text-xs mt-2 text-red-500">{kartMesaj}</p>}
-                </div>
+                    >
+                      {gonderiliyor ? 'Başlatılıyor…' : 'Ücretsiz Dene'}
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-xs text-slate-400 italic text-right">
+                      {SALT_OKUNUR_BUTON_METIN[k.buton]}
+                    </span>
+                  )}
+                />
               );
             })}
           </div>

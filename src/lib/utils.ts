@@ -5,6 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// axios hata gövdesinden { hata: "..." } mesajını çıkarır — kurum-yoneticisi,
+// ulke-temsilcisi ve sinif-form-slideover'da ayrı ayrı tanımlıydı (code review
+// bulgu #5), tek yere taşındı.
+export function apiHataMesaji(err: unknown): string {
+  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
+    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
+}
+
 export function cokSatirMi(text: string | null | undefined): boolean {
   return !!text && (
     text.includes('\n') || /<br\s*\/?>/i.test(text) || /<\/(div|p|li)>/i.test(text)
