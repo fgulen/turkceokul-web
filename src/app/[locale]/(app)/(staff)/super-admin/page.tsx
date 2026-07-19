@@ -117,9 +117,9 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
     enabled: duzenle && !!s.dersKitabiId && kapasiteSayi > 0 && kapasiteDebounced !== kapasiteBaslangic,
   });
 
-  // Öneri gelince tutarı otomatik doldur — admin sonrasında elle üzerine yazabilir.
+  // Öneri gelince tutarı otomatik doldur (EUR, cent değil) — admin sonrasında elle üzerine yazabilir.
   useEffect(() => {
-    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent));
+    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent / 100));
   }, [fiyatOnerisi]);
 
   function invalidate() {
@@ -142,7 +142,7 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
   const kaydetMutation = useMutation({
     mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}`, {
       ogrenciKapasite: Number(kapasite),
-      toplamTutar: Number(tutar),
+      toplamTutar: Math.round(Number(tutar) * 100), // input EUR gösterir, backend cent bekler
     }),
     onMutate: () => setHata(null),
     onSuccess: () => { setDuzenle(false); invalidate(); },
@@ -156,7 +156,7 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
       setKapasite(baslangic);
       setKapasiteBaslangic(baslangic);
       setKapasiteDebounced(baslangic);
-      setTutar(String(s.toplamTutar ?? ''));
+      setTutar(String((s.toplamTutar ?? 0) / 100));
     }
     setDuzenle(v => !v);
   }
@@ -212,8 +212,8 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
               className="w-28 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Tutar (EUR cent)</label>
-            <input type="number" min={0} value={tutar} onChange={e => setTutar(e.target.value)}
+            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Tutar (EUR)</label>
+            <input type="number" min={0} step="0.01" value={tutar} onChange={e => setTutar(e.target.value)}
               className="w-32 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
           </div>
           <button

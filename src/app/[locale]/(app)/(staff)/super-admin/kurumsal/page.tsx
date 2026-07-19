@@ -73,10 +73,10 @@ export default function KurumsalSatisPage() {
 
   function exportCsv() {
     csvIndir('siparisler.csv',
-      ['Kurum', 'Ülke', 'Yetkili', 'E-posta', 'Kapasite', 'Tutar (EUR cent)', 'Eğitim Yılı', 'Tarih', 'Durum'],
+      ['Kurum', 'Ülke', 'Yetkili', 'E-posta', 'Kapasite', 'Tutar (EUR)', 'Eğitim Yılı', 'Tarih', 'Durum'],
       gorunen.map(s => [
         s.kurumAdi ?? '', s.ulkeAdi ?? '', s.yetkiliAdi ?? '', s.yetkiliEmail ?? '',
-        s.ogrenciKapasite ?? 0, s.toplamTutar ?? 0, s.egitimYili ?? '',
+        s.ogrenciKapasite ?? 0, (s.toplamTutar ?? 0) / 100, s.egitimYili ?? '',
         new Date(s.tarih).toLocaleDateString('tr-TR'), DURUM_ETIKET[s.durum] ?? s.durum,
       ]));
   }
@@ -229,16 +229,16 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
   const kaydetMutation = useMutation({
     mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}`, {
       ogrenciKapasite: Number(kapasite),
-      toplamTutar: Number(tutar),
+      toplamTutar: Math.round(Number(tutar) * 100), // input EUR gösterir, backend cent bekler
     }),
     onMutate: () => setHata(null),
     onSuccess: () => { setDuzenleAcik(false); invalidate(); onClose(); },
     onError: (err: any) => setHata(apiHataMesaji(err)),
   });
 
-  // Öneri gelince tutarı otomatik doldur — admin sonrasında elle üzerine yazabilir.
+  // Öneri gelince tutarı otomatik doldur (EUR, cent değil) — admin sonrasında elle üzerine yazabilir.
   useEffect(() => {
-    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent));
+    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent / 100));
   }, [fiyatOnerisi]);
 
   function acDuzenle() {
@@ -246,7 +246,7 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
     setKapasite(baslangic);
     setKapasiteBaslangic(baslangic);
     setKapasiteDebounced(baslangic);
-    setTutar(String(s.toplamTutar ?? ''));
+    setTutar(String((s.toplamTutar ?? 0) / 100));
     setDuzenleAcik(v => !v);
   }
 
@@ -305,7 +305,7 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
             {bilgi('Durum', <span className={`px-2 py-0.5 rounded-full text-xs ${DURUM_RENK[s.durum] ?? ''}`}>{DURUM_ETIKET[s.durum] ?? s.durum}</span>)}
             {bilgi('Kitap', s.urunAdi ?? s.dersKitabiId)}
             {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`, 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
-            {bilgi('Tutar', `${euro(s.toplamTutar)} (${s.toplamTutar} cent)`)}
+            {bilgi('Tutar', euro(s.toplamTutar))}
             {bilgi('Eğitim Yılı', s.egitimYili)}
             {bilgi('Tarih', new Date(s.tarih).toLocaleString('tr-TR'))}
             {bilgi('Ülke', s.ulkeAdi)}
@@ -333,8 +333,8 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
                   className="w-28 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Tutar (EUR cent)</label>
-                <input type="number" min={0} value={tutar} onChange={e => setTutar(e.target.value)}
+                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Tutar (EUR)</label>
+                <input type="number" min={0} step="0.01" value={tutar} onChange={e => setTutar(e.target.value)}
                   className="w-32 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
               </div>
               <button
