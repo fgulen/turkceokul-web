@@ -104,7 +104,6 @@ export const SEGMENT_LABELS: Record<string, string> = {
   'kitaplar': 'Ders Kitapları',
   'editor': 'Okuma Kitapları',
   'kullanicilar': 'Kullanıcı Listesi',
-  'kullanici-olustur': 'Kullanıcı Oluştur',
   'ulkeler': 'Ülkeler & Okullar',
   'kurumsal': 'Kurumsal Satış',
   'loglar': 'Loglar',

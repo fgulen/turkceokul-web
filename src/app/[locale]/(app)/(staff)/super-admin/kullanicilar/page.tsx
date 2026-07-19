@@ -8,7 +8,8 @@ import {
   RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
   Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus, Sparkles
 } from 'lucide-react';
-import { Link, useRouter } from '@/navigation';
+import { useRouter } from '@/navigation';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
@@ -17,7 +18,7 @@ import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
 import { AramaInput, Sayfalama, SortTh, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd } from '@/components/staff/table-kit';
 
-type SortKey = 'name' | 'rol' | 'kurum' | 'durum';
+type SortKey = 'name' | 'rol' | 'kurum' | 'ulke' | 'kayitTarihi' | 'durum';
 
 function KullanicilarTab() {
   const qc = useQueryClient();
@@ -28,6 +29,7 @@ function KullanicilarTab() {
   const [sayfa, setSayfa] = useState(1);
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
@@ -125,10 +127,10 @@ function KullanicilarTab() {
                 </button>
               </>
             )}
-            <Link href="/super-admin/kullanici-olustur"
+            <button onClick={() => setShowAdd(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
               <UserPlus className="size-3.5" /> Yeni Kullanıcı
-            </Link>
+            </button>
           </div>
         </div>
         <table className="w-full text-sm">
@@ -136,8 +138,10 @@ function KullanicilarTab() {
             <tr>
               <TopluSecimTh gorunenIdler={kullanicilar.map((u: any) => u.id)} secili={secili} onToggleHepsi={toggleHepsi} />
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kullanıcı</SortTh>
-              <SortTh colKey="rol" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Rol</SortTh>
+              <SortTh colKey="ulke" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Ülke</SortTh>
               <SortTh colKey="kurum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kurum</SortTh>
+              <SortTh colKey="kayitTarihi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kayıt Tarihi</SortTh>
+              <SortTh colKey="rol" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Rol</SortTh>
               <SortTh colKey="durum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Durum</SortTh>
               <th className="px-4 py-2.5"></th>
             </tr>
@@ -150,13 +154,19 @@ function KullanicilarTab() {
                   <div className="font-medium text-slate-900">{u.name} {u.surname}</div>
                   <div className="text-xs text-slate-400">{u.email}</div>
                 </td>
+                <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
+                  {u.ulkeAdi ?? '—'}
+                </td>
+                <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
+                  {u.kurumAdi ?? u.ulkeAdi ?? '—'}
+                </td>
+                <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
+                  {new Date(u.insertDate).toLocaleDateString('tr')}
+                </td>
                 <td className="px-4 py-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROL_RENKLERI[u.rol] ?? 'bg-slate-100 text-slate-600'}`}>
                     {u.rol}
                   </span>
-                </td>
-                <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
-                  {u.kurumAdi ?? u.ulkeAdi ?? '—'}
                 </td>
                 <td className="px-4 py-2 text-center">
                   <button
@@ -180,7 +190,7 @@ function KullanicilarTab() {
               </tr>
             ))}
             {kullanicilar.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Kullanıcı bulunamadı</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400 text-sm">Kullanıcı bulunamadı</td></tr>
             )}
           </tbody>
         </table>
@@ -225,6 +235,12 @@ function KullanicilarTab() {
         )}
       </SlideOver>
 
+      <KullaniciEkleSlideOver
+        open={showAdd}
+        onClose={() => setShowAdd(false)}
+        onOlusturuldu={() => qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] })}
+      />
+
       <DeleteConfirmModal
         open={topluOnay}
         entityName={`${secili.size} kullanıcı`}
@@ -241,6 +257,30 @@ function KullanicilarTab() {
         loading={silMutation.isPending}
       />
     </div>
+  );
+}
+
+function KullaniciEkleSlideOver({ open, onClose, onOlusturuldu }: {
+  open: boolean; onClose: () => void; onOlusturuldu: () => void;
+}) {
+  return (
+    <SlideOver open={open} onClose={onClose} title="Yeni Kullanıcı" width="sm">
+      <RoleScopedUserForm
+        bare
+        baslik="Kullanıcı Oluştur"
+        aciklama="Koordinatör, ülke temsilcisi, kurum yöneticisi veya öğretmen davet et."
+        hedefRolSecenekleri={[
+          { value: 'Koordinator', label: 'Koordinatör' },
+          { value: 'UlkeTemsilcisi', label: 'Ülke Temsilcisi' },
+          { value: 'KurumYoneticisi', label: 'Kurum Yöneticisi' },
+          { value: 'Ogretmen', label: 'Öğretmen' },
+        ]}
+        onOlusturuldu={() => {
+          onOlusturuldu();
+          toast.success('Davet linki oluşturuldu');
+        }}
+      />
+    </SlideOver>
   );
 }
 

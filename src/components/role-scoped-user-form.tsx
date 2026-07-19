@@ -62,6 +62,9 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   // UlkeTemsilcisi'nin kurumu olmaz — hedef rol bu ise Kurum alanı hiç gösterilmez.
   const kurumAlaniGorunsun = (scopeSuz || scope?.rol === 'UlkeTemsilcisi') && hedefRol !== 'UlkeTemsilcisi';
   const kurumSabit = scope?.rol === 'KurumYoneticisi' ? scope.kurum : null;
+  // Ülke temsilcisi ülke-scope'lu çalışır: ülkesiz temsilci kendi paneline bile giremez (403).
+  // Diğer roller (Koordinator scope'suz, Ogretmen/KurumYoneticisi sonradan tamamlanabilir) için ülke opsiyonel kalır.
+  const ulkeZorunlu = hedefRol === 'UlkeTemsilcisi' && !sabitUlke;
 
   const davetMutation = useMutation({
     mutationFn: () => api.post('/api/davet/olustur', {
@@ -100,15 +103,20 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           {scopeSuz && !sabitUlke && (
             <div>
-              <label className="block text-xs font-medium mb-1">Ülke</label>
+              <label className="block text-xs font-medium mb-1">
+                Ülke{ulkeZorunlu && <span className="text-red-500"> *</span>}
+              </label>
               <select
                 value={seciliUlkeId}
                 onChange={(e) => { setSeciliUlkeId(e.target.value); setSeciliKurumId(''); }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"
               >
-                <option value="">Tüm ülkeler / belirtilmeyecek</option>
+                <option value="">{ulkeZorunlu ? 'Seçiniz' : 'Tüm ülkeler / belirtilmeyecek'}</option>
                 {(scope?.ulkeler ?? []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
+              {ulkeZorunlu && !seciliUlkeId && (
+                <p className="text-xs text-red-500 mt-1">Ülke temsilcisi için ülke seçimi zorunlu.</p>
+              )}
             </div>
           )}
 
@@ -141,7 +149,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           <button
             onClick={() => davetMutation.mutate()}
-            disabled={davetMutation.isPending || !scope}
+            disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId)}
             className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
           >
             {davetMutation.isPending ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}
