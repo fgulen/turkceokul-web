@@ -343,7 +343,7 @@ export default function PanoPage() {
                       <div className="relative">
                         <BookCoverThumb src={coverUrl} alt={k.name} />
                         <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                          <Lock className="size-3.5 text-white" />
+                          <Lock className="size-3.5 text-white" aria-label="Kilitli" role="img" />
                         </div>
                       </div>
                     </div>
@@ -397,9 +397,9 @@ function GorevSatiri({ gorev }: { gorev: Gorev }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl border border-border">
       {gorev.tamamlandi ? (
-        <CheckCircle2 className="size-5 shrink-0" style={{ color: 'var(--correct)' }} />
+        <CheckCircle2 className="size-5 shrink-0" style={{ color: 'var(--correct)' }} aria-label="Tamamlandı" role="img" />
       ) : (
-        <Circle className="size-5 shrink-0 text-muted-foreground" />
+        <Circle className="size-5 shrink-0 text-muted-foreground" aria-label="Tamamlanmadı" role="img" />
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1.5">

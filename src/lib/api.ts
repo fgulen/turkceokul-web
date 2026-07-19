@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { getServerApiUrl } from '@/lib/api-url';
 
-const BASE_URL = typeof window === 'undefined'
-  ? (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221')
-  : '';
+const BASE_URL = typeof window === 'undefined' ? getServerApiUrl() : '';
 
 // Paylaşılan refresh promise — hem interceptor hem SignalR/getToken kullanır.
 // Aynı anda birden fazla refresh çağrısı olmaz → rotate edilmiş token çakışması engellenir.

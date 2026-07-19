@@ -162,7 +162,7 @@ export default function OkumaIlerlemePage({
 }: {
   params: Promise<{ sinifId: string; locale: string }>;
 }) {
-  useAuthGuard('Ogretmen');
+  const { user, ready } = useAuthGuard('Ogretmen');
   const { sinifId } = use(params);
   const qc = useQueryClient();
 
@@ -208,6 +208,8 @@ export default function OkumaIlerlemePage({
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] }),
     onError: () => toast.error('Bölüm açılamadı. Lütfen tekrar deneyin.'),
   });
+
+  if (!ready || !user) return null;
 
   if (isLoading) {
     return (

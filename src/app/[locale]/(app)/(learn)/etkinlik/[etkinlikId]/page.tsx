@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { PerdeGiris } from '@/components/perde-giris';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -55,11 +56,35 @@ interface EtkinlikListItem {
 
 function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDon: () => void }) {
   const btnRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => { btnRef.current?.focus(); }, []);
 
+  // Focus trap: modal arkasındaki içerik DOM'da hâlâ mevcut, Tab ile dışına
+  // kaçılabiliyordu — döngü modal içindeki ilk/son odaklanabilir öğe arasında tutar.
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'Tab' || !dialogRef.current) return;
+    const focusables = dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
-      <div className="bg-card border border-border rounded-[2rem] p-8 text-center max-w-xs w-full shadow-xl">
+    <div
+      className="fixed inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center z-[60] p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Kalbin bitti"
+      onKeyDown={handleKeyDown}
+    >
+      <div ref={dialogRef} className="bg-card border border-border rounded-[2rem] p-8 text-center max-w-xs w-full shadow-xl">
         <motion.div
           className="flex justify-center mb-5"
           animate={{ scale: [1, 1.25, 1], opacity: [1, 0.5, 1] }}
@@ -387,7 +412,9 @@ export default function EtkinlikPage({
       if (uniteId) queryClient.invalidateQueries({ queryKey: ['etkinlikler', uniteId] });
       if (kitapId) queryClient.invalidateQueries({ queryKey: ['uniteler', kitapId] });
     } catch {
-      // If API fails, still show something
+      // API hatasında sessizce "0 puan / başarısız" göstermek öğrenciyi yanlış cevap
+      // verdiğine inandırıyordu — asıl sorun gönderim hatasıydı. Toast ile ayırt ettir.
+      toast.error('Cevap gönderilemedi. Bağlantını kontrol edip tekrar dene.');
       setSonuc({ puan: 0, basarili: false, kazanilanXp: 0, yeniToplam: user?.puan ?? 0, combo: 0, kalpAzaldi: false, kalanKalp: user?.kalp ?? 5 });
     } finally {
       setSubmitting(false);

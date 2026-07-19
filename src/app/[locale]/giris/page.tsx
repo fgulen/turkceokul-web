@@ -104,7 +104,7 @@ export default function GirisPage() {
                   type="button"
                   onClick={() => setShowPass((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
+                  aria-label={showPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
                 >
                   {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>

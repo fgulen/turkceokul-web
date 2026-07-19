@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerApiUrl } from '@/lib/api-url';
 
 // Vercel'de uzun Claude çağrısı için — local dev'de limit yok
 export const maxDuration = 300;
 
-const BACKEND = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
+const BACKEND = getServerApiUrl();
 
 export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization');

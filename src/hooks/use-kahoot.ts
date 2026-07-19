@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { useAuthStore } from '@/stores/auth';
 import { ensureToken } from '@/lib/api';
+import { getClientApiUrl } from '@/lib/api-url';
 
-const getHubUrl = () =>
-  (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221') + '/hubs/kahoot';
+const getHubUrl = () => getClientApiUrl() + '/hubs/kahoot';
 
 export interface LeaderboardSatir {
   sira: number;

@@ -12,11 +12,9 @@ import { Button } from '@/components/ui/button';
 import { ChatMessages, type Message } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { useAuthStore } from '@/stores/auth';
+import { getClientApiUrl } from '@/lib/api-url';
 
-const API_URL =
-  typeof window !== 'undefined'
-    ? ''
-    : (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221');
+const API_URL = typeof window !== 'undefined' ? '' : getClientApiUrl();
 
 const SESSION_KEY = 'helpChat';
 const SEEN_KEY = 'helpChatSeen';

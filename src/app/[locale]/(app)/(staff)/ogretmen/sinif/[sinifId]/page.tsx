@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocale } from '@/navigation';
+import { toast } from 'sonner';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
   Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info,
@@ -10,6 +11,7 @@ import {
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
+import { getClientApiUrl } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
 import { KatilimKoduDavet } from '@/components/katilim-kodu-davet';
 
@@ -335,7 +337,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   });
 
   async function badgePdfIndir() {
-    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
+    const base = getClientApiUrl();
     try {
       const res = await fetch(`${base}/api/ogretmen/sinif/${id}/badge-pdf`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -353,7 +355,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (e) {
       console.error('Badge PDF indirilemedi:', e);
-      alert('PDF indirilemedi. Lütfen tekrar deneyin.');
+      toast.error('PDF indirilemedi. Lütfen tekrar deneyin.');
     }
   }
 
