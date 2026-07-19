@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   BookOpen, Users, Globe, BarChart3, Shield,
@@ -23,9 +24,11 @@ type SortKey = 'name' | 'rol' | 'kurum' | 'ulke' | 'kayitTarihi' | 'durum';
 function KullanicilarTab() {
   const qc = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: saUser, setAuth } = useAuthStore();
   const [arama, setArama] = useState('');
   const [rolFilter, setRolFilter] = useState('');
+  const [durumFilter, setDurumFilter] = useState(() => searchParams?.get('durum') ?? '');
   const [sayfa, setSayfa] = useState(1);
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -34,10 +37,12 @@ function KullanicilarTab() {
   const [topluOnay, setTopluOnay] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
 
+  const isApproved = durumFilter === 'askida' ? false : durumFilter === 'aktif' ? true : undefined;
+
   const { data } = useQuery({
-    queryKey: ['sa-kullanicilar', rolFilter, arama, sayfa, sortKey, sortDir],
+    queryKey: ['sa-kullanicilar', rolFilter, durumFilter, arama, sayfa, sortKey, sortDir],
     queryFn: () => api.get('/api/super-admin/kullanicilar', {
-      params: { rol: rolFilter || undefined, arama: arama || undefined, sayfa, sayfaBoyutu: 50, sortKey, sortDir }
+      params: { rol: rolFilter || undefined, isApproved, arama: arama || undefined, sayfa, sayfaBoyutu: 50, sortKey, sortDir }
     }).then(r => r.data),
     placeholderData: keepPreviousData,
   });
@@ -113,6 +118,12 @@ function KullanicilarTab() {
             className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300">
             <option value="">Tüm Roller</option>
             {TUM_ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <select value={durumFilter} onChange={e => { setDurumFilter(e.target.value); setSayfa(1); }}
+            className={`border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300 ${durumFilter === 'askida' ? 'border-red-200 text-red-700 bg-red-50' : 'border-slate-200'}`}>
+            <option value="">Tüm Durumlar</option>
+            <option value="aktif">Aktif</option>
+            <option value="askida">Askıda</option>
           </select>
           <div className="flex items-center gap-2 ml-auto">
             {secili.size > 0 && (

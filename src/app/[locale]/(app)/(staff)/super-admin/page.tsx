@@ -31,19 +31,27 @@ function GenelBakis() {
       {/* Sayaçlar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         {[
-          { label: 'Toplam Kullanıcı', val: stats?.toplamKullanici },
+          { label: 'Toplam Kullanıcı', val: stats?.toplamKullanici, href: '/super-admin/kullanicilar' },
           { label: 'Yayında Kitap', val: `${stats?.yayindaKitap ?? '—'} / ${stats?.toplamKitap ?? '—'}` },
           { label: 'Toplam Okul', val: stats?.toplamKurum },
-          { label: 'Askıda Kullanıcı', val: stats?.askidaKullanici, danger: true },
+          { label: 'Askıda Kullanıcı', val: stats?.askidaKullanici, danger: true, href: '/super-admin/kullanicilar?durum=askida' },
           { label: 'Bekleyen Sipariş', val: stats?.bekleyenSiparis, danger: true },
-        ].map(({ label, val, danger }) => (
-          <div key={label} className={`bg-white border rounded-xl p-4 ${danger && (val as number) > 0 ? 'border-red-200' : 'border-slate-200'}`}>
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
-            <p className={`text-2xl font-bold ${danger && (val as number) > 0 ? 'text-red-600' : 'text-slate-900'}`}>
-              {val ?? '—'}
-            </p>
-          </div>
-        ))}
+        ].map(({ label, val, danger, href }) => {
+          const kart = (
+            <>
+              <p className="text-xs text-slate-500 mb-1">{label}</p>
+              <p className={`text-2xl font-bold ${danger && (val as number) > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                {val ?? '—'}
+              </p>
+            </>
+          );
+          const className = `bg-white border rounded-xl p-4 ${danger && (val as number) > 0 ? 'border-red-200' : 'border-slate-200'} ${href ? 'hover:border-purple-300 transition-colors' : ''}`;
+          return href ? (
+            <Link key={label} href={href} className={className}>{kart}</Link>
+          ) : (
+            <div key={label} className={className}>{kart}</div>
+          );
+        })}
       </div>
 
       {/* Rol dağılımı */}
