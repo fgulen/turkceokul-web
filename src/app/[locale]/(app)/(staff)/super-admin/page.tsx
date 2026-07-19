@@ -94,9 +94,33 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
   const [hata, setHata] = useState<string | null>(null);
   const [duzenle, setDuzenle] = useState(false);
   const [kapasite, setKapasite] = useState('');
+  const [kapasiteBaslangic, setKapasiteBaslangic] = useState('');
   const [tutar, setTutar] = useState('');
+  const [kapasiteDebounced, setKapasiteDebounced] = useState('');
 
   const lead = s.kurumId == null; // lead: henüz kuruma dönüştürülmemiş talep
+
+  // Kapasite değişince 400ms sonra tutarı otomatik hesapla (hacim indirimi/kampanya dahil).
+  useEffect(() => {
+    const t = setTimeout(() => setKapasiteDebounced(kapasite), 400);
+    return () => clearTimeout(t);
+  }, [kapasite]);
+
+  const kapasiteSayi = Number(kapasiteDebounced);
+  // Sadece kapasite AÇILIŞTAKİ değerden farklıysa hesapla — formu sadece görüntülemek/
+  // tutarı elle değiştirmek isteyen admin'in mevcut tutarı sessizce ezilmesin.
+  const { data: fiyatOnerisi, isFetching: fiyatHesaplaniyor } = useQuery({
+    queryKey: ['fiyat-hesapla', s.dersKitabiId, kapasiteSayi],
+    queryFn: () => api.get('/api/katalog/fiyat-hesapla', {
+      params: { kitapIdler: s.dersKitabiId, ogrenciSayisi: kapasiteSayi },
+    }).then(r => r.data),
+    enabled: duzenle && !!s.dersKitabiId && kapasiteSayi > 0 && kapasiteDebounced !== kapasiteBaslangic,
+  });
+
+  // Öneri gelince tutarı otomatik doldur — admin sonrasında elle üzerine yazabilir.
+  useEffect(() => {
+    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent));
+  }, [fiyatOnerisi]);
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ['sa-siparisler-bekleyen'] });
@@ -128,7 +152,10 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
   function toggleDuzenle() {
     if (!duzenle) {
       // Her açılışta satırın güncel değerleriyle doldur
-      setKapasite(String(s.ogrenciKapasite ?? ''));
+      const baslangic = String(s.ogrenciKapasite ?? '');
+      setKapasite(baslangic);
+      setKapasiteBaslangic(baslangic);
+      setKapasiteDebounced(baslangic);
       setTutar(String(s.toplamTutar ?? ''));
     }
     setDuzenle(v => !v);
@@ -195,6 +222,14 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
             className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50">
             {kaydetMutation.isPending ? 'Kaydediliyor…' : 'Kaydet'}
           </button>
+          {fiyatHesaplaniyor && <span className="text-[11px] text-slate-400">Tutar hesaplanıyor…</span>}
+          {!fiyatHesaplaniyor && fiyatOnerisi && (
+            <span className="text-[11px] text-slate-500">
+              Otomatik: {fiyatOnerisi.toplamGosterim} ({fiyatOnerisi.ogrenciSayisi} öğrenci × €{(fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
+              {fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${fiyatOnerisi.hacimIndirimiOrani}` : ''}
+              {fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${fiyatOnerisi.kampanyaIndirimOrani}` : ''}) — üzerine elle yazılabilir
+            </span>
+          )}
         </div>
       )}
 

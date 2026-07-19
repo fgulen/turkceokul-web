@@ -4,7 +4,7 @@
 // Sipariş çok bölümlü bir entity olmadığı için detay route yerine SlideOver kullanılır.
 // API tüm listeyi döner; durum filtresi/arama/sıralama/sayfalama client-side.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Package, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -183,11 +183,30 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
   const qc = useQueryClient();
   const [hata, setHata] = useState<string | null>(null);
   const [kapasite, setKapasite] = useState('');
+  const [kapasiteBaslangic, setKapasiteBaslangic] = useState('');
   const [tutar, setTutar] = useState('');
   const [duzenleAcik, setDuzenleAcik] = useState(false);
+  const [kapasiteDebounced, setKapasiteDebounced] = useState('');
 
   const lead = s?.kurumId == null;
   const beklemede = s?.durum === 'Beklemede';
+
+  // Kapasite değişince 400ms sonra tutarı otomatik hesapla (hacim indirimi/kampanya dahil).
+  useEffect(() => {
+    const t = setTimeout(() => setKapasiteDebounced(kapasite), 400);
+    return () => clearTimeout(t);
+  }, [kapasite]);
+
+  const kapasiteSayi = Number(kapasiteDebounced);
+  // Sadece kapasite AÇILIŞTAKİ değerden farklıysa hesapla — formu sadece görüntülemek/
+  // tutarı elle değiştirmek isteyen admin'in mevcut tutarı sessizce ezilmesin.
+  const { data: fiyatOnerisi, isFetching: fiyatHesaplaniyor } = useQuery({
+    queryKey: ['fiyat-hesapla', s?.dersKitabiId, kapasiteSayi],
+    queryFn: () => api.get('/api/katalog/fiyat-hesapla', {
+      params: { kitapIdler: s.dersKitabiId, ogrenciSayisi: kapasiteSayi },
+    }).then(r => r.data),
+    enabled: duzenleAcik && !!s?.dersKitabiId && kapasiteSayi > 0 && kapasiteDebounced !== kapasiteBaslangic,
+  });
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ['sa-siparisler'] });
@@ -217,8 +236,16 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
     onError: (err: any) => setHata(apiHataMesaji(err)),
   });
 
+  // Öneri gelince tutarı otomatik doldur — admin sonrasında elle üzerine yazabilir.
+  useEffect(() => {
+    if (fiyatOnerisi) setTutar(String(fiyatOnerisi.toplamEurCent));
+  }, [fiyatOnerisi]);
+
   function acDuzenle() {
-    setKapasite(String(s.ogrenciKapasite ?? ''));
+    const baslangic = String(s.ogrenciKapasite ?? '');
+    setKapasite(baslangic);
+    setKapasiteBaslangic(baslangic);
+    setKapasiteDebounced(baslangic);
     setTutar(String(s.toplamTutar ?? ''));
     setDuzenleAcik(v => !v);
   }
@@ -316,6 +343,14 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
                 className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
                 {kaydetMutation.isPending ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
+              {fiyatHesaplaniyor && <span className="text-[11px] text-slate-400 w-full">Tutar hesaplanıyor…</span>}
+              {!fiyatHesaplaniyor && fiyatOnerisi && (
+                <span className="text-[11px] text-slate-500 w-full">
+                  Otomatik: {fiyatOnerisi.toplamGosterim} ({fiyatOnerisi.ogrenciSayisi} öğrenci × €{(fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
+                  {fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${fiyatOnerisi.hacimIndirimiOrani}` : ''}
+                  {fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${fiyatOnerisi.kampanyaIndirimOrani}` : ''}) — üzerine elle yazılabilir
+                </span>
+              )}
             </div>
           )}
 
