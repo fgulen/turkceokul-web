@@ -80,6 +80,17 @@ const SETS: Record<string, CharDef[]> = {
  * fixed=true (varsayılan) → viewport sabitli, scroll eden sayfalar için ideal.
  * fixed=false → absolute, position:relative+overflow:hidden bir kapsayıcı içinde kullan.
  * İçerik div'inin position:relative + zIndex:1 olması gerekir (harflerin arkasında kalmaması için).
+ *
+ * UYARI (code review "altitude" bulgusu): bu position:relative+zIndex:1 sarmalayıcı
+ * kendi stacking context'ini kurar ve içine gelen her position:fixed öğeyi (toast,
+ * modal, dropdown) sticky header'ın (z-70) altında hapseder. SlideOver/
+ * DeleteConfirmModal/AppToaster/KahootBaslatModal bu tuzağı ayrı ayrı keşfedip
+ * createPortal(..., document.body) + z-[80] ile çözdü (bkz. src/components/slide-over.tsx
+ * yorumu). Negatif z-index veya portal ile backdrop'u burada "düzeltmek" denendi ama
+ * StaffShell'in kendi opak kök arka planı (bg-slate-50) her ihtimalde ARADA kalıp
+ * backdrop'u tamamen gizliyor — canlı testte doğrulandı, bilinçli olarak geri alındı.
+ * Bu yüzden BU sayfada/sarmalayıcıda YENİ bir position:fixed öğe eklersen, onu da
+ * mutlaka document.body'ye portalla — inline render edip bu wrapper'a güvenme.
  */
 export function TurkishLetterBackdrop({
   variant,

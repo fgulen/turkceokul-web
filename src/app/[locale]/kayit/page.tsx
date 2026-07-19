@@ -16,7 +16,7 @@ import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/lib/api";
 import { safeRedirect } from "@/lib/safe-redirect";
-import { cn } from "@/lib/utils";
+import { cn, gecerliIsimMi } from "@/lib/utils";
 
 type Tab = "kurumsal" | "bireysel";
 type Step = 1 | 2 | 3;
@@ -119,6 +119,10 @@ function KayitForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!tab) return;
+    if (!gecerliIsimMi(form.name) || !gecerliIsimMi(form.surname)) {
+      setError("Ad ve soyad yalnızca harf, boşluk, kesme işareti ve tire içerebilir.");
+      return;
+    }
     if (form.password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); return; }
     setError("");
     setLoading(true);

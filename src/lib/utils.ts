@@ -5,12 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// axios hata gövdesinden { hata: "..." } mesajını çıkarır — kurum-yoneticisi,
-// ulke-temsilcisi ve sinif-form-slideover'da ayrı ayrı tanımlıydı (code review
-// bulgu #5), tek yere taşındı.
+// axios hata gövdesinden { hata: "..." } nesnesini ya da düz string (BadRequest("..."))
+// gövdesini çıkarır — kurum-yoneticisi, ulke-temsilcisi, sinif-form-slideover,
+// super-admin/shared.ts ve AiAyarlarPanel'de ayrı ayrı (ve birbirinden az farklı
+// davranışlarla) tanımlıydı (code review reuse bulgusu), tek yere taşındı.
 export function apiHataMesaji(err: unknown): string {
-  return (err as { response?: { data?: { hata?: string } } })?.response?.data?.hata
-    ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
+  const data = (err as { response?: { data?: unknown } })?.response?.data;
+  if (typeof data === 'string' && data) return data;
+  return (data as { hata?: string } | undefined)?.hata ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
+}
+
+// İsim/soyisim alanları: script/URI enjeksiyonunu (örn. "javascript:alert(...)")
+// engellemek için yalnızca harf (her dilden — Arapça/Kürtçe/Rusça/Kazakça kullanıcı
+// tabanı var, \p{L} bunu kapsar), boşluk, kesme işareti, nokta ve tire kabul edilir.
+const ISIM_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M}\s'’.-]{0,49}$/u;
+
+export function gecerliIsimMi(deger: string): boolean {
+  return ISIM_PATTERN.test(deger.trim());
 }
 
 export function cokSatirMi(text: string | null | undefined): boolean {

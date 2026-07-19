@@ -3,7 +3,7 @@
 // Ülke detayı — Detay Route şablonu (4 Şablon Kuralı).
 // URL-first: /super-admin/ulkeler/12 derin linklenebilir, yenilemeye dayanıklı.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Globe, Pencil, Trash2 } from 'lucide-react';
@@ -33,8 +33,15 @@ export default function UlkeDetayPage() {
 
   const [bolum, setBolum] = useState<Bolum>('kurumlar');
   const [editUlke, setEditUlke] = useState<UlkeOzet | null>(null);
+  const editUlkeDirtyRef = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{ tip: 'ulke' | 'kurum'; id: number; name: string } | null>(null);
   const [seciliKurum, setSeciliKurum] = useState<{ id: number; name: string } | null>(null);
+
+  function editUlkeAc(hedef: UlkeOzet) {
+    if (editUlke && editUlkeDirtyRef.current
+      && !window.confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?')) return;
+    setEditUlke(hedef);
+  }
 
   // Liste sorgusuyla aynı cache — ülke tekil endpoint'i olmadığından listeden bulunur
   const { data, isLoading } = useQuery({
@@ -88,7 +95,7 @@ export default function UlkeDetayPage() {
           )}
           <div className="flex items-center gap-1 ml-auto">
             <button
-              onClick={() => ulke && setEditUlke({ id: ulke.id, name: ulke.name, visible: ulke.visible, ogretmenId: ulke.ogretmenId ?? null, ogretmenAdi: ulke.ogretmenAdi ?? null })}
+              onClick={() => ulke && editUlkeAc({ id: ulke.id, name: ulke.name, visible: ulke.visible, ogretmenId: ulke.ogretmenId ?? null, ogretmenAdi: ulke.ogretmenAdi ?? null })}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
               <Pencil className="size-3.5" />
               Düzenle
@@ -116,7 +123,7 @@ export default function UlkeDetayPage() {
       </div>
 
       <div className="min-h-[400px]">
-        {bolum === 'temsilciler' && <TemsilcilerPanel ulkeId={ulkeId} />}
+        {bolum === 'temsilciler' && <TemsilcilerPanel ulkeId={ulkeId} ulkeAdi={ulke?.name ?? ''} />}
         {bolum === 'kurumlar' && (
           <KurumlarPanel
             ulkeId={ulkeId}
@@ -139,7 +146,11 @@ export default function UlkeDetayPage() {
         {seciliKurum && <KurumSiniflarDetail kurumId={seciliKurum.id} />}
       </SlideOver>
 
-      <UlkeDuzenleSlideOver ulke={editUlke} onClose={() => setEditUlke(null)} />
+      <UlkeDuzenleSlideOver
+        ulke={editUlke}
+        onClose={() => setEditUlke(null)}
+        onDirtyChange={d => { editUlkeDirtyRef.current = d; }}
+      />
 
       <DeleteConfirmModal
         open={!!deleteTarget}

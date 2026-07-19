@@ -5,19 +5,18 @@
 // Veri seti küçük (< 500 ülke) olduğu için tek fetch + client-side
 // arama/sıralama/sayfalama; büyürse server-side'a geçilir.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Globe, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
-import { AramaInput, Sayfalama } from '@/components/staff/table-kit';
+import { AramaInput, Sayfalama, useSiralama } from '@/components/staff/table-kit';
 import { UlkeDuzenleSlideOver, type UlkeOzet } from './ulke-duzenle';
 
 const SAYFA_BOYUTU = 20;
 
 type SortKey = 'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogrenciSayisi' | 'visible';
-type SortDir = 'asc' | 'desc';
 
 function csvIndir(satirlar: any[]) {
   const basliklar = ['Ülke', 'Sorumlu Öğretmen', 'Kurum Sayısı', 'Öğrenci Sayısı', 'Durum'];
@@ -47,15 +46,21 @@ export default function UlkelerListePage() {
 
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
   const [showAdd, setShowAdd] = useState(false);
   const [yeniAd, setYeniAd] = useState('');
   const [editUlke, setEditUlke] = useState<UlkeOzet | null>(null);
+  const editUlkeDirtyRef = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [secili, setSecili] = useState<Set<number>>(new Set());
   const [topluOnay, setTopluOnay] = useState(false);
   const [topluHata, setTopluHata] = useState('');
+
+  function editUlkeAc(hedef: UlkeOzet) {
+    if (editUlke && editUlkeDirtyRef.current
+      && !window.confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?')) return;
+    setEditUlke(hedef);
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['sa-ulkeler', 'tumu'],
@@ -113,12 +118,6 @@ export default function UlkelerListePage() {
   const totalPages = Math.max(1, Math.ceil(gorunen.length / SAYFA_BOYUTU));
   const guvenliSayfa = Math.min(sayfa, totalPages);
   const sayfadakiler = gorunen.slice((guvenliSayfa - 1) * SAYFA_BOYUTU, guvenliSayfa * SAYFA_BOYUTU);
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
-    setSayfa(1);
-  }
 
   function SortHeader({ colKey, children, align = 'left' }: { colKey: SortKey; children: React.ReactNode; align?: 'left' | 'center' }) {
     const aktif = sortKey === colKey;
@@ -235,7 +234,7 @@ export default function UlkelerListePage() {
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        setEditUlke({ id: u.id, name: u.name, visible: u.visible, ogretmenId: u.ogretmenId ?? null, ogretmenAdi: u.ogretmenAdi ?? null });
+                        editUlkeAc({ id: u.id, name: u.name, visible: u.visible, ogretmenId: u.ogretmenId ?? null, ogretmenAdi: u.ogretmenAdi ?? null });
                       }}
                       className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-blue-500 transition-colors">
                       <Pencil className="size-3.5" />
@@ -267,7 +266,11 @@ export default function UlkelerListePage() {
 
     <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={gorunen.length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
 
-    <UlkeDuzenleSlideOver ulke={editUlke} onClose={() => setEditUlke(null)} />
+    <UlkeDuzenleSlideOver
+      ulke={editUlke}
+      onClose={() => setEditUlke(null)}
+      onDirtyChange={d => { editUlkeDirtyRef.current = d; }}
+    />
 
     {/* Toplu silme onayı — DELETE yazma şartı DeleteConfirmModal'dan geliyor */}
     <DeleteConfirmModal

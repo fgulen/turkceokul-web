@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
+import { apiHataMesaji } from '@/lib/utils';
 
 type Provider = 'anthropic' | 'openai' | 'deepseek' | 'gemini';
 
@@ -28,12 +29,6 @@ const MODEL_ONERILERI: Record<Provider, string[]> = {
   deepseek: ['deepseek-chat'],
   gemini: [],
 };
-
-function apiHataMesaji(err: any): string {
-  const data = err?.response?.data;
-  if (typeof data === 'string' && data) return data;
-  return data?.hata ?? 'İşlem başarısız.';
-}
 
 export function AiAyarlarPanel() {
   const qc = useQueryClient();

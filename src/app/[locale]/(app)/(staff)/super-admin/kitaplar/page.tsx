@@ -16,7 +16,7 @@ import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
 import {
-  AramaInput, Sayfalama, SortTh, trSirala, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton,
+  AramaInput, Sayfalama, SortTh, trSirala, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton,
 } from '@/components/staff/table-kit';
 
 type SortKey = 'name' | 'seviye' | 'uniteSayisi' | 'visible' | 'onaylandi';
@@ -29,19 +29,12 @@ function KitaplarTab() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<string>();
   const [topluOnay, setTopluOnay] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
 
   const { data: kitaplarHam = [] } = useQuery({
     queryKey: ['sa-kitaplar', arama],
     queryFn: () => api.get('/api/super-admin/kitaplar', { params: { arama } }).then(r => r.data),
   });
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
-    setSayfa(1);
-  }
 
   const kitaplar = useMemo(() => trSirala(kitaplarHam as any[], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
 

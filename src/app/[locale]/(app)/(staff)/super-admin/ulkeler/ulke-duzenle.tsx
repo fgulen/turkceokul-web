@@ -20,9 +20,14 @@ export interface UlkeOzet {
 interface Props {
   ulke: UlkeOzet | null;
   onClose: () => void;
+  /** Ebeveyne güncel dirty durumunu bildirir — başka bir ülkeyi düzenlemeye
+   *  geçmeden önce kaydedilmemiş değişiklik olup olmadığını sormak için. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function UlkeDuzenleSlideOver({ ulke, onClose }: Props) {
+const KAYDEDILMEMIS_UYARI = 'Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?';
+
+export function UlkeDuzenleSlideOver({ ulke, onClose, onDirtyChange }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState<UlkeOzet | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -36,6 +41,15 @@ export function UlkeDuzenleSlideOver({ ulke, onClose }: Props) {
     setOgretmenQuery('');
     setShowDropdown(false);
   }, [ulke]);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleClose() {
+    if (dirty && !window.confirm(KAYDEDILMEMIS_UYARI)) return;
+    onClose();
+  }
 
   const { data: ogretmenler = [] } = useQuery({
     queryKey: ['sa-ogretmenler', ogretmenQuery],
@@ -57,14 +71,14 @@ export function UlkeDuzenleSlideOver({ ulke, onClose }: Props) {
   return (
     <SlideOver
       open={!!ulke}
-      onClose={onClose}
+      onClose={handleClose}
       title="Ülke Düzenle"
       width="md"
       noDim
       footer={
         <div className="flex gap-2 justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
             İptal
           </button>

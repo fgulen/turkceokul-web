@@ -15,7 +15,7 @@ import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
-import { AramaInput, Sayfalama, SortTh, useTopluSecim, TopluSecimTh, TopluSecimTd } from '@/components/staff/table-kit';
+import { AramaInput, Sayfalama, SortTh, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd } from '@/components/staff/table-kit';
 
 type SortKey = 'name' | 'rol' | 'kurum' | 'durum';
 
@@ -30,14 +30,7 @@ function KullanicilarTab() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
-    setSayfa(1);
-  }
+  const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
 
   const { data } = useQuery({
     queryKey: ['sa-kullanicilar', rolFilter, arama, sayfa, sortKey, sortDir],
@@ -97,7 +90,7 @@ function KullanicilarTab() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       const roleRoutes: Record<string, string> = {
         SuperAdmin: '/super-admin', Admin: '/admin', Ogretmen: '/ogretmen', Ogrenci: '/pano',
-        KurumYoneticisi: '/admin', UlkeTemsilcisi: '/pano', Editor: '/pano'
+        KurumYoneticisi: '/kurum-yoneticisi', UlkeTemsilcisi: '/ulke-temsilcisi', Editor: '/pano'
       };
       router.push(roleRoutes[data.user.role] ?? '/pano');
     },
@@ -289,19 +282,6 @@ function KullaniciEditForm({ user, ulkeler, kurumlar, onSave }: {
     </form>
   );
 }
-
-// ─── Ülkeler & Okullar — Master-Detail ────────────────────────────────────────
-
-function buildPageRange(current: number, total: number): (number | '...')[] {
-  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | '...')[] = [1];
-  if (current > 3) pages.push('...');
-  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
-  if (current < total - 2) pages.push('...');
-  pages.push(total);
-  return pages;
-}
-
 
 export default function Page() {
   return <KullanicilarTab />;

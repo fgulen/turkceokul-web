@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { AppToaster } from "@/components/app-toaster";
 import { getLocale } from "next-intl/server";
 
 const inter = Inter({
@@ -34,6 +35,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>{children}</Providers>
+        <AppToaster />
       </body>
     </html>
   );

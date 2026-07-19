@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Package, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SlideOver } from '@/components/slide-over';
-import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir } from '@/components/staff/table-kit';
+import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
 import { apiHataMesaji } from '../shared';
 
 const SAYFA_BOYUTU = 20;
@@ -42,8 +42,7 @@ export default function KurumsalSatisPage() {
   const [durum, setDurum] = useState<Durum>('Tumu');
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>('tarih');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('tarih', () => setSayfa(1), 'desc');
   const [seciliSiparis, setSeciliSiparis] = useState<any | null>(null);
 
   const { data: siparisler = [], isLoading } = useQuery({
@@ -71,12 +70,6 @@ export default function KurumsalSatisPage() {
   const totalPages = Math.max(1, Math.ceil(gorunen.length / SAYFA_BOYUTU));
   const guvenliSayfa = Math.min(sayfa, totalPages);
   const sayfadakiler = gorunen.slice((guvenliSayfa - 1) * SAYFA_BOYUTU, guvenliSayfa * SAYFA_BOYUTU);
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
-    setSayfa(1);
-  }
 
   function exportCsv() {
     csvIndir('siparisler.csv',

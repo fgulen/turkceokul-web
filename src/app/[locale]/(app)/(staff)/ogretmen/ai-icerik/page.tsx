@@ -140,7 +140,10 @@ export default function AIIcerikPage() {
   // Sonuçlar: sekme başına saklanır
   const [sonuclar, setSonuclar] = useState<Partial<Record<TabId, TabSonuc>>>({});
   const [kopyalandi, setKopyalandi] = useState(false);
-  const [kaydedildi, setKaydedildi] = useState<string | null>(null); // etkinlikId
+  // Kaydedilen etkinlikId sekme başına saklanır — aksi halde bir sekmede kaydedip
+  // 5sn içinde başka sekmeye geçilirse "Hemen Kahoot Başlat" o sekmenin değil,
+  // önceki sekmenin etkinlikId'sini kullanırdı.
+  const [kaydedildi, setKaydedildi] = useState<Partial<Record<TabId, string>>>({});
   const [kaydetHata, setKaydetHata] = useState('');
   const [hata, setHata] = useState('');
   const [duzenlemeModuAktif, setDuzenlemeModuAktif] = useState(false);
@@ -320,13 +323,17 @@ export default function AIIcerikPage() {
   }
 
   async function wordIndir() {
+    if (!kaynak) {
+      setHata('Önce kaynak seçin.');
+      return;
+    }
     try {
       const res = await aiApi.post('/api/ai/icerik-uret', {
         tip: aktifTab,
         soruSayisi,
-        duzey: kaynak!.seviye,
-        uniteId: kaynak!.uniteId,
-        kitapTuru: kaynak!.kitapTuru,
+        duzey: kaynak.seviye,
+        uniteId: kaynak.uniteId,
+        kitapTuru: kaynak.kitapTuru,
         yonergeDili: yonergeDili || undefined,
         girdi: girdi || undefined,
         resimli,
@@ -344,8 +351,8 @@ export default function AIIcerikPage() {
   }
 
   const kaydetMutation = useMutation({
-    mutationFn: async () => {
-      const sonuc = sonuclar[aktifTab];
+    mutationFn: async (tabId: TabId) => {
+      const sonuc = sonuclar[tabId];
       if (!sonuc?.icerik?.sorular?.length) throw new Error('Önce içerik üretin.');
       const sorular = sonuc.icerik.sorular.map(s => ({
         question: s.question ?? s.description ?? '',
@@ -354,25 +361,30 @@ export default function AIIcerikPage() {
         imageId: s.image_id ?? undefined,
       }));
       return api.post('/api/ai/sinifa-kaydet', {
-        tip: aktifTab,
+        tip: tabId,
         uniteId: kaynak?.uniteId,
         duzey: kaynak?.seviye,
         baslik: sonuc.icerik.baslik ?? undefined,
         sorular,
       }).then(r => r.data);
     },
-    onSuccess: (data: { etkinlikId: string }) => {
-      setKaydedildi(data.etkinlikId);
+    onSuccess: (data: { etkinlikId: string }, tabId: TabId) => {
+      setKaydedildi(prev => ({ ...prev, [tabId]: data.etkinlikId }));
       setKaydetHata('');
-      setTimeout(() => setKaydedildi(null), 5000);
+      setTimeout(() => setKaydedildi(prev => {
+        const next = { ...prev };
+        delete next[tabId];
+        return next;
+      }), 5000);
     },
     onError: (e: Error) => setKaydetHata(e.message),
   });
 
   async function hemenKahootBaslat() {
+    const tab = aktifTab;
     try {
-      // Eğer zaten kaydedildiyse, o etkinlikId'yi kullan
-      const etkinlikId = kaydedildi ?? (await kaydetMutation.mutateAsync()).etkinlikId;
+      // Eğer bu sekme zaten kaydedildiyse, o etkinlikId'yi kullan
+      const etkinlikId = kaydedildi[tab] ?? (await kaydetMutation.mutateAsync(tab)).etkinlikId;
       setModalEtkinlikId(etkinlikId);
       setModalAcik(true);
     } catch (e) {
@@ -381,9 +393,10 @@ export default function AIIcerikPage() {
   }
 
   const mevcutSonuc = sonuclar[aktifTab];
+  const mevcutKaydedildi = kaydedildi[aktifTab] ?? null;
   const varSonuc = !!(mevcutSonuc?.icerik || mevcutSonuc?.metin);
   const uretimTabAktif = aktifTab !== 'bulten' && aktifTab !== 'pdf_import';
-  const canKaydet = uretimTabAktif && !!kaynak?.uniteId && !!mevcutSonuc?.icerik?.sorular?.length && !kaydedildi;
+  const canKaydet = uretimTabAktif && !!kaynak?.uniteId && !!mevcutSonuc?.icerik?.sorular?.length && !mevcutKaydedildi;
 
   const canUret = aktifTab === 'bulten'
     ? !!bultenSinifId && (bultenKapsam === 'sinif' ? true : !!bultenOgrenciId)
@@ -634,7 +647,7 @@ export default function AIIcerikPage() {
                         ? <><Check className="size-3.5 text-emerald-500" />Kopyalandı!</>
                         : <><Copy className="size-3.5" />Kopyala</>}
                     </button>
-                    {uretimTabAktif && mevcutSonuc?.icerik && (
+                    {uretimTabAktif && mevcutSonuc?.icerik && !!kaynak?.uniteId && (
                       <button
                         onClick={wordIndir}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
@@ -643,9 +656,9 @@ export default function AIIcerikPage() {
                         Word İndir
                       </button>
                     )}
-                    {uretimTabAktif && mevcutSonuc?.icerik?.sorular?.length && !kaydedildi && (
+                    {uretimTabAktif && mevcutSonuc?.icerik?.sorular?.length && !mevcutKaydedildi && (
                       <button
-                        onClick={() => kaydetMutation.mutate()}
+                        onClick={() => kaydetMutation.mutate(aktifTab)}
                         disabled={kaydetMutation.isPending || !canKaydet}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-40"
                         title={!kaynak?.uniteId ? 'Önce kaynak ünite seçin' : 'Kütüphaneye kaydet'}
@@ -655,7 +668,7 @@ export default function AIIcerikPage() {
                           : <><Save className="size-3.5" />Kütüphaneye Kaydet</>}
                       </button>
                     )}
-                    {aktifTab === 'kahoot' && (kaydedildi || mevcutSonuc?.icerik?.sorular?.length) && (
+                    {aktifTab === 'kahoot' && (mevcutKaydedildi || mevcutSonuc?.icerik?.sorular?.length) && (
                       <button
                         onClick={hemenKahootBaslat}
                         disabled={kaydetMutation.isPending}
@@ -683,7 +696,7 @@ export default function AIIcerikPage() {
                 </div>
 
                 {/* Kaydet başarı mesajı */}
-                {kaydedildi && (
+                {mevcutKaydedildi && (
                   <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 mb-4">
                     <Check className="size-3.5 text-emerald-600 shrink-0" />
                     <span>İçerik kütüphaneye kaydedildi. Sınıf sayfanızdan atayabilir veya Kahoot havuzundan başlatabilirsiniz.</span>

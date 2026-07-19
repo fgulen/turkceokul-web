@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, AlertCircle, Check, X } from 'lucide-react';
 import { useRouter } from '@/navigation';
@@ -73,10 +74,12 @@ export function KahootBaslatModal({
 
   if (!acik) return null;
 
-  // Normal seçim ekranı
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-lg max-w-sm w-full p-6">
+  // Portal + z-[80]: SlideOver/DeleteConfirmModal ile aynı sebep — üst öğelerin
+  // stacking context'i (bkz. TurkishLetterBackdrop trap'i) modalı sticky header'ın
+  // (z-70) altında bırakmasın.
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[80]">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-lg max-w-sm w-full p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900">Kahoot Başlat</h3>
           <button
@@ -166,6 +169,7 @@ export function KahootBaslatModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

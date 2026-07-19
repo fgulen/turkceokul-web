@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
-import { ArrowRight, Building2, Users, MonitorPlay, BarChart3, Sparkles } from 'lucide-react';
+import { ArrowRight, Building2, Users, MonitorPlay, BarChart3, Sparkles, KeyRound } from 'lucide-react';
 
 const BASE = 'https://turkceokulu.com';
 
@@ -54,6 +54,7 @@ const C = {
     sub: 'Kurumu kurmaktan canlı Kahoot quizine, raporlamaya kadar Türkçe Okulu\'nu adım adım kullanın — gerçek ekran görüntüleriyle.',
     anchors: [
       { label: 'Kurum Kurulumu', href: '#kurum' },
+      { label: 'Satın Alma & Lisans', href: '#lisans' },
       { label: 'Sınıf Ekleme', href: '#sinif' },
       { label: 'Canlı Kahoot', href: '#kahoot' },
       { label: 'Raporlama', href: '#rapor' },
@@ -71,8 +72,21 @@ const C = {
         ] as Step[],
         image: { src: '/rehber/kurum-yonetim.png', alt: 'Süper Admin panelinde Ülkeler & Okullar sekmesi — ülke listesi ve seçili ülkenin Temsilciler/Kurumlar/Ders Kitapları/Sınıflar sekmeleri' } as GuideImage,
       },
+      lisans: {
+        kicker: '2 · ÜLKE TEMSİLCİSİ / KURUM YÖNETİCİSİ',
+        title: 'Satın Alma & Lisans Aktivasyonu',
+        desc: 'Bir okul demo talebinden ücretli lisansa kadar süreç birkaç rolün elinden geçer — davet linkleriyle ilerler, ödeme banka havalesiyle yapılır.',
+        steps: [
+          { n: '1', text: 'Süper Admin, "Kullanıcı Oluştur" ekranından bir ülkeye Ülke Temsilcisi davet linki oluşturur; temsilci linkle kendi hesabını açar.', image: { src: '/rehber/kurumsal-davet-form.png', alt: 'Kullanıcı Oluştur ekranı — Rol: Ülke Temsilcisi, Ülke seçili, "Davet Linki Oluştur" butonu' } as GuideImage },
+          { n: '2', text: 'Okul, Kurumsal Satış sayfasından bir kitap için "Demo / Teklif Talep Et" formunu doldurur. Ödeme yöntemi banka havalesidir; satış ekibi 48 saat içinde döner.', image: { src: '/rehber/kurumsal-demo-talep.png', alt: 'Kurumsal Satış sayfası — Demo / Teklif Talep Et formu: kurum adı, yetkili, e-posta, ülke' } as GuideImage },
+          { n: '3', text: 'Ülke Temsilcisi panelinde beliren talebi "Kuruma Dönüştür" ile okula çevirir — bu adımda otomatik bir deneme lisansı açılır.', image: { src: '/rehber/kurumsal-bekleyen-talep.png', alt: 'Ülke Temsilcisi paneli — Bekleyen Talepler listesinde bir demo talebi ve "Kuruma Dönüştür" butonu' } as GuideImage },
+          { n: '4', text: 'Aynı panelden okula özel bir Kurum Yöneticisi davet linki oluşturur; yönetici linkle hesabını açar ve kendi öğretmenlerini davet eder.', image: { src: '/rehber/kurumsal-yonetici-davet.png', alt: 'Ülke Temsilcisi paneli — Kurum Yöneticisi Davet Et formu, hedef kurum seçili' } as GuideImage },
+          { n: '5', text: 'Kurum Yöneticisi, Lisanslar sekmesinde deneme lisanslı kitap için "Satın Al" butonuna basar — talep "Talebiniz İnceleniyor" durumuna düşer.', image: { src: '/rehber/kurumsal-lisans-deneme.png', alt: 'Kurum Yöneticisi paneli — Lisanslar sekmesi, Deneme etiketli kitap ve Satın Al butonu' } as GuideImage },
+          { n: '6', text: 'Havale ödemesi ulaştığında Süper Admin, Kurumsal Satış → Siparişler\'de kapasite/tutarı teyit edip "Onayla"ya basar; lisans aynı anda Ücretli\'ye döner ve kurum yöneticisi ekranında aktif görünür.', image: { src: '/rehber/kurumsal-siparis-onay.png', alt: 'Süper Admin — Kurumsal Satış siparişi detayı: kapasite, tutar ve Onayla butonu' } as GuideImage },
+        ] as (Step & { image?: GuideImage })[],
+      },
       sinif: {
-        kicker: '2 · ÖĞRETMEN',
+        kicker: '3 · ÖĞRETMEN',
         title: 'Sınıf Ekleme',
         desc: 'Öğretmen panelinden yeni bir sınıf açmak ve öğrencilerin katılmasını sağlamak birkaç dakika sürer.',
         steps: [
@@ -83,7 +97,7 @@ const C = {
         ] as (Step & { image?: GuideImage })[],
       },
       kahoot: {
-        kicker: '3 · CANLI DERS',
+        kicker: '4 · CANLI DERS',
         title: 'Kahoot Canlı Quiz',
         desc: 'Sınıfı tahtaya ya da projektöre yansıtın, öğrenciler kendi cihazlarından katılsın.',
         steps: [
@@ -95,7 +109,7 @@ const C = {
         image: { src: '/rehber/kahoot-baslat.png', alt: 'Canlı Kahoot kurulum ekranı — "Etkinlik Seç" (kitap/ünite filtresi + arama + çok-seçim), "Başlat (N soru)" ve "Demo" butonları' } as GuideImage,
       },
       rapor: {
-        kicker: '4 · PUANLAMA & RAPORLAMA',
+        kicker: '5 · PUANLAMA & RAPORLAMA',
         title: 'İlerleme Raporu',
         desc: 'Her sınıfın ünite bazlı ilerlemesini görün, dilerseniz Excel olarak indirin.',
         steps: [
@@ -122,6 +136,7 @@ const C = {
     sub: 'From institution setup to a live Kahoot quiz and progress reports — walk through Türkçe Okulu step by step, with real screenshots.',
     anchors: [
       { label: 'Institution Setup', href: '#kurum' },
+      { label: 'Purchase & Licensing', href: '#lisans' },
       { label: 'Add a Class', href: '#sinif' },
       { label: 'Live Kahoot', href: '#kahoot' },
       { label: 'Reporting', href: '#rapor' },
@@ -139,8 +154,21 @@ const C = {
         ] as Step[],
         image: { src: '/rehber/kurum-yonetim.png', alt: 'Super Admin panel — Countries & Schools tab: country list and the selected country\'s Representatives/Institutions/Textbooks/Classes tabs' } as GuideImage,
       },
+      lisans: {
+        kicker: '2 · COUNTRY REPRESENTATIVE / INSTITUTION ADMIN',
+        title: 'Purchase & License Activation',
+        desc: 'From a school\'s demo request to a paid license, the process passes through a few roles — moved along by invite links, paid by bank transfer.',
+        steps: [
+          { n: '1', text: 'The Super Admin creates a Country Representative invite link from the "Create User" screen for a country; the representative opens their own account with the link.', image: { src: '/rehber/kurumsal-davet-form.png', alt: 'Create User screen — Role: Country Representative, country selected, "Generate Invite Link" button' } as GuideImage },
+          { n: '2', text: 'A school fills out the "Request Demo / Quote" form for a textbook on the Corporate Sales page. Payment is by bank transfer; the sales team follows up within 48 hours.', image: { src: '/rehber/kurumsal-demo-talep.png', alt: 'Corporate Sales page — Request Demo / Quote form: institution name, contact, email, country' } as GuideImage },
+          { n: '3', text: 'The Country Representative converts the request that appears in their panel into an institution via "Convert to Institution" — this automatically opens a trial license.', image: { src: '/rehber/kurumsal-bekleyen-talep.png', alt: 'Country Representative panel — a demo request in the Pending Requests list and the "Convert to Institution" button' } as GuideImage },
+          { n: '4', text: 'From the same panel, they generate an Institution Admin invite link scoped to that school; the admin opens their account with the link and invites their own teachers.', image: { src: '/rehber/kurumsal-yonetici-davet.png', alt: 'Country Representative panel — Invite Institution Admin form, target institution selected' } as GuideImage },
+          { n: '5', text: 'The Institution Admin clicks "Purchase" on the Licenses tab for a book still on a trial license — the request moves to "Under Review".', image: { src: '/rehber/kurumsal-lisans-deneme.png', alt: 'Institution Admin panel — Licenses tab, a book tagged Trial and the Purchase button' } as GuideImage },
+          { n: '6', text: 'Once the bank transfer arrives, the Super Admin confirms the capacity/amount in Corporate Sales → Orders and clicks "Approve"; the license switches to Paid immediately and shows as active on the institution admin\'s screen.', image: { src: '/rehber/kurumsal-siparis-onay.png', alt: 'Super Admin — Corporate Sales order detail: capacity, amount and the Approve button' } as GuideImage },
+        ] as (Step & { image?: GuideImage })[],
+      },
       sinif: {
-        kicker: '2 · TEACHER',
+        kicker: '3 · TEACHER',
         title: 'Add a Class',
         desc: 'Opening a new class from the teacher panel and getting students to join takes a few minutes.',
         steps: [
@@ -151,7 +179,7 @@ const C = {
         ] as (Step & { image?: GuideImage })[],
       },
       kahoot: {
-        kicker: '3 · LIVE LESSON',
+        kicker: '4 · LIVE LESSON',
         title: 'Live Kahoot Quiz',
         desc: 'Project the class screen on a board or projector, and let students join from their own devices.',
         steps: [
@@ -163,7 +191,7 @@ const C = {
         image: { src: '/rehber/kahoot-baslat.png', alt: 'Live Kahoot setup screen — "Select Activities" (book/unit filter + search + multi-select), "Start (N questions)" and "Demo" buttons' } as GuideImage,
       },
       rapor: {
-        kicker: '4 · SCORING & REPORTING',
+        kicker: '5 · SCORING & REPORTING',
         title: 'Progress Report',
         desc: 'See each class\'s progress broken down by unit, and download it as Excel if you like.',
         steps: [
@@ -222,7 +250,7 @@ export default async function NasilCalisirPage(
   const c = isEn ? C.en : C.tr;
   const s = c.sections;
 
-  const icons = { kurum: Building2, sinif: Users, kahoot: MonitorPlay, rapor: BarChart3 };
+  const icons = { kurum: Building2, lisans: KeyRound, sinif: Users, kahoot: MonitorPlay, rapor: BarChart3 };
 
   return (
     <div className="bg-white text-slate-900">
@@ -282,8 +310,44 @@ export default async function NasilCalisirPage(
         </div>
       </section>
 
-      {/* 2 — Sınıf Ekleme */}
-      <section id="sinif" className="scroll-mt-32 border-b border-slate-100 bg-[#f9fafb] px-4 py-16 md:px-10 md:py-20">
+      {/* 2 — Satın Alma & Lisans Aktivasyonu */}
+      <section id="lisans" className="scroll-mt-32 border-b border-slate-100 bg-[#f9fafb] px-4 py-16 md:px-10 md:py-20">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="mb-10 max-w-2xl">
+            <div className="mb-3 flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" />
+              <span className="type-label text-primary">{s.lisans.kicker}</span>
+            </div>
+            <h2 className="type-display tracking-tight text-slate-900">{s.lisans.title}</h2>
+            <p className="mt-3 type-body-lg text-slate-500">{s.lisans.desc}</p>
+          </div>
+          <div className="flex flex-col gap-12">
+            {s.lisans.steps.map((step, i) => (
+              <div
+                key={step.n}
+                className={`grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-14 ${
+                  step.image && i % 2 === 1 ? 'md:[&>*:first-child]:order-2' : ''
+                }`}
+              >
+                <div className="flex gap-4">
+                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                    {step.n}
+                  </span>
+                  <p className="type-body-lg text-slate-600">{step.text}</p>
+                </div>
+                {step.image ? (
+                  <GuideImg image={step.image} />
+                ) : (
+                  <div className="hidden md:block" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3 — Sınıf Ekleme */}
+      <section id="sinif" className="scroll-mt-32 border-b border-slate-100 px-4 py-16 md:px-10 md:py-20">
         <div className="mx-auto max-w-[1200px]">
           <div className="mb-10 max-w-2xl">
             <div className="mb-3 flex items-center gap-2">
@@ -318,8 +382,8 @@ export default async function NasilCalisirPage(
         </div>
       </section>
 
-      {/* 3 — Kahoot Canlı Quiz */}
-      <section id="kahoot" className="scroll-mt-32 border-b border-slate-100 px-4 py-16 md:px-10 md:py-20">
+      {/* 4 — Kahoot Canlı Quiz */}
+      <section id="kahoot" className="scroll-mt-32 border-b border-slate-100 bg-[#f9fafb] px-4 py-16 md:px-10 md:py-20">
         <div className="mx-auto grid max-w-[1200px] grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-14">
           <div className="md:order-2">
             <div className="mb-3 flex items-center gap-2">
@@ -336,8 +400,8 @@ export default async function NasilCalisirPage(
         </div>
       </section>
 
-      {/* 4 — Puanlama & Raporlama */}
-      <section id="rapor" className="scroll-mt-32 bg-[#f9fafb] px-4 py-16 md:px-10 md:py-20">
+      {/* 5 — Puanlama & Raporlama */}
+      <section id="rapor" className="scroll-mt-32 px-4 py-16 md:px-10 md:py-20">
         <div className="mx-auto max-w-[1200px]">
           <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-14">
             <div>

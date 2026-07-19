@@ -3,11 +3,14 @@
 // DataTable şablonunun ortak parçaları (4 Şablon Kuralı: Liste).
 // Küçük veri setleri için client-side sıralama/sayfalama desenini standartlaştırır.
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
 
 // Standart arama kutusu (referans: Ülkeler "Ülke ara..."): kompakt, ikonlu,
 // doluyken X ile temizlenir. Tüm staff listelerinde bu kullanılır.
+// onChange 300ms debounce'lu çağrılır — Kullanıcılar/Ders Kitapları server-side
+// arama sorgusunu her tuş vuruşunda tetikliyordu (code review efficiency bulgusu);
+// input'un kendisi yine anlık (local state), yalnız onChange'e giden değer gecikir.
 interface AramaInputProps {
   value: string;
   onChange: (v: string) => void;
@@ -15,17 +18,37 @@ interface AramaInputProps {
 }
 
 export function AramaInput({ value, onChange, placeholder = 'Ara...' }: AramaInputProps) {
+  const [local, setLocal] = useState(value);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Dışarıdan value değişirse (örn. filtre sıfırlama) local input'u senkronla.
+  useEffect(() => { setLocal(value); }, [value]);
+
+  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+
+  function handleChange(v: string) {
+    setLocal(v);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => onChange(v), 300);
+  }
+
+  function handleClear() {
+    setLocal('');
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    onChange('');
+  }
+
   return (
     <div className="relative flex-1 min-w-[180px] max-w-xs">
       <Search className="absolute left-2.5 top-2 size-3.5 text-slate-400" />
       <input
-        value={value}
-        onChange={e => onChange(e.target.value)}
+        value={local}
+        onChange={e => handleChange(e.target.value)}
         placeholder={placeholder}
         className="w-full pl-8 pr-7 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300" />
-      {value && (
+      {local && (
         <button
-          onClick={() => onChange('')}
+          onClick={handleClear}
           className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 transition-colors"
           aria-label="Aramayı temizle">
           <X className="size-3.5" />
@@ -137,6 +160,23 @@ export function TopluSilButton({ sayi, onClick }: { sayi: number; onClick: () =>
 export async function topluSilParalel<ID>(ids: ID[], silFn: (id: ID) => Promise<any>): Promise<number> {
   const sonuclar = await Promise.allSettled(ids.map(id => silFn(id)));
   return sonuclar.filter(s => s.status === 'rejected').length;
+}
+
+// Sıralama state + toggle standardı (bkz. useTopluSecim) — aynı 3 satırlık
+// toggleSort mantığı 6 dosyada/9 yerde kopyalanıyordu (code review reuse bulgusu).
+// onToggle: sayfalı listelerde her sıralama değişiminde sayfa 1'e dönmek için
+// (örn. `() => setSayfa(1)`); sayfasız panellerde/görünümlerde opsiyoneldir.
+export function useSiralama<K extends string>(baslangicKey: K, onToggle?: () => void, baslangicDir: 'asc' | 'desc' = 'asc') {
+  const [sortKey, setSortKey] = useState<K>(baslangicKey);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(baslangicDir);
+
+  function toggleSort(key: K) {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+    onToggle?.();
+  }
+
+  return { sortKey, sortDir, toggleSort };
 }
 
 interface SortThProps<K extends string> {

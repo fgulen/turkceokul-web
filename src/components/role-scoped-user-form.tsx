@@ -15,6 +15,10 @@ interface RoleScopedUserFormProps {
   aciklama: string;
   hedefRolSecenekleri: HedefRolSecenegi[];
   onOlusturuldu?: () => void;
+  /** Ülke bağlamı sabitse (örn. ülke detay sayfası) dropdown yerine salt-okunur metin gösterilir. */
+  sabitUlke?: { id: number; name: string };
+  /** true ise dış kart/başlık/açıklama render edilmez — SlideOver gibi kendi chrome'u olan yerlerde kullanılır. */
+  bare?: boolean;
 }
 
 interface SinifFormData {
@@ -32,7 +36,7 @@ const DAVET_MESAJI: Record<string, string> = {
   Koordinator: 'koordinatör',
 };
 
-export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOlusturuldu }: RoleScopedUserFormProps) {
+export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOlusturuldu, sabitUlke, bare }: RoleScopedUserFormProps) {
   const [hedefRol, setHedefRol] = useState(hedefRolSecenekleri[0]?.value ?? '');
   const [seciliUlkeId, setSeciliUlkeId] = useState<string>('');
   const [seciliKurumId, setSeciliKurumId] = useState<string>('');
@@ -55,14 +59,15 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   }, [seciliUlkeId, scopeSuz]);
 
   const kurumSecenekleri = scope?.rol === 'UlkeTemsilcisi' ? (scope.kurumlar ?? []) : kurumlarByUlke;
-  const kurumAlaniGorunsun = scopeSuz || scope?.rol === 'UlkeTemsilcisi';
+  // UlkeTemsilcisi'nin kurumu olmaz — hedef rol bu ise Kurum alanı hiç gösterilmez.
+  const kurumAlaniGorunsun = (scopeSuz || scope?.rol === 'UlkeTemsilcisi') && hedefRol !== 'UlkeTemsilcisi';
   const kurumSabit = scope?.rol === 'KurumYoneticisi' ? scope.kurum : null;
 
   const davetMutation = useMutation({
     mutationFn: () => api.post('/api/davet/olustur', {
       hedefRol,
       kurumId: kurumSabit?.id ?? (seciliKurumId ? Number(seciliKurumId) : undefined),
-      ulkeId: hedefRol === 'UlkeTemsilcisi' && seciliUlkeId ? Number(seciliUlkeId) : undefined,
+      ulkeId: hedefRol === 'UlkeTemsilcisi' ? (sabitUlke?.id ?? (seciliUlkeId ? Number(seciliUlkeId) : undefined)) : undefined,
     }),
     onSuccess: (res) => {
       setDavetUrl(res.data.url);
@@ -72,14 +77,8 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
   const rolEtiketi = DAVET_MESAJI[hedefRol] ?? hedefRol.toLowerCase();
 
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
-        <Share2 className="size-4 text-primary" />
-        {baslik}
-      </h2>
-      <p className="text-xs text-slate-400 mb-4">{aciklama}</p>
-
+  const icerik = (
+    <>
       {scopeYukleniyor ? (
         <p className="text-xs text-slate-400">Yetki bilgisi yükleniyor...</p>
       ) : scopeHatali ? (
@@ -99,7 +98,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
             </div>
           )}
 
-          {scopeSuz && (
+          {scopeSuz && !sabitUlke && (
             <div>
               <label className="block text-xs font-medium mb-1">Ülke</label>
               <select
@@ -111,6 +110,10 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
                 {(scope?.ulkeler ?? []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
+          )}
+
+          {sabitUlke && (
+            <p className="text-xs text-slate-500">Ülke: <strong>{sabitUlke.name}</strong> (sabit)</p>
           )}
 
           {scope?.rol === 'UlkeTemsilcisi' && scope.ulke && (
@@ -181,6 +184,19 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (bare) return icerik;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
+        <Share2 className="size-4 text-primary" />
+        {baslik}
+      </h2>
+      <p className="text-xs text-slate-400 mb-4">{aciklama}</p>
+      {icerik}
     </div>
   );
 }

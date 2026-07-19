@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, GraduationCap, Users, Clock, ArrowRightCircle, ChevronRight } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { cn, apiHataMesaji } from '@/lib/utils';
@@ -135,7 +135,6 @@ export default function UlkeTemsilcisiPage() {
 
   return (
     <div className="bg-[#F3F4F6]">
-      <Toaster richColors position="top-center" />
       <main className="px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">

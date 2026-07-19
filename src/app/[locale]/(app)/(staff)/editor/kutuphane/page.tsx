@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import {
-  SortTh, trSirala, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton, topluSilParalel,
+  SortTh, trSirala, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton, topluSilParalel,
 } from '@/components/staff/table-kit';
 import { KitapDuzenleSlideOver } from './kitap-duzenle-slideover';
 
@@ -47,8 +47,7 @@ export default function EditorKutuphaneListPage() {
   const [silOnay, setSilOnay] = useState<KutuphaneKitap | null>(null);
   // ?duzenle=<id> derin linki: eski /duzenle route'u buraya yönlendirir
   const [duzenleId, setDuzenleId] = useState<string | null>(() => searchParams?.get('duzenle') ?? null);
-  const [sortKey, setSortKey] = useState<SortKey>('baslik');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('baslik');
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<string>();
   const [topluOnay, setTopluOnay] = useState(false);
 
@@ -57,11 +56,6 @@ export default function EditorKutuphaneListPage() {
     queryFn: () => api.get('/api/kutuphane/kitaplar').then(r => r.data),
     enabled: !!user,
   });
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
-  }
 
   const kitaplar = useMemo(() => trSirala(kitaplarHam ?? [], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
 
