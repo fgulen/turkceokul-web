@@ -41,10 +41,11 @@ interface Props {
   onClose: () => void;
   mod: 'olustur' | 'duzenle';
   sinifId?: number; // mod === 'duzenle' iken zorunlu
+  ulkeId?: number; // ulke detay sayfasindan acilinca dropdown'u onceden secili baslatir (SuperAdmin)
   onBasarili: () => void; // liste query'sini invalidate etmek icin ebeveyne haber verir
 }
 
-export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: Props) {
+export function SinifFormSlideOver({ open, onClose, mod, sinifId, ulkeId, onBasarili }: Props) {
   const locale = useLocale();
   const qc = useQueryClient();
 
@@ -64,12 +65,12 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, onBasarili }: 
     if (open) {
       setDavetSinif(null);
       setSinifAdi('');
-      setSeciliUlkeId(null);
+      setSeciliUlkeId(mod === 'olustur' ? (ulkeId ?? null) : null);
       setSeciliKurumId(null);
       setSeciliOgretmenId(null);
       setSeciliKitapId('');
     }
-  }, [open, mod, sinifId]);
+  }, [open, mod, sinifId, ulkeId]);
 
   const { data: formData } = useQuery<FormData>({
     queryKey: ['sinif-form-data'],

@@ -482,6 +482,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
       <SinifFormSlideOver
         open={showAdd}
         mod="olustur"
+        ulkeId={ulkeId}
         onClose={() => setShowAdd(false)}
         onBasarili={() => qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] })}
       />
