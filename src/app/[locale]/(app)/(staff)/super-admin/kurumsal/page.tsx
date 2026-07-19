@@ -229,9 +229,13 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
     onClose();
   }
 
-  const bilgi = (label: string, val: React.ReactNode) => (
+  const bilgi = (label: string, val: React.ReactNode, aciklama?: string) => (
     <div className="flex justify-between gap-3 py-1.5 border-b border-slate-50 text-sm">
-      <span className="text-slate-500 shrink-0">{label}</span>
+      <span
+        className={`text-slate-500 shrink-0 ${aciklama ? 'cursor-help border-b border-dotted border-slate-300' : ''}`}
+        title={aciklama}>
+        {label}
+      </span>
       <span className="text-slate-800 text-right min-w-0">{val ?? '—'}</span>
     </div>
   );
@@ -272,20 +276,26 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
 
           <div>
             {bilgi('Durum', <span className={`px-2 py-0.5 rounded-full text-xs ${DURUM_RENK[s.durum] ?? ''}`}>{DURUM_ETIKET[s.durum] ?? s.durum}</span>)}
-            {bilgi('Kitap', s.dersKitabiId)}
-            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`)}
+            {bilgi('Kitap', s.urunAdi ?? s.dersKitabiId)}
+            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`, 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
             {bilgi('Tutar', `${euro(s.toplamTutar)} (${s.toplamTutar} cent)`)}
             {bilgi('Eğitim Yılı', s.egitimYili)}
             {bilgi('Tarih', new Date(s.tarih).toLocaleString('tr-TR'))}
             {bilgi('Ülke', s.ulkeAdi)}
-            {bilgi('Yetkili', s.yetkiliAdi)}
+            {bilgi('Yetkili', s.yetkiliAdi, 'Sipariş formuna girilen iletişim kişisi — sistemdeki bir kullanıcı hesabıyla otomatik bağlantılı değil')}
             {bilgi('E-posta', s.yetkiliEmail)}
             {bilgi('Telefon', s.telefon
               ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
               : '—')}
-            {bilgi('Sınıf Sayısı', s.sinifSayisi)}
-            {bilgi('Aktif Öğrenci', s.aktifOgrenci)}
-            {bilgi('Mevcut Lisans', s.mevcutLisansTipi)}
+            {!lead && bilgi('Kurum Yöneticisi', s.kurumYoneticisiEmail === s.yetkiliEmail
+              ? <span className="text-slate-400 italic">Yetkili ile aynı</span>
+              : s.kurumYoneticisiAdi
+                ? `${s.kurumYoneticisiAdi} (${s.kurumYoneticisiEmail})`
+                : 'Atanmamış')}
+            {bilgi('Ülke Temsilcisi', s.ulkeTemsilcisiAdi ? `${s.ulkeTemsilcisiAdi} (${s.ulkeTemsilcisiEmail})` : 'Atanmamış')}
+            {bilgi('Sınıf Sayısı', s.sinifSayisi, 'Bu kurumda bu kitaba atanmış sınıf adedi')}
+            {bilgi('Aktif Öğrenci', s.aktifOgrenci, 'O sınıflardaki, sisteme şu an aktif olarak eklenmiş öğrenci sayısı')}
+            {bilgi('Mevcut Lisans', s.mevcutLisansTipi, 'Onay öncesi kurumun bu kitap için halihazırda sahip olduğu lisans tipi (Deneme / Ücretli)')}
           </div>
 
           {duzenleAcik && (

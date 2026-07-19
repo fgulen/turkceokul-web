@@ -78,7 +78,7 @@ function GenelBakis() {
               Tüm siparişler →
             </Link>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="p-3 space-y-3">
             {(bekleyenSiparisler as any[]).map((s: any) => (
               <BekleyenSiparisRow key={s.id} siparis={s} />
             ))}
@@ -134,50 +134,51 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
     setDuzenle(v => !v);
   }
 
+  const alan = (etiket: string, deger: React.ReactNode, aciklama?: string) => (
+    <div className="min-w-0">
+      <dt
+        className={`text-[10px] uppercase tracking-wide text-slate-400 ${aciklama ? 'cursor-help w-fit border-b border-dotted border-slate-300' : ''}`}
+        title={aciklama}>
+        {etiket}
+      </dt>
+      <dd className="text-xs text-slate-700 truncate">{deger ?? '—'}</dd>
+    </div>
+  );
+
   return (
-    <div className="px-5 py-3 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-slate-800 flex-1 min-w-[140px] truncate">{s.kurumAdi}</span>
-        <span className="text-xs text-slate-500 whitespace-nowrap">{s.dersKitabiId} · {s.ogrenciKapasite} lisans · {s.toplamTutar} EUR cent</span>
-        <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.tarih).toLocaleDateString('tr')}</span>
-        <button onClick={toggleDuzenle}
-          className={`px-2 py-1 text-xs rounded-lg border transition-colors ${duzenle ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-          {duzenle ? 'Kapat' : 'Düzenle'}
-        </button>
-        {lead ? (
-          <span className="text-xs text-slate-400 italic" title="Lead siparişler onaylanamaz">
-            Önce kuruma dönüştürülmeli (ülke temsilcisi paneli)
-          </span>
-        ) : (
-          <button onClick={() => onaylaMutation.mutate()} disabled={onaylaMutation.isPending}
-            className="px-2 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
-            Onayla
-          </button>
-        )}
-        <button onClick={() => iptalMutation.mutate()} disabled={iptalMutation.isPending}
-          className="px-2 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50">
-          İptal
-        </button>
+    <div className="rounded-lg border border-slate-200 overflow-hidden">
+      {/* Başlık: kurum + ürün/tutar özeti + tarih */}
+      <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-slate-50 border-b border-slate-100">
+        <div className="min-w-0">
+          <p className="font-semibold text-slate-800 truncate">{s.kurumAdi}</p>
+          <p className="text-xs text-slate-500 truncate">
+            {s.urunAdi ?? s.dersKitabiId ?? '—'} ·{' '}
+            <span
+              className="cursor-help border-b border-dotted border-slate-300"
+              title="Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil">
+              {s.ogrenciKapasite} lisans
+            </span>{' '}
+            · {euro(s.toplamTutar)}
+          </p>
+        </div>
+        <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">{new Date(s.tarih).toLocaleDateString('tr-TR')}</span>
       </div>
 
       {/* Bağlam bilgileri — temsilcinin onay öncesi ihtiyaç duyduğu alanlar (spec adım 7) */}
-      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
-        <span>Yetkili: {s.yetkiliAdi ?? '—'}{s.yetkiliEmail ? ` (${s.yetkiliEmail})` : ''}</span>
-        <span>Ülke: {s.ulkeAdi ?? '—'}</span>
-        <span>
-          Telefon:{' '}
-          {s.telefon
-            ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
-            : '—'}
-        </span>
-        <span>Eğitim yılı: {s.egitimYili || '—'}</span>
-        <span>Sınıf: {s.sinifSayisi}</span>
-        <span>Aktif öğrenci: {s.aktifOgrenci}</span>
-        <span>Mevcut lisans: {s.mevcutLisansTipi ?? '—'}</span>
-      </div>
+      <dl className="px-4 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+        {alan('Yetkili', <>{s.yetkiliAdi ?? '—'}{s.yetkiliEmail ? <span className="text-slate-400"> · {s.yetkiliEmail}</span> : ''}</>)}
+        {alan('Ülke', s.ulkeAdi)}
+        {alan('Telefon', s.telefon
+          ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
+          : '—')}
+        {alan('Eğitim yılı', s.egitimYili)}
+        {alan('Sınıf', s.sinifSayisi, 'Bu kurumda bu kitaba atanmış sınıf adedi')}
+        {alan('Aktif öğrenci', s.aktifOgrenci, 'O sınıflardaki, sisteme şu an aktif olarak eklenmiş öğrenci sayısı')}
+        {alan('Mevcut lisans', s.mevcutLisansTipi, 'Onay öncesi kurumun bu kitap için halihazırda sahip olduğu lisans tipi (Deneme / Ücretli)')}
+      </dl>
 
       {duzenle && (
-        <div className="mt-2 flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+        <div className="mx-4 mb-2.5 flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
           <div>
             <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Öğrenci Kapasitesi</label>
             <input type="number" min={1} value={kapasite} onChange={e => setKapasite(e.target.value)}
@@ -198,10 +199,38 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
       )}
 
       {hata && (
-        <p role="alert" className="mt-1.5 text-xs text-red-600">{hata}</p>
+        <p role="alert" className="px-4 pb-2 text-xs text-red-600">{hata}</p>
       )}
+
+      {/* Aksiyonlar — verinin altında, ayrı bir şerit */}
+      <div className="px-4 py-2 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white">
+        {lead && (
+          <span className="text-xs text-slate-400 italic mr-auto" title="Lead siparişler onaylanamaz">
+            Önce kuruma dönüştürülmeli (ülke temsilcisi paneli)
+          </span>
+        )}
+        <button onClick={toggleDuzenle}
+          className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${duzenle ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+          {duzenle ? 'Kapat' : 'Düzenle'}
+        </button>
+        <button onClick={() => iptalMutation.mutate()} disabled={iptalMutation.isPending}
+          className="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50">
+          İptal
+        </button>
+        {!lead && (
+          <button onClick={() => onaylaMutation.mutate()} disabled={onaylaMutation.isPending}
+            className="px-2.5 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+            {onaylaMutation.isPending ? 'Onaylanıyor…' : 'Onayla'}
+          </button>
+        )}
+      </div>
     </div>
   );
+}
+
+function euro(cent: number | null | undefined) {
+  if (cent == null) return '—';
+  return `€${(cent / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ─── Loglar ─────────────────────────────────────────────────────────────────
