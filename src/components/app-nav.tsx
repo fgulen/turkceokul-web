@@ -213,7 +213,7 @@ export function AppNav() {
             </>}
             {user.role === 'Ogrenci' && <>
               <NL href="/pano"              label={t('nav.app.dashboard')}  active={pathname === '/pano'} />
-              <NL href="/lig"               label={t('nav.League')}         active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
+              <NL href="/lig"               label={t('League')}         active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
               <NL href="/okuma"             label={t('nav.app.reading')}    active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} />
               <NL href="/kahoot/katil"      label="Kahoot"                  active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
             </>}

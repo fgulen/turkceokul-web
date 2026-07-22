@@ -157,7 +157,15 @@
     "premium": "Premium",
     "locked": "Kilitli",
     "completed": "Tamamlandı",
-    "notCompleted": "Tamamlanmadı"
+    "notCompleted": "Tamamlanmadı",
+    "taskLabels": {
+      "DakikaCalis": "20 dakika çalış",
+      "EtkinlikHatasiz": "3 etkinliği hatasız tamamla",
+      "DueloDavet": "Bir düello başlat"
+    },
+    "taskReward": "+{count} {type}",
+    "xpUnit": "XP",
+    "heartUnit": "Kalp"
   },
   "seviyeTesti": {
     "title": "Türkçe Seviye Tespiti",

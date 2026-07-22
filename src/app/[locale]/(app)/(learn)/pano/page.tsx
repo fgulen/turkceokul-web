@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { BookMarked, BookOpen, CheckCircle2, Circle, Flame, Heart, Zap, Lock } from 'lucide-react';
 import { bookCoverUrl } from '@/lib/book-covers';
@@ -51,19 +52,14 @@ interface OkumaKitabi {
   tamamlananBolum: number;
 }
 
-const gorevLabel: Record<string, string> = {
-  DakikaCalış: '20 dakika çalış',
-  EtkinlikHatasiz: '3 etkinliği hatasız tamamla',
-  DüelloDavet: 'Bir düello başlat',
+const gorevLabelMap: Record<string, string> = {
+  DakikaCalis: 'pano.taskLabels.DakikaCalis',
+  EtkinlikHatasiz: 'pano.taskLabels.EtkinlikHatasiz',
+  DueloDavet: 'pano.taskLabels.DueloDavet',
 };
 
-function odulLabel(tipi: string, miktar: number) {
-  if (tipi === 'Xp') return `+${miktar} XP`;
-  if (tipi === 'Kalp') return `+${miktar} Kalp`;
-  return `+${miktar}`;
-}
-
 export default function PanoPage() {
+  const t = useTranslations();
   const { user, ready } = useAuthGuard();
   const [cefrLevel, setCefrLevel] = useState<string | null>(null);
 
@@ -105,25 +101,25 @@ export default function PanoPage() {
       <main className="max-w-[1200px] mx-auto px-4 py-10">
         {/* Greeting */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Selam, {user.name}! 👋</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Bugün ne öğreniyorsun?</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('pano.greeting', { name: user.name })}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('pano.greetingSub')}</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-5">
           <StatCard
             icon={<Flame className="size-5 fill-current" style={{ color: 'var(--streak)' }} />}
-            label="Streak"
-            value={`${user.streakCount} gün`}
+            label={t('pano.streak')}
+            value={t('pano.streakDays', { count: user.streakCount })}
           />
           <StatCard
             icon={<Heart className="size-5 fill-current" style={{ color: 'var(--heart)' }} />}
-            label="Kalp"
-            value={`${user.kalp} / 5`}
+            label={t('pano.hearts')}
+            value={t('pano.heartsCount', { current: user.kalp })}
           />
           <StatCard
             icon={<Zap className="size-5 fill-current" style={{ color: 'var(--xp)' }} />}
-            label="Toplam XP"
+            label={t('pano.totalXp')}
             value={user.puan.toLocaleString('tr')}
           />
         </div>
@@ -133,7 +129,7 @@ export default function PanoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           {/* Günlük Görevler */}
           <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
-            <h2 className="font-semibold text-lg mb-4">Günlük Görevler</h2>
+            <h2 className="font-semibold text-lg mb-4">{t('pano.dailyTasks')}</h2>
             {gorevLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -152,7 +148,7 @@ export default function PanoPage() {
           {/* Lig */}
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Ligim</h2>
+              <h2 className="font-semibold text-lg">{t('pano.myLeague')}</h2>
               {lig && (
                 <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
                   {lig.ligAdi}
@@ -168,7 +164,7 @@ export default function PanoPage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  İlk etkinliği tamamlayınca lig grubuna otomatik katılırsın.
+                  {t('pano.noLeague')}
                 </p>
               )
             ) : (
@@ -192,7 +188,7 @@ export default function PanoPage() {
                       </span>
                       <span className="truncate max-w-[100px]">{s.name}</span>
                       {s.benimSatir && (
-                        <span className="text-xs text-primary">(sen)</span>
+                        <span className="text-xs text-primary">{t('pano.youLabel')}</span>
                       )}
                     </div>
                     <span className="text-muted-foreground text-xs shrink-0">
@@ -209,9 +205,9 @@ export default function PanoPage() {
         {okumaKitaplari && okumaKitaplari.length > 0 && (
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Okuma Kitapları</h2>
+              <h2 className="font-semibold text-lg">{t('pano.readingBooks')}</h2>
               <Link href="/okuma" className="text-xs text-primary hover:underline">
-                Tümünü gör →
+                {t('pano.viewAll')}
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -241,7 +237,7 @@ export default function PanoPage() {
                         {kitap.name}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {kitap.tamamlananBolum}/{kitap.toplamBolum} bölüm
+                        {t('pano.progress', { done: kitap.tamamlananBolum, total: kitap.toplamBolum })}
                       </p>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
@@ -263,10 +259,10 @@ export default function PanoPage() {
         {/* Ders Kitapları */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg">Ders Kitapları</h2>
+            <h2 className="font-semibold text-lg">{t('pano.courseBooks')}</h2>
             {cefrLevel && (
               <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                Seviyeniz: {cefrLevel}
+                {t('pano.yourLevel', { level: cefrLevel })}
               </span>
             )}
           </div>
@@ -274,13 +270,13 @@ export default function PanoPage() {
           {!cefrLevel && (
             <div className="mb-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-4">
               <p className="text-sm text-amber-800">
-                Seviye testini tamamlayarak size uygun kitaplara erişin.
+                {t('pano.levelTestPrompt')}
               </p>
               <Link
                 href="/seviye-testi"
                 className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
               >
-                Testi Başlat →
+                {t('pano.startTest')}
               </Link>
             </div>
           )}
@@ -325,7 +321,7 @@ export default function PanoPage() {
                     key={k.id}
                     href="/kayit?tip=bireysel"
                     className="p-5 bg-card border border-border rounded-2xl opacity-50 hover:opacity-70 transition-opacity relative group"
-                    title="Bu seviyeye erişmek için Premium'a geç"
+                    title={t('pano.premiumRequired')}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
@@ -334,7 +330,7 @@ export default function PanoPage() {
                             {k.seviye}
                           </span>
                           <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                            Premium
+                            {t('pano.premium')}
                           </span>
                         </div>
                         <div className="font-semibold text-muted-foreground truncate">{k.name}</div>
@@ -343,7 +339,7 @@ export default function PanoPage() {
                       <div className="relative">
                         <BookCoverThumb src={coverUrl} alt={k.name} />
                         <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                          <Lock className="size-3.5 text-white" aria-label="Kilitli" role="img" />
+                          <Lock className="size-3.5 text-white" aria-label={t('pano.locked')} role="img" />
                         </div>
                       </div>
                     </div>
@@ -393,18 +389,25 @@ function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
 }
 
 function GorevSatiri({ gorev }: { gorev: Gorev }) {
+  const t = useTranslations();
   const pct = Math.min(100, Math.round((gorev.mevcut / gorev.hedef) * 100));
+
+  function odulLabel(tipi: string, miktar: number) {
+    const type = tipi === 'Xp' ? t('pano.xpUnit') : tipi === 'Kalp' ? t('pano.heartUnit') : '';
+    return t('pano.taskReward', { count: miktar, type });
+  }
+
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl border border-border">
       {gorev.tamamlandi ? (
-        <CheckCircle2 className="size-5 shrink-0" style={{ color: 'var(--correct)' }} aria-label="Tamamlandı" role="img" />
+        <CheckCircle2 className="size-5 shrink-0" style={{ color: 'var(--correct)' }} aria-label={t('pano.completed')} role="img" />
       ) : (
-        <Circle className="size-5 shrink-0 text-muted-foreground" aria-label="Tamamlanmadı" role="img" />
+        <Circle className="size-5 shrink-0 text-muted-foreground" aria-label={t('pano.notCompleted')} role="img" />
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-sm font-medium">
-            {gorevLabel[gorev.gorevTipi] ?? gorev.gorevTipi}
+            {t(gorevLabelMap[gorev.gorevTipi] ?? gorev.gorevTipi)}
           </span>
           <span className="text-xs text-primary font-medium ml-2 shrink-0">
             {odulLabel(gorev.odulTipi, gorev.odulMiktari)}

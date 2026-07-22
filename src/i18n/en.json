@@ -157,7 +157,15 @@
     "premium": "Premium",
     "locked": "Locked",
     "completed": "Completed",
-    "notCompleted": "Not completed"
+    "notCompleted": "Not completed",
+    "taskLabels": {
+      "DakikaCalis": "Study 20 min",
+      "EtkinlikHatasiz": "Complete 3 activities flawlessly",
+      "DueloDavet": "Start a duel"
+    },
+    "taskReward": "+{count} {type}",
+    "xpUnit": "XP",
+    "heartUnit": "Heart"
   },
   "seviyeTesti": {
     "title": "Turkish Level Test",
