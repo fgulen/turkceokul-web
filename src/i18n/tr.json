@@ -225,6 +225,24 @@
       "ileri": "İleri"
     }
   },
+  "lig": {
+    "yourRank": "Sıran",
+    "weeklyXp": "Bu Hafta XP",
+    "youLabel": "(sen)",
+    "noLeague": "Henüz bir lig grubunda değilsin.",
+    "noLeagueHint": "İlk etkinliği tamamlayınca otomatik katılırsın.",
+    "rules": "Lig Kuralları",
+    "promoteRule": "İlk {count} oyuncu bir üst lige terfi eder.",
+    "demoteRule": "Son {count} oyuncu bir alt lige düşme tehlikesi yaşar.",
+    "timeRemaining": "{days}g {hours}s kaldı",
+    "timeRemainingHours": "{hours}s {minutes}dk kaldı",
+    "timeRemainingMinutes": "{minutes}dk kaldı",
+    "timeExpired": "Bitti",
+    "motivationPromote": "Terfi bölgesindesin! Sıranı koru.",
+    "motivationClose": "{count} kişiyi geç, bir üst lige çık!",
+    "motivationSafe": "Güvenli bölgedesin, devam et.",
+    "motivationDanger": "Dikkat! {count} kişiyi geç, düşmekten kaçın."
+  },
   "etkinlik": {
     "heartDepleted": "Kalbin Bitti!",
     "heartDepletedDesc": "30 dakika bekle ya da başka bir etkinlik yap, kalbin yenilenir.",
@@ -239,6 +257,7 @@
     "continue": "Devam Et →",
     "submitError": "Cevap gönderilemedi. Bağlantını kontrol edip tekrar dene.",
     "combo": "{count} Combo",
-    "heartLost": "-{count} Kalp"
+    "heartLost": "-{count} Kalp",
+    "calculating": "Sonuç hesaplanıyor…"
   }
 }

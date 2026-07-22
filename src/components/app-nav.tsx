@@ -306,7 +306,7 @@ export function AppNav() {
     {mounted && hydrated && user?.role === 'Ogrenci' && !pathname?.startsWith('/kahoot') && (
       <MobileBar items={[
         { href: '/pano',               Icon: LayoutDashboard, label: t('nav.app.dashboard'), active: pathname === '/pano' },
-        { href: '/lig',                Icon: Trophy,          label: t('nav.League'), active: pathname === '/lig' },
+        { href: '/lig',                Icon: Trophy,          label: t('League'), active: pathname === '/lig' },
         { href: '/okuma',              Icon: BookOpen,        label: t('nav.app.reading'), active: !!pathname?.startsWith('/okuma') },
         { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot', active: !!pathname?.startsWith('/kahoot') },
       ]} />

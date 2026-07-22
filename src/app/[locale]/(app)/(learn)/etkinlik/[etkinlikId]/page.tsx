@@ -534,7 +534,7 @@ export default function EtkinlikPage({
         ) : submitting ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <p className="text-muted-foreground">Sonuç hesaplanıyor…</p>
+            <p className="text-muted-foreground">{t('etkinlik.calculating')}</p>
           </div>
         ) : sonuc && sonuc.kalanKalp === 0 && !sonuc.basarili ? (
           <KalpSifirScreen

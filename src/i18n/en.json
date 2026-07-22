@@ -225,6 +225,24 @@
       "ileri": "Advanced"
     }
   },
+  "lig": {
+    "yourRank": "Your Rank",
+    "weeklyXp": "This Week XP",
+    "youLabel": "(you)",
+    "noLeague": "You're not in a league group yet.",
+    "noLeagueHint": "You'll join automatically when you complete your first activity.",
+    "rules": "League Rules",
+    "promoteRule": "Top {count} players get promoted to the next league.",
+    "demoteRule": "Last {count} players risk demotion to the lower league.",
+    "timeRemaining": "{days}d {hours}h left",
+    "timeRemainingHours": "{hours}h {minutes}m left",
+    "timeRemainingMinutes": "{minutes}m left",
+    "timeExpired": "Over",
+    "motivationPromote": "You're in the promotion zone! Keep your rank.",
+    "motivationClose": "Pass {count} more players to move up!",
+    "motivationSafe": "You're in the safe zone, keep going.",
+    "motivationDanger": "Warning! Pass {count} players to avoid demotion."
+  },
   "etkinlik": {
     "heartDepleted": "No Hearts Left!",
     "heartDepletedDesc": "Wait 30 minutes or do another activity to regain hearts.",
@@ -239,6 +257,7 @@
     "continue": "Continue →",
     "submitError": "Couldn't submit answers. Check your connection and try again.",
     "combo": "{count} Combo",
-    "heartLost": "-{count} Heart"
+    "heartLost": "-{count} Heart",
+    "calculating": "Calculating result…"
   }
 }
