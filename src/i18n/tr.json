@@ -225,6 +225,14 @@
       "ileri": "İleri"
     }
   },
+  "okuma": {
+    "title": "Okuma",
+    "subtitle": "Seviyene uygun kitabı seç, bölüm bölüm oku.",
+    "empty": "Henüz okuma kitabı eklenmemiş.",
+    "assignment": "Ödev",
+    "overdue": "(gecikmeli)",
+    "progress": "{done}/{total} bölüm"
+  },
   "lig": {
     "yourRank": "Sıran",
     "weeklyXp": "Bu Hafta XP",

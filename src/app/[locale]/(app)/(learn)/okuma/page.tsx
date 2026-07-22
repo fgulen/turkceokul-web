@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Link } from '@/navigation';
@@ -28,6 +29,7 @@ interface OkumaAtama {
 }
 
 export default function OkumaPage() {
+  const t = useTranslations();
   const { user, ready } = useAuthGuard(undefined, true);
 
   const { data: kitaplar, isLoading } = useQuery<OkumaKitap[]>({
@@ -86,16 +88,16 @@ export default function OkumaPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       {/* Başlık */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Okuma</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('okuma.title')}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Seviyene uygun kitabı seç, bölüm bölüm oku.
+          {t('okuma.subtitle')}
         </p>
       </div>
 
       {!birlesik.length ? (
         <div className="text-center py-16 text-muted-foreground">
           <BookOpen className="mx-auto size-12 mb-4 opacity-30" />
-          <p>Henüz okuma kitabı eklenmemiş.</p>
+          <p>{t('okuma.empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -131,7 +133,7 @@ export default function OkumaPage() {
                     </span>
                     {atama && (
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                        Ödev
+                        {t('okuma.assignment')}
                       </span>
                     )}
                     {tamam && <CheckCircle2 className="size-4 text-emerald-500" />}
@@ -140,7 +142,7 @@ export default function OkumaPage() {
                     {kitap.name}
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    {kitap.tamamlananBolum}/{kitap.toplamBolum} bölüm
+                    {t('okuma.progress', { done: kitap.tamamlananBolum, total: kitap.toplamBolum })}
                   </p>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
@@ -152,7 +154,7 @@ export default function OkumaPage() {
                     <p className={cn('text-xs flex items-center gap-1 mt-1', gecikti ? 'text-red-500' : 'text-muted-foreground')}>
                       <Calendar className="size-3" />
                       {new Date(atama.teslimTarihi).toLocaleDateString('tr-TR')}
-                      {gecikti && ' (gecikmeli)'}
+                      {gecikti && ` ${t('okuma.overdue')}`}
                     </p>
                   )}
                 </div>

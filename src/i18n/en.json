@@ -225,6 +225,14 @@
       "ileri": "Advanced"
     }
   },
+  "okuma": {
+    "title": "Reading",
+    "subtitle": "Pick a book that matches your level and read chapter by chapter.",
+    "empty": "No reading books available yet.",
+    "assignment": "Assignment",
+    "overdue": "(overdue)",
+    "progress": "{done}/{total} chapters"
+  },
   "lig": {
     "yourRank": "Your Rank",
     "weeklyXp": "This Week XP",
