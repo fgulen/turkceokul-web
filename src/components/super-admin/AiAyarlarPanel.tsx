@@ -64,14 +64,14 @@ export function AiAyarlarPanel() {
       qc.invalidateQueries({ queryKey: ['sa-ai-ayarlar'] });
       setTimeout(() => setKaydedildi(false), 3000);
     },
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
   const testMutation = useMutation({
     mutationFn: () => api.post('/api/admin/ai-ayarlar/test').then(r => r.data as { basarili: boolean; mesaj: string }),
     onMutate: () => { setTestSonuc(null); setHata(null); },
     onSuccess: (data) => setTestSonuc(data),
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
   if (isLoading) {

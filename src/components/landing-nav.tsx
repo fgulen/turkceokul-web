@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 import { Logo } from '@/components/logo';
 import { Globe } from 'lucide-react';
@@ -18,33 +19,17 @@ interface LandingNavProps {
   ctaHref?: string;
 }
 
-const MAIN_LINKS: Record<string, NavLink[]> = {
-  tr: [
-    { label: 'Platform', href: '/#platform' },
-    { label: 'Kitaplar', href: '/#kitaplar' },
-    { label: 'Fiyatlar', href: '/#fiyatlar' },
-    { label: 'Nasıl Çalışır?', href: '/nasil-calisir' },
-    { label: 'Öğretmenler', href: '/ogretmenler' },
-  ],
-  en: [
-    { label: 'Platform', href: '/#platform' },
-    { label: 'Books', href: '/#kitaplar' },
-    { label: 'Pricing', href: '/#fiyatlar' },
-    { label: 'How It Works', href: '/nasil-calisir' },
-    { label: 'Teachers', href: '/for-teachers' },
-  ],
-};
-
-const AUTH = {
-  tr: { login: 'Giriş Yap', cta: 'Ücretsiz Başla', ctaHref: '/kayit' },
-  en: { login: 'Log In', cta: 'Start Free', ctaHref: '/kayit' },
-};
+const NAV_LINKS: NavLink[] = [
+  { label: 'nav.platform', href: '/#platform' },
+  { label: 'nav.books', href: '/#kitaplar' },
+  { label: 'nav.pricing', href: '/#fiyatlar' },
+  { label: 'nav.howItWorks', href: '/nasil-calisir' },
+  { label: 'nav.teachers', href: '/ogretmenler' },
+];
 
 export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: LandingNavProps) {
-  const isEn = locale === 'en';
-  const auth = isEn ? AUTH.en : AUTH.tr;
-  const navLinks = links ?? (isEn ? MAIN_LINKS.en : MAIN_LINKS.tr);
-  const otherLocale = isEn ? 'TR' : 'EN';
+  const t = useTranslations();
+  const navLinks = links ?? NAV_LINKS;
 
   return (
     <nav
@@ -64,37 +49,35 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
           <Logo size="md" />
         </Link>
 
-        {/* Nav links — masaüstünde görünür */}
         {navLinks.length > 0 && (
           <div className="hidden md:flex" style={{ alignItems: 'center', gap: 24 }}>
-            {navLinks.map((l) =>
-              l.href.startsWith('#') ? (
+            {navLinks.map((l) => {
+              const label = t(l.label);
+              return l.href.startsWith('#') ? (
                 <a
                   key={l.label}
                   href={l.href}
-                  style={{ fontSize: 14, fontWeight: l.active ? 600 : 500, color: l.active ? '#1b75bc' : '#414751', textDecoration: 'none' }}
+                  style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
                 >
-                  {l.label}
+                  {label}
                 </a>
               ) : (
                 <Link
                   key={l.label}
                   href={l.href}
-                  style={{ fontSize: 14, fontWeight: l.active ? 600 : 500, color: l.active ? '#1b75bc' : '#414751', textDecoration: 'none' }}
+                  style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
                 >
-                  {l.label}
+                  {label}
                 </Link>
-              )
-            )}
+              );
+            })}
           </div>
         )}
 
-        {/* Sağ: locale switcher + auth */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Locale switcher — sadece masaüstünde */}
           <a
             href={alternateHref}
-            title={isEn ? 'Türkçeye geç' : 'Switch to English'}
+            title={t('nav.switchTitle')}
             className="hidden md:flex"
             style={{
               alignItems: 'center',
@@ -110,19 +93,19 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
             }}
           >
             <Globe style={{ width: 13, height: 13 }} />
-            {otherLocale}
+            {t('nav.switchLocale')}
           </a>
 
           <Link
             href="/giris"
             style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
           >
-            <span className="hidden md:inline">{auth.login}</span>
-            <span className="md:hidden">{isEn ? 'Log In' : 'Giriş'}</span>
+            <span className="hidden md:inline">{t('nav.logIn')}</span>
+            <span className="md:hidden">{t('nav.logIn')}</span>
           </Link>
 
           <Link
-            href={ctaHref ?? auth.ctaHref}
+            href={ctaHref ?? '/kayit'}
             style={{
               background: '#1b75bc',
               color: '#fff',
@@ -134,7 +117,7 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
               whiteSpace: 'nowrap',
             }}
           >
-            {ctaLabel ?? auth.cta}
+            {ctaLabel ?? t('nav.startFree')}
           </Link>
         </div>
       </div>

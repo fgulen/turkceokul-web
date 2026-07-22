@@ -16,6 +16,36 @@ interface Bulgu {
   mesaj: string;
 }
 
+interface DetayItem {
+  cevap?: string;
+  kelime1?: string;
+  kelime2?: string;
+  kelime3?: string;
+  kelime4?: string;
+  kelime5?: string;
+  kelime6?: string;
+  kelime7?: string;
+  kelime8?: string;
+  kelime9?: string;
+  kelime10?: string;
+  orderNo: number;
+  description?: string;
+  resimLink?: string;
+  sesLink?: string;
+}
+
+interface ActivityDetail {
+  id: string;
+  name: string;
+  bolum: string;
+  etkinlikTuru: string;
+  soruYonergesi?: string;
+  resimLink?: string;
+  sesLink?: string;
+  cevap?: string;
+  detaylar?: DetayItem[];
+}
+
 const bulgular: Bulgu[] = [];
 
 function bulguEkle(tip: Bulgu['tip'], etkinlikId: string, etkinlikAdi: string, etkinlikTuru: string, bolum: string, alan: string, mesaj: string) {
@@ -28,7 +58,7 @@ function dosyaVarMi(url: string | null): boolean {
   return url.startsWith('/Medya/') || url.startsWith('http');
 }
 
-function cevapKontrol(tur: string, detay: any): string | null {
+function cevapKontrol(tur: string, detay: ActivityDetail): string | null {
   // Her etkinlik türü için cevap alanının doğru olup olmadığını kontrol et
   // AkilliKart: cevap boş olmalı (flashcard)
   if (tur === 'AkilliKart') {
@@ -57,7 +87,7 @@ async function loginViaApi(): Promise<string> {
   return data.accessToken;
 }
 
-async function getActivityDetail(etkinlikId: string, token: string): Promise<any> {
+async function getActivityDetail(etkinlikId: string, token: string): Promise<ActivityDetail> {
   const r = await fetch(`${API_BASE}/api/etkinlik/${etkinlikId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -78,7 +108,7 @@ test('Zağmur Kitabı Denetimi - 1. Ders', async ({ page }) => {
 
   // 3. Her etkinlik için API'den detayları al
   for (const etkinlik of etkinlikler) {
-    let detay: any;
+    let detay: ActivityDetail;
     try {
       detay = await getActivityDetail(etkinlik.id, token);
     } catch {
@@ -189,7 +219,7 @@ test('Zağmur Kitabı Denetimi - 1. Ders', async ({ page }) => {
     await page.waitForTimeout(500);
 
     // Bu bölümdeki etkinlikleri bul
-    const bolumEtkinlikler = etkinlikler.filter((e: any) => e.bolum === tab);
+    const bolumEtkinlikler = etkinlikler.filter((e: ActivityDetail) => e.bolum === tab);
     if (bolumEtkinlikler.length === 0) continue;
 
     // İlk 3 etkinliği UI'da kontrol et

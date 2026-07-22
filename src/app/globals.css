@@ -9,6 +9,12 @@ body {
   max-width: 100vw;
 }
 
+/* Edge/IE'nin yerleşik şifre-göster ikonu custom Eye/EyeOff butonuyla çakışıp iki ikon gösteriyordu */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

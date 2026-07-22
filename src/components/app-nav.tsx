@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Link, usePathname, useRouter } from '@/navigation';
 import { BookOpen, Building2, Flame, Globe, Heart, LayoutDashboard, Library, LogOut, Settings, Sparkles, Trophy, User, Users, Wifi, Zap } from 'lucide-react';
@@ -29,6 +30,7 @@ const ROL_BADGE: Record<string, string> = {
 };
 
 export function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -74,7 +76,7 @@ export function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => v
               className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
             >
               <User className="size-3.5 text-slate-400" />
-              Profili Düzenle
+              {t('nav.app.editProfile')}
             </Link>
           </div>
 
@@ -84,7 +86,7 @@ export function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => v
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors"
             >
               <LogOut className="size-3.5" />
-              Çıkış Yap
+              {t('nav.app.logout')}
             </button>
           </div>
         </div>
@@ -138,6 +140,7 @@ function MobileBar({ items }: { items: MBItem[] }) {
 }
 
 export function AppNav() {
+  const t = useTranslations();
   const { user, logout } = useAuthStore();
   const hydrated = useAuthStore((s) => s._hasHydrated);
   const router = useRouter();
@@ -177,42 +180,42 @@ export function AppNav() {
         {mounted && hydrated && user && (
           <nav className="hidden md:flex items-center gap-1">
             {user.role === 'SuperAdmin' && <>
-              <NL href="/super-admin"       label="Super Admin"      active={!!pathname?.startsWith('/super-admin')} />
-              <NL href="/admin"             label="Admin Paneli"     active={!!pathname?.startsWith('/admin')} />
-              <NL href="/ogretmen"          label="Öğretmen Paneli"  active={!!pathname?.startsWith('/ogretmen')} />
-              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+              <NL href="/super-admin"       label={t('nav.app.superAdmin')}     active={!!pathname?.startsWith('/super-admin')} />
+              <NL href="/admin"             label={t('nav.app.adminPanel')}     active={!!pathname?.startsWith('/admin')} />
+              <NL href="/ogretmen"          label={t('nav.app.teacherPanel')}   active={!!pathname?.startsWith('/ogretmen')} />
+              <NL href="/kutuphane"         label={t('nav.app.library')}        active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'Koordinator' && <>
-              <NL href="/admin"             label="Admin Paneli"     active={!!pathname?.startsWith('/admin')} />
-              <NL href="/ogretmen"          label="Öğretmen Paneli"  active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
-              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
-              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+              <NL href="/admin"             label={t('nav.app.adminPanel')}     active={!!pathname?.startsWith('/admin')} />
+              <NL href="/ogretmen"          label={t('nav.app.teacherPanel')}   active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label={t('nav.app.aiContent')}     active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label={t('nav.app.library')}        active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'Editor' && (
-              <NL href="/editor/kutuphane"  label="Kütüphane"        active={!!pathname?.startsWith('/editor')} />
+              <NL href="/editor/kutuphane"  label={t('nav.app.library')}  active={!!pathname?.startsWith('/editor')} />
             )}
             {user.role === 'Ogretmen' && <>
-              <NL href="/ogretmen"          label="Panelim"          active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
-              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
-              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+              <NL href="/ogretmen"          label={t('nav.app.myPanel')}      active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label={t('nav.app.aiContent')}   active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label={t('nav.app.library')}      active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'KurumYoneticisi' && <>
-              <NL href="/kurum-yoneticisi"  label="Kurum Paneli"     active={!!pathname?.startsWith('/kurum-yoneticisi')} icon={<Building2 className="size-3.5" />} />
-              <NL href="/ogretmen"          label="Öğretmen Panelim" active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
-              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
-              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+              <NL href="/kurum-yoneticisi"  label={t('nav.app.institutionPanel')} active={!!pathname?.startsWith('/kurum-yoneticisi')} icon={<Building2 className="size-3.5" />} />
+              <NL href="/ogretmen"          label={t('nav.app.teacherPanel')}     active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label={t('nav.app.aiContent')}       active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label={t('nav.app.library')}          active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'UlkeTemsilcisi' && <>
-              <NL href="/ulke-temsilcisi"   label="Ülke Paneli"      active={!!pathname?.startsWith('/ulke-temsilcisi')} icon={<Globe className="size-3.5" />} />
-              <NL href="/ogretmen"          label="Öğretmen Panelim" active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
-              <NL href="/ogretmen/ai-icerik" label="AI İçerik"       active={pathname === '/ogretmen/ai-icerik'} />
-              <NL href="/kutuphane"         label="Kütüphane"        active={!!pathname?.startsWith('/kutuphane')} />
+              <NL href="/ulke-temsilcisi"   label={t('nav.app.countryPanel')}   active={!!pathname?.startsWith('/ulke-temsilcisi')} icon={<Globe className="size-3.5" />} />
+              <NL href="/ogretmen"          label={t('nav.app.teacherPanel')}   active={!!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik')} />
+              <NL href="/ogretmen/ai-icerik" label={t('nav.app.aiContent')}     active={pathname === '/ogretmen/ai-icerik'} />
+              <NL href="/kutuphane"         label={t('nav.app.library')}        active={!!pathname?.startsWith('/kutuphane')} />
             </>}
             {user.role === 'Ogrenci' && <>
-              <NL href="/pano"              label="Pano"             active={pathname === '/pano'} />
-              <NL href="/lig"               label="Lig"              active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
-              <NL href="/okuma"             label="Okuma"            active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} />
-              <NL href="/kahoot/katil"      label="Kahoot"           active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
+              <NL href="/pano"              label={t('nav.app.dashboard')}  active={pathname === '/pano'} />
+              <NL href="/lig"               label={t('nav.League')}         active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
+              <NL href="/okuma"             label={t('nav.app.reading')}    active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} />
+              <NL href="/kahoot/katil"      label="Kahoot"                  active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
             </>}
           </nav>
         )}
@@ -258,54 +261,54 @@ export function AppNav() {
     {/* Mobil bottom bar'lar — rol bazlı */}
     {mounted && hydrated && user?.role === 'SuperAdmin' && (
       <MobileBar items={[
-        { href: '/super-admin',        Icon: Settings,        label: 'Super Admin', active: !!pathname?.startsWith('/super-admin') },
-        { href: '/admin',              Icon: Users,           label: 'Admin',       active: !!pathname?.startsWith('/admin') },
-        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!pathname?.startsWith('/ogretmen') },
-        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+        { href: '/super-admin',        Icon: Settings,        label: t('nav.app.superAdmin'), active: !!pathname?.startsWith('/super-admin') },
+        { href: '/admin',              Icon: Users,           label: t('nav.app.adminPanel'), active: !!pathname?.startsWith('/admin') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: t('nav.app.teacherPanel'), active: !!pathname?.startsWith('/ogretmen') },
+        { href: '/kutuphane',          Icon: BookOpen,        label: t('nav.app.library'), active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'Koordinator' && (
       <MobileBar items={[
-        { href: '/admin',              Icon: Users,           label: 'Admin',       active: !!pathname?.startsWith('/admin') },
-        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
-        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
-        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+        { href: '/admin',              Icon: Users,           label: t('nav.app.adminPanel'), active: !!pathname?.startsWith('/admin') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: t('nav.app.teacherPanel'), active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: t('nav.app.aiContent'), active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: t('nav.app.library'), active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'Editor' && (
       <MobileBar items={[
-        { href: '/editor/kutuphane',   Icon: Library,         label: 'Kütüphane',   active: !!pathname?.startsWith('/editor') },
+        { href: '/editor/kutuphane',   Icon: Library,         label: t('nav.app.library'), active: !!pathname?.startsWith('/editor') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'Ogretmen' && !pathname?.endsWith('/canli') && (
       <MobileBar items={[
-        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Panelim',     active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
-        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
-        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: t('nav.app.myPanel'), active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: t('nav.app.aiContent'), active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: t('nav.app.library'), active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'KurumYoneticisi' && !pathname?.endsWith('/canli') && (
       <MobileBar items={[
-        { href: '/kurum-yoneticisi',   Icon: Building2,       label: 'Kurum',       active: !!pathname?.startsWith('/kurum-yoneticisi') },
-        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
-        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
-        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+        { href: '/kurum-yoneticisi',   Icon: Building2,       label: t('nav.app.institutionPanel'), active: !!pathname?.startsWith('/kurum-yoneticisi') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: t('nav.app.teacherPanel'), active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: t('nav.app.aiContent'), active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: t('nav.app.library'), active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'UlkeTemsilcisi' && !pathname?.endsWith('/canli') && (
       <MobileBar items={[
-        { href: '/ulke-temsilcisi',    Icon: Globe,           label: 'Ülke',        active: !!pathname?.startsWith('/ulke-temsilcisi') },
-        { href: '/ogretmen',           Icon: LayoutDashboard, label: 'Öğretmen',    active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
-        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: 'AI İçerik',   active: pathname === '/ogretmen/ai-icerik' },
-        { href: '/kutuphane',          Icon: BookOpen,        label: 'Kütüphane',   active: !!pathname?.startsWith('/kutuphane') },
+        { href: '/ulke-temsilcisi',    Icon: Globe,           label: t('nav.app.countryPanel'), active: !!pathname?.startsWith('/ulke-temsilcisi') },
+        { href: '/ogretmen',           Icon: LayoutDashboard, label: t('nav.app.teacherPanel'), active: !!(pathname?.startsWith('/ogretmen') && pathname !== '/ogretmen/ai-icerik') },
+        { href: '/ogretmen/ai-icerik', Icon: Sparkles,        label: t('nav.app.aiContent'), active: pathname === '/ogretmen/ai-icerik' },
+        { href: '/kutuphane',          Icon: BookOpen,        label: t('nav.app.library'), active: !!pathname?.startsWith('/kutuphane') },
       ]} />
     )}
     {mounted && hydrated && user?.role === 'Ogrenci' && !pathname?.startsWith('/kahoot') && (
       <MobileBar items={[
-        { href: '/pano',               Icon: LayoutDashboard, label: 'Pano',        active: pathname === '/pano' },
-        { href: '/lig',                Icon: Trophy,          label: 'Lig',         active: pathname === '/lig' },
-        { href: '/okuma',              Icon: BookOpen,        label: 'Okuma',       active: !!pathname?.startsWith('/okuma') },
-        { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot',      active: !!pathname?.startsWith('/kahoot') },
+        { href: '/pano',               Icon: LayoutDashboard, label: t('nav.app.dashboard'), active: pathname === '/pano' },
+        { href: '/lig',                Icon: Trophy,          label: t('nav.League'), active: pathname === '/lig' },
+        { href: '/okuma',              Icon: BookOpen,        label: t('nav.app.reading'), active: !!pathname?.startsWith('/okuma') },
+        { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot', active: !!pathname?.startsWith('/kahoot') },
       ]} />
     )}
     </>

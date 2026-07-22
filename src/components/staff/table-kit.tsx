@@ -71,7 +71,7 @@ export function buildPageRange(current: number, total: number): (number | '...')
 // Türkçe locale ile karışık tip sıralama (string'ler localeCompare, sayılar sayısal)
 export function trSirala<T>(liste: T[], key: keyof T & string, dir: 'asc' | 'desc'): T[] {
   const yon = dir === 'asc' ? 1 : -1;
-  return [...liste].sort((a: any, b: any) => {
+  return [...liste].sort((a: T, b: T) => {
     const av = a[key], bv = b[key];
     if (typeof av === 'string' || typeof bv === 'string')
       return yon * String(av ?? '').localeCompare(String(bv ?? ''), 'tr');
@@ -157,7 +157,7 @@ export function TopluSilButton({ sayi, onClick }: { sayi: number; onClick: () =>
 // Bulk endpoint yoksa: tekil DELETE'leri paralel çalıştırır, başarısız sayısını
 // döner (referans: Ülkeler toplu silme — "bağlı kurum/kayıt" gibi sebeplerle
 // bazı silmeler reddedilebilir, hepsi başarısız olmadan diğerleri uygulanır).
-export async function topluSilParalel<ID>(ids: ID[], silFn: (id: ID) => Promise<any>): Promise<number> {
+export async function topluSilParalel<ID>(ids: ID[], silFn: (id: ID) => Promise<unknown>): Promise<number> {
   const sonuclar = await Promise.allSettled(ids.map(id => silFn(id)));
   return sonuclar.filter(s => s.status === 'rejected').length;
 }

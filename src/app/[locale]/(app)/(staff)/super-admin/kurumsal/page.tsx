@@ -101,7 +101,7 @@ export default function KurumsalSatisPage() {
           disabled={gorunen.length === 0}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition-colors ml-auto">
           <Download className="size-3.5" />
-          Excel'e Aktar
+          Excel&apos;e Aktar
         </button>
       </div>
 
