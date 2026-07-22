@@ -225,6 +225,26 @@
       "ileri": "İleri"
     }
   },
+  "kahoot": {
+    "joinTitle": "Kahoot&apos;a Katıl",
+    "joinSubtitle": "Öğretmenden aldığın 6 haneli kodu gir",
+    "joinButton": "Oyuna Katıl",
+    "connecting": "Bağlanıyor...",
+    "joined": "Oyuna katıldın!",
+    "playersJoined": "oyuncu katıldı",
+    "waitingTeacher": "Öğretmenin oyunu başlatmasını bekle...",
+    "question": "Soru {current}/{total}",
+    "listenAudio": "Sesi Dinle",
+    "correctAnswer": "Doğru cevap!",
+    "wrongAnswer": "Yanlış cevap",
+    "points": "puan",
+    "waitingNext": "Sıradaki soru bekleniyor...",
+    "interimRanking": "Ara Sıralama",
+    "nextQuestion": "Sıradaki soru geliyor...",
+    "gameOver": "Oyun Bitti!",
+    "backToDashboard": "Panoya Dön",
+    "errorCode": "Oyun kodu bulunamadı veya oyun sona erdi."
+  },
   "okuma": {
     "title": "Okuma",
     "subtitle": "Seviyene uygun kitabı seç, bölüm bölüm oku.",

@@ -225,6 +225,26 @@
       "ileri": "Advanced"
     }
   },
+  "kahoot": {
+    "joinTitle": "Join Kahoot",
+    "joinSubtitle": "Enter the 6-digit code from your teacher",
+    "joinButton": "Join Game",
+    "connecting": "Connecting...",
+    "joined": "You joined the game!",
+    "playersJoined": "players joined",
+    "waitingTeacher": "Waiting for your teacher to start the game...",
+    "question": "Question {current}/{total}",
+    "listenAudio": "Listen to Audio",
+    "correctAnswer": "Correct answer!",
+    "wrongAnswer": "Wrong answer",
+    "points": "pts",
+    "waitingNext": "Waiting for the next question...",
+    "interimRanking": "Interim Ranking",
+    "nextQuestion": "Next question coming...",
+    "gameOver": "Game Over!",
+    "backToDashboard": "Back to Dashboard",
+    "errorCode": "Game code not found or game has ended."
+  },
   "okuma": {
     "title": "Reading",
     "subtitle": "Pick a book that matches your level and read chapter by chapter.",

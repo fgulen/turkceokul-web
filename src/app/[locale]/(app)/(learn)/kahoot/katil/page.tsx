@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle, Volume2 } from 'lucide-react';
 import { Link } from '@/navigation';
@@ -21,6 +22,7 @@ const CEVAP_RENKLERI = [
 const SESSION_KEY = 'kahoot_aktif_kod';
 
 export default function KahootKatilPage() {
+  const t = useTranslations();
   const { user, ready } = useAuthGuard();
   const kahoot = useKahoot();
 
@@ -112,7 +114,7 @@ export default function KahootKatilPage() {
       sessionStorage.setItem(SESSION_KEY, girilenKod);
       setAsama('bekleme');
     } catch {
-      setHataMsg('Oyun kodu bulunamadı veya oyun sona erdi.');
+      setHataMsg(t('kahoot.errorCode'));
     } finally {
       setYukleniyor(false);
     }
@@ -152,7 +154,7 @@ export default function KahootKatilPage() {
               {/* Progress */}
               <div className="flex-1">
                 <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground mb-1">
-                  <span>Soru {kahoot.soruBilgisi?.soruNo} / {kahoot.soruBilgisi?.toplamSoru}</span>
+                  <span>{t('kahoot.question', { current: kahoot.soruBilgisi?.soruNo ?? 0, total: kahoot.soruBilgisi?.toplamSoru ?? 0 })}</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
@@ -189,7 +191,7 @@ export default function KahootKatilPage() {
                       className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl font-semibold text-sm hover:bg-primary/20 transition-colors"
                     >
                       <Volume2 className="size-4" />
-                      Sesi Dinle
+                      {t('kahoot.listenAudio')}
                     </button>
                   )}
                   {kahoot.soruBilgisi?.soru && (
@@ -245,9 +247,9 @@ export default function KahootKatilPage() {
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Wifi className="size-8 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Kahoot&apos;a Katıl</h1>
+              <h1 className="text-2xl font-bold text-foreground mb-1">{t('kahoot.joinTitle')}</h1>
               <p className="text-muted-foreground text-sm mb-8">
-                Öğretmenden aldığın 6 haneli kodu gir
+                {t('kahoot.joinSubtitle')}
               </p>
 
               <input
@@ -273,7 +275,7 @@ export default function KahootKatilPage() {
                 disabled={kod.length !== 6 || yukleniyor}
                 className="mt-6 w-full py-4 bg-primary text-primary-foreground rounded-2xl text-lg font-bold hover:bg-primary-dark transition-colors disabled:opacity-50"
               >
-                {yukleniyor ? 'Bağlanıyor...' : 'Oyuna Katıl'}
+                {yukleniyor ? t('kahoot.connecting') : t('kahoot.joinButton')}
               </button>
             </div>
           </motion.div>
@@ -292,17 +294,17 @@ export default function KahootKatilPage() {
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Users className="size-8 text-primary" />
               </div>
-              <p className="text-muted-foreground text-sm mb-2">Oyuna katıldın!</p>
+              <p className="text-muted-foreground text-sm mb-2">{t('kahoot.joined')}</p>
               <div className="text-5xl font-black tracking-[0.2em] text-primary mb-6">
                 {aktifKod}
               </div>
               <div className="flex items-center justify-center gap-2 text-slate-600">
                 <Users className="size-4" />
                 <span className="font-semibold">{kahoot.oyuncuSayisi}</span>
-                <span className="text-sm">oyuncu katıldı</span>
+                <span className="text-sm">{t('kahoot.playersJoined')}</span>
               </div>
               <p className="text-muted-foreground text-sm mt-6 animate-pulse">
-                Öğretmenin oyunu başlatmasını bekle...
+                {t('kahoot.waitingTeacher')}
               </p>
             </div>
           </motion.div>
@@ -326,14 +328,14 @@ export default function KahootKatilPage() {
               <CheckCircle className="size-16 text-correct mx-auto mb-4" />
             )}
             <p className="text-xl font-bold text-foreground mb-2">
-              {kahoot.cevapDogru === false ? 'Yanlış cevap' : 'Doğru cevap!'}
+              {kahoot.cevapDogru === false ? t('kahoot.wrongAnswer') : t('kahoot.correctAnswer')}
             </p>
             <div className="text-5xl font-black text-primary">
               +{kahoot.kazanilanPuan}
             </div>
-            <p className="text-muted-foreground text-sm mt-2">puan</p>
+            <p className="text-muted-foreground text-sm mt-2">{t('kahoot.points')}</p>
             <p className="text-muted-foreground text-sm mt-4 animate-pulse">
-              Sıradaki soru bekleniyor...
+              {t('kahoot.waitingNext')}
             </p>
           </div>
           </motion.div>
@@ -351,7 +353,7 @@ export default function KahootKatilPage() {
             <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="bg-foreground px-6 py-4 text-center">
                 <Trophy className="size-6 text-secondary mx-auto mb-1" />
-                <p className="text-primary-foreground font-bold">Ara Sıralama</p>
+                <p className="text-primary-foreground font-bold">{t('kahoot.interimRanking')}</p>
               </div>
               <div className="divide-y divide-border">
                 {araLeaderboard.slice(0, 5).map(s => (
@@ -373,7 +375,7 @@ export default function KahootKatilPage() {
                 ))}
               </div>
               <p className="text-muted-foreground text-sm text-center py-4 animate-pulse">
-                Sıradaki soru geliyor...
+                {t('kahoot.nextQuestion')}
               </p>
             </div>
           </motion.div>
@@ -390,7 +392,7 @@ export default function KahootKatilPage() {
             <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="bg-gradient-to-br from-primary to-primary-dark px-6 py-8 text-center">
                 <Trophy className="size-12 text-secondary mx-auto mb-2" />
-                <h2 className="text-2xl font-black text-primary-foreground">Oyun Bitti!</h2>
+                <h2 className="text-2xl font-black text-primary-foreground">{t('kahoot.gameOver')}</h2>
               </div>
               <div className="p-4 space-y-2">
                 {kahoot.leaderboard.map(s => (
@@ -413,7 +415,7 @@ export default function KahootKatilPage() {
                       </span>
                       <span className="font-semibold text-foreground">{s.ad}</span>
                     </div>
-                    <span className="font-bold text-primary">{s.toplamPuan} puan</span>
+                    <span className="font-bold text-primary">{s.toplamPuan} {t('kahoot.points')}</span>
                   </div>
                 ))}
               </div>
@@ -422,7 +424,7 @@ export default function KahootKatilPage() {
                   href="/pano"
                   className="block w-full text-center py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary-dark transition-colors"
                 >
-                  Panoya Dön
+                  {t('kahoot.backToDashboard')}
                 </Link>
               </div>
             </div>
