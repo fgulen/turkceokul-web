@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useRef, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { ChevronRight, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -68,13 +69,14 @@ interface NextButtonProps {
 }
 
 export function NextButton({ isLast, onClick, disabled }: NextButtonProps) {
+  const t = useTranslations();
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
     >
-      {isLast ? 'Tamamla' : 'İleri'}
+      {isLast ? t('Complete') : t('Next')}
       <ChevronRight className="size-4" />
     </button>
   );

@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter, useLocale } from '@/navigation';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -8,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 export default function PinLoginPage() {
+  const t = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -26,7 +28,7 @@ export default function PinLoginPage() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       router.push('/pano', { locale });
     } catch {
-      setHata('Kullanıcı adı veya PIN hatalı.');
+      setHata(t('pinLogin.error'));
     } finally {
       setYukleniyor(false);
     }
@@ -40,12 +42,12 @@ export default function PinLoginPage() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8">
-          <h1 className="text-2xl font-bold mb-1">Giriş Yap</h1>
-          <p className="text-muted-foreground text-sm mb-6">Kullanıcı adı ve PIN&apos;ini gir</p>
+          <h1 className="text-2xl font-bold mb-1">{t('pinLogin.title')}</h1>
+          <p className="text-muted-foreground text-sm mb-6">{t('pinLogin.subtitle')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-xs font-medium mb-1">Kullanıcı Adı</label>
+              <label className="block text-xs font-medium mb-1">{t('pinLogin.usernameLabel')}</label>
               <input
                 required
                 value={kullaniciAdi}
@@ -57,7 +59,7 @@ export default function PinLoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">PIN</label>
+              <label className="block text-xs font-medium mb-1">{t('pinLogin.pinLabel')}</label>
               <input
                 required
                 type="password"
@@ -79,7 +81,7 @@ export default function PinLoginPage() {
               className="w-full py-2.5 bg-primary text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
             >
               {yukleniyor && <Loader2 className="size-4 animate-spin" />}
-              Giriş Yap
+              {t('pinLogin.submit')}
             </button>
           </form>
         </div>
