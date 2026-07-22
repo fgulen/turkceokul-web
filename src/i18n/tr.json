@@ -192,5 +192,21 @@
       "ortaUstu": "Orta-Üstü",
       "ileri": "İleri"
     }
+  },
+  "etkinlik": {
+    "heartDepleted": "Kalbin Bitti!",
+    "heartDepletedDesc": "30 dakika bekle ya da başka bir etkinlik yap, kalbin yenilenir.",
+    "returnToMap": "Haritaya Dön",
+    "retry": "Tekrar Dene",
+    "completed": "Harika iş! Etkinliği tamamladın.",
+    "failed": "Geçemedin. Tekrar dene!",
+    "accuracy": "Doğruluk",
+    "remainingHearts": "Kalan Kalp",
+    "answerBreakdown": "Cevap Dökümü",
+    "nextActivity": "Sonraki Etkinlik →",
+    "continue": "Devam Et →",
+    "submitError": "Cevap gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+    "combo": "{count} Combo",
+    "heartLost": "-{count} Kalp"
   }
 }

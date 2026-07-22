@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { use, useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
@@ -55,6 +56,7 @@ interface EtkinlikListItem {
 }
 
 function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDon: () => void }) {
+  const t = useTranslations();
   const btnRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => { btnRef.current?.focus(); }, []);
@@ -81,7 +83,7 @@ function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDo
       className="fixed inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center z-[60] p-6"
       role="dialog"
       aria-modal="true"
-      aria-label="Kalbin bitti"
+      aria-label={t('etkinlik.heartDepleted')}
       onKeyDown={handleKeyDown}
     >
       <div ref={dialogRef} className="bg-card border border-border rounded-[2rem] p-8 text-center max-w-xs w-full shadow-xl">
@@ -92,9 +94,9 @@ function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDo
         >
           <Heart className="size-16 fill-red-500 text-red-500" />
         </motion.div>
-        <h2 className="text-2xl font-extrabold mb-2">Kalbin Bitti!</h2>
+        <h2 className="text-2xl font-extrabold mb-2">{t('etkinlik.heartDepleted')}</h2>
         <p className="text-muted-foreground text-sm mb-7">
-          30 dakika bekle ya da başka bir etkinlik yap, kalbin yenilenir.
+          {t('etkinlik.heartDepletedDesc')}
         </p>
         <div className="flex flex-col gap-2">
           <button
@@ -102,13 +104,13 @@ function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDo
             onClick={onGeriDon}
             className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors focus:outline-none focus:ring-4 focus:ring-primary/40"
           >
-            Haritaya Dön
+            {t('etkinlik.returnToMap')}
           </button>
           <button
             onClick={onRetry}
             className="w-full py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            Tekrar Dene
+            {t('etkinlik.retry')}
           </button>
         </div>
       </div>
@@ -169,6 +171,7 @@ function ResultScreen({
   returnUrl: string | null;
   sonrakiUrl: string | null;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const updateUser = useAuthStore((s) => s.updateUser);
   const { play } = useGameSound();
@@ -216,7 +219,7 @@ function ResultScreen({
         </div>
 
         <p className="result-a2 text-muted-foreground text-sm mb-5">
-          {sonuc.basarili ? 'Harika iş! Etkinliği tamamladın.' : 'Geçemedin. Tekrar dene!'}
+          {sonuc.basarili ? t('etkinlik.completed') : t('etkinlik.failed')}
         </p>
 
         {/* XP + Combo + Kalp badges */}
@@ -229,13 +232,13 @@ function ResultScreen({
           )}
           {sonuc.combo >= 3 && (
             <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
-              x{sonuc.combo} Combo
+              {t('etkinlik.combo', { count: sonuc.combo })}
             </div>
           )}
           {sonuc.kalpAzaldi && (
             <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-red-100 text-red-500 font-bold text-sm">
               <Heart className="size-3.5" />
-              -{1} Kalp
+              {t('etkinlik.heartLost', { count: 1 })}
             </div>
           )}
         </div>
@@ -243,11 +246,11 @@ function ResultScreen({
         {/* Stats grid */}
         <div className="result-a4 grid grid-cols-2 gap-2 w-full mb-7">
           <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Doğruluk</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">{t('etkinlik.accuracy')}</p>
             <p className="font-bold text-foreground tabular-nums">{sonuc.puan}%</p>
           </div>
           <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Kalan Kalp</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">{t('etkinlik.remainingHearts')}</p>
             <p className="font-bold text-foreground">{sonuc.kalanKalp} / 5</p>
           </div>
         </div>
@@ -261,7 +264,7 @@ function ResultScreen({
               onClick={() => setDokumAcik((v) => !v)}
               className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
             >
-              Cevap Dökümü
+              {t('etkinlik.answerBreakdown')}
               <ChevronDown className={cn('size-3.5 transition-transform', dokumAcik && 'rotate-180')} />
             </button>
             {dokumAcik && (
@@ -302,13 +305,13 @@ function ResultScreen({
             onClick={() => devamUrl ? router.push(devamUrl) : router.back()}
             className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors"
           >
-            {sonrakiUrl ? 'Sonraki Etkinlik →' : 'Devam Et →'}
+            {sonrakiUrl ? t('etkinlik.nextActivity') : t('etkinlik.continue')}
           </button>
           <button
             onClick={onRetry}
             className="w-full py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            Tekrar Dene
+            {t('etkinlik.retry')}
           </button>
         </div>
       </div>
@@ -321,6 +324,7 @@ export default function EtkinlikPage({
 }: {
   params: Promise<{ etkinlikId: string }>;
 }) {
+  const t = useTranslations();
   const { etkinlikId } = use(params);
   const { user, ready } = useAuthGuard(undefined, true);
   const router = useRouter();
@@ -414,7 +418,7 @@ export default function EtkinlikPage({
     } catch {
       // API hatasında sessizce "0 puan / başarısız" göstermek öğrenciyi yanlış cevap
       // verdiğine inandırıyordu — asıl sorun gönderim hatasıydı. Toast ile ayırt ettir.
-      toast.error('Cevap gönderilemedi. Bağlantını kontrol edip tekrar dene.');
+      toast.error(t('etkinlik.submitError'));
       setSonuc({ puan: 0, basarili: false, kazanilanXp: 0, yeniToplam: user?.puan ?? 0, combo: 0, kalpAzaldi: false, kalanKalp: user?.kalp ?? 5 });
     } finally {
       setSubmitting(false);

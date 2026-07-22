@@ -53,9 +53,9 @@ interface OkumaKitabi {
 }
 
 const gorevLabelMap: Record<string, string> = {
-  DakikaCalis: 'pano.taskLabels.DakikaCalis',
+  DakikaCalış: 'pano.taskLabels.DakikaCalis',
   EtkinlikHatasiz: 'pano.taskLabels.EtkinlikHatasiz',
-  DueloDavet: 'pano.taskLabels.DueloDavet',
+  DüelloDavet: 'pano.taskLabels.DueloDavet',
 };
 
 export default function PanoPage() {

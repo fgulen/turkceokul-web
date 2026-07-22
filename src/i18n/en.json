@@ -192,5 +192,21 @@
       "ortaUstu": "Upper-Intermediate",
       "ileri": "Advanced"
     }
+  },
+  "etkinlik": {
+    "heartDepleted": "No Hearts Left!",
+    "heartDepletedDesc": "Wait 30 minutes or do another activity to regain hearts.",
+    "returnToMap": "Return to Map",
+    "retry": "Try Again",
+    "completed": "Great job! You completed the activity.",
+    "failed": "Didn't pass. Try again!",
+    "accuracy": "Accuracy",
+    "remainingHearts": "Remaining Hearts",
+    "answerBreakdown": "Answer Breakdown",
+    "nextActivity": "Next Activity →",
+    "continue": "Continue →",
+    "submitError": "Couldn't submit answers. Check your connection and try again.",
+    "combo": "{count} Combo",
+    "heartLost": "-{count} Heart"
   }
 }
