@@ -97,7 +97,6 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       <div className="bg-card border border-border rounded-2xl p-8 mb-6 text-center min-h-[100px] flex items-center justify-center">
         <p
           className="text-xl font-semibold leading-relaxed"
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: sanitizeHtml(sentence).replace(
               /\[___\]|_{3,}/g,

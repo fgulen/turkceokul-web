@@ -141,7 +141,6 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
         <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
           {parts.map((part, i) => (
             <span key={i}>
-              {/* eslint-disable-next-line react/no-danger */}
               <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
               {i < blankCount && (() => {
                 const optIdx = safe[i];

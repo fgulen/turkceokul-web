@@ -126,7 +126,6 @@ export function OkumaMetin({
       {/* Metin — tüm paragraflar scrollable */}
       <div className="space-y-5">
         {paragraflar.map((paragraf, pi) => (
-          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div
             key={pi}
             className={cn(
@@ -134,7 +133,6 @@ export function OkumaMetin({
               'selection:bg-yellow-200 selection:text-yellow-900'
             )}
             onMouseUp={(e) => handleMouseUp(e, paragraf)}
-            // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(paragraf) }}
           />
         ))}

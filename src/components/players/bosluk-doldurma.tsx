@@ -147,7 +147,6 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
         <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
           {parts.map((part, i) => (
             <span key={i}>
-              {/* eslint-disable-next-line react/no-danger */}
               <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
               {i < blankCount && (() => {
                 const val = safe[i];

@@ -75,8 +75,12 @@ export function insertIntoInput(
 }
 
 // Yazma etkinlikleri için standart puan hesaplama
+// toLowerCase() (locale'siz) Türkçe büyük I'yı (noktasız) 'i'ye çeviriyor,
+// 'ı'ya değil ('KIRMIZI'.toLowerCase() === 'kirmizi' !== 'kırmızı') — bu yüzden
+// büyük harfle yazılan doğru cevaplar yanlış sayılıyordu. toLocaleLowerCase('tr')
+// I→ı, İ→i eşlemesini doğru yapar.
 export function sadelestir(s: string) {
-  return s.trim().toLowerCase();
+  return s.trim().toLocaleLowerCase('tr');
 }
 
 export function stripTurkce(s: string) {
