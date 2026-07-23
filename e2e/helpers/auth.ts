@@ -13,10 +13,10 @@ export async function loginAsSuperAdmin(page: Page) {
 }
 
 export async function goToSuperAdminUlkeler(page: Page) {
-  await page.goto('/tr/super-admin');
-  // Sidebar nav öğeleri next-intl'in locale-aware <Link>'i ile render ediliyor
-  // (native <a>/role="link", <button> değil — bkz. staff-shell.tsx).
-  await page.getByRole('link', { name: /ülkeler/i }).click();
-  // Sidebar görünmeli
-  await page.waitForSelector('text=Ülkeler', { timeout: 8_000 });
+  // Sidebar linkine tıklayıp SPA nav'ı beklemek yerine doğrudan rotaya git —
+  // auth zaten localStorage'da, ve sidebar-click yaklaşımı hydration bitmeden
+  // tıklarsa (veya /super-admin genel bakış sayfası henüz hazır değilse) ara
+  // sıra "/tr"ye düşen bir race'e yol açıyordu (tests 1/2/3/6/10'da gözlendi).
+  await page.goto('/tr/super-admin/ulkeler');
+  await page.getByRole('heading', { name: 'Ülkeler' }).waitFor({ timeout: 8_000 });
 }

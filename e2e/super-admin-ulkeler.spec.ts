@@ -33,8 +33,8 @@ test.describe('Ülkeler Tab — Country Management', () => {
   // ─── 1. Sayfa Yükleme & Temel Yapı ──────────────────────────────────────
 
   test('1. Sidebar renders: header, search, list, pagination controls', async () => {
-    // Başlık
-    await expect(page.locator('text=Ülkeler')).toBeVisible();
+    // Başlık (h2) — "text=Ülkeler" hem sidebar linkine hem bu başlığa eşleşiyordu
+    await expect(page.getByRole('heading', { name: 'Ülkeler' })).toBeVisible();
 
     // Arama kutusu
     await expect(page.getByPlaceholder('Ülke ara...')).toBeVisible();
@@ -99,47 +99,40 @@ test.describe('Ülkeler Tab — Country Management', () => {
 
   // ─── 3. Arama (Search) ───────────────────────────────────────────────────
 
-  test('4. Search input fires API request with arama param after debounce', async () => {
+  test('4. Search input filters the visible list client-side', async () => {
     const searchInput = page.getByPlaceholder('Ülke ara...');
-    const searchTerm = 'Test';
+    const rows = page.locator('table tbody tr.group');
+    // İlk fetch tamamlanmadan sayılırsa 0 döner (henüz "isLoading") — önce bekle.
+    await expect(rows.first()).toBeVisible();
+    const before = await rows.count();
 
-    const [response] = await Promise.all([
-      page.waitForResponse(r =>
-        r.url().includes('/api/super-admin/ulkeler') &&
-        r.url().includes(`arama=${searchTerm}`) &&
-        r.status() === 200
-      ),
-      searchInput.fill(searchTerm),
-    ]);
+    // page.tsx tek fetch yapıp `tumUlkeler`i lokal filtreliyor (bkz. dosya üstü
+    // yorum: "tek fetch + client-side arama") — arama bir REST çağrısı değil.
+    await searchInput.fill('zzzzznotexistszzz');
+    await page.waitForTimeout(500); // 300ms debounce + render
+    await expect(rows).toHaveCount(0);
 
-    expect(response.url()).toContain('pageNumber=1'); // her aramada sayfa 1'e döner
+    // Temizle ki sonraki testler tam listeyi görsün
+    await searchInput.clear();
+    await page.waitForTimeout(500);
+    await expect(rows).not.toHaveCount(0);
+    expect(await rows.count()).toBe(before);
   });
 
-  test('5. X (clear) button appears while typing and resets search + page', async () => {
+  test('5. X (clear) button appears while typing and resets search', async () => {
     const searchInput = page.getByPlaceholder('Ülke ara...');
     await searchInput.fill('xyz');
+    await page.waitForTimeout(400); // debounce
 
-    // X butonu görünmeli
-    const clearBtn = page.locator('button').filter({ has: page.locator('svg') }).last();
-    // Daha güvenilir: X butonunu aria ya da konumuna göre bul
-    const xBtn = page.locator('input[placeholder="Ülke ara..."] ~ button').or(
-      page.locator('div').filter({ hasText: /ülke ara/i }).locator('button').last()
-    );
+    const clearBtn = page.locator('.relative').filter({ has: searchInput }).locator('button');
+    await expect(clearBtn).toBeVisible();
 
-    await expect(page.locator('.relative').filter({ has: searchInput }).locator('button')).toBeVisible();
-
-    // X'e tıkla
-    const [resetResponse] = await Promise.all([
-      page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler') && r.status() === 200),
-      page.locator('.relative').filter({ has: searchInput }).locator('button').click(),
-    ]);
+    await clearBtn.click();
 
     // Input temizlendi
     await expect(searchInput).toHaveValue('');
-    // Sayfa 1'e döndü
-    expect(resetResponse.url()).toContain('pageNumber=1');
     // X butonu kayboldu
-    await expect(page.locator('.relative').filter({ has: searchInput }).locator('button')).toHaveCount(0);
+    await expect(clearBtn).toHaveCount(0);
   });
 
   test('6. Empty state message shown when search yields no results', async () => {
@@ -151,38 +144,44 @@ test.describe('Ülkeler Tab — Country Management', () => {
 
   // ─── 4. Ülke Ekleme ──────────────────────────────────────────────────────
 
-  test('7. Adding a new country: appears on page 1, list refreshes', async () => {
+  test('7. Adding a new country: appears in list, list refreshes', async () => {
     const timestamp = Date.now();
     const newName = `QA-Ulke-${timestamp}`;
 
-    // + butonuna tıkla
-    await page.locator('button').filter({ has: page.locator('svg[data-lucide="plus"], svg') }).first().click();
+    // "Yeni Ülke" butonuna tıkla — generic svg-filtreli buton seçici mobil
+    // hamburger menüsünü (md:hidden) yakalıyordu; metne göre hedefle.
+    await page.getByRole('button', { name: /yeni ülke/i }).click();
     const nameInput = page.getByPlaceholder('Ülke adı...');
     await expect(nameInput).toBeVisible();
 
     await nameInput.fill(newName);
 
-    const [addResponse] = await Promise.all([
+    await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/super-admin/ulke') && r.request().method() === 'POST' && r.status() === 200),
       page.getByRole('button', { name: 'Ekle' }).click(),
     ]);
 
-    // Sayfalama 1'e döndü, yeni ülke listenin başında
+    // Liste yenilendi (invalidateQueries → refetch)
     await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler?') && r.status() === 200);
 
     // Input kapandı
     await expect(nameInput).toHaveCount(0);
 
-    // Yeni ülke sayfanın başında görünmeli (CreatedDate DESC sort)
-    const firstRow = page.locator('.group').first();
-    await expect(firstRow).toContainText(newName);
+    // Varsayılan sıralama isim-artan (CreatedDate DESC değil) — "QA-..." alfabetik
+    // olarak sayfa 1'de olmayabilir (client-side sayfalama); arayarak bul.
+    await page.getByPlaceholder('Ülke ara...').fill(newName);
+    await page.waitForTimeout(400);
+    const newRow = page.locator('table tbody tr.group').filter({ hasText: newName });
+    await expect(newRow).toBeVisible();
 
-    // Cleanup: sil
-    await firstRow.hover();
-    await firstRow.locator('button').last().click(); // Trash butonu
-    await page.locator('input[type="text"]').last().fill('DELETE');
-    await page.getByRole('button', { name: /onayla|sil/i }).last().click();
-    await page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'DELETE');
+    // Cleanup: sil (DeleteConfirmModal: "DELETE" yazılan input + "Sil" butonu)
+    await newRow.hover();
+    await newRow.locator('button').last().click(); // Trash butonu
+    await page.getByPlaceholder('DELETE').fill('DELETE');
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'DELETE'),
+      page.getByRole('button', { name: 'Sil' }).click(),
+    ]);
   });
 
   // ─── 5. Ülke Düzenleme (Edit SlideOver) ────────────────────────────────
@@ -210,13 +209,17 @@ test.describe('Ülkeler Tab — Country Management', () => {
     await expect(saveBtn).toBeDisabled();
 
     // Kapat
-    await page.getByRole('button', { name: /iptal/i }).click();
+    // /iptal/i regex hiç eşleşmiyordu: JS'in case-insensitive regex'i Türkçe
+    // büyük İ'yi (U+0130) ASCII 'i'ye fold etmiyor ('İ'.toLowerCase() === 'i̇',
+    // iki karakter) — buton metni sabit "İptal" olduğu için tam eşleşme kullan.
+    await page.getByRole('button', { name: 'İptal' }).click();
     await expect(page.locator('text=Ülke Düzenle')).toHaveCount(0);
   });
 
   test('9. Edit SlideOver: changing name enables Save, saves correctly', async () => {
-    const firstRow = page.locator('.group').first();
-    const originalName = await firstRow.locator('.text-sm.font-medium').first().textContent();
+    const firstRow = page.locator('table tbody tr.group').first();
+    // .text-sm.font-medium yanlıştı — text-sm ata <table>'da, isim hücresinde sadece font-medium var
+    const originalName = (await firstRow.locator('.font-medium').first().textContent())!.trim();
     await firstRow.hover();
     await firstRow.locator('button').nth(0).click();
 
@@ -229,7 +232,7 @@ test.describe('Ülkeler Tab — Country Management', () => {
     const saveBtn = page.getByRole('button', { name: /kaydet/i });
     await expect(saveBtn).toBeEnabled();
 
-    const [putRes] = await Promise.all([
+    await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'PUT' && r.status() === 200),
       saveBtn.click(),
     ]);
@@ -237,35 +240,41 @@ test.describe('Ülkeler Tab — Country Management', () => {
     // SlideOver kapandı
     await expect(page.locator('text=Ülke Düzenle')).toHaveCount(0);
 
-    // Optimistic cache: detail panel isim güncellendi (seçili ülke başlığı)
-    await expect(page.locator('h2').filter({ hasText: '-EDITED' })).toBeVisible({ timeout: 3000 });
+    // v1b DataTable: ayrı bir "detay paneli" yok — invalidateQueries sonrası
+    // liste yeniden çekiliyor, güncel isim satırda görünmeli.
+    const editedRow = page.locator('table tbody tr.group').filter({ hasText: `${originalName}-EDITED` });
+    await expect(editedRow).toBeVisible({ timeout: 3000 });
 
     // Geri al (cleanup)
-    await firstRow.hover();
-    await firstRow.locator('button').nth(0).click();
+    await editedRow.hover();
+    await editedRow.locator('button').nth(0).click();
     const nameInput2 = page.locator('label:has-text("Ülke Adı") ~ input');
     await nameInput2.clear();
-    await nameInput2.fill(originalName!.trim());
-    await page.getByRole('button', { name: /kaydet/i }).click();
-    await page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'PUT');
+    await nameInput2.fill(originalName);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'PUT'),
+      page.getByRole('button', { name: /kaydet/i }).click(),
+    ]);
   });
 
   test('10. noDim SlideOver: background list remains clickable', async () => {
-    const firstRow = page.locator('.group').first();
+    const rows = page.locator('table tbody tr.group');
+    const firstRow = rows.first();
     await firstRow.hover();
     await firstRow.locator('button').nth(0).click();
     await expect(page.locator('text=Ülke Düzenle')).toBeVisible();
 
-    // Arka planda overlay (bg-black/30) yok — listedeki ikinci satıra tıklanabilmeli
-    const secondRow = page.locator('.group').nth(1);
+    // Arka planda overlay (bg-black/30) yok — listedeki ikinci satır SlideOver açıkken
+    // gerçek tıklamayla ulaşılabilir olmalı (overlay pointer-events engellemez).
+    // Satır tıklaması detay rotasına (/ulkeler/[ulkeId]) navigate eder — bu, tıklamanın
+    // gerçekten geçtiğinin (force değil) kanıtı.
+    const secondRow = rows.nth(1);
     await expect(secondRow).toBeVisible();
 
-    // Direkt tıklanabilir (overlay pointer-events engellemez)
-    await secondRow.click({ force: false }); // force:false = gerçek tıklama testi
-
-    // Detail panel 2. ülke adını göstermeli
-    const secondName = await secondRow.locator('.font-medium').first().textContent();
-    await expect(page.locator('h2').filter({ hasText: secondName!.trim() })).toBeVisible();
+    await Promise.all([
+      page.waitForURL(/\/super-admin\/ulkeler\/\d+/),
+      secondRow.click({ force: false }),
+    ]);
   });
 
   // ─── 6. Dirty State Guard ────────────────────────────────────────────────
@@ -305,12 +314,15 @@ test.describe('Ülkeler Tab — Country Management', () => {
   // ─── 7. Öğretmen Type-Ahead ──────────────────────────────────────────────
 
   test('12. Teacher type-ahead shows results in "Name Surname (email)" format', async () => {
-    const firstRow = page.locator('.group').first();
+    const firstRow = page.locator('table tbody tr.group').first();
     await firstRow.hover();
     await firstRow.locator('button').nth(0).click();
     await expect(page.locator('text=Ülke Düzenle')).toBeVisible();
 
-    const teacherInput = page.getByPlaceholder(/öğretmen ara/i);
+    // Placeholder duruma göre değişir: atanmışsa "Değiştirmek için ara…",
+    // boşsa "Öğretmen ara…" — genel /ara/i regex'i sayfanın "Ülke ara..."
+    // arama kutusuyla da eşleşip strict-mode ihlali veriyordu; ikisine özel eşleş.
+    const teacherInput = page.getByPlaceholder(/değiştirmek için ara|öğretmen ara/i);
     await teacherInput.fill('a');
 
     // API çağrısını bekle
@@ -337,68 +349,78 @@ test.describe('Ülkeler Tab — Country Management', () => {
     }
 
     // Kapat
-    await page.getByRole('button', { name: /iptal/i }).click();
+    // /iptal/i regex hiç eşleşmiyordu: JS'in case-insensitive regex'i Türkçe
+    // büyük İ'yi (U+0130) ASCII 'i'ye fold etmiyor ('İ'.toLowerCase() === 'i̇',
+    // iki karakter) — buton metni sabit "İptal" olduğu için tam eşleşme kullan.
+    await page.getByRole('button', { name: 'İptal' }).click();
   });
 
   // ─── 8. Silme & Tam Reset ────────────────────────────────────────────────
 
-  test('13. Deleting a country: resets to page 1, clears search, deselects detail', async () => {
-    // Önce arama yap ve bir sayfa ilerle (eğer pagination varsa)
-    const nextBtn = page.locator('button', { hasText: '›' });
-    if (await nextBtn.count() > 0 && await nextBtn.isEnabled()) {
-      await nextBtn.click();
-      await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler'));
-    }
+  test('13. Deleting a country removes it from the list', async () => {
+    // v1b DataTable'da satır tıklaması artık /ulkeler/[id] detay rotasına
+    // navigate ediyor (eski inline "detay panel" yok) — o yüzden burada satıra
+    // hiç tıklamıyoruz, sadece hover+trash ile listeden siliyoruz.
+    const newName = `QA-Delete-${Date.now()}`;
 
-    // Yeni ülke ekle (test için temiz bir hedef)
-    await page.locator('button').filter({ has: page.locator('svg') }).first().click();
-    const addInput = page.getByPlaceholder('Ülke adı...');
-    await addInput.fill(`QA-Delete-${Date.now()}`);
-    await page.getByRole('button', { name: 'Ekle' }).click();
-    await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler?'));
+    await page.getByRole('button', { name: /yeni ülke/i }).click();
+    await page.getByPlaceholder('Ülke adı...').fill(newName);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/super-admin/ulke') && r.request().method() === 'POST' && r.status() === 200),
+      page.getByRole('button', { name: 'Ekle' }).click(),
+    ]);
+    await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler?') && r.status() === 200);
 
-    // Yeni ülke page 1'de, başta
-    const newRow = page.locator('.group').first();
-    await newRow.click(); // detayı seç
-    await expect(page.locator('h2').filter({ hasText: /QA-Delete/ })).toBeVisible();
+    // "QA-..." alfabetik sırada sayfa 1'de olmayabilir (client-side sayfalama) — arayarak bul.
+    await page.getByPlaceholder('Ülke ara...').fill(newName);
+    await page.waitForTimeout(400);
+    const newRow = page.locator('table tbody tr.group').filter({ hasText: newName });
+    await expect(newRow).toBeVisible();
 
-    // Sil
     await newRow.hover();
-    const trashBtn = newRow.locator('button').last();
-    await trashBtn.click();
-
-    // DeleteConfirmModal
-    const modal = page.locator('[role="dialog"], .fixed').last();
-    const deleteInput = modal.locator('input[type="text"]').or(page.locator('input[placeholder*="DELETE"]'));
-    if (await deleteInput.count() > 0) {
-      await deleteInput.fill('DELETE');
-    }
-    const confirmBtn = page.getByRole('button', { name: /onayla|sil|evet/i }).last();
+    await newRow.locator('button').last().click(); // Trash butonu
+    await page.getByPlaceholder('DELETE').fill('DELETE');
 
     const [delRes] = await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/super-admin/ulke/') && r.request().method() === 'DELETE'),
-      confirmBtn.click(),
+      page.getByRole('button', { name: 'Sil' }).click(),
     ]);
-
     expect(delRes.status()).toBe(200);
 
-    // Sayfa 1'e döndü
+    // Liste yenilendi, silinen ülke artık listede yok (arama hâlâ o isimle filtreli)
     await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler?') && r.status() === 200);
+    await expect(page.locator('table tbody tr.group').filter({ hasText: newName })).toHaveCount(0);
+  });
+});
 
-    // Detay panel temizlendi
-    await expect(page.locator('text=Sol listeden bir ülke seçin')).toBeVisible();
+// ─── 9. API Yanıt Yapısı ───────────────────────────────────────────────────
+//
+// Ayrı describe + kendi page'i: yukarıdaki 13 UI testiyle aynı paylaşılan
+// oturumu/page'i kullanmıyor. Denendi ve GERİ ALINDI: test 14 içinde
+// /api/auth/login'e tekrar login atıp üstteki paylaşılan page'in oturumunu
+// geçersiz kılmak — backend tek-oturum/refresh-token invalidation'ı
+// tetikliyordu. Burada login KENDİ page'i için ve sadece BİR KEZ oluyor,
+// hemen ardından 2 hızlı GET atılıyor — üstteki 13 testin süresine
+// (dolayısıyla olası token expiry'sine) hiç maruz kalmıyor.
+test.describe('Ülkeler Tab — API yanıt şekli', () => {
+  let apiPage: Page;
+  let token: string;
 
-    // Arama temizlendi
-    await expect(page.getByPlaceholder('Ülke ara...')).toHaveValue('');
+  test.beforeAll(async ({ browser }) => {
+    apiPage = await browser.newPage();
+    await loginAsSuperAdmin(apiPage);
+    const raw = await apiPage.evaluate(() => localStorage.getItem('auth'));
+    const parsed = raw ? JSON.parse(raw) : null;
+    token = parsed?.state?.accessToken ?? parsed?.accessToken ?? '';
   });
 
-  // ─── 9. API Yanıt Yapısı ─────────────────────────────────────────────────
+  test.afterAll(async () => {
+    await apiPage.close();
+  });
 
   test('14. API response shape: liste, totalCount, currentPage, totalPages', async () => {
-    const response = await page.request.get('http://localhost:5221/api/super-admin/ulkeler?pageNumber=1&pageSize=20', {
-      headers: {
-        Authorization: `Bearer ${await getStoredToken(page)}`,
-      },
+    const response = await apiPage.request.get('http://localhost:5221/api/super-admin/ulkeler?pageNumber=1&pageSize=20', {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     expect(response.status()).toBe(200);
@@ -425,8 +447,8 @@ test.describe('Ülkeler Tab — Country Management', () => {
   });
 
   test('15. Newest country sorts first (CreatedDate DESC)', async () => {
-    const response = await page.request.get('http://localhost:5221/api/super-admin/ulkeler?pageNumber=1&pageSize=20', {
-      headers: { Authorization: `Bearer ${await getStoredToken(page)}` },
+    const response = await apiPage.request.get('http://localhost:5221/api/super-admin/ulkeler?pageNumber=1&pageSize=20', {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     type UlkeListeItem = { createdDate?: string; CreatedDate?: string };
@@ -442,17 +464,3 @@ test.describe('Ülkeler Tab — Country Management', () => {
     }
   });
 });
-
-// ─── Yardımcı: Auth token'ı localStorage'dan al ───────────────────────────
-
-async function getStoredToken(page: Page): Promise<string> {
-  const raw = await page.evaluate(() => localStorage.getItem('auth'));
-  if (!raw) return '';
-  try {
-    const parsed = JSON.parse(raw);
-    // Zustand persist: { state: { accessToken } }
-    return parsed?.state?.accessToken ?? parsed?.accessToken ?? '';
-  } catch {
-    return '';
-  }
-}
