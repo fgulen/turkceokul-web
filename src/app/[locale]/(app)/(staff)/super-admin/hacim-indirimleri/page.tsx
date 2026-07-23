@@ -36,7 +36,16 @@ export default function SuperAdminHacimIndirimleriPage() {
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 2000);
     },
-    onError: (e: any) => setErrorMsg(e.response?.data ?? 'Kaydedilemedi.'),
+    onError: (e: unknown) => {
+      let errorMessage = 'Kaydedilemedi.';
+      if (e && typeof e === 'object' && 'response' in e) {
+        const response = (e as Record<string, unknown>).response;
+        if (response && typeof response === 'object' && 'data' in response) {
+          errorMessage = String(response.data);
+        }
+      }
+      setErrorMsg(errorMessage);
+    },
   });
 
   function updateRow(i: number, patch: Partial<Kademe>) {

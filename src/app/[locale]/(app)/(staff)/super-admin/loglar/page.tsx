@@ -4,6 +4,16 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
+interface AuditLog {
+  id: number;
+  eylem: string;
+  entityType: string;
+  entityId?: number | string;
+  detay?: string;
+  admin: string;
+  tarih: string;
+}
+
 const ENTITY_LABELS: Record<string, string> = {
   DersKitabi: 'Kitap',
   User: 'Kullanıcı',
@@ -22,7 +32,7 @@ function eylemRenk(eylem: string): string {
 }
 function LoglarTab() {
   const [logFilter, setLogFilter] = useState('Tümü');
-  const { data: auditLog } = useQuery({
+  const { data: auditLog } = useQuery<AuditLog[]>({
     queryKey: ['sa-audit-log'],
     queryFn: () => api.get('/api/super-admin/audit-log').then(r => r.data),
   });
@@ -34,13 +44,13 @@ function LoglarTab() {
       </div>
 
       {/* Filtre pilleri */}
-      {(auditLog as any[] ?? []).length > 0 && (() => {
-        const logs = auditLog as any[];
-        const tipler = ['Tümü', ...Array.from(new Set(logs.map((l: any) => l.entityType as string)))];
+      {(auditLog ?? []).length > 0 && (() => {
+        const logs = auditLog ?? [];
+        const tipler = ['Tümü', ...Array.from(new Set(logs.map((l: AuditLog) => l.entityType)))];
         return (
           <div className="px-5 pt-3 pb-2 border-b border-slate-100 flex gap-2 flex-wrap">
             {tipler.map((tip) => {
-              const count = tip === 'Tümü' ? logs.length : logs.filter((l: any) => l.entityType === tip).length;
+              const count = tip === 'Tümü' ? logs.length : logs.filter((l: AuditLog) => l.entityType === tip).length;
               const active = logFilter === tip;
               return (
                 <button
@@ -63,11 +73,11 @@ function LoglarTab() {
 
       <div className="divide-y divide-slate-50">
         {(() => {
-          const logs = (auditLog as any[] ?? []);
-          const filtered = logFilter === 'Tümü' ? logs : logs.filter((l: any) => l.entityType === logFilter);
+          const logs = auditLog ?? [];
+          const filtered = logFilter === 'Tümü' ? logs : logs.filter((l: AuditLog) => l.entityType === logFilter);
           if (!logs.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Henüz işlem yok</p>;
           if (!filtered.length) return <p className="px-5 py-6 text-sm text-slate-400 text-center">Bu kategoride işlem yok</p>;
-          return filtered.slice(0, 20).map((log: any) => (
+          return filtered.slice(0, 20).map((log: AuditLog) => (
             <div key={log.id} className="px-5 py-3 flex items-start gap-3">
               <span className={`shrink-0 mt-0.5 text-xs px-2 py-0.5 rounded font-medium ${eylemRenk(log.eylem)}`}>
                 {log.eylem}

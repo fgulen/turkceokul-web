@@ -15,14 +15,26 @@ import {
   AramaInput, Sayfalama, SortTh, trSirala, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton,
 } from '@/components/staff/table-kit';
 
+interface Kitap {
+  id: string;
+  name: string;
+  seviye: string | null;
+  uniteSayisi: number;
+  visible: boolean;
+  onaylandi: boolean;
+  kitapSeti?: string | null;
+  seri?: string | null;
+  orderNo: number;
+}
+
 type SortKey = 'name' | 'seviye' | 'uniteSayisi' | 'visible' | 'onaylandi';
 
 function KitaplarTab() {
   const qc = useQueryClient();
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
-  const [editKitap, setEditKitap] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [editKitap, setEditKitap] = useState<Kitap | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Kitap | null>(null);
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<string>();
   const [topluOnay, setTopluOnay] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('name', () => setSayfa(1));
@@ -32,15 +44,15 @@ function KitaplarTab() {
     queryFn: () => api.get('/api/super-admin/kitaplar', { params: { arama } }).then(r => r.data),
   });
 
-  const kitaplar = useMemo(() => trSirala(kitaplarHam as any[], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
+  const kitaplar = useMemo(() => trSirala(kitaplarHam as Kitap[], sortKey, sortDir), [kitaplarHam, sortKey, sortDir]);
 
   const SAYFA_BOYUTU = 20;
-  const totalPages = Math.max(1, Math.ceil((kitaplar as any[]).length / SAYFA_BOYUTU));
+  const totalPages = Math.max(1, Math.ceil((kitaplar as Kitap[]).length / SAYFA_BOYUTU));
   const guvenliSayfa = Math.min(sayfa, totalPages);
-  const sayfadakiler = (kitaplar as any[]).slice((guvenliSayfa - 1) * SAYFA_BOYUTU, guvenliSayfa * SAYFA_BOYUTU);
+  const sayfadakiler = (kitaplar as Kitap[]).slice((guvenliSayfa - 1) * SAYFA_BOYUTU, guvenliSayfa * SAYFA_BOYUTU);
 
   const guncelleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Kitap> }) =>
       api.put(`/api/super-admin/kitap/${id}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setEditKitap(null); },
   });
@@ -63,7 +75,7 @@ function KitaplarTab() {
           <div className="flex items-center gap-2">
             <BookOpen className="size-4 text-purple-600" />
             <h2 className="text-sm font-semibold text-slate-800">Ders Kitapları</h2>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{(kitaplar as any[]).length}</span>
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{(kitaplar as Kitap[]).length}</span>
           </div>
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ders kitabı ara..." />
           <div className="flex items-center gap-2 ml-auto">
@@ -78,7 +90,7 @@ function KitaplarTab() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <TopluSecimTh gorunenIdler={kitaplar.map((k: any) => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+              <TopluSecimTh gorunenIdler={kitaplar.map((k: Kitap) => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
               <SortTh colKey="seviye" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Seviye</SortTh>
               <SortTh colKey="uniteSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ünite</SortTh>
@@ -88,7 +100,7 @@ function KitaplarTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sayfadakiler.map((k: any) => (
+            {sayfadakiler.map((k: Kitap) => (
               <tr key={k.id} className="odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/30">
                 <TopluSecimTd id={k.id} secili={secili} onToggle={toggleBir} />
                 <td className="px-4 py-2">
@@ -140,7 +152,7 @@ function KitaplarTab() {
         </table>
       </div>
 
-      <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={(kitaplar as any[]).length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+      <Sayfalama sayfa={guvenliSayfa} totalPages={totalPages} toplam={(kitaplar as Kitap[]).length} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
 
       <SlideOver
         open={!!editKitap}
@@ -188,15 +200,40 @@ function KitaplarTab() {
   );
 }
 
-function KitapEditForm({ kitap, onSave }: { kitap: any; onSave: (d: any) => void }) {
-  const [form, setForm] = useState({ name: kitap.name, seviye: kitap.seviye ?? '', kitapSeti: kitap.kitapSeti ?? '', seri: kitap.seri ?? '', orderNo: kitap.orderNo, visible: kitap.visible, onaylandi: kitap.onaylandi });
+interface KitapEditFormProps {
+  kitap: Kitap;
+  onSave: (d: Partial<Kitap>) => void;
+}
+
+interface KitapEditFormData {
+  name: string;
+  seviye: string;
+  kitapSeti: string;
+  seri: string;
+  orderNo: number;
+  visible: boolean;
+  onaylandi: boolean;
+}
+
+type StringFieldKey = 'name' | 'seviye' | 'kitapSeti' | 'seri';
+type BooleanFieldKey = 'visible' | 'onaylandi';
+
+function KitapEditForm({ kitap, onSave }: KitapEditFormProps) {
+  const [form, setForm] = useState<KitapEditFormData>({ name: kitap.name, seviye: kitap.seviye ?? '', kitapSeti: kitap.kitapSeti ?? '', seri: kitap.seri ?? '', orderNo: kitap.orderNo, visible: kitap.visible, onaylandi: kitap.onaylandi });
+
+  const stringFields: Array<[StringFieldKey, string]> = [
+    ['name', 'Ad'],
+    ['seviye', 'Seviye (A1, B2...)'],
+    ['kitapSeti', 'Kitap Seti'],
+    ['seri', 'Seri (kurumsal katalogda kategori olarak gösterilir)'],
+  ];
 
   return (
     <form id="kitap-edit-form" onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
-      {[['name', 'Ad'], ['seviye', 'Seviye (A1, B2...)'], ['kitapSeti', 'Kitap Seti'], ['seri', 'Seri (kurumsal katalogda kategori olarak gösterilir)']].map(([key, label]) => (
+      {stringFields.map(([key, label]) => (
         <div key={key}>
           <label className="text-xs font-medium text-slate-600 block mb-1">{label}</label>
-          <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+          <input value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
         </div>
       ))}
@@ -206,10 +243,10 @@ function KitapEditForm({ kitap, onSave }: { kitap: any; onSave: (d: any) => void
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
       </div>
       <div className="flex gap-4 pt-1">
-        {[['visible', 'Görünür'], ['onaylandi', 'Onaylı']].map(([key, label]) => (
+        {(['visible', 'onaylandi'] as const satisfies BooleanFieldKey[]).map(key => (
           <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} />
-            {label}
+            <input type="checkbox" checked={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} />
+            {key === 'visible' ? 'Görünür' : 'Onaylı'}
           </label>
         ))}
       </div>

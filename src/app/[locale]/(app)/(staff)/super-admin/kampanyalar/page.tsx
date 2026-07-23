@@ -17,6 +17,14 @@ interface Kampanya {
   aktifMi: boolean;
 }
 
+type KampanyaInput = Omit<Kampanya, 'id'>;
+
+interface ApiErrorResponse {
+  response?: {
+    data?: unknown;
+  };
+}
+
 function toDateInput(iso: string) {
   return iso ? iso.slice(0, 10) : '';
 }
@@ -35,21 +43,34 @@ export default function SuperAdminKampanyalarPage() {
   });
 
   const olusturMutation = useMutation({
-    mutationFn: (data: any) => api.post('/api/super-admin/kampanya', data),
+    mutationFn: (data: KampanyaInput) => api.post('/api/super-admin/kampanya', data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kampanyalar'] }); setEditKampanya(null); setErrorMsg(null); },
-    onError: (e: any) => setErrorMsg(e.response?.data ?? 'Kampanya oluşturulamadı.'),
+    onError: (e: unknown) => {
+      const errorData = (e as ApiErrorResponse)?.response?.data;
+      const msg = typeof errorData === 'string' ? errorData : 'Kampanya oluşturulamadı.';
+      setErrorMsg(msg);
+    },
   });
 
   const guncelleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/super-admin/kampanya/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: KampanyaInput }) => api.put(`/api/super-admin/kampanya/${id}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kampanyalar'] }); setEditKampanya(null); setErrorMsg(null); },
-    onError: (e: any) => setErrorMsg(e.response?.data ?? 'Kampanya güncellenemedi.'),
+    onError: (e: unknown) => {
+      const errorData = (e as ApiErrorResponse)?.response?.data;
+      const msg = typeof errorData === 'string' ? errorData : 'Kampanya güncellenemedi.';
+      setErrorMsg(msg);
+    },
   });
 
   const silMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/super-admin/kampanya/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kampanyalar'] }); setDeleteTarget(null); setErrorMsg(null); },
-    onError: (e: any) => { setErrorMsg(e.response?.data ?? 'Kampanya silinemedi.'); setDeleteTarget(null); },
+    onError: (e: unknown) => {
+      const errorData = (e as ApiErrorResponse)?.response?.data;
+      const msg = typeof errorData === 'string' ? errorData : 'Kampanya silinemedi.';
+      setErrorMsg(msg);
+      setDeleteTarget(null);
+    },
   });
 
   if (!ready || !user) return null;
@@ -162,7 +183,7 @@ export default function SuperAdminKampanyalarPage() {
   );
 }
 
-function KampanyaForm({ kampanya, onSave }: { kampanya: Kampanya | null; onSave: (d: any) => void }) {
+function KampanyaForm({ kampanya, onSave }: { kampanya: Kampanya | null; onSave: (d: KampanyaInput) => void }) {
   const [form, setForm] = useState({
     ad: kampanya?.ad ?? '',
     indirimOrani: kampanya?.indirimOrani ?? 10,

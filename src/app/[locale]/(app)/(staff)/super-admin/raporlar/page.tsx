@@ -5,8 +5,27 @@ import { RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { ROL_RENKLERI } from '../shared';
 
+interface RolDagilimi {
+  rol: string;
+  sayi: number;
+}
+
+interface KitapTamamlama {
+  kitapAdi: string;
+  tamamlamaSayisi: number;
+}
+
+interface Raporlar {
+  son30GunAktif: number;
+  bugunKayit: number;
+  toplamEtkinlikCevap?: number;
+  rolDagilimi: RolDagilimi[];
+  enCokTamamlanan: KitapTamamlama[];
+  toplamKullanici: number;
+}
+
 function RaporlarTab() {
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<Raporlar>({
     queryKey: ['sa-raporlar'],
     queryFn: () => api.get('/api/super-admin/raporlar').then(r => r.data),
   });
@@ -14,7 +33,7 @@ function RaporlarTab() {
   if (isLoading) return <div className="text-sm text-slate-400 py-8 text-center">Yükleniyor...</div>;
   if (!data) return null;
 
-  const maxTamamlama = Math.max(...(data.enCokTamamlanan ?? []).map((x: any) => x.tamamlamaSayisi), 1);
+  const maxTamamlama = Math.max(...(data.enCokTamamlanan ?? []).map((x: KitapTamamlama) => x.tamamlamaSayisi), 1);
 
   return (
     <div className="space-y-6">
@@ -41,7 +60,7 @@ function RaporlarTab() {
         <div className="bg-white border border-slate-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Rol Dağılımı</h3>
           <div className="space-y-2">
-            {(data.rolDagilimi as any[] ?? []).map(({ rol, sayi }: any) => (
+            {(data.rolDagilimi ?? []).map(({ rol, sayi }: RolDagilimi) => (
               <div key={rol} className="flex items-center gap-3">
                 <span className={`text-xs font-medium w-28 shrink-0 ${ROL_RENKLERI[rol]?.split(' ')[1] ?? 'text-slate-600'}`}>{rol}</span>
                 <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
@@ -56,7 +75,7 @@ function RaporlarTab() {
         <div className="bg-white border border-slate-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">En Çok Tamamlanan Kitaplar</h3>
           <div className="space-y-2">
-            {(data.enCokTamamlanan as any[] ?? []).map(({ kitapAdi, tamamlamaSayisi }: any) => (
+            {(data.enCokTamamlanan ?? []).map(({ kitapAdi, tamamlamaSayisi }: KitapTamamlama) => (
               <div key={kitapAdi} className="flex items-center gap-3">
                 <span className="text-xs text-slate-600 flex-1 truncate">{kitapAdi}</span>
                 <div className="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">

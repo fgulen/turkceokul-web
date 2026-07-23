@@ -17,6 +17,13 @@ export interface UlkeOzet {
   ogretmenAdi: string | null;
 }
 
+interface Ogretmen {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+}
+
 interface Props {
   ulke: UlkeOzet | null;
   onClose: () => void;
@@ -136,7 +143,7 @@ export function UlkeDuzenleSlideOver({ ulke, onClose, onDirtyChange }: Props) {
               />
               {showDropdown && ogretmenler.length > 0 && (
                 <div className="absolute z-20 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto">
-                  {ogretmenler.map((u: any) => (
+                  {ogretmenler.map((u: Ogretmen) => (
                     <button
                       key={u.id}
                       onMouseDown={e => e.preventDefault()}

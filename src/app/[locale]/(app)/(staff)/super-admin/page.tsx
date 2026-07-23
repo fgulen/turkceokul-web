@@ -7,6 +7,25 @@ import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { ROL_RENKLERI, apiHataMesaji } from './shared';
 
+interface Siparis {
+  id: number;
+  kurumId: number | null;
+  kurumAdi: string;
+  dersKitabiId: number;
+  urunAdi: string | null;
+  ogrenciKapasite: number | null;
+  toplamTutar: number | null;
+  tarih: string;
+  yetkiliAdi: string | null;
+  yetkiliEmail: string | null;
+  ulkeAdi: string;
+  telefon: string | null;
+  egitimYili: string;
+  sinifSayisi: number;
+  aktifOgrenci: number;
+  mevcutLisansTipi: string;
+}
+
 function GenelBakis() {
   const { data: stats } = useQuery({
     queryKey: ['sa-istatistikler'],
@@ -60,17 +79,17 @@ function GenelBakis() {
       )}
 
       {/* Bekleyen siparişler */}
-      {(bekleyenSiparisler as any[]).length > 0 && (
+      {(bekleyenSiparisler as Siparis[]).length > 0 && (
         <div className="bg-white border border-amber-200 rounded-xl">
           <div className="px-5 py-4 border-b border-amber-100 flex items-center gap-2">
             <Package className="size-4 text-amber-600" />
-            <h3 className="text-sm font-semibold text-amber-700 flex-1">Bekleyen Siparişler ({(bekleyenSiparisler as any[]).length})</h3>
+            <h3 className="text-sm font-semibold text-amber-700 flex-1">Bekleyen Siparişler ({(bekleyenSiparisler as Siparis[]).length})</h3>
             <Link href="/super-admin/kurumsal" className="text-xs font-medium text-amber-700 hover:text-amber-900">
               Tüm siparişler →
             </Link>
           </div>
           <div className="p-3 space-y-3">
-            {(bekleyenSiparisler as any[]).map((s: any) => (
+            {(bekleyenSiparisler as Siparis[]).map((s: Siparis) => (
               <BekleyenSiparisRow key={s.id} siparis={s} />
             ))}
           </div>
@@ -80,7 +99,7 @@ function GenelBakis() {
   );
 }
 
-function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
+function BekleyenSiparisRow({ siparis: s }: { siparis: Siparis }) {
   const qc = useQueryClient();
   const [hata, setHata] = useState<string | null>(null);
   const [duzenle, setDuzenle] = useState(false);
@@ -122,13 +141,13 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
     mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/onayla`),
     onMutate: () => setHata(null),
     onSuccess: invalidate,
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
   const iptalMutation = useMutation({
     mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/iptal`),
     onMutate: () => setHata(null),
     onSuccess: invalidate,
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
   const kaydetMutation = useMutation({
     mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}`, {
@@ -137,7 +156,7 @@ function BekleyenSiparisRow({ siparis: s }: { siparis: any }) {
     }),
     onMutate: () => setHata(null),
     onSuccess: () => { setDuzenle(false); invalidate(); },
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
   function toggleDuzenle() {

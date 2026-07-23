@@ -18,6 +18,16 @@ import { UlkeDuzenleSlideOver, type UlkeOzet } from '../ulke-duzenle';
 
 type Bolum = 'kurumlar' | 'temsilciler' | 'kitaplar' | 'siniflar';
 
+interface UlkeSatir {
+  id: number;
+  name: string;
+  ogretmenId: number | null;
+  ogretmenAdi: string | null;
+  kurumSayisi: number;
+  ogrenciSayisi: number;
+  visible: boolean;
+}
+
 const BOLUMLER: [Bolum, string][] = [
   ['kurumlar', 'Kurumlar'],
   ['temsilciler', 'Temsilciler'],
@@ -50,7 +60,7 @@ export default function UlkeDetayPage() {
       params: { pageNumber: 1, pageSize: 500 }
     }).then(r => r.data),
   });
-  const ulke = (data?.liste ?? []).find((u: any) => u.id === ulkeId);
+  const ulke = (data?.liste ?? []).find((u: UlkeSatir) => u.id === ulkeId);
 
   const silMutation = useMutation({
     mutationFn: ({ tip, id }: { tip: string; id: number }) => api.delete(`/api/super-admin/${tip}/${id}`),

@@ -12,6 +12,30 @@ import { SlideOver } from '@/components/slide-over';
 import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
 import { apiHataMesaji } from '../shared';
 
+interface Siparis {
+  id: number;
+  kurumId: number | null;
+  kurumAdi: string;
+  dersKitabiId: number;
+  urunAdi: string | null;
+  ogrenciKapasite: number | null;
+  toplamTutar: number | null;
+  tarih: string;
+  yetkiliAdi: string | null;
+  yetkiliEmail: string | null;
+  ulkeAdi: string;
+  telefon: string | null;
+  egitimYili: string;
+  sinifSayisi: number;
+  aktifOgrenci: number;
+  mevcutLisansTipi: string;
+  durum: 'Beklemede' | 'Onaylandi' | 'Iptal' | 'Donusturuldu';
+  kurumYoneticisiEmail: string | null;
+  kurumYoneticisiAdi: string | null;
+  ulkeTemsilcisiAdi: string | null;
+  ulkeTemsilcisiEmail: string | null;
+}
+
 const SAYFA_BOYUTU = 20;
 
 type Durum = 'Tumu' | 'Beklemede' | 'Onaylandi' | 'Iptal' | 'Donusturuldu';
@@ -42,7 +66,7 @@ export default function KurumsalSatisPage() {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
   const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('tarih', () => setSayfa(1), 'desc');
-  const [seciliSiparis, setSeciliSiparis] = useState<any | null>(null);
+  const [seciliSiparis, setSeciliSiparis] = useState<Siparis | null>(null);
 
   const { data: siparisler = [], isLoading } = useQuery({
     queryKey: ['sa-siparisler'],
@@ -51,13 +75,13 @@ export default function KurumsalSatisPage() {
 
   const durumSayilari = useMemo(() => {
     const s: Record<string, number> = { Tumu: siparisler.length };
-    for (const sp of siparisler as any[]) s[sp.durum] = (s[sp.durum] ?? 0) + 1;
+    for (const sp of siparisler as Siparis[]) s[sp.durum] = (s[sp.durum] ?? 0) + 1;
     return s;
   }, [siparisler]);
 
   const gorunen = useMemo(() => {
     const q = arama.trim().toLocaleLowerCase('tr');
-    let liste = (siparisler as any[]).filter(s => durum === 'Tumu' || s.durum === durum);
+    let liste = (siparisler as Siparis[]).filter(s => durum === 'Tumu' || s.durum === durum);
     if (q) {
       liste = liste.filter(s =>
         [s.kurumAdi, s.ulkeAdi, s.yetkiliAdi, s.yetkiliEmail]
@@ -133,7 +157,7 @@ export default function KurumsalSatisPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sayfadakiler.map((s: any) => (
+            {sayfadakiler.map((s: Siparis) => (
               <tr
                 key={s.id}
                 onClick={() => setSeciliSiparis(s)}
@@ -178,7 +202,7 @@ export default function KurumsalSatisPage() {
 
 // ─── Sipariş Detayı + Hızlı İşlemler (SlideOver şablonu) ─────────────────────
 
-function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; onClose: () => void }) {
+function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: Siparis | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [hata, setHata] = useState<string | null>(null);
   const [kapasite, setKapasite] = useState('');
@@ -202,7 +226,7 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
   const { data: fiyatOnerisi, isFetching: fiyatHesaplaniyor } = useQuery({
     queryKey: ['fiyat-hesapla', s?.dersKitabiId, kapasiteSayi],
     queryFn: () => api.get('/api/katalog/fiyat-hesapla', {
-      params: { kitapIdler: s.dersKitabiId, ogrenciSayisi: kapasiteSayi },
+      params: { kitapIdler: s!.dersKitabiId, ogrenciSayisi: kapasiteSayi },
     }).then(r => r.data),
     enabled: duzenleAcik && !!s?.dersKitabiId && kapasiteSayi > 0 && kapasiteDebounced !== kapasiteBaslangic,
   });
@@ -214,25 +238,25 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
   }
 
   const onaylaMutation = useMutation({
-    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/onayla`),
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s!.id}/onayla`),
     onMutate: () => setHata(null),
     onSuccess: () => { invalidate(); onClose(); },
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
   const iptalMutation = useMutation({
-    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}/iptal`),
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s!.id}/iptal`),
     onMutate: () => setHata(null),
     onSuccess: () => { invalidate(); onClose(); },
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
   const kaydetMutation = useMutation({
-    mutationFn: () => api.put(`/api/super-admin/siparis/${s.id}`, {
+    mutationFn: () => api.put(`/api/super-admin/siparis/${s!.id}`, {
       ogrenciKapasite: Number(kapasite),
       toplamTutar: Math.round(Number(tutar) * 100), // input EUR gösterir, backend cent bekler
     }),
     onMutate: () => setHata(null),
     onSuccess: () => { setDuzenleAcik(false); invalidate(); onClose(); },
-    onError: (err: any) => setHata(apiHataMesaji(err)),
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
   // Öneri gelince tutarı otomatik doldur (EUR, cent değil) — admin sonrasında elle üzerine yazabilir.
@@ -241,6 +265,7 @@ function SiparisDetaySlideOver({ siparis: s, onClose }: { siparis: any | null; o
   }, [fiyatOnerisi]);
 
   function acDuzenle() {
+    if (!s) return;
     const baslangic = String(s.ogrenciKapasite ?? '');
     setKapasite(baslangic);
     setKapasiteBaslangic(baslangic);
