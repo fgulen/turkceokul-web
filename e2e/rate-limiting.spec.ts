@@ -18,13 +18,6 @@ import { test, expect, APIRequestContext } from '@playwright/test';
 
 const API_BASE = process.env.API_BASE_URL ?? 'http://localhost:5221';
 
-// ─── Yardımcı: API bağlamı oluştur ───────────────────────────────────────────
-
-// request fixture doğrudan kullanılır — ayrı context açmaya gerek yok.
-function makeApiContext(request: APIRequestContext): APIRequestContext {
-  return request;
-}
-
 // ─── Yardımcı: Auth token al ──────────────────────────────────────────────────
 
 async function getAuthToken(request: APIRequestContext): Promise<string | null> {

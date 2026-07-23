@@ -27,7 +27,6 @@ interface KahootEtkinlik {
 
 // ── Etkinlik Seçim Ekranı ─────────────────────────────────────────────────────
 function EtkinlikSecimEkrani({
-  sinifId,
   onBaslat,
 }: {
   sinifId: number;

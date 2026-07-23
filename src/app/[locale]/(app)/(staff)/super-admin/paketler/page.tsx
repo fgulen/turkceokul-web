@@ -4,10 +4,9 @@
 // Tam editör (kitap çoklu seç, seri indirim açıklama metni) Faz 2'ye sarkıyor —
 // brief'in kendi kapsam notu: "temel CRUD çalışmalı", tam CRUD değil.
 import { useQuery } from '@tanstack/react-query';
-import { Package, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 
 interface SaPaket {
   id: number;

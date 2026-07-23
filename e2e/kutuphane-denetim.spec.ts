@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -56,25 +56,6 @@ function dosyaVarMi(url: string | null): boolean {
   if (!url || !url.trim()) return false;
   // Sadece URL formatını kontrol et — dosyanın varlığını kontrol etmiyoruz
   return url.startsWith('/Medya/') || url.startsWith('http');
-}
-
-function cevapKontrol(tur: string, detay: ActivityDetail): string | null {
-  // Her etkinlik türü için cevap alanının doğru olup olmadığını kontrol et
-  // AkilliKart: cevap boş olmalı (flashcard)
-  if (tur === 'AkilliKart') {
-    if (detay.cevap && detay.cevap.trim()) {
-      return `AkilliKart'ta cevap olmamalı ama "${detay.cevap}" var`;
-    }
-    return null;
-  }
-  // CoktanSecmeli, BoslukDoldurma: cevap dolu olmalı
-  if (['CoktanSecmeli', 'CoktanSecmeliBoslukDoldurma', 'BoslukDoldurma', 'DogruYanlis', 'Quiz'].includes(tur)) {
-    if (!detay.cevap || !detay.cevap.trim()) {
-      return `${tur} tipinde cevap boş`;
-    }
-    return null;
-  }
-  return null;
 }
 
 async function loginViaApi(): Promise<string> {

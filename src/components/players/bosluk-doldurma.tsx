@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';

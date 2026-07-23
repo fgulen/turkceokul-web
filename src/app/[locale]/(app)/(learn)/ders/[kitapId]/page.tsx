@@ -341,7 +341,7 @@ function UniteSidebarItem({
   );
 }
 
-function UniteHero({ unite, kitapName, kitapId }: { unite: Unite; kitapName?: string; kitapId: string }) {
+function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string; kitapId: string }) {
   const hasCount = unite.toplamEtkinlik > 0;
   const pct = hasCount ? Math.round((unite.tamamlananEtkinlik / unite.toplamEtkinlik) * 100) : 0;
   const allDone = hasCount && unite.tamamlananEtkinlik === unite.toplamEtkinlik;

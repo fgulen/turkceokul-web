@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -22,7 +22,6 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
 
-  const audioUrl = toMediaUrl(etkinlik.sesLink);
   const current = detaylar[index];
   const correctWords = useMemo(() => getKelimeler(current), [current]);
 

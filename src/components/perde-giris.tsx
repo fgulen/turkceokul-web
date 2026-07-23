@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Volume2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { AudioPlayButton } from '@/components/players/ui';

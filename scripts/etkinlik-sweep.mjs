@@ -65,7 +65,7 @@ await page.getByPlaceholder('••••••••').fill('Admin123!');
 await page.getByRole('button', { name: 'Giriş Yap' }).click();
 await page.waitForURL(/\/(tr|en)\/(pano|super-admin|ogretmen)/, { timeout: 15_000 });
 
-for (const { id, tip, sebepler } of kuyruk) {
+for (const { id } of kuyruk) {
   let hataOldu = false;
   const konsolHatalari = [];
   const errHandler = (m) => { if (m.type() === 'error') konsolHatalari.push(m.text()); };

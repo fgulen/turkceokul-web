@@ -27,7 +27,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'nav.teachers', href: '/ogretmenler' },
 ];
 
-export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: LandingNavProps) {
+export function LandingNav({ alternateHref, links, ctaLabel, ctaHref }: LandingNavProps) {
   const t = useTranslations();
   const navLinks = links ?? NAV_LINKS;
 

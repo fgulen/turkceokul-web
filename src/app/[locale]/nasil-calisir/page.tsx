@@ -250,7 +250,6 @@ export default async function NasilCalisirPage(
   const c = isEn ? C.en : C.tr;
   const s = c.sections;
 
-  const icons = { kurum: Building2, lisans: KeyRound, sinif: Users, kahoot: MonitorPlay, rapor: BarChart3 };
 
   return (
     <div className="bg-white text-slate-900">

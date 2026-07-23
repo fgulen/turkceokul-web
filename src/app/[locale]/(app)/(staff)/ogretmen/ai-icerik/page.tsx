@@ -12,7 +12,7 @@ import {
   Sparkles, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, Newspaper, Zap,
   Loader2, AlertTriangle, X, Save,
-  Trash2, Plus, History, Clock, ShieldCheck, ChevronDown, ChevronUp, FileUp,
+  Trash2, Plus, History, ShieldCheck, ChevronDown, ChevronUp, FileUp,
   Lock, FileText, MessageSquare,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -1287,12 +1287,6 @@ function SoruDuzenleyiciKart({
     </div>
   );
 }
-
-const TIP_ETIKETLER: Record<string, { label: string; renk: string }> = {
-  Quiz:             { label: 'Quiz',          renk: 'bg-blue-50 text-blue-700 border-blue-200' },
-  KelimeleriEslestir: { label: 'Eşleştirme', renk: 'bg-purple-50 text-purple-700 border-purple-200' },
-  BoslukDoldurma:   { label: 'Boşluk Doldur', renk: 'bg-amber-50 text-amber-700 border-amber-200' },
-};
 
 function GecmisKart({
   item, onSil, onOnayla, silIsPending, onaylaIsPending,

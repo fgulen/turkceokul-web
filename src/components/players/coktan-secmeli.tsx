@@ -8,14 +8,6 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 
-function comboMult(combo: number) {
-  if (combo >= 10) return 10;
-  if (combo >= 5) return 5;
-  if (combo >= 3) return 3;
-  if (combo >= 2) return 2;
-  return 1;
-}
-
 export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);

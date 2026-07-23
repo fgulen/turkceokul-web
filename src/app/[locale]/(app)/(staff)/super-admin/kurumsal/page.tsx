@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, Package, Search, X } from 'lucide-react';
+import { Download, Package } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SlideOver } from '@/components/slide-over';
 import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
@@ -37,7 +37,6 @@ function euro(cent: number | null | undefined) {
 }
 
 export default function KurumsalSatisPage() {
-  const qc = useQueryClient();
 
   const [durum, setDurum] = useState<Durum>('Tumu');
   const [arama, setArama] = useState('');

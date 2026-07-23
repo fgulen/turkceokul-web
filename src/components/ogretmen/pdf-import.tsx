@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, FileText, Loader2, Save, Eye, Check, X } from 'lucide-react';
+import { BookOpen, FileText, Loader2, Save, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 

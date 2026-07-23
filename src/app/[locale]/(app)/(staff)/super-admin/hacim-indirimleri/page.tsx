@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TrendingDown, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 
 interface Kademe {
   minOgrenci: number;

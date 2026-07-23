@@ -86,7 +86,7 @@ export function MikroQuiz({ etkinlikler, onBitti }: MikroQuizProps) {
   const isLast = idx === etkinlikler.length - 1;
 
   // onComplete: etkinlik tamamlandı (doğru/yanlış fark etmez) → sonraki etkinliğe geç
-  const handleComplete = (_cevaplar: Cevap[]) => {
+  const handleComplete = () => {
     if (isLast) {
       onBitti();
     } else {

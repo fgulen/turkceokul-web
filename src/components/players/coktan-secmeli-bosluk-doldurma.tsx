@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
@@ -14,10 +14,6 @@ const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
 
 function splitByBlanks(text: string): string[] {
   return text.split(BLANK_RE);
-}
-
-function countBlanks(text: string): number {
-  return (text.match(BLANK_RE) ?? []).length;
 }
 
 // CoktanSecmeliBoslukDoldurma: kelime1-5 = doğru cevaplar (sırayla), kelime6-10 = çeldirici

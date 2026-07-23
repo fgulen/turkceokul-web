@@ -6,7 +6,7 @@ import { ImageOff } from 'lucide-react';
 import { toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
-import { ProgressDots, AudioPlayButton, NextButton, NavCounter, ActivityHint } from './ui';
+import { ProgressDots, AudioPlayButton, NextButton, NavCounter } from './ui';
 
 export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;

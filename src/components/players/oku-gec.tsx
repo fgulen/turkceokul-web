@@ -9,7 +9,7 @@ import { toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useWordTranslation } from '@/hooks/use-word-translation';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
-import { AudioPlayButton, PlayingBars } from './ui';
+import { PlayingBars } from './ui';
 
 function getWordAtPoint(x: number, y: number): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

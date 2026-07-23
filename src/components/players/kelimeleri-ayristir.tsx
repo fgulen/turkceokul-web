@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
-import { TurkceKlavye, insertIntoInput, sadelestir, stripTurkce, scoreAnswer } from './turkce-klavye';
+import { TurkceKlavye, insertIntoInput, scoreAnswer } from './turkce-klavye';
 
 function stripHtml(s: string) {
   return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
@@ -71,7 +71,6 @@ export function KelimeleriAyristirPlayer({ etkinlik, onComplete }: PlayerProps) 
     setResults(wordResults);
 
     const allCorrect = wordResults.every((r) => r.isCorrect);
-    const allPerfect = wordResults.every((r) => r.isPerfect);
     const anyYakin = !allCorrect && wordResults.some((r) => r.isYakin);
 
     play(allCorrect ? 'correct' : 'wrong');

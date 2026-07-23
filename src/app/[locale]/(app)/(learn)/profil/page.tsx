@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, ChevronRight, Key, Languages, Library, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';

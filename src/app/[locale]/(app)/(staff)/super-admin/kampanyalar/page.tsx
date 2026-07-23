@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Megaphone, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { SlideOver } from '@/components/slide-over';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { ChevronRight, Volume2 } from 'lucide-react';

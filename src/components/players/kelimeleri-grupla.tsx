@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useMemo } from 'react';
-import { cn, toMediaUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { ActivityHint } from './ui';
