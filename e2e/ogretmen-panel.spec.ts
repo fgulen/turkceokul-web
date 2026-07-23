@@ -8,7 +8,7 @@
 
 import { test, expect, APIRequestContext } from '@playwright/test';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'http://localhost:5221';
 
 // ─── Yardımcı: Öğretmen token al ─────────────────────────────────────────────
 

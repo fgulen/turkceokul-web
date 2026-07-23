@@ -14,7 +14,9 @@ export async function loginAsSuperAdmin(page: Page) {
 
 export async function goToSuperAdminUlkeler(page: Page) {
   await page.goto('/tr/super-admin');
-  await page.getByRole('button', { name: /ülkeler/i }).click();
+  // Sidebar nav öğeleri next-intl'in locale-aware <Link>'i ile render ediliyor
+  // (native <a>/role="link", <button> değil — bkz. staff-shell.tsx).
+  await page.getByRole('link', { name: /ülkeler/i }).click();
   // Sidebar görünmeli
   await page.waitForSelector('text=Ülkeler', { timeout: 8_000 });
 }
