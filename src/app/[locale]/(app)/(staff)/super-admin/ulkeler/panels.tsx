@@ -28,6 +28,42 @@ interface Temsilci {
   isApproved: boolean;
 }
 
+interface KurumSatir {
+  id: number;
+  name: string;
+  sehir: string | null;
+  sinifSayisi: number;
+  ogrenciSayisi: number;
+}
+
+interface KitapSatir {
+  dersKitabiId: string;
+  name: string;
+  seviye: string | null;
+  isDefault: boolean;
+}
+
+interface KitapKatalogSatir {
+  id: string;
+  name: string;
+  seviye: string | null;
+}
+
+interface SinifSatir {
+  id: number;
+  name: string;
+  kurumAdi: string | null;
+  ogrenciSayisi: number;
+  dersKitabiId: string | null;
+}
+
+interface KurumSinifSatir {
+  id: number;
+  name: string;
+  ogrenciSayisi: number;
+  efektifKitapAdi: string | null;
+}
+
 export function TemsilcilerPanel({ ulkeId, ulkeAdi }: { ulkeId: number; ulkeAdi: string }) {
   const { sortKey, sortDir, toggleSort } = useSiralama<TemsilciSortKey>('name');
   const [showAdd, setShowAdd] = useState(false);
@@ -123,9 +159,11 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
 
-  const { data: kurumlarHam = [] } = useQuery({
+  const { data: kurumlarHam = [] } = useQuery<KurumSatir[]>({
     queryKey: ['sa-kurumlar', ulkeId],
-    queryFn: () => api.get('/api/super-admin/kurumlar', { params: { ulkeId } }).then(r => r.data),
+    queryFn: () => api.get('/api/super-admin/kurumlar', {
+      params: { ulkeId, sayfaBoyutu: 500 }
+    }).then(r => r.data?.liste ?? []),
   });
 
   const topluSilMutation = useMutation({
@@ -133,7 +171,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kurumlar', ulkeId] }); temizle(); setTopluOnay(false); },
   });
 
-  const kurumlar = useMemo(() => trSirala(kurumlarHam as any[], sortKey, sortDir), [kurumlarHam, sortKey, sortDir]);
+  const kurumlar = useMemo(() => trSirala(kurumlarHam, sortKey, sortDir), [kurumlarHam, sortKey, sortDir]);
 
   return (
     <div className="flex flex-col h-full">
@@ -149,7 +187,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
       <table className="w-full text-sm flex-1">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
-            <TopluSecimTh gorunenIdler={kurumlar.map((k: any) => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+            <TopluSecimTh gorunenIdler={kurumlar.map((k) => k.id)} secili={secili} onToggleHepsi={toggleHepsi} />
             <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
             <SortTh colKey="sehir" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Şehir</SortTh>
             <SortTh colKey="sinifSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Sınıf</SortTh>
@@ -158,7 +196,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {(kurumlar as any[]).map((k: any) => (
+          {kurumlar.map((k) => (
             <tr key={k.id}
               className="odd:bg-white even:bg-slate-50/40 hover:bg-blue-50/30 cursor-pointer group"
               onClick={() => onKurumClick(k.id, k.name)}>
@@ -175,7 +213,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
               </td>
             </tr>
           ))}
-          {(kurumlar as any[]).length === 0 && (
+          {kurumlar.length === 0 && (
             <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">Bu ülkede kayıtlı okul yok</td></tr>
           )}
         </tbody>
@@ -262,7 +300,7 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
   const [showAdd, setShowAdd] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'seviye'>('name');
 
-  const { data: mevcutKitaplarHam = [] } = useQuery({
+  const { data: mevcutKitaplarHam = [] } = useQuery<KitapSatir[]>({
     queryKey: ['sa-ulke-kitaplar', ulkeId],
     queryFn: () => api.get(`/api/super-admin/ulke/${ulkeId}/kitaplar`).then(r => r.data),
   });
@@ -277,9 +315,9 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sa-ulke-kitaplar', ulkeId] }),
   });
 
-  const atanamaz = new Set((mevcutKitaplarHam as any[]).map((k: any) => k.dersKitabiId));
+  const atanamaz = new Set(mevcutKitaplarHam.map((k) => k.dersKitabiId));
 
-  const mevcutKitaplar = useMemo(() => trSirala(mevcutKitaplarHam as any[], sortKey, sortDir), [mevcutKitaplarHam, sortKey, sortDir]);
+  const mevcutKitaplar = useMemo(() => trSirala(mevcutKitaplarHam, sortKey, sortDir), [mevcutKitaplarHam, sortKey, sortDir]);
 
   return (
     <div>
@@ -301,7 +339,7 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {(mevcutKitaplar as any[]).map((k: any) => (
+          {mevcutKitaplar.map((k) => (
             <tr key={k.dersKitabiId} className="odd:bg-white even:bg-slate-50/40">
               <td className="px-5 py-2 font-medium text-slate-800">{k.name}</td>
               <td className="px-5 py-2 text-xs text-slate-500">{k.seviye ?? '—'}</td>
@@ -317,7 +355,7 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
               </td>
             </tr>
           ))}
-          {(mevcutKitaplar as any[]).length === 0 && (
+          {mevcutKitaplar.length === 0 && (
             <tr><td colSpan={4} className="px-5 py-8 text-center text-slate-400 text-sm">Atanmış kitap yok</td></tr>
           )}
         </tbody>
@@ -339,7 +377,7 @@ function KitapAtaSlideOver({ open, ulkeId, atanamaz, onClose }: {
     if (open) { setSeciliKitap(''); setIsDefault(false); }
   }, [open]);
 
-  const { data: tumKitaplar = [] } = useQuery({
+  const { data: tumKitaplar = [] } = useQuery<KitapKatalogSatir[]>({
     queryKey: ['sa-kitaplar', ''],
     queryFn: () => api.get('/api/super-admin/kitaplar').then(r => r.data),
     enabled: open,
@@ -384,8 +422,8 @@ function KitapAtaSlideOver({ open, ulkeId, atanamaz, onClose }: {
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
           >
             <option value="">Kitap seç...</option>
-            {(tumKitaplar as any[]).filter((k: any) => !atanamaz.has(k.id))
-              .map((k: any) => <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>)}
+            {tumKitaplar.filter((k) => !atanamaz.has(k.id))
+              .map((k) => <option key={k.id} value={k.id}>{k.name} ({k.seviye})</option>)}
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -404,13 +442,13 @@ function KitapAtaSlideOver({ open, ulkeId, atanamaz, onClose }: {
 
 export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
   const qc = useQueryClient();
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SinifSatir | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi' | 'dersKitabiId'>('name');
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
 
-  const { data: siniflarHam = [] } = useQuery({
+  const { data: siniflarHam = [] } = useQuery<SinifSatir[]>({
     queryKey: ['sa-ulke-siniflar', ulkeId],
     queryFn: () => api.get(`/api/super-admin/ulke/${ulkeId}/siniflar`).then(r => r.data),
   });
@@ -425,7 +463,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] }); temizle(); setTopluOnay(false); },
   });
 
-  const siniflar = useMemo(() => trSirala(siniflarHam as any[], sortKey, sortDir), [siniflarHam, sortKey, sortDir]);
+  const siniflar = useMemo(() => trSirala(siniflarHam, sortKey, sortDir), [siniflarHam, sortKey, sortDir]);
 
   return (
     <div>
@@ -439,7 +477,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
-            <TopluSecimTh gorunenIdler={siniflar.map((s: any) => s.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+            <TopluSecimTh gorunenIdler={siniflar.map((s) => s.id)} secili={secili} onToggleHepsi={toggleHepsi} />
             <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
             <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
             <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Öğrenci</SortTh>
@@ -448,7 +486,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {(siniflar as any[]).map((s: any) => (
+          {siniflar.map((s) => (
             <tr key={s.id} className="odd:bg-white even:bg-slate-50/40">
               <TopluSecimTd id={s.id} secili={secili} onToggle={toggleBir} />
               <td className="px-5 py-2 font-medium text-slate-800">{s.name}</td>
@@ -463,7 +501,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
               </td>
             </tr>
           ))}
-          {(siniflar as any[]).length === 0 && (
+          {siniflar.length === 0 && (
             <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">Bu ülkede sınıf yok</td></tr>
           )}
         </tbody>
@@ -498,9 +536,9 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
 
 export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
   const qc = useQueryClient();
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KurumSinifSatir | null>(null);
 
-  const { data: siniflar = [] } = useQuery({
+  const { data: siniflar = [] } = useQuery<KurumSinifSatir[]>({
     queryKey: ['sa-siniflar', kurumId],
     queryFn: () => api.get(`/api/super-admin/kurum/${kurumId}/siniflar`).then(r => r.data),
   });
@@ -512,7 +550,7 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
 
   return (
     <div className="space-y-2">
-      {(siniflar as any[]).map((s: any) => (
+      {siniflar.map((s) => (
         <div key={s.id} className="flex items-center gap-3 py-2 border-b border-slate-100 text-sm group">
           <div className="flex-1 min-w-0">
             <div className="font-medium text-slate-800">{s.name}</div>
@@ -524,7 +562,7 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
           </button>
         </div>
       ))}
-      {(siniflar as any[]).length === 0 && <p className="text-xs text-slate-400 py-4 text-center">Bu kurumda sınıf yok</p>}
+      {siniflar.length === 0 && <p className="text-xs text-slate-400 py-4 text-center">Bu kurumda sınıf yok</p>}
 
       <DeleteConfirmModal
         open={!!deleteTarget}

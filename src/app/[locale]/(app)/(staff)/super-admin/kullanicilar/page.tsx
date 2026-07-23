@@ -20,6 +20,30 @@ import { AramaInput, Sayfalama, SortTh, useSiralama, useTopluSecim, TopluSecimTh
 
 type SortKey = 'name' | 'rol' | 'kurum' | 'ulke' | 'kayitTarihi' | 'durum';
 
+interface KullaniciSatir {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  rol: string;
+  ulkeId: number | null;
+  kurumId: number | null;
+  ulkeAdi: string | null;
+  kurumAdi: string | null;
+  insertDate: string;
+  isApproved: boolean;
+}
+
+interface UlkeOption { id: number; name: string; }
+interface KurumOption { id: number; name: string; }
+
+interface KullaniciGuncelleDto {
+  rol: string;
+  ulkeId: number | null;
+  kurumId: number | null;
+  isApproved: boolean;
+}
+
 function KullanicilarTab() {
   const qc = useQueryClient();
   const router = useRouter();
@@ -29,8 +53,8 @@ function KullanicilarTab() {
   const [rolFilter, setRolFilter] = useState('');
   const [durumFilter, setDurumFilter] = useState(() => searchParams?.get('durum') ?? '');
   const [sayfa, setSayfa] = useState(1);
-  const [editUser, setEditUser] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [editUser, setEditUser] = useState<(KullaniciSatir & { ulkeler: UlkeOption[]; kurumlar: KurumOption[] }) | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KullaniciSatir | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
@@ -46,7 +70,7 @@ function KullanicilarTab() {
     placeholderData: keepPreviousData,
   });
 
-  const kullanicilar: any[] = data?.liste ?? [];
+  const kullanicilar: KullaniciSatir[] = data?.liste ?? [];
   const toplam: number = data?.toplam ?? 0;
 
   const { data: ulkeler = [] } = useQuery({
@@ -55,11 +79,11 @@ function KullanicilarTab() {
   });
   const { data: kurumlar = [] } = useQuery({
     queryKey: ['sa-kurumlar-liste'],
-    queryFn: () => api.get('/api/super-admin/kurumlar').then(r => r.data),
+    queryFn: () => api.get('/api/super-admin/kurumlar', { params: { sayfaBoyutu: 500 } }).then(r => r.data?.liste ?? []),
   });
 
   const guncelleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/super-admin/kullanici/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: KullaniciGuncelleDto }) => api.put(`/api/super-admin/kullanici/${id}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setEditUser(null); },
   });
 
@@ -146,7 +170,7 @@ function KullanicilarTab() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <TopluSecimTh gorunenIdler={kullanicilar.map((u: any) => u.id)} secili={secili} onToggleHepsi={toggleHepsi} />
+              <TopluSecimTh gorunenIdler={kullanicilar.map((u) => u.id)} secili={secili} onToggleHepsi={toggleHepsi} />
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kullanıcı</SortTh>
               <SortTh colKey="ulke" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Ülke</SortTh>
               <SortTh colKey="kurum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kurum</SortTh>
@@ -157,7 +181,7 @@ function KullanicilarTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {kullanicilar.map((u: any) => (
+            {kullanicilar.map((u) => (
               <tr key={u.id} className="odd:bg-white even:bg-slate-50/40 hover:bg-purple-50/30">
                 <TopluSecimTd id={u.id} secili={secili} onToggle={toggleBir} />
                 <td className="px-4 py-2">
@@ -295,10 +319,12 @@ function KullaniciEkleSlideOver({ open, onClose, onOlusturuldu }: {
 }
 
 function KullaniciEditForm({ user, ulkeler, kurumlar, onSave }: {
-  user: any; ulkeler: any[]; kurumlar: any[];
-  onSave: (d: any) => void;
+  user: KullaniciSatir; ulkeler: UlkeOption[]; kurumlar: KurumOption[];
+  onSave: (d: KullaniciGuncelleDto) => void;
 }) {
-  const [form, setForm] = useState({ rol: user.rol, ulkeId: user.ulkeId ?? '', kurumId: user.kurumId ?? '', isApproved: user.isApproved });
+  const [form, setForm] = useState<{ rol: string; ulkeId: number | ''; kurumId: number | ''; isApproved: boolean }>({
+    rol: user.rol, ulkeId: user.ulkeId ?? '', kurumId: user.kurumId ?? '', isApproved: user.isApproved,
+  });
 
   return (
     <form id="user-edit-form" onSubmit={e => { e.preventDefault(); onSave({ rol: form.rol, ulkeId: form.ulkeId || null, kurumId: form.kurumId || null, isApproved: form.isApproved }); }} className="space-y-4">
@@ -314,7 +340,7 @@ function KullaniciEditForm({ user, ulkeler, kurumlar, onSave }: {
         <select value={form.ulkeId} onChange={e => setForm(f => ({ ...f, ulkeId: e.target.value ? +e.target.value : '' }))}
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
           <option value="">— Yok —</option>
-          {ulkeler.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          {ulkeler.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>
       <div>
@@ -322,7 +348,7 @@ function KullaniciEditForm({ user, ulkeler, kurumlar, onSave }: {
         <select value={form.kurumId} onChange={e => setForm(f => ({ ...f, kurumId: e.target.value ? +e.target.value : '' }))}
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
           <option value="">— Yok —</option>
-          {kurumlar.map((k: any) => <option key={k.id} value={k.id}>{k.name}</option>)}
+          {kurumlar.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
         </select>
       </div>
       <label className="flex items-center gap-2 text-sm cursor-pointer">
