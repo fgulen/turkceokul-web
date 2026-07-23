@@ -20,6 +20,14 @@ import {
 
 type TemsilciSortKey = 'name' | 'email' | 'isApproved';
 
+interface Temsilci {
+  id: number;
+  name: string;
+  surname: string | null;
+  email: string;
+  isApproved: boolean;
+}
+
 export function TemsilcilerPanel({ ulkeId, ulkeAdi }: { ulkeId: number; ulkeAdi: string }) {
   const { sortKey, sortDir, toggleSort } = useSiralama<TemsilciSortKey>('name');
   const [showAdd, setShowAdd] = useState(false);
@@ -30,7 +38,7 @@ export function TemsilcilerPanel({ ulkeId, ulkeAdi }: { ulkeId: number; ulkeAdi:
       params: { rol: 'UlkeTemsilcisi', ulkeId, sayfaBoyutu: 100 }
     }).then(r => r.data),
   });
-  const ham: any[] = data?.liste ?? [];
+  const ham: Temsilci[] = useMemo(() => data?.liste ?? [], [data]);
 
   const liste = useMemo(() => trSirala(ham, sortKey, sortDir), [ham, sortKey, sortDir]);
 
@@ -52,7 +60,7 @@ export function TemsilcilerPanel({ ulkeId, ulkeAdi }: { ulkeId: number; ulkeAdi:
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {liste.map((u: any) => (
+          {liste.map((u) => (
             <tr key={u.id} className="odd:bg-white even:bg-slate-50/40">
               <td className="px-5 py-2 font-medium text-slate-800">{u.name} {u.surname}</td>
               <td className="px-5 py-2 text-xs text-slate-500">{u.email}</td>

@@ -20,14 +20,13 @@ export function YaziyaTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
       ? current.description
       : '';
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     reset();
     const url = toMediaUrl(detaylar[index]?.sesLink);
     if (!url) return;
     const t = setTimeout(() => play(url), 300);
     return () => { clearTimeout(t); reset(); };
-  }, [index]);
+  }, [index, detaylar, play, reset]);
 
   function handleNext() {
     if (index + 1 >= detaylar.length) {

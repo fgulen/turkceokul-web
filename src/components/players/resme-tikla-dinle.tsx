@@ -19,7 +19,6 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
   const imgUrl = toMediaUrl(current.resimLink);
   const sesUrl = toMediaUrl(current.sesLink);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setImgError(false);
     reset();
@@ -27,7 +26,7 @@ export function ResmeTiklaDinlePlayer({ etkinlik, onComplete }: PlayerProps) {
     if (!url) return;
     const t = setTimeout(() => play(url), 300);
     return () => { clearTimeout(t); reset(); };
-  }, [index]);
+  }, [index, detaylar, play, reset]);
 
   function handleNext() {
     if (index + 1 >= detaylar.length) {

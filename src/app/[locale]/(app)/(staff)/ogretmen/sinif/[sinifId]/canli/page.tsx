@@ -258,7 +258,10 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [kahoot.soruBilgisi?.soruNo, kahoot.oyunBitti]);
+    // kahoot.soruBilgisi bilerek soruNo'ya daraltıldı: her SignalR mesajında (oyuncu katılımı
+    // gibi soruyla ilgisiz olaylarda dahi) yeni bir soruBilgisi referansı geliyor — tam objeyi
+    // bağımlılığa koymak geri sayımı her mesajda sıfırlardı.
+  }, [kahoot.soruBilgisi?.soruNo, kahoot.oyunBitti]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (kahoot.hata && oyunKodu) {
@@ -274,7 +277,10 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
       const ok = await kahoot.connect();
       if (ok) await kahoot.joinAsTeacher(oyunKodu);
     })();
-  }, [oyunKodu, kahoot.connect, kahoot.joinAsTeacher]);
+    // kahoot nesnesinin tamamı her render'da yeniden oluşuyor (use-kahoot.ts'in dönüşü);
+    // connect/joinAsTeacher zaten useCallback ile stabil — tam objeyi bağımlılığa koymak
+    // her render'da yeniden bağlanmaya (reconnect loop) yol açardı.
+  }, [oyunKodu, kahoot.connect, kahoot.joinAsTeacher]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Hub'dan gelen OyunDurumu gerçek başlatılma durumunu söylediğinde sessionStorage'ı güncelle
   useEffect(() => {
