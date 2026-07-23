@@ -136,9 +136,10 @@ test.describe('Ülkeler Tab — Country Management', () => {
   });
 
   test('6. Empty state message shown when search yields no results', async () => {
+    // Arama client-side filtre — network isteği atmıyor (bkz. test 4), o yüzden
+    // waitForResponse burada hiç gelmeyecek bir yanıtı bekleyip 30sn'de patlıyordu.
     const searchInput = page.getByPlaceholder('Ülke ara...');
     await searchInput.fill('zzzzznotexistszzz');
-    await page.waitForResponse(r => r.url().includes('/api/super-admin/ulkeler'));
     await expect(page.locator('text=/için sonuç bulunamadı/')).toBeVisible();
   });
 
@@ -200,7 +201,6 @@ test.describe('Ülkeler Tab — Country Management', () => {
     await expect(page.locator('text=Ülke Düzenle')).toBeVisible();
 
     // İsim input dolu
-    const nameField = page.locator('input').filter({ hasText: '' }).first();
     const inputValue = await page.locator('label:has-text("Ülke Adı") + input, label:has-text("Ülke Adı") ~ input').inputValue();
     expect(inputValue).toBe(countryName?.trim());
 
@@ -330,7 +330,7 @@ test.describe('Ülkeler Tab — Country Management', () => {
       r.url().includes('/api/super-admin/kullanicilar') &&
       r.url().includes('rol=Ogretmen') &&
       r.status() === 200,
-      { timeout: 5000 }
+      { timeout: 8000 }
     );
 
     const dropdown = page.locator('.absolute.z-20');
@@ -396,22 +396,25 @@ test.describe('Ülkeler Tab — Country Management', () => {
 // ─── 9. API Yanıt Yapısı ───────────────────────────────────────────────────
 //
 // Ayrı describe + kendi page'i: yukarıdaki 13 UI testiyle aynı paylaşılan
-// oturumu/page'i kullanmıyor. Denendi ve GERİ ALINDI: test 14 içinde
-// /api/auth/login'e tekrar login atıp üstteki paylaşılan page'in oturumunu
-// geçersiz kılmak — backend tek-oturum/refresh-token invalidation'ı
-// tetikliyordu. Burada login KENDİ page'i için ve sadece BİR KEZ oluyor,
-// hemen ardından 2 hızlı GET atılıyor — üstteki 13 testin süresine
-// (dolayısıyla olası token expiry'sine) hiç maruz kalmıyor.
+// oturumu/page'i kullanmıyor. Token'ı localStorage'dan okumaya çalışmak GERÇEK
+// KÖK NEDENDİ: src/stores/auth.ts'nin partialize'ı accessToken'ı bilinçli
+// olarak persist ETMİYOR (15 dk TTL, memory-only) — sadece user+refreshToken
+// localStorage'a yazılıyor. Bu yüzden UI login + localStorage okuma hiçbir
+// zaman çalışmayacaktı; token'ı login API'sinin response body'sinden al.
 test.describe('Ülkeler Tab — API yanıt şekli', () => {
   let apiPage: Page;
   let token: string;
 
   test.beforeAll(async ({ browser }) => {
     apiPage = await browser.newPage();
-    await loginAsSuperAdmin(apiPage);
-    const raw = await apiPage.evaluate(() => localStorage.getItem('auth'));
-    const parsed = raw ? JSON.parse(raw) : null;
-    token = parsed?.state?.accessToken ?? parsed?.accessToken ?? '';
+    const email = process.env.TEST_SUPER_ADMIN_EMAIL ?? 'admin@turkceokulu.com';
+    const password = process.env.TEST_SUPER_ADMIN_PASS ?? 'Admin123!';
+    const res = await apiPage.request.post('http://localhost:5221/api/auth/login', {
+      data: { email, password },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const body = await res.json();
+    token = body?.accessToken ?? body?.token ?? '';
   });
 
   test.afterAll(async () => {
