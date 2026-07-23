@@ -38,7 +38,9 @@ interface LigTablo {
   tablo: LigSatir[];
 }
 
-function getMotivasyon(sira: number, t: (key: string, params?: any) => string): { mesaj: string; renk: string } {
+type TFunc = (key: string, params?: Record<string, string | number | Date>) => string;
+
+function getMotivasyon(sira: number, t: TFunc): { mesaj: string; renk: string } {
   if (sira <= TERFI_ESIGI)
     return { mesaj: t('lig.motivationPromote'), renk: 'text-[#15803d]' };
   const terfiIcin = sira - TERFI_ESIGI;
@@ -49,7 +51,7 @@ function getMotivasyon(sira: number, t: (key: string, params?: any) => string): 
   return { mesaj: t('lig.motivationDanger', { count: sira - DUSME_ESIGI }), renk: 'text-[#b91c1c]' };
 }
 
-function kalanSure(haftaBitis: string, t: (key: string, params?: any) => string) {
+function kalanSure(haftaBitis: string, t: TFunc) {
   const ms = new Date(haftaBitis).getTime() - Date.now();
   if (ms <= 0) return t('lig.timeExpired');
   const gun = Math.floor(ms / 86400000);
