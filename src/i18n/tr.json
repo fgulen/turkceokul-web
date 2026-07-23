@@ -51,8 +51,9 @@
     "teachers": "Öğretmenler",
     "students": "Öğrenciler",
     "logIn": "Giriş Yap",
+    "logInShort": "Giriş",
     "startFree": "Ücretsiz Başla",
-    "switchLocale": "English",
+    "switchLocale": "EN",
     "switchTitle": "İngilizceye geç",
     "app": {
       "superAdmin": "Super Admin",
@@ -156,9 +157,9 @@
       "badgeCorporate": "KURUMSAL HESAP",
       "badgeIndividual": "BİREYSEL HESAP",
       "badgeDefault": "HESAP OLUŞTUR",
-"leftTitleCorporate": "Okulunuz için<br />ücretsiz başlayın.",
-"leftTitleIndividual": "Türkçenizi<br />geliştirin.",
-"leftTitleDefault": "Türkçe öğrenme<br />yolculuğunuz başlıyor.",
+      "leftTitleCorporate": "Okulunuz için<br></br>ücretsiz başlayın.",
+      "leftTitleIndividual": "Türkçenizi<br></br>geliştirin.",
+      "leftTitleDefault": "Türkçe öğrenme<br></br>yolculuğunuz başlıyor.",
       "leftDescCorporate": "1 öğretmen, 10 öğrenci — kredi kartı gerekmez, 5 dakikada kurulum.",
       "leftDescIndividual": "CEFR müfredatı ve gamification ile Türkçe öğrenin.",
       "leftDescDefault": "3 kısa adımda hesabını oluştur, hemen başla.",
@@ -167,7 +168,7 @@
     }
   },
   "pano": {
-    "greeting": "Selam, {name}!",
+    "greeting": "Selam, {name}! 👋",
     "greetingSub": "Bugün ne öğreniyorsun?",
     "streak": "Streak",
     "streakDays": "{count} gün",

@@ -57,7 +57,7 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
                 <a
                   key={l.label}
                   href={l.href}
-                  style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
+                  style={{ fontSize: 14, fontWeight: l.active ? 600 : 500, color: l.active ? '#1b75bc' : '#414751', textDecoration: 'none' }}
                 >
                   {label}
                 </a>
@@ -65,7 +65,7 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
                 <Link
                   key={l.label}
                   href={l.href}
-                  style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
+                  style={{ fontSize: 14, fontWeight: l.active ? 600 : 500, color: l.active ? '#1b75bc' : '#414751', textDecoration: 'none' }}
                 >
                   {label}
                 </Link>
@@ -101,7 +101,7 @@ export function LandingNav({ locale, alternateHref, links, ctaLabel, ctaHref }: 
             style={{ fontSize: 14, fontWeight: 500, color: '#414751', textDecoration: 'none' }}
           >
             <span className="hidden md:inline">{t('nav.logIn')}</span>
-            <span className="md:hidden">{t('nav.logIn')}</span>
+            <span className="md:hidden">{t('nav.logInShort')}</span>
           </Link>
 
           <Link

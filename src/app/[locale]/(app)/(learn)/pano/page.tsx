@@ -407,7 +407,7 @@ function GorevSatiri({ gorev }: { gorev: Gorev }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-sm font-medium">
-            {t(gorevLabelMap[gorev.gorevTipi] ?? gorev.gorevTipi)}
+            {gorevLabelMap[gorev.gorevTipi] ? t(gorevLabelMap[gorev.gorevTipi]) : gorev.gorevTipi}
           </span>
           <span className="text-xs text-primary font-medium ml-2 shrink-0">
             {odulLabel(gorev.odulTipi, gorev.odulMiktari)}

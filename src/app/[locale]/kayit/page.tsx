@@ -71,7 +71,9 @@ function KayitForm() {
   const tipParam = searchParams.get("tip");
   const initialTab: Tab | null =
     tipParam === "bireysel" ? "bireysel"
-    : (tipParam === "kurumsal" || tipParam === "kurumsal-pro") ? "kurumsal"
+    // "ogretmen" öğretmen sayfalarının CTA'sı (for-teachers/ogretmenler) — kurumsal = öğretmen
+    // rolü. Eşlenmezse rol seçili gelmiyor, kullanıcı rol adımında takılıyordu.
+    : (tipParam === "kurumsal" || tipParam === "kurumsal-pro" || tipParam === "ogretmen") ? "kurumsal"
     : null;
   const redirectAfter = searchParams.get("redirect") ?? "";
 
@@ -101,7 +103,9 @@ function KayitForm() {
   }
 
   function goToStep(next: Step) {
-    if (next === 3 && !tab) return; // rol seçilmeden bilgi adımına geçilemez
+    // Rol 1. adım ve zorunlu — seçilmeden dil (2) veya bilgi (3) adımına geçilemez.
+    // Aksi halde StepIndicator'dan dil adımına atlayıp dil seçince 3. adım boş kalıyordu.
+    if (next >= 2 && !tab) return;
     setDirection(next > step ? 1 : -1);
     setStep(next);
   }
@@ -109,7 +113,7 @@ function KayitForm() {
   function selectLanguage(code: NativeLangValue) {
     setNativeLanguage(code);
     setDirection(1);
-    setStep(3);
+    setStep(tab ? 3 : 1); // rol yoksa bilgi adımı boş kalır — rol adımına geri dön
   }
 
   function selectRole(role: Tab) {
