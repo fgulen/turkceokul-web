@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
-  BookOpen, Users, Globe, BarChart3, Shield,
-  Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
-  RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
-  Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus, Sparkles
+  Users,
+  Pencil, Trash2,
+  LogIn, UserPlus
 } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { toast } from 'sonner';
@@ -16,7 +15,7 @@ import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
-import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
+import { ROL_RENKLERI, TUM_ROLLER } from '../shared';
 import { AramaInput, Sayfalama, SortTh, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd } from '@/components/staff/table-kit';
 
 type SortKey = 'name' | 'rol' | 'kurum' | 'ulke' | 'kayitTarihi' | 'durum';

@@ -7,8 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  BookOpen, Users, Globe, Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
-  RefreshCw, ExternalLink, ChevronRight,
+  Trash2, X, Plus,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
@@ -18,7 +17,6 @@ import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
 import {
   SortTh, trSirala, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton, topluSilParalel,
 } from '@/components/staff/table-kit';
-import { apiHataMesaji } from '../shared';
 
 type TemsilciSortKey = 'name' | 'email' | 'isApproved';
 

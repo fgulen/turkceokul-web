@@ -7,7 +7,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Download, Globe, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Download, Globe, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
@@ -18,7 +18,17 @@ const SAYFA_BOYUTU = 20;
 
 type SortKey = 'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogrenciSayisi' | 'visible';
 
-function csvIndir(satirlar: any[]) {
+interface UlkeSatir {
+  id: number;
+  name: string;
+  ogretmenId: number | null;
+  ogretmenAdi: string | null;
+  kurumSayisi: number;
+  ogrenciSayisi: number;
+  visible: boolean;
+}
+
+function csvIndir(satirlar: UlkeSatir[]) {
   const basliklar = ['Ülke', 'Sorumlu Öğretmen', 'Kurum Sayısı', 'Öğrenci Sayısı', 'Durum'];
   const csv = [
     basliklar.join(';'),
@@ -68,7 +78,7 @@ export default function UlkelerListePage() {
       params: { pageNumber: 1, pageSize: 500 }
     }).then(r => r.data),
   });
-  const tumUlkeler: any[] = data?.liste ?? [];
+  const tumUlkeler: UlkeSatir[] = useMemo(() => data?.liste ?? [], [data]);
 
   const olusturMutation = useMutation({
     mutationFn: (name: string) => api.post('/api/super-admin/ulke', { name, ogretmenId: null }),
@@ -199,7 +209,7 @@ export default function UlkelerListePage() {
               <th className="w-10 px-4 py-2.5">
                 <input type="checkbox"
                   checked={secili.size === gorunen.length && gorunen.length > 0}
-                  onChange={() => setSecili(secili.size === gorunen.length ? new Set() : new Set(gorunen.map((u: any) => u.id)))} />
+                  onChange={() => setSecili(secili.size === gorunen.length ? new Set() : new Set(gorunen.map(u => u.id)))} />
               </th>
               <SortHeader colKey="name">Ülke</SortHeader>
               <SortHeader colKey="ogretmenAdi">Sorumlu Öğretmen</SortHeader>
@@ -210,7 +220,7 @@ export default function UlkelerListePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sayfadakiler.map((u: any) => (
+            {sayfadakiler.map((u) => (
               <tr
                 key={u.id}
                 onClick={() => router.push(`/super-admin/ulkeler/${u.id}`)}
@@ -218,7 +228,11 @@ export default function UlkelerListePage() {
                 <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                   <input type="checkbox"
                     checked={secili.has(u.id)}
-                    onChange={() => setSecili(prev => { const s = new Set(prev); s.has(u.id) ? s.delete(u.id) : s.add(u.id); return s; })} />
+                    onChange={() => setSecili(prev => {
+                      const s = new Set(prev);
+                      if (s.has(u.id)) s.delete(u.id); else s.add(u.id);
+                      return s;
+                    })} />
                 </td>
                 <td className="px-4 py-2.5 font-medium text-slate-800">{u.name}</td>
                 <td className="px-4 py-2.5 text-xs text-slate-500">{u.ogretmenAdi ?? '—'}</td>

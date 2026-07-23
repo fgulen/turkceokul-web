@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  BookOpen, Users, Globe, BarChart3, Shield,
-  Pencil, Trash2, Check, X, Search, Plus, Eye, EyeOff,
-  RefreshCw, ExternalLink, LogIn, Package, AlertCircle,
-  Megaphone, TrendingDown, ScrollText, ChevronRight, UserPlus, Sparkles
+  BookOpen,
+  Pencil, Trash2, Check, X, Plus, Eye, EyeOff,
+  ExternalLink,
 } from 'lucide-react';
-import { Link, useRouter } from '@/navigation';
+import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
-import { useAuthStore, impersonation } from '@/stores/auth';
-import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
-import { ROL_RENKLERI, TUM_ROLLER, apiHataMesaji } from '../shared';
 import {
   AramaInput, Sayfalama, SortTh, trSirala, useSiralama, useTopluSecim, TopluSecimTh, TopluSecimTd, TopluSilButton,
 } from '@/components/staff/table-kit';

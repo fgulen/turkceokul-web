@@ -100,7 +100,11 @@ export function useTopluSecim<ID extends string | number>() {
   const [secili, setSecili] = useState<Set<ID>>(new Set());
 
   function toggleBir(id: ID) {
-    setSecili(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setSecili(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
   }
 
   function toggleHepsi(gorunenIdler: ID[]) {
