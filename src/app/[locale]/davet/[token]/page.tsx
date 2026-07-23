@@ -72,7 +72,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
         ulkeId: bilgi?.hedefRol === 'KurumYoneticisi' ? form.ulkeId || undefined : undefined,
       };
       const { data } = await api.post(`/api/davet/${token}/kabul`, body);
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       setTamamlandi(true);
       setTimeout(() => {
         const role = data.user?.role;

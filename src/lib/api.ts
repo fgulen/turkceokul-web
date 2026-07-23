@@ -11,13 +11,21 @@ const BASE_URL = typeof window === 'undefined' ? getServerApiUrl() : '';
 // edilmiş token çakışmasına yol açabilir.
 let refreshPromise: Promise<string> | null = null;
 
+// refreshToken artık httpOnly cookie'de — JS'ten okunamaz. hasSession, middleware
+// (AuthCookies.SetSession) tarafından aynı anda set edilen, kendisi hassas olmayan
+// bir işaret cookie'si: "muhtemelen bir oturum var, refresh denemeye değer" sinyali.
+// Bu kontrol olmadan her anonim sayfa yüklemesi/istek boşuna bir refresh denemesi yapardı.
+export function hasSessionHint(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.cookie.split('; ').some((c) => c === 'hasSession=1');
+}
+
 function doRefresh(): Promise<string> {
   if (!refreshPromise) {
-    const { refreshToken } = useAuthStore.getState();
     refreshPromise = axios
-      .post<{ accessToken: string; refreshToken: string }>('/api/auth/refresh', { refreshToken })
+      .post<{ accessToken: string }>('/api/auth/refresh', {})
       .then(({ data }) => {
-        useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
+        useAuthStore.getState().setTokens(data.accessToken);
         return data.accessToken;
       })
       .finally(() => { refreshPromise = null; });
@@ -27,9 +35,9 @@ function doRefresh(): Promise<string> {
 
 // SignalR ve diğer non-interceptor kullanımlar için dışa aktarılır
 export async function ensureToken(): Promise<string | null> {
-  const { accessToken, refreshToken } = useAuthStore.getState();
+  const { accessToken } = useAuthStore.getState();
   if (accessToken) return accessToken;
-  if (!refreshToken) return null;
+  if (!hasSessionHint()) return null;
   try {
     return await doRefresh();
   } catch {
@@ -52,7 +60,7 @@ function createApiClient(baseURL: string, timeout?: number) {
     // refresh tamamlanmadan atılan istek anonim gider. Anonime açık endpoint'ler
     // (örn. GET /api/etkinlik/{id}) 401 dönmediği için response interceptor'ın
     // retry'ı da devreye girmez ve role-gated alanlar (Cevap) sessizce null gelir.
-    if (!accessToken && useAuthStore.getState().refreshToken) {
+    if (!accessToken && hasSessionHint()) {
       try { accessToken = await doRefresh(); } catch { /* anonim devam */ }
     }
     if (accessToken) {
@@ -65,20 +73,17 @@ function createApiClient(baseURL: string, timeout?: number) {
     (res) => res,
     async (error) => {
       const original = error.config;
-      if (error.response?.status === 401 && !original._retry && !original.url?.startsWith('/api/auth/')) {
+      if (error.response?.status === 401 && !original._retry && !original.url?.startsWith('/api/auth/') && hasSessionHint()) {
         original._retry = true;
-        const { refreshToken, logout } = useAuthStore.getState();
-        if (refreshToken) {
-          try {
-            const newToken = await doRefresh();
-            original.headers.Authorization = `Bearer ${newToken}`;
-            return client(original);
-          } catch (refreshError) {
-            // Sadece gerçek auth hatası (4xx) → logout. Network hatası → logout yapma.
-            if (axios.isAxiosError(refreshError) && refreshError.response?.status) {
-              logout();
-              if (typeof window !== 'undefined') window.location.href = '/';
-            }
+        try {
+          const newToken = await doRefresh();
+          original.headers.Authorization = `Bearer ${newToken}`;
+          return client(original);
+        } catch (refreshError) {
+          // Sadece gerçek auth hatası (4xx) → logout. Network hatası → logout yapma.
+          if (axios.isAxiosError(refreshError) && refreshError.response?.status) {
+            useAuthStore.getState().logout();
+            if (typeof window !== 'undefined') window.location.href = '/';
           }
         }
       }

@@ -115,9 +115,11 @@ function KullanicilarTab() {
   const impersonateMutation = useMutation({
     mutationFn: (id: number) => api.post(`/api/super-admin/impersonate/${id}`).then(r => r.data),
     onSuccess: (data) => {
-      if (!saUser || !useAuthStore.getState().accessToken || !useAuthStore.getState().refreshToken) return;
-      impersonation.save(saUser, useAuthStore.getState().accessToken!, useAuthStore.getState().refreshToken!);
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      if (!saUser || !useAuthStore.getState().accessToken) return;
+      // Orijinal SuperAdmin refresh token'ı sunucu tarafında (httpOnly cookie) saklanıyor —
+      // bkz. SuperAdminController.Impersonate. Burada sadece banner'ı göstermek için işaretleniyor.
+      impersonation.start();
+      setAuth(data.user, data.accessToken);
       const roleRoutes: Record<string, string> = {
         SuperAdmin: '/super-admin', Admin: '/admin', Ogretmen: '/ogretmen', Ogrenci: '/pano',
         KurumYoneticisi: '/kurum-yoneticisi', UlkeTemsilcisi: '/ulke-temsilcisi', Editor: '/pano'

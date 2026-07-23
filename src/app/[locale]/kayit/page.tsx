@@ -144,7 +144,7 @@ function KayitForm() {
         ...(nativeLanguage && nativeLanguage !== "none" ? { nativeLanguage } : {}),
       };
       const { data } = await api.post("/api/auth/register", payload);
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       const safeAfter = safeRedirect(redirectAfter);
       if (tab === "bireysel" && safeAfter) {
         window.location.href = safeAfter;

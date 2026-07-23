@@ -25,7 +25,7 @@ export default function PinLoginPage() {
     setYukleniyor(true);
     try {
       const { data } = await api.post('/api/auth/pin-login', { kullaniciAdi, pin });
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       router.push('/pano', { locale });
     } catch {
       setHata(t('pinLogin.error'));

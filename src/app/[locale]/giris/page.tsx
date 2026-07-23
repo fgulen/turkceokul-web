@@ -31,7 +31,7 @@ export default function GirisPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/api/auth/login', form);
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       // Redirect param'ı kontrol et (QR tarama, korumalı sayfa yönlendirmesi için)
       const params = new URLSearchParams(window.location.search);
       const redirect = safeRedirect(params.get('redirect'));

@@ -25,7 +25,7 @@ export default function QrLoginPage({ params }: { params: Promise<{ params: stri
 
     api.post('/api/auth/qr-login', { userId: parseInt(userId), qrToken })
       .then(({ data }) => {
-        setAuth(data.user, data.accessToken, data.refreshToken);
+        setAuth(data.user, data.accessToken);
         router.push('/pano', { locale });
       })
       .catch(() => setHata('QR kodu geçersiz veya süresi dolmuş. Öğretmeninizden yeni badge isteyin.'));

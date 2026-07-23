@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { useAuthStore } from '@/stores/auth';
-import { ensureToken } from '@/lib/api';
+import { ensureToken, hasSessionHint } from '@/lib/api';
 import { getClientApiUrl } from '@/lib/api-url';
 
 const getHubUrl = () => getClientApiUrl() + '/hubs/kahoot';
@@ -35,9 +35,8 @@ function redirectToHome() {
 
 // SignalR için geçerli token al — api.ts ile paylaşılan refreshPromise kullanır (çakışma yok)
 async function getToken(): Promise<string> {
-  const { refreshToken } = useAuthStore.getState();
-  if (!refreshToken) {
-    // refreshToken yoksa kullanıcı zaten giriş yapmamış
+  if (!hasSessionHint()) {
+    // hasSession cookie'si yoksa kullanıcı zaten giriş yapmamış
     useAuthStore.getState().logout();
     redirectToHome();
     return '';

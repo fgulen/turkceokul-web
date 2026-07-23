@@ -18,10 +18,9 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
-  refreshToken: string | null;
   _hasHydrated: boolean;
-  setAuth: (user: AuthUser, accessToken: string, refreshToken: string) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  setAuth: (user: AuthUser, accessToken: string) => void;
+  setTokens: (accessToken: string) => void;
   updateUser: (patch: Partial<AuthUser>) => void;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -29,45 +28,37 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
       _hasHydrated: false,
-      setAuth: (user, accessToken, refreshToken) =>
-        set({ user, accessToken, refreshToken }),
-      setTokens: (accessToken, refreshToken) =>
-        set({ accessToken, refreshToken }),
+      setAuth: (user, accessToken) => set({ user, accessToken }),
+      setTokens: (accessToken) => set({ accessToken }),
       updateUser: (patch) =>
         set((s) => ({ user: s.user ? { ...s.user, ...patch } : null })),
       logout: () => {
-        // Best-effort server-side revoke — refresh token'ı sunucuda geçersiz kıl.
-        // keepalive: hemen ardından yönlendirme olsa bile istek tamamlanır.
-        // Plain fetch (api.ts değil) → circular import yok; hata yutulur.
-        const { refreshToken } = get();
-        if (refreshToken && typeof window !== 'undefined') {
+        // refreshToken artık httpOnly cookie'de — aynı-origin istek onu otomatik taşır,
+        // JS'in okuyup göndermesine gerek yok. keepalive: hemen ardından yönlendirme
+        // olsa bile istek tamamlanır. Plain fetch (api.ts değil) → circular import yok.
+        if (typeof window !== 'undefined') {
           fetch('/api/auth/logout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
+            body: '{}',
             keepalive: true,
           }).catch(() => {});
         }
-        set({ user: null, accessToken: null, refreshToken: null });
+        set({ user: null, accessToken: null });
       },
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
       name: 'auth',
       // localStorage: yeni tab ve browser yeniden başlatmada session korunur.
-      // accessToken zaten memory-only olduğu için refreshToken'ı localStorage'da tutmak
-      // marginal ek risk yaratır; sessionStorage yeni-tab logout sorununa yol açıyordu.
+      // Sadece user profili persist edilir — refreshToken artık httpOnly cookie'de,
+      // accessToken zaten memory-only (15 dk TTL, persist edilmesine gerek yok).
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({
-        user: s.user,
-        // accessToken persist edilmiyor — 15 dk TTL, memory-only yeterli
-        refreshToken: s.refreshToken,
-      }),
+      partialize: (s) => ({ user: s.user }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
@@ -75,20 +66,17 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Impersonation helpers — use sessionStorage so they survive page refreshes but not new tabs
+// Impersonation — asıl oturum değişimi (SuperAdmin <-> hedef kullanıcı) sunucu
+// tarafında httpOnly cookie ile yönetiliyor (bkz. AuthController.ImpersonateReturn).
+// Burada sadece "impersonation aktif" bandını göstermek için sessionStorage bayrağı tutulur.
 export const impersonation = {
-  save(user: AuthUser, accessToken: string, refreshToken: string) {
-    sessionStorage.setItem('sa_backup', JSON.stringify({ user, accessToken, refreshToken }));
-  },
-  restore() {
-    const raw = sessionStorage.getItem('sa_backup');
-    if (!raw) return null;
-    return JSON.parse(raw) as { user: AuthUser; accessToken: string; refreshToken: string };
+  start() {
+    sessionStorage.setItem('sa_impersonating', '1');
   },
   isActive() {
-    return !!sessionStorage.getItem('sa_backup');
+    return !!sessionStorage.getItem('sa_impersonating');
   },
   clear() {
-    sessionStorage.removeItem('sa_backup');
+    sessionStorage.removeItem('sa_impersonating');
   },
 };
