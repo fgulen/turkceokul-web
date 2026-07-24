@@ -7,6 +7,7 @@ import { CheckCircle, Users } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
+import { hasSessionHint } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -52,7 +53,10 @@ function SinifKatilContent() {
     if (k.length < 4) return;
 
     // Giriş yapılmamışsa kayıt sayfasına yönlendir; kodu URL'e göm (manuel giriş dahil)
-    if (_hasHydrated && !user) {
+    // !user: hiç kullanıcı yok. user && !hasSessionHint(): localStorage'ta stale user
+    // var ama geçerli oturum cookie'si yok — yine kayıt sayfasına yönlendir.
+    if (_hasHydrated && (!user || !hasSessionHint())) {
+      useAuthStore.getState().logout();
       const returnTo = encodeURIComponent(`${window.location.pathname}?kod=${encodeURIComponent(k)}`);
       router.push(`/kayit?tip=bireysel&redirect=${returnTo}` as Parameters<typeof router.push>[0]);
       return;

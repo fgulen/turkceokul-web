@@ -29,6 +29,7 @@ const NAV_LINKS: NavLink[] = [
 
 export function LandingNav({ alternateHref, links, ctaLabel, ctaHref }: LandingNavProps) {
   const t = useTranslations();
+  const isCustomLinks = links !== undefined;
   const navLinks = links ?? NAV_LINKS;
 
   return (
@@ -52,7 +53,7 @@ export function LandingNav({ alternateHref, links, ctaLabel, ctaHref }: LandingN
         {navLinks.length > 0 && (
           <div className="hidden md:flex" style={{ alignItems: 'center', gap: 24 }}>
             {navLinks.map((l) => {
-              const label = t(l.label);
+              const label = isCustomLinks ? l.label : t(l.label);
               return l.href.startsWith('#') ? (
                 <a
                   key={l.label}

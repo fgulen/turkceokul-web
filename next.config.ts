@@ -159,9 +159,14 @@ const nextConfig: NextConfig = {
     // NOT: 'unsafe-inline' script-src'de XSS'i tam kapatmıyor — Next.js App Router + next-intl + Sentry
     // olmadan nonce-based strict CSP bu aşamada pratik değil. Asıl XSS koruması InputSanitizer/DOMPurify'da
     // kalıyor; bu CSP clickjacking/mixed-content/veri-sızıntısı gibi diğer sınıfları kapatıyor. Post-MVP: nonce'a geç.
+    // 'unsafe-eval' SADECE dev'de: Next.js dev bundler'ı (webpack eval-source-map / React Refresh)
+    // modülleri eval() ile sarıyor — prod build'de gerekmiyor, prod'a asla sızmamalı.
+    const scriptSrc = process.env.NODE_ENV === 'development'
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: ${r2Origin}`,
       `media-src 'self' ${r2Origin}`,

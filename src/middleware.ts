@@ -24,6 +24,8 @@ function stripLocale(pathname: string): string {
 }
 
 function isProtectedPath(pathname: string): boolean {
+  // Sınıfa katıl sayfası anonim erişime açık (PIN kodu ile giriş)
+  if (pathname === '/sinif/katil' || pathname.startsWith('/sinif/katil/')) return false;
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 

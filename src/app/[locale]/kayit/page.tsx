@@ -76,12 +76,15 @@ function KayitForm() {
     : (tipParam === "kurumsal" || tipParam === "kurumsal-pro" || tipParam === "ogretmen") ? "kurumsal"
     : null;
   const redirectAfter = searchParams.get("redirect") ?? "";
+  // Sınıfa Katıl akışından dönüldüğünde (kod zaten girildi) dil adımını atla —
+  // doğrudan isim/e-posta formuna in, kutlama banner'ı hemen görünsün.
+  const sinifKatilRedirect = redirectAfter.startsWith('/') && !redirectAfter.startsWith('//') && redirectAfter.includes('/sinif/katil');
 
   const router = useRouter();
   const locale = useLocale();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const [step, setStep] = useState<Step>(initialTab ? 2 : 1);
+  const [step, setStep] = useState<Step>(initialTab ? (sinifKatilRedirect ? 3 : 2) : 1);
   const [direction, setDirection] = useState(1);
   const [tab, setTab] = useState<Tab | null>(initialTab);
   const [nativeLanguage, setNativeLanguage] = useState<NativeLangValue | null>(null);
@@ -276,7 +279,7 @@ function KayitForm() {
                     setKurumOpen={setKurumOpen}
                     error={error}
                     loading={loading}
-                    redirectAfter={redirectAfter}
+                    sinifKatilRedirect={sinifKatilRedirect}
                     onSubmit={handleSubmit}
                   />
                 )}
@@ -443,7 +446,7 @@ function StepRol({ value, onSelect }: { value: Tab | null; onSelect: (t: Tab) =>
 function StepBilgi({
   tab, form, field, setForm, formatKurumKodu,
   showPass, setShowPass, kurumOpen, setKurumOpen,
-  error, loading, redirectAfter, onSubmit,
+  error, loading, sinifKatilRedirect, onSubmit,
 }: {
   tab: Tab;
   form: { name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string };
@@ -456,11 +459,10 @@ function StepBilgi({
   setKurumOpen: React.Dispatch<React.SetStateAction<boolean>>;
   error: string;
   loading: boolean;
-  redirectAfter: string;
+  sinifKatilRedirect: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }) {
   const t = useTranslations();
-  const sinifKatilRedirect = redirectAfter.startsWith('/') && !redirectAfter.startsWith('//') && redirectAfter.includes('/sinif/katil');
 
   return (
     <div>
