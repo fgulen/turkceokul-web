@@ -226,6 +226,16 @@
       "ileri": "Advanced"
     }
   },
+  "sinifKatil": {
+    "title": "Join Class",
+    "subtitle": "Enter the code your teacher gave you",
+    "joinButton": "Join Class",
+    "joining": "Joining…",
+    "hintNoAccount": "Enter the code and tap the button — if you don't have an account we'll take you to sign up.",
+    "successTitle": "You joined the class!",
+    "goToDashboard": "Go to Dashboard →",
+    "errorGeneric": "Something went wrong."
+  },
   "kahoot": {
     "joinTitle": "Join Kahoot",
     "joinSubtitle": "Enter the 6-digit code from your teacher",

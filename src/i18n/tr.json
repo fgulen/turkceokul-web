@@ -226,6 +226,16 @@
       "ileri": "İleri"
     }
   },
+  "sinifKatil": {
+    "title": "Sınıfa Katıl",
+    "subtitle": "Öğretmeninden aldığın kodu gir",
+    "joinButton": "Sınıfa Katıl",
+    "joining": "Katılınıyor…",
+    "hintNoAccount": "Kodu gir ve butona tıkla — hesabın yoksa seni kayıt sayfasına yönlendireceğiz.",
+    "successTitle": "Sınıfa katıldın!",
+    "goToDashboard": "Panoya Git →",
+    "errorGeneric": "Bir hata oluştu."
+  },
   "kahoot": {
     "joinTitle": "Kahoot'a Katıl",
     "joinSubtitle": "Öğretmenden aldığın 6 haneli kodu gir",

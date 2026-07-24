@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { CheckCircle, Users } from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
@@ -18,6 +19,7 @@ interface KatilResponse {
 }
 
 function SinifKatilContent() {
+  const t = useTranslations('sinifKatil');
   const searchParams = useSearchParams();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -70,10 +72,10 @@ function SinifKatilContent() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
         <div className="bg-card border border-border rounded-2xl p-10 max-w-sm w-full text-center shadow-lg">
           <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Sınıfa katıldın!</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('successTitle')}</h1>
           <p className="text-muted-foreground mb-8">{joined.name}</p>
           <Button className="w-full h-14 text-lg font-semibold" onClick={() => router.push('/pano')}>
-            Panoya Git →
+            {t('goToDashboard')}
           </Button>
         </div>
       </div>
@@ -86,9 +88,9 @@ function SinifKatilContent() {
     if (typeof d === 'string') return d;
     if (d && typeof d === 'object') {
       const obj = d as Record<string, unknown>;
-      return (obj.mesaj ?? obj.message ?? 'Bir hata oluştu.') as string;
+      return (obj.mesaj ?? obj.message ?? t('errorGeneric')) as string;
     }
-    return 'Bir hata oluştu.';
+    return t('errorGeneric');
   })();
 
   return (
@@ -99,8 +101,8 @@ function SinifKatilContent() {
             <Users className="size-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Sınıfa Katıl</h1>
-            <p className="text-sm text-muted-foreground">Öğretmeninden aldığın kodu gir</p>
+            <h1 className="text-xl font-bold">{t('title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
           </div>
         </div>
 
@@ -126,13 +128,13 @@ function SinifKatilContent() {
             disabled={kod.trim().length < 4 || katilMutation.isPending}
             className="w-full h-14 text-lg font-semibold"
           >
-            {katilMutation.isPending ? 'Katılınıyor…' : 'Sınıfa Katıl'}
+            {katilMutation.isPending ? t('joining') : t('joinButton')}
           </Button>
         </form>
 
         {_hasHydrated && !user && (
           <p className="text-center text-xs text-muted-foreground mt-4">
-            Kodu gir ve butona tıkla — hesabın yoksa seni kayıt sayfasına yönlendireceğiz.
+            {t('hintNoAccount')}
           </p>
         )}
       </div>
