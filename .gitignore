@@ -48,3 +48,12 @@ next-env.d.ts
 
 # a11y taramasi - uretilen veri, commit etme
 e2e/test-unitesi-idler.tsv
+
+# playwright test raporu - uretilen, commit etme
+/playwright-report/
+
+# ad-hoc smoke test scriptleri - commit etme
+smoke-tmp*.mjs
+
+# icerik denetim raporlari (audit tooling ciktisi) - commit etme
+denetim-bulgu-*.md
