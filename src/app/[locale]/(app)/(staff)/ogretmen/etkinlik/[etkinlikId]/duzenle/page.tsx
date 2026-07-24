@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from '@/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -47,7 +48,7 @@ function MediaPreview({ url }: { url: string }) {
   const resolved = toMediaUrl(url);
   if (!resolved || !url.trim()) return null;
   if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url))
-    return <img src={resolved} alt="" className="mt-1.5 rounded-lg max-h-20 max-w-[120px] object-cover border border-slate-200" />;
+    return <Image src={resolved} alt="" width={120} height={80} className="mt-1.5 rounded-lg max-h-20 max-w-[120px] object-cover border border-slate-200" unoptimized />;
   if (/\.(mp3|wav|ogg|aac|m4a)$/i.test(url))
     return <audio controls src={resolved} className="mt-1.5 w-full" style={{ height: 32 }} />;
   return null;

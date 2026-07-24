@@ -492,6 +492,8 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
                       )}
                     </div>
                     {kahoot.soruBilgisi.resimUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- canlı Kahoot oyun ekranı,
+                      // next/image geçişi hızlıca görsel doğrulanamadan riske edilmiyor.
                       <img src={toMediaUrl(kahoot.soruBilgisi.resimUrl) ?? ''} alt="" className="w-full max-h-48 rounded-xl object-contain mb-3 bg-slate-50" />
                     )}
                     <p className="text-xl sm:text-2xl font-bold text-foreground mb-4 whitespace-pre-wrap">{kahoot.soruBilgisi.soru}</p>

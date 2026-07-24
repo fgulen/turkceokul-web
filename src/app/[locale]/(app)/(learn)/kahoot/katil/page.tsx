@@ -177,6 +177,8 @@ export default function KahootKatilPage() {
             {/* Soru — resim kenardan kenara, altında ses/metin */}
             <div className="bg-card rounded-2xl border border-border shadow-sm shrink-0 text-center overflow-hidden">
               {kahoot.soruBilgisi?.resimUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- canlı Kahoot oyun ekranı,
+                // next/image geçişi hızlıca görsel doğrulanamadan riske edilmiyor.
                 <img
                   src={toMediaUrl(kahoot.soruBilgisi.resimUrl) ?? ''}
                   alt=""

@@ -92,7 +92,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
           dangerouslySetInnerHTML={{
             __html: sanitizeHtml(sentence).replace(
               /\[___\]|_{3,}/g,
-              `<span class="inline-block min-w-[80px] border-b-2 border-primary mx-1 text-primary font-bold">${selected ?? '&nbsp;&nbsp;&nbsp;&nbsp;'}</span>`
+              `<span class="inline-block min-w-[80px] border-b-2 border-primary mx-1 text-primary font-bold">${sanitizeHtml(selected ?? '&nbsp;&nbsp;&nbsp;&nbsp;')}</span>`
             ),
           }}
         />

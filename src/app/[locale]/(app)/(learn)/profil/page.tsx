@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Camera, Check, ChevronRight, Key, Languages, Library, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
@@ -386,10 +387,12 @@ export default function ProfilPage() {
             <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center">
               <div className="relative w-24 h-24 mx-auto mb-4">
                 {avatarUrl ? (
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt="Profil"
-                    className="w-full h-full rounded-full object-cover border-4 border-primary/10"
+                    fill
+                    unoptimized
+                    className="rounded-full object-cover border-4 border-primary/10"
                   />
                 ) : (
                   <div className="w-full h-full rounded-full bg-primary/10 border-4 border-primary/10 flex items-center justify-center text-primary text-3xl font-bold">

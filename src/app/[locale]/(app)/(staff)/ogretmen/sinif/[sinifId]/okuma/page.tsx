@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -85,9 +86,11 @@ function KitapAtaModal({
               )}
             >
               {k.thumbnailPicture ? (
-                <img
+                <Image
                   src={k.thumbnailPicture}
                   alt={k.name}
+                  width={48}
+                  height={48}
                   className="size-12 rounded-lg object-cover shrink-0"
                 />
               ) : (

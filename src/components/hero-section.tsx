@@ -13,7 +13,7 @@ const HERO_IMAGE_SRC = "/hero-optimized.jpg";
 
 const HERO_TEXT = {
   tr: {
-    badge: "NEVAİ YAYINLARI — A1'DEN C1'E",
+    badge: "NEVAİ YAYINLARI — A1'DEN B2'YE",
     h1a: "Türkçe Eğitimini",
     h1b: "Yeniden Tasarladık.",
     segments: {

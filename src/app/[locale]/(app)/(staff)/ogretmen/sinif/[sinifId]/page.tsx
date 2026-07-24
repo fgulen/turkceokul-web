@@ -346,7 +346,9 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       if (!res.ok) {
         // Backend "öğrenci yok" gibi durumlarda 400 + açıklayıcı düz metin dönüyor —
         // öğretmen "neden indiremiyorum" diye sormasın diye jenerik hata yerine göster.
-        const mesaj = await res.text().catch(() => '');
+        // Yalnızca 400'de: 500/502 gibi durumlarda gövde proxy/altyapı hata sayfası
+        // olabilir, ham metni kullanıcıya sızdırmamak için jenerik `HTTP {status}`'a düşülür.
+        const mesaj = res.status === 400 ? await res.text().catch(() => '') : '';
         throw new Error(mesaj || `HTTP ${res.status}`);
       }
       const buffer = await res.arrayBuffer();

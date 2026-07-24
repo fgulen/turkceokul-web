@@ -32,7 +32,7 @@ export function useWordTranslation(bookId: string) {
   const activeWordRef = useRef<string | null>(null);
 
   const translate = useCallback(async (word: string) => {
-    const clean = word.trim().toLowerCase().replace(/[.,!?;:"'()]/g, '');
+    const clean = word.trim().toLocaleLowerCase('tr').replace(/[.,!?;:"'()]/g, '');
     if (!clean) return;
 
     // Toggle off if same word tapped again

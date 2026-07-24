@@ -89,7 +89,7 @@ export function OkumaMetin({
       translate(word);
 
       // Kelimeyi arka planda kaydet (hata durumunda UI etkilenmez)
-      const normalized = word.toLowerCase();
+      const normalized = word.toLocaleLowerCase('tr');
       if (!kaydilenKelimeler.has(normalized)) {
         const ornekCumle = paragraf.replace(/<[^>]*>/g, '').slice(0, 200);
         api

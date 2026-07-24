@@ -4,6 +4,20 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
 
+// next/image remote loader — CSP img-src/media-src ile AYNI kaynaktan türetilmeli (next.config.ts
+// içinde aşağıda ayrıca bkz: r2Origin). Sabit '*.r2.dev' pattern'i local dev'i (NEXT_PUBLIC_R2_URL=
+// http://localhost:5221) ve r2.dev dışı bir prod R2 custom domain'ini kaçırır — next/image o zaman
+// "hostname not configured" hatasıyla resmi hiç yüklemez.
+function r2RemotePattern(): { protocol: 'http' | 'https'; hostname: string; port?: string } {
+  const raw = process.env.NEXT_PUBLIC_R2_URL ?? 'http://localhost:5221';
+  const url = new URL(raw);
+  return {
+    protocol: url.protocol === 'https:' ? 'https' : 'http',
+    hostname: url.hostname,
+    ...(url.port ? { port: url.port } : {}),
+  };
+}
+
 // EN locale redirect helper — "currentCulture=en-US" parametreli eski URL'leri /en/... hedefine yönlendirir
 type RedirectEntry = {
   source: string;
@@ -27,6 +41,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '*.r2.dev' },
       { protocol: 'https', hostname: 'pub-*.r2.dev' },
+      r2RemotePattern(),
     ],
   },
   outputFileTracingRoot: __dirname,

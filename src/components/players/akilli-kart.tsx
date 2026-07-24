@@ -151,7 +151,10 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
         >
           {/* SIZER */}
           <div style={{ visibility: 'hidden' }} aria-hidden="true" className="w-full rounded-2xl overflow-hidden">
-            {imageMode && <img src={imgUrl!} alt="" className="w-full h-auto block" />}
+            {imageMode && (
+              // eslint-disable-next-line @next/next/no-img-element -- SIZER: görünür yüzlerle (satır ~175/200) birebir aynı native <img> davranışı olmalı, next/image farklı ölçümlenir
+              <img src={imgUrl!} alt="" className="w-full h-auto block" />
+            )}
             <div className={cn('flex flex-col items-center gap-2 px-6 py-3', !imageMode && 'min-h-44 justify-center')}>
               <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
               {sesUrl && <div className="size-9 rounded-full" />}

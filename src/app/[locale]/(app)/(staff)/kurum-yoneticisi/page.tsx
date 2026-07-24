@@ -256,9 +256,9 @@ export default function KurumYoneticisiPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci</span>
-                        <a href={`/ogretmen/sinif/${s.id}`} className="text-primary hover:text-primary/80">
+                        <Link href={`/ogretmen/sinif/${s.id}`} className="text-primary hover:text-primary/80">
                           <ChevronRight className="size-4" />
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   ))}

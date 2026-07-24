@@ -91,6 +91,9 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
           )}
 
           {resimUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- 30 etkinlik tipinde paylaşılan
+            // kritik yol; next/image'ın uzak-host/boyut kısıtları hızlıca görsel doğrulanamadan
+            // riske edilmiyor (bkz. akilli-kart.tsx aynı gerekçe).
             <img
               src={resimUrl}
               alt="Bağlam görseli"
