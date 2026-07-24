@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { queryClient } from '@/components/providers';
 
 export type UserRole = 'Ogrenci' | 'Ogretmen' | 'Koordinator' | 'KurumYoneticisi' | 'UlkeTemsilcisi' | 'SuperAdmin' | 'Editor';
 
@@ -28,11 +29,18 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       _hasHydrated: false,
-      setAuth: (user, accessToken) => set({ user, accessToken }),
+      setAuth: (user, accessToken) => {
+        // Kimlik değişiyorsa (login, PIN/QR giriş, impersonation start/return)
+        // önceki kullanıcının React Query cache'i (okuma-atamalar, siniflarim, vb.
+        // global key'ler) yeni kullanıcının ekranına sızmasın diye temizle.
+        // Aynı kullanıcının token yenilemesinde (id aynı) gereksiz temizlik yapma.
+        if (get().user?.id !== user.id) queryClient.clear();
+        set({ user, accessToken });
+      },
       setTokens: (accessToken) => set({ accessToken }),
       updateUser: (patch) =>
         set((s) => ({ user: s.user ? { ...s.user, ...patch } : null })),
@@ -48,6 +56,10 @@ export const useAuthStore = create<AuthState>()(
             keepalive: true,
           }).catch(() => {});
         }
+        // Farklı kullanıcıların verisi aynı sekmede React Query cache'inde
+        // (global key'ler: okuma-atamalar, siniflarim, vb.) kalıp bir sonraki
+        // hesaba (ör. impersonation) sızmasın diye çıkışta tamamen temizle.
+        queryClient.clear();
         set({ user: null, accessToken: null });
       },
       setHasHydrated: (v) => set({ _hasHydrated: v }),

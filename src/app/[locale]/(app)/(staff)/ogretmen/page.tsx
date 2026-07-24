@@ -105,10 +105,10 @@ export default function OgretmenDashboard() {
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/ogretmen/sinif/${sinif.id}/canli`); }}
                       className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors text-[10px] font-semibold"
-                      title="Canlı Kahoot Başlat"
+                      title="Kahoot Başlat"
                     >
                       <Wifi className="size-3" />
-                      Canlı
+                      Kahoot
                     </button>
                     <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-mono">
                       {sinif.katilimKodu}
