@@ -212,7 +212,7 @@ const nextConfig: NextConfig = {
 const withNextIntl = createNextIntlPlugin();
 
 export default withSentryConfig(withNextIntl(nextConfig), {
-  org: "your-org",
+  org: process.env.SENTRY_ORG,
   project: "turkceokulu-web",
   silent: true,
 });
