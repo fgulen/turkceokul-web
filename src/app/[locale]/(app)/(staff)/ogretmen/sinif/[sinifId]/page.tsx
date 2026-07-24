@@ -343,7 +343,12 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       const res = await fetch(`${base}/api/ogretmen/sinif/${id}/badge-pdf`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // Backend "öğrenci yok" gibi durumlarda 400 + açıklayıcı düz metin dönüyor —
+        // öğretmen "neden indiremiyorum" diye sormasın diye jenerik hata yerine göster.
+        const mesaj = await res.text().catch(() => '');
+        throw new Error(mesaj || `HTTP ${res.status}`);
+      }
       const buffer = await res.arrayBuffer();
       const blob = new Blob([buffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -356,7 +361,10 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (e) {
       console.error('Badge PDF indirilemedi:', e);
-      toast.error('PDF indirilemedi. Lütfen tekrar deneyin.');
+      const mesaj = e instanceof Error && e.message && !/^HTTP \d+$/.test(e.message)
+        ? e.message
+        : 'PDF indirilemedi. Lütfen tekrar deneyin.';
+      toast.error(mesaj);
     }
   }
 
