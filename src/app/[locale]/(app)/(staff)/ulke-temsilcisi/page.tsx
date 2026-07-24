@@ -71,9 +71,12 @@ function sonGirisMetni(tarih: string | null) {
 }
 
 const SALT_OKUNUR_BUTON_METIN: Record<string, string> = {
-  SatinAl: 'Satın Alma — kurum yöneticisi',
   Inceleniyor: 'Talebi inceleniyor',
-  EkLisans: 'Ek lisans — kurum yöneticisi',
+};
+
+const SATIN_AL_BUTON_METIN: Record<string, string> = {
+  SatinAl: 'Satın Al',
+  EkLisans: 'Ek Lisans Al / Kapasiteyi Artır',
 };
 
 export default function UlkeTemsilcisiPage() {
@@ -150,6 +153,21 @@ export default function UlkeTemsilcisiPage() {
     onMutate: () => setLisansMesaj(null),
     onSuccess: (res) => {
       toast.success(res.data?.mesaj ?? 'Deneme başlatıldı.');
+      queryClient.invalidateQueries({ queryKey: kurumLisanslarKey });
+    },
+    onError: (err, dersKitabiId) => {
+      const hata = apiHataMesaji(err);
+      setLisansMesaj({ id: dersKitabiId, mesaj: hata });
+      toast.error(hata);
+    },
+  });
+
+  const satinAlMutation = useMutation({
+    mutationFn: (dersKitabiId: string) =>
+      api.post(`/api/ulke-temsilcisi/kurum/${acikKurum!.id}/satin-al`, { dersKitabiId }),
+    onMutate: () => setLisansMesaj(null),
+    onSuccess: (res) => {
+      toast.success(res.data?.mesaj ?? 'Talebiniz alındı.');
       queryClient.invalidateQueries({ queryKey: kurumLisanslarKey });
     },
     onError: (err, dersKitabiId) => {
@@ -316,7 +334,9 @@ export default function UlkeTemsilcisiPage() {
           <div className="divide-y divide-slate-50 -mx-6">
             {kurumLisanslari.map(k => {
               const denemeBaslatilabilir = k.buton === 'UcretsizDene';
-              const gonderiliyor = denemeMutation.isPending && denemeMutation.variables === k.id;
+              const satinAlinabilir = k.buton === 'SatinAl' || k.buton === 'EkLisans';
+              const denemeGonderiliyor = denemeMutation.isPending && denemeMutation.variables === k.id;
+              const satinAlGonderiliyor = satinAlMutation.isPending && satinAlMutation.variables === k.id;
               const kartMesaj = lisansMesaj?.id === k.id
                 ? { tip: 'hata' as const, metin: lisansMesaj.mesaj }
                 : null;
@@ -328,14 +348,25 @@ export default function UlkeTemsilcisiPage() {
                   mesaj={kartMesaj}
                   aksiyon={denemeBaslatilabilir ? (
                     <button
-                      disabled={gonderiliyor}
+                      disabled={denemeGonderiliyor}
                       onClick={() => denemeMutation.mutate(k.id)}
                       className={cn(
                         'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-emerald-500 text-white hover:bg-emerald-600',
-                        gonderiliyor && 'opacity-60 cursor-wait',
+                        denemeGonderiliyor && 'opacity-60 cursor-wait',
                       )}
                     >
-                      {gonderiliyor ? 'Başlatılıyor…' : 'Ücretsiz Dene'}
+                      {denemeGonderiliyor ? 'Başlatılıyor…' : 'Ücretsiz Dene'}
+                    </button>
+                  ) : satinAlinabilir ? (
+                    <button
+                      disabled={satinAlGonderiliyor}
+                      onClick={() => satinAlMutation.mutate(k.id)}
+                      className={cn(
+                        'shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-primary text-white hover:bg-primary/90',
+                        satinAlGonderiliyor && 'opacity-60 cursor-wait',
+                      )}
+                    >
+                      {satinAlGonderiliyor ? 'Gönderiliyor…' : SATIN_AL_BUTON_METIN[k.buton]}
                     </button>
                   ) : (
                     <span className="shrink-0 text-xs text-slate-400 italic text-right">
