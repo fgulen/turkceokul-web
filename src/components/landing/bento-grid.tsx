@@ -27,7 +27,7 @@ const C = {
   tr: {
     badge: "PLATFORM",
     h2: "Sınıfı geleceğe taşıyan araçlar",
-    sub: "Öğretmen için AI stüdyo. Öğrenci için bağımlılık yaratan deneyim.",
+    sub: "Öğretmen için AI stüdyo. Öğrenci için bağımlılık yapan deneyim.",
     ai: {
       label: "AI STÜDYO",
       title: "30 Saniyede Sınav Üretin",
@@ -36,7 +36,7 @@ const C = {
       cta: "Öğretmenler için",
     },
     gam: {
-      title: "Bağımlılık Yaratan Sistem",
+      title: "Bağımlılık Yapan Sistem",
       sub: "Duolingo mekanikleri, gerçek müfredat.",
       streak: "12 gün",
       combo: "5x COMBO",

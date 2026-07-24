@@ -146,6 +146,10 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: `${API_URL}/api/:path*`,
       },
+      {
+        source: '/Medya/:path*',
+        destination: `${API_URL}/Medya/:path*`,
+      },
     ];
   },
 };

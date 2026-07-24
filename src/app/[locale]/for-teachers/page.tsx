@@ -327,7 +327,7 @@ export default function ForTeachersPage() {
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>{'// AI Content Studio'}</div>
                 <div style={{ background: 'rgba(87,223,254,0.05)', border: '1px solid rgba(87,223,254,0.12)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>TOPIC</div>
-                  <div style={{ fontSize: 13, color: '#fff' }}>Turkish geography, B1 level, 10 questions</div>
+                  <div style={{ fontSize: 13, color: '#fff' }}>Daily routines, A2 level, 10 questions</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
@@ -336,7 +336,7 @@ export default function ForTeachersPage() {
                   </div>
                   <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
                 </div>
-                {['Which continent is Istanbul on?', 'What is the capital of Türkiye?', 'Which provinces are on the Aegean coast?'].map((q, i) => (
+                {['What time do you wake up?', 'What do you eat for breakfast?', 'How do you go to school?'].map((q, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 7, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 10, color: '#57dffe', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>Q{i + 1}</span>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: '18px' }}>{q}</span>

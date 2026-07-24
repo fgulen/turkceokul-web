@@ -119,7 +119,7 @@ export default function TurkceOgrenPage() {
               <span style={{ color: '#1b75bc' }}>Her Gün Bir Adım İlerle</span>
             </h1>
             <p style={{ fontSize: 18, color: '#414751', maxWidth: 560, margin: '0 auto 36px', lineHeight: '28px' }}>
-              Nevai Yayınları&apos;nın gerçek müfredatı, Duolingo&apos;nun bağımlılık yaratan mekanizmaları.
+              Nevai Yayınları&apos;nın gerçek müfredatı, Duolingo&apos;nun bağımlılık yapan mekanizmaları.
               Kalp sistemi, XP zinciri, günlük seri — öğrenmek bir alışkanlığa dönüşür.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>

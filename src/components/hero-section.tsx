@@ -31,7 +31,7 @@ const HERO_TEXT = {
     todayXp: "BUGÜNKÜ XP",
   },
   en: {
-    badge: "NEVAI PUBLISHERS — A1 TO C1",
+    badge: "NEVAI PUBLISHERS — A1 TO B2",
     h1a: "We Reimagined",
     h1b: "Turkish Education.",
     segments: {
@@ -58,14 +58,17 @@ function HeroCopy({ locale }: { locale: string }) {
 
   return (
     <div>
-      <motion.div
+      <motion.a
+        href="https://nevai.co/"
+        target="_blank"
+        rel="noopener noreferrer"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-blue-100 px-3.5 py-[5px] text-[11px] font-bold tracking-[0.06em] text-[#1e3a5f]"
+        className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-blue-100 px-3.5 py-[5px] text-[11px] font-bold tracking-[0.06em] text-[#1e3a5f] transition-colors hover:bg-blue-200"
       >
         <BookOpen className="h-3 w-3" />
         {T.badge}
-      </motion.div>
+      </motion.a>
 
       <motion.h1
         initial={{ opacity: 0, y: 20 }}

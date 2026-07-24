@@ -291,9 +291,9 @@ export default async function LandingPage(
                   >
                     <div className="flex items-end gap-2">
                       {b.imgs.slice(0, 3).map((src, i) => (
-                        // Kapak görselleri eski ASP.NET CDN'inde (turkceokulu.com/UserFiles),
-                        // next.config.ts remotePatterns'e alınmadı — unoptimized ile next/image
-                        // kullanılıyor (CLS koruması için width/height sabit, optimizasyon atlanıyor).
+                        // Kapak görselleri toMediaUrl() ile çözülüyor (R2 varsa R2, yoksa
+                        // /Medya rewrite üzerinden API) — remotePatterns'e alınmadı, unoptimized
+                        // ile next/image kullanılıyor (CLS koruması için width/height sabit).
                         <Image
                           key={i}
                           src={src}

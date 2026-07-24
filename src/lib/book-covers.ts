@@ -1,9 +1,16 @@
-const BASE = "https://turkceokulu.com/UserFiles/css/kitap/";
+import { toMediaUrl } from "@/lib/utils";
+
+const BASE = "/Medya/kitap_kapak/";
+
+function coverUrl(fileName: string): string {
+  const path = `${BASE}${fileName}`;
+  return toMediaUrl(path) ?? path;
+}
 
 export const BOOK_COVERS = {
-  CAN:     Array.from({ length: 4 }, (_, i) => `${BASE}c${i + 1}.png`),
-  YAGMUR:  Array.from({ length: 5 }, (_, i) => `${BASE}y${i + 1}.png`),
-  HARMONI: Array.from({ length: 4 }, (_, i) => `${BASE}h${i + 1}.png`),
+  CAN:     Array.from({ length: 4 }, (_, i) => coverUrl(`c${i + 1}.png`)),
+  YAGMUR:  Array.from({ length: 5 }, (_, i) => coverUrl(`y${i + 1}.png`)),
+  HARMONI: Array.from({ length: 4 }, (_, i) => coverUrl(`h${i + 1}.png`)),
 } as const;
 
 export type BookSeries = keyof typeof BOOK_COVERS;

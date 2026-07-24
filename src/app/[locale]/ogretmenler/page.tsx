@@ -343,7 +343,7 @@ export default function OgretmenlerPage() {
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>{'// AI İçerik Stüdyosu'}</div>
                 <div style={{ background: 'rgba(87,223,254,0.05)', border: '1px solid rgba(87,223,254,0.12)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>KONU</div>
-                  <div style={{ fontSize: 13, color: '#fff' }}>Türkiye&apos;nin coğrafyası, B1 seviyesi, 10 soru</div>
+                  <div style={{ fontSize: 13, color: '#fff' }}>Günlük rutinler, A2 seviyesi, 10 soru</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
@@ -353,9 +353,9 @@ export default function OgretmenlerPage() {
                   <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
                 </div>
                 {[
-                  'İstanbul hangi kıtadadır?',
-                  'Türkiye\'nin başkenti neresidir?',
-                  'Ege\'de hangi iller yer alır?',
+                  'Saat kaçta uyanıyorsun?',
+                  'Kahvaltıda ne yersin?',
+                  'Okula nasıl gidiyorsun?',
                 ].map((q, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 7, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 10, color: '#57dffe', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>Q{i + 1}</span>
