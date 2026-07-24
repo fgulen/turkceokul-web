@@ -170,10 +170,10 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
                   <input
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={form.sifre}
                     onChange={field('sifre')}
-                    placeholder="En az 6 karakter"
+                    placeholder="En az 8 karakter"
                     className="w-full px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
                   />
                 </div>

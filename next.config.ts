@@ -135,9 +135,53 @@ const nextConfig: NextConfig = {
       '/(tr|en)/davet/:path*',
       '/(tr|en)/qr-login/:path*',
       '/(tr|en)/pin-login',
+      // O9: bu 4'ü middleware korumalı ama noindex eksikti
+      '/(tr|en)/kutuphane/:path*',
+      '/(tr|en)/sinif/:path*',
+      '/(tr|en)/editor/:path*',
+      '/(tr|en)/ulke-temsilcisi/:path*',
     ];
 
-    return privatePaths.map(source => ({ source, headers: noindexHeader }));
+    // SignalR (Kahoot) tarayıcıda getClientApiUrl() → yalnızca NEXT_PUBLIC_API_URL kullanır
+    // (rewrite ile proxy'lenmiyor, doğrudan bağlanır). CSP bu YÜZDEN API_URL (server-side,
+    // private API_URL'i önceliklendirir — rewrite hedefi) değil, NEXT_PUBLIC_API_URL'den
+    // türetilmeli: ikisi prod'da farklı olabilir (internal vs public Railway domain),
+    // yanlış olan connect-src Kahoot'u sessizce kırar.
+    const clientApiOrigin = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5221';
+    const apiOrigin = clientApiOrigin;
+    const apiWsOrigin = clientApiOrigin.replace(/^http/, 'ws');
+
+    // NOT: 'unsafe-inline' script-src'de XSS'i tam kapatmıyor — Next.js App Router + next-intl + Sentry
+    // olmadan nonce-based strict CSP bu aşamada pratik değil. Asıl XSS koruması InputSanitizer/DOMPurify'da
+    // kalıyor; bu CSP clickjacking/mixed-content/veri-sızıntısı gibi diğer sınıfları kapatıyor. Post-MVP: nonce'a geç.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https://*.r2.dev https://pub-*.r2.dev",
+      "font-src 'self' data:",
+      `connect-src 'self' ${apiOrigin} ${apiWsOrigin} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "form-action 'self'",
+    ].join('; ');
+
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: csp },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      // includeSubDomains/preload eklenmedi — api. alt domaini HTTPS-hazır doğrulanmadan
+      // includeSubDomains geridönüşü zor bir taahhüt (preload listesinden çıkmak yavaş).
+      { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
+    ];
+
+    return [
+      { source: '/(.*)', headers: securityHeaders },
+      ...privatePaths.map(source => ({ source, headers: noindexHeader })),
+    ];
   },
 
   async rewrites() {

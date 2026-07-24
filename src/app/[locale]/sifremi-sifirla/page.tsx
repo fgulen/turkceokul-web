@@ -38,7 +38,7 @@ function SifreSifirlaForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) { setError('Şifre en az 6 karakter olmalıdır.'); return; }
+    if (form.password.length < 8) { setError('Şifre en az 8 karakter olmalıdır.'); return; }
     if (form.password !== form.confirm) { setError('Şifreler eşleşmiyor.'); return; }
     setError('');
     setLoading(true);
@@ -78,7 +78,7 @@ function SifreSifirlaForm() {
         </div>
         <div>
           <h1 className="text-xl font-bold leading-tight">Yeni şifre belirle</h1>
-          <p className="text-muted-foreground text-xs">En az 6 karakter olmalı</p>
+          <p className="text-muted-foreground text-xs">En az 8 karakter olmalı</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ function SifreSifirlaForm() {
               value={form.password}
               onChange={field('password')}
               required
-              placeholder="En az 6 karakter"
+              placeholder="En az 8 karakter"
               autoComplete="new-password"
               autoFocus
               className="pr-10"

@@ -129,7 +129,7 @@ function KayitForm() {
       setError(t("auth.register.errorInvalidName"));
       return;
     }
-    if (form.password.length < 6) { setError(t("auth.register.errorShortPassword")); return; }
+    if (form.password.length < 8) { setError(t("auth.register.errorShortPassword")); return; }
     setError("");
     setLoading(true);
     try {
