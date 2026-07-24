@@ -473,13 +473,25 @@ function StepBilgi({
 
       {tab === "bireysel" && (
         sinifKatilRedirect ? (
-          <div className="mb-4 flex items-start gap-3.5 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-primary p-4">
-            <span className="shrink-0 text-2xl leading-none">🎉</span>
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 380, damping: 22 }}
+            className="mb-4 flex items-start gap-3.5 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-primary p-4"
+          >
+            <motion.span
+              className="shrink-0 text-2xl leading-none"
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.1 }}
+            >
+              🎉
+            </motion.span>
             <div>
             <div className="mb-1 text-sm font-extrabold text-white">{t("auth.register.infoClassCodeSuccess")}</div>
             <div className="text-xs leading-relaxed text-white/80">{t("auth.register.infoClassCodeDesc")}</div>
             </div>
-          </div>
+          </motion.div>
         ) : (
           <div className="mb-4 flex flex-col gap-2.5">
             {/* Bireysel kullanım henüz açık olmadığından AI seviye testi vaadi şimdilik gizli —

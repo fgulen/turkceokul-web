@@ -30,6 +30,7 @@ interface OgrenciOzet {
   toplamPuan: number;
   tamamlananUnite: number;
   sonAktivite: string | null;
+  sonGirisTarihi: string | null;
 }
 
 interface TopluEkleSonuc {
@@ -521,7 +522,11 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                 <p className="text-slate-400 text-sm text-center py-10">Henüz öğrenci yok.</p>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {ogrenciler.map(o => (
+                  {ogrenciler.map(o => {
+                    const gunOnce = o.sonGirisTarihi
+                      ? Math.round((Date.now() - new Date(o.sonGirisTarihi).getTime()) / 86400000)
+                      : null;
+                    return (
                     <div key={o.userId} className="flex items-center justify-between py-3 group">
                       <div className="flex items-center gap-3">
                         <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
@@ -536,7 +541,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-xs text-slate-400">
-                          {o.sonAktivite ? new Date(o.sonAktivite).toLocaleDateString('tr') : 'Hiç girmedi'}
+                          {gunOnce === null ? 'Hiç girmedi' : gunOnce === 0 ? 'Bugün' : `${gunOnce} gün önce`}
                         </div>
                         <button
                           onClick={() => {
@@ -549,7 +554,8 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
