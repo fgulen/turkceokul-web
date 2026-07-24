@@ -151,6 +151,11 @@ const nextConfig: NextConfig = {
     const apiOrigin = clientApiOrigin;
     const apiWsOrigin = clientApiOrigin.replace(/^http/, 'ws');
 
+    // Kitap kapakları + tüm telaffuz/dinleme sesi R2'den serve edilir (toMediaUrl → NEXT_PUBLIC_R2_URL).
+    // img-src ve media-src bu YÜZDEN NEXT_PUBLIC_R2_URL'den türetilir: local'de bu API origin'i (localhost:5221),
+    // prod'da gerçek R2 domain'i (ör. https://r2.turkceokulu.com). Sabit *.r2.dev pattern'i her ikisini de kaçırırdı.
+    const r2Origin = process.env.NEXT_PUBLIC_R2_URL ?? 'http://localhost:5221';
+
     // NOT: 'unsafe-inline' script-src'de XSS'i tam kapatmıyor — Next.js App Router + next-intl + Sentry
     // olmadan nonce-based strict CSP bu aşamada pratik değil. Asıl XSS koruması InputSanitizer/DOMPurify'da
     // kalıyor; bu CSP clickjacking/mixed-content/veri-sızıntısı gibi diğer sınıfları kapatıyor. Post-MVP: nonce'a geç.
@@ -158,7 +163,8 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://*.r2.dev https://pub-*.r2.dev",
+      `img-src 'self' data: ${r2Origin}`,
+      `media-src 'self' ${r2Origin}`,
       "font-src 'self' data:",
       `connect-src 'self' ${apiOrigin} ${apiWsOrigin} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io`,
       "frame-ancestors 'none'",
