@@ -21,6 +21,12 @@ interface PanelOgretmen {
   surname: string | null;
   email: string;
   isApproved: boolean;
+  lastLoginDate: string | null;
+}
+
+function sonGirisMetni(tarih: string | null) {
+  if (!tarih) return 'Hiç giriş yapmadı';
+  return new Date(tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 interface PanelSinif {
@@ -284,6 +290,7 @@ export default function KurumYoneticisiPage() {
                       <div>
                         <div className="font-medium text-sm text-slate-800">{o.name} {o.surname}</div>
                         <div className="text-xs text-slate-400">{o.email}</div>
+                        <div className="text-xs text-slate-400">Son giriş: {sonGirisMetni(o.lastLoginDate)}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

@@ -65,6 +65,10 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   // Ülke temsilcisi ülke-scope'lu çalışır: ülkesiz temsilci kendi paneline bile giremez (403).
   // Diğer roller (Koordinator scope'suz, Ogretmen/KurumYoneticisi sonradan tamamlanabilir) için ülke opsiyonel kalır.
   const ulkeZorunlu = hedefRol === 'UlkeTemsilcisi' && !sabitUlke;
+  // Sadece UlkeTemsilcisi'nin ogretmen daveti icin kurum zorunlu — SuperAdmin/Koordinator
+  // icin kurum opsiyonel kalmasi 2026-07-19'da bilinclli karardi (bkz. proje hafizasi),
+  // burada degistirilmiyor; bu yalnizca yeni ulke-capinda ogretmen-ekleme akisina ozel.
+  const kurumZorunlu = scope?.rol === 'UlkeTemsilcisi' && hedefRol === 'Ogretmen';
 
   const davetMutation = useMutation({
     mutationFn: () => api.post('/api/davet/olustur', {
@@ -130,7 +134,9 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           {kurumAlaniGorunsun && (
             <div>
-              <label className="block text-xs font-medium mb-1">Kurum</label>
+              <label className="block text-xs font-medium mb-1">
+                Kurum{kurumZorunlu && <span className="text-red-500"> *</span>}
+              </label>
               <select
                 value={seciliKurumId}
                 onChange={(e) => setSeciliKurumId(e.target.value)}
@@ -140,6 +146,9 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
                 <option value="">{hedefRol === 'KurumYoneticisi' ? 'Yeni kurum oluşturulacak' : 'Seçiniz'}</option>
                 {kurumSecenekleri.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
               </select>
+              {kurumZorunlu && !seciliKurumId && (
+                <p className="text-xs text-red-500 mt-1">Öğretmen daveti için kurum seçimi zorunlu.</p>
+              )}
             </div>
           )}
 
@@ -149,7 +158,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           <button
             onClick={() => davetMutation.mutate()}
-            disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId)}
+            disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId) || (kurumZorunlu && !seciliKurumId)}
             className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
           >
             {davetMutation.isPending ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}

@@ -15,6 +15,7 @@ interface DavetBilgi {
   kurumAdi?: string;
   sinifAdi?: string;
   hedefEmail?: string;
+  sabitUlkeAdi?: string;
 }
 
 const ROL_LABELS: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
   }, [token]);
 
   useEffect(() => {
-    if (bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi.kurumAdi) {
+    if (bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi.kurumAdi && !bilgi.sabitUlkeAdi) {
       api.get('/api/davet/ulkeler').then(r => setUlkeler(r.data));
     }
   }, [bilgi]);
@@ -69,7 +70,7 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
         sifre: form.sifre,
         email: form.email || undefined,
         kurumAdi: bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi?.kurumAdi ? form.kurumAdi : undefined,
-        ulkeId: bilgi?.hedefRol === 'KurumYoneticisi' ? form.ulkeId || undefined : undefined,
+        ulkeId: bilgi?.hedefRol === 'KurumYoneticisi' && !bilgi?.sabitUlkeAdi ? form.ulkeId || undefined : undefined,
       };
       const { data } = await api.post(`/api/davet/${token}/kabul`, body);
       setAuth(data.user, data.accessToken);
@@ -191,7 +192,13 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
                   </div>
                 )}
 
-                {bilgi.hedefRol === 'KurumYoneticisi' && ulkeler.length > 0 && (
+                {bilgi.hedefRol === 'KurumYoneticisi' && bilgi.sabitUlkeAdi && (
+                  <p className="text-xs text-muted-foreground">
+                    Ülke: <strong>{bilgi.sabitUlkeAdi}</strong> (sabit)
+                  </p>
+                )}
+
+                {bilgi.hedefRol === 'KurumYoneticisi' && !bilgi.sabitUlkeAdi && ulkeler.length > 0 && (
                   <div>
                     <label className="block text-xs font-medium mb-1">Ülke *</label>
                     <select

@@ -45,6 +45,31 @@ interface KatalogKitapAd {
   ad: string;
 }
 
+interface OgretmenSatiri {
+  id: number;
+  name: string;
+  surname: string | null;
+  email: string;
+  lastLoginDate: string | null;
+  kurumId: number;
+  kurumAdi: string;
+}
+
+interface OgrenciSatiri {
+  id: number;
+  name: string;
+  surname: string | null;
+  email: string;
+  lastLoginDate: string | null;
+  kurumAdi: string;
+  sinifAdi: string;
+}
+
+function sonGirisMetni(tarih: string | null) {
+  if (!tarih) return 'Hiç giriş yapmadı';
+  return new Date(tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 const SALT_OKUNUR_BUTON_METIN: Record<string, string> = {
   SatinAl: 'Satın Alma — kurum yöneticisi',
   Inceleniyor: 'Talebi inceleniyor',
@@ -57,6 +82,7 @@ export default function UlkeTemsilcisiPage() {
   const [donusturuluyorId, setDonusturuluyorId] = useState<number | null>(null);
   const [acikKurum, setAcikKurum] = useState<{ id: number; name: string } | null>(null);
   const [lisansMesaj, setLisansMesaj] = useState<{ id: string; mesaj: string } | null>(null);
+  const [acikListe, setAcikListe] = useState<'ogretmen' | 'ogrenci' | null>(null);
 
   const { data: panel, isLoading } = useQuery<UlkePanel>({
     queryKey: ['ulke-temsilcisi-panel'],
@@ -80,6 +106,18 @@ export default function UlkeTemsilcisiPage() {
   });
   const kitapAdi = (id: string | null) =>
     (id && katalog?.kitaplar.find(k => k.id === id)?.ad) || id || '—';
+
+  const { data: ogretmenler, isLoading: ogretmenlerYukleniyor } = useQuery<OgretmenSatiri[]>({
+    queryKey: ['ulke-temsilcisi-ogretmenler'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/ogretmenler').then(r => r.data),
+    enabled: acikListe === 'ogretmen',
+  });
+
+  const { data: ogrenciler, isLoading: ogrencilerYukleniyor } = useQuery<OgrenciSatiri[]>({
+    queryKey: ['ulke-temsilcisi-ogrenciler'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/ogrenciler').then(r => r.data),
+    enabled: acikListe === 'ogrenci',
+  });
 
   const donusturMutation = useMutation({
     mutationFn: (id: number) =>
@@ -200,14 +238,20 @@ export default function UlkeTemsilcisiPage() {
             <div className="text-2xl font-bold text-primary">{panel?.kurumlar.length ?? 0}</div>
             <div className="text-xs text-slate-500 mt-1">Kurum</div>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <button
+            onClick={() => setAcikListe('ogretmen')}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-left hover:bg-slate-50 transition-colors"
+          >
             <div className="text-2xl font-bold text-slate-700">{panel?.toplamOgretmen ?? 0}</div>
             <div className="text-xs text-slate-500 mt-1">Öğretmen</div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          </button>
+          <button
+            onClick={() => setAcikListe('ogrenci')}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-left hover:bg-slate-50 transition-colors"
+          >
             <div className="text-2xl font-bold text-slate-700">{panel?.toplamOgrenci ?? 0}</div>
             <div className="text-xs text-slate-500 mt-1">Öğrenci</div>
-          </div>
+          </button>
         </div>
 
         <RoleScopedUserForm
@@ -301,6 +345,71 @@ export default function UlkeTemsilcisiPage() {
                 />
               );
             })}
+          </div>
+        )}
+      </SlideOver>
+
+      <SlideOver
+        open={acikListe === 'ogretmen'}
+        onClose={() => setAcikListe(null)}
+        title="Öğretmenler"
+        subtitle={panel?.name}
+        width="lg"
+      >
+        <div className="mb-5 pb-5 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3">Öğretmen Davet Et</h3>
+          <RoleScopedUserForm
+            bare
+            baslik="Öğretmen Davet Et"
+            aciklama=""
+            hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
+            onOlusturuldu={() => {
+              queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-ogretmenler'] });
+              queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+            }}
+          />
+        </div>
+        {ogretmenlerYukleniyor ? (
+          <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+        ) : !ogretmenler?.length ? (
+          <p className="text-slate-400 text-sm text-center py-12">Henüz öğretmen yok.</p>
+        ) : (
+          <div className="divide-y divide-slate-50 -mx-6">
+            {ogretmenler.map(o => (
+              <div key={o.id} className="flex items-center justify-between px-6 py-3">
+                <div className="min-w-0">
+                  <div className="font-medium text-sm text-slate-800 truncate">{o.name} {o.surname ?? ''}</div>
+                  <div className="text-xs text-slate-400 truncate">{o.email} · {o.kurumAdi}</div>
+                </div>
+                <div className="shrink-0 text-xs text-slate-400 text-right">{sonGirisMetni(o.lastLoginDate)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SlideOver>
+
+      <SlideOver
+        open={acikListe === 'ogrenci'}
+        onClose={() => setAcikListe(null)}
+        title="Öğrenciler"
+        subtitle={panel?.name}
+        width="lg"
+      >
+        {ogrencilerYukleniyor ? (
+          <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+        ) : !ogrenciler?.length ? (
+          <p className="text-slate-400 text-sm text-center py-12">Henüz öğrenci yok.</p>
+        ) : (
+          <div className="divide-y divide-slate-50 -mx-6">
+            {ogrenciler.map(o => (
+              <div key={o.id} className="flex items-center justify-between px-6 py-3">
+                <div className="min-w-0">
+                  <div className="font-medium text-sm text-slate-800 truncate">{o.name} {o.surname ?? ''}</div>
+                  <div className="text-xs text-slate-400 truncate">{o.email} · {o.kurumAdi} · {o.sinifAdi}</div>
+                </div>
+                <div className="shrink-0 text-xs text-slate-400 text-right">{sonGirisMetni(o.lastLoginDate)}</div>
+              </div>
+            ))}
           </div>
         )}
       </SlideOver>
