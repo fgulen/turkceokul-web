@@ -152,7 +152,6 @@ const faqs = [
   { q: 'QR kodu nasıl çalışır? Özel uygulama gerekiyor mu?', a: 'Hayır, uygulama gerekmez. Öğretmen Paneli → Sınıfım → "QR ile Katıl" butonuna tıklayınca büyük bir QR kodu açılır. Öğrenci telefon kamerasıyla (iOS veya Android — ayrı QR uygulaması şart değil) kodu tarar; tarayıcıda turkceokulu.com/sinif/katil sayfası açılır ve sınıfa katılır. Hesabı yoksa önce kayıt olur, ardından otomatik olarak katılım sayfasına yönlendirilir.' },
   { q: 'AI İçerik Stüdyosu hangi dillerde çalışır?', a: 'Şu an Türkçe içerik üretimi için optimize edilmiştir. Konu Türkçe verilince kelime düzeyine uygun quiz, boşluk doldurma ve kelime listesi üretir.' },
   { q: 'Kahoot modunda kaç öğrenci aynı anda katılabilir?', a: 'Kurumsal Pro planda 50 öğrenciye kadar aynı anda canlı quiz yapılabilir. Kampüs planında bu limit kaldırılır.' },
-  { q: 'Nevai Yayınları kitaplarıyla entegrasyon nasıl çalışır?', a: 'Kitap aktivasyon kodları öğrencilere 6 aylık premium erişim verir. Öğretmen panelinden sınıfı bağlı kitaba göre filtreleyebilirsiniz.' },
   { q: 'Veriler güvenli mi? GDPR uyumlu mu?', a: 'Evet. Platform UK merkezlidir ve GDPR\'a tabidir. Öğrenci verileri üçüncü taraflarla paylaşılmaz. Veri silme talebi 30 gün içinde yerine getirilir.' },
 ];
 

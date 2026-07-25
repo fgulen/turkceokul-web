@@ -7,7 +7,7 @@ import { HeroSection } from "@/components/hero-section";
 import { BentoGrid } from "@/components/landing/bento-grid";
 import { SegmentProvider } from "@/components/landing/segment-switcher";
 import { YakindaSheetProvider, YakindaTrigger, YakindaBadge } from "@/components/landing/yakinda-sheet";
-import { Check, Package, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { BOOK_COVERS } from "@/lib/book-covers";
 
 const BASE = 'https://turkceokulu.com';
@@ -115,8 +115,6 @@ const C = {
     ],
     individualPriceLabel: "Yakında",
     individualCta: "Haber ver",
-    bookNotePre: "Nevai Yayınları kitap setlerinde ",
-    bookNote: '<strong>6 aylık Premium erişim kodu</strong> aktivasyonu yakında açılıyor. Kurumsal alımlarda özel paketler için iletişime geçin.',
     ctaBadge: "ÜCRETSİZ BAŞLA",
     ctaH2a: "Okulunuz için ilk adımı",
     ctaH2b: "bugün atın.",
@@ -189,8 +187,6 @@ const C = {
     ],
     individualPriceLabel: "Coming soon",
     individualCta: "Notify me",
-    bookNotePre: "Nevai Publishers book sets include a ",
-    bookNote: '<strong>6-month Premium access code</strong> — activation is opening soon. Contact us for custom packages on institutional orders.',
     ctaBadge: "START FREE",
     ctaH2a: "Take the first step",
     ctaH2b: "for your school, today.",
@@ -407,13 +403,7 @@ export default async function LandingPage(
                 ))}
               </div>
 
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
-                <Package className="h-[18px] w-[18px] flex-shrink-0 text-primary" />
-                <p
-                  className="m-0 text-xs text-slate-600"
-                  dangerouslySetInnerHTML={{ __html: t.bookNotePre + t.bookNote }}
-                />
-              </div>
+
             </div>
           </section>
 

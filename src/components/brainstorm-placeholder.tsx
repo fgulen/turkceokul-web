@@ -17,7 +17,7 @@ export function BrainstormPlaceholder({ alan, minHeight = 160 }: BrainstormPlace
       style={{ minHeight }}
     >
       <p className="text-sm font-medium text-slate-400">
-        [ Brainstorming / Bu İçerik Eklenecek: {alan} ]
+        [ Buraya İçerik Eklenecek: {alan} ]
       </p>
     </div>
   );
