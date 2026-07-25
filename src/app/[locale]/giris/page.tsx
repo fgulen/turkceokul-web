@@ -43,7 +43,8 @@ export default function GirisPage() {
       if (role === 'SuperAdmin') router.push('/super-admin', { locale });
       else if (role === 'Koordinator') router.push('/admin', { locale });
       else if (role === 'KurumYoneticisi') router.push('/kurum-yoneticisi', { locale });
-      else if (role === 'Ogretmen' || role === 'UlkeTemsilcisi') router.push('/ogretmen', { locale });
+      else if (role === 'UlkeTemsilcisi') router.push('/ulke-temsilcisi', { locale });
+      else if (role === 'Ogretmen') router.push('/ogretmen', { locale });
       else router.push('/pano', { locale });
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
