@@ -13,7 +13,7 @@ const HERO_IMAGE_SRC = "/hero-optimized.jpg";
 
 const HERO_TEXT = {
   tr: {
-    badge: "NEVAİ YAYINLARI — A1'DEN B2'YE",
+    badge: "NEVAİ YAYINLARI — A1'DEN C1'E",
     h1a: "Türkçe Eğitimini",
     h1b: "Yeniden Tasarladık.",
     segments: {
@@ -31,7 +31,7 @@ const HERO_TEXT = {
     todayXp: "BUGÜNKÜ XP",
   },
   en: {
-    badge: "NEVAI PUBLISHERS — A1 TO B2",
+    badge: "NEVAI PUBLISHERS — A1 TO C1",
     h1a: "We Reimagined",
     h1b: "Turkish Education.",
     segments: {
