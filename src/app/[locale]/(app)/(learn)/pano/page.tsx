@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { PlusBanner } from '@/components/plus-banner';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { Link } from '@/navigation';
 
 interface Gorev {
@@ -41,6 +41,7 @@ interface DersKitabi {
   kitapSeti: string;
   seviye: string;
   orderNo: number;
+  thumbnailPicture?: string | null;
 }
 
 interface OkumaKitabi {
@@ -292,7 +293,7 @@ export default function PanoPage() {
               {(kitaplar ?? []).map((k, idx, arr) => {
                 // Seri içi sırayı hesapla (1-tabanlı)
                 const seriesIdx = arr.filter((x, i) => i < idx && x.kitapSeti === k.kitapSeti).length + 1;
-                const coverUrl = bookCoverUrl(k.kitapSeti, seriesIdx);
+                const coverUrl = toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(k.kitapSeti, seriesIdx);
                 const active = !cefrLevel || k.seviye === cefrLevel;
                 if (active) {
                   return (
@@ -301,7 +302,8 @@ export default function PanoPage() {
                       href={`/ders/${k.id}`}
                       className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group"
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-4">
+                        <BookCoverThumb src={coverUrl} alt={k.name} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -311,7 +313,6 @@ export default function PanoPage() {
                           <div className="font-semibold group-hover:text-primary transition-colors truncate">{k.name}</div>
                           <div className="text-xs text-muted-foreground mt-1">{k.kitapSeti}</div>
                         </div>
-                        <BookCoverThumb src={coverUrl} alt={k.name} />
                       </div>
                     </Link>
                   );
@@ -323,7 +324,13 @@ export default function PanoPage() {
                     className="p-5 bg-card border border-border rounded-2xl opacity-50 hover:opacity-70 transition-opacity relative group"
                     title={t('pano.premiumRequired')}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <BookCoverThumb src={coverUrl} alt={k.name} />
+                        <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+                          <Lock className="size-3.5 text-white" aria-label={t('pano.locked')} role="img" />
+                        </div>
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
@@ -335,12 +342,6 @@ export default function PanoPage() {
                         </div>
                         <div className="font-semibold text-muted-foreground truncate">{k.name}</div>
                         <div className="text-xs text-muted-foreground mt-1">{k.kitapSeti}</div>
-                      </div>
-                      <div className="relative">
-                        <BookCoverThumb src={coverUrl} alt={k.name} />
-                        <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                          <Lock className="size-3.5 text-white" aria-label={t('pano.locked')} role="img" />
-                        </div>
                       </div>
                     </div>
                   </Link>
@@ -376,12 +377,12 @@ function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
     );
   }
   return (
-    <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 shadow-sm">
+    <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 shadow-sm bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         onError={() => setErr(true)}
       />
     </div>

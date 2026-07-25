@@ -8,7 +8,7 @@ import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { api } from '@/lib/api';
 import { bookCoverUrl, normalizeSeriesName } from '@/lib/book-covers';
 import { Link } from '@/navigation';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 
 interface DersKitabi {
   id: string;
@@ -21,10 +21,10 @@ interface DersKitabi {
 }
 
 function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
-  if (!src) return <div className="size-16 rounded-xl bg-muted flex items-center justify-center shrink-0"><BookOpen className="size-6 text-muted-foreground" /></div>;
+  if (!src) return <div className="h-16 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><BookOpen className="size-5 text-muted-foreground" /></div>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className="size-16 rounded-xl object-cover shrink-0 shadow-sm" />
+    <img src={src} alt={alt} className="h-16 w-12 rounded-lg object-contain shrink-0 shadow-sm bg-white" />
   );
 }
 
@@ -157,7 +157,7 @@ export default function KutuphanePage() {
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {seridekiKitaplar.map((k, idx) => {
-                      const coverUrl = bookCoverUrl(k.kitapSeti, idx + 1);
+                      const coverUrl = toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(seri, idx + 1);
                       const active = isStaff || !cefrLevel || k.seviye === cefrLevel;
 
                       if (active) {
@@ -195,7 +195,7 @@ export default function KutuphanePage() {
                         >
                           <div className="relative shrink-0">
                             <BookCoverThumb src={coverUrl} alt={k.name} />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
                               <Lock className="size-5 text-white" />
                             </div>
                           </div>
