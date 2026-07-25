@@ -63,7 +63,7 @@ const C = {
     booksH2: "Öne Çıkan Kitap Serisi",
     booksAll: "Tüm setler ve paketler",
     books: [
-      { levelLabel: "YENİ BAŞLAYANLAR" },
+      { levelLabel: "7-9 yaş grubu" },
       { levelLabel: "GELİŞMEKTE OLANLAR" },
       { levelLabel: "İLERİ SEVİYE" },
     ],
@@ -301,7 +301,7 @@ export default async function LandingPage(
                           width={100}
                           height={140}
                           unoptimized
-                          className="h-[140px] w-auto rounded-md object-contain shadow-md"
+                          className="h-[90px] sm:h-[140px] w-auto rounded-md object-contain shadow-md"
                         />
                       ))}
                     </div>
