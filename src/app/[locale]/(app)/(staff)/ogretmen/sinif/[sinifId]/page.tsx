@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { getClientApiUrl } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
 import { KatilimKoduDavet } from '@/components/katilim-kodu-davet';
+import { ContextBreadcrumb } from '@/components/context-breadcrumb';
 
 interface Sinif {
   id: number;
@@ -21,6 +22,8 @@ interface Sinif {
   katilimKodu: string;
   dersKitabiId: string | null;
   ogrenciSayisi: number;
+  kurumAdi: string | null;
+  ulkeAdi: string | null;
 }
 
 interface OgrenciOzet {
@@ -416,6 +419,17 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             <div>
               <h1 className="text-xl font-bold text-slate-900">{sinif?.name ?? '...'}</h1>
               <p className="text-slate-500 text-sm mt-0.5">{sinif?.ogrenciSayisi ?? 0} öğrenci</p>
+              {sinif && (
+                <div className="mt-1.5">
+                  <ContextBreadcrumb
+                    crumbs={[
+                      sinif.ulkeAdi ? { level: 'ulke', label: sinif.ulkeAdi } : null,
+                      sinif.kurumAdi ? { level: 'kurum', label: sinif.kurumAdi } : null,
+                      { level: 'sinif', label: sinif.name },
+                    ]}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

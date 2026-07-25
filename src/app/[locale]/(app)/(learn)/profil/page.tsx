@@ -4,10 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Camera, Check, ChevronRight, Globe, GraduationCap, Key, Languages, LogOut, Mail, Phone, Receipt, Shield, User, Users, Zap } from 'lucide-react';
+import { Camera, Check, ChevronRight, GraduationCap, Key, Languages, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
+import { ContextBreadcrumb } from '@/components/context-breadcrumb';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -317,34 +318,19 @@ export default function ProfilPage() {
                     const { kalanGun, yuzde } = kalanGunYuzdesi(lisans.baslangicTarihi, lisans.bitisTarihi);
                     return (
                       <div key={lisans.id} className="p-5 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-slate-500">{t('profil.institution')}</span>
-                          <span className="text-sm font-semibold text-slate-900">{lisans.kurumAdi}</span>
-                        </div>
-                        {lisans.ulkeAdi && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-500">{t('profil.country')}</span>
-                            <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                              <Globe className="size-3.5 text-slate-400" />
-                              {lisans.ulkeAdi}
-                            </span>
-                          </div>
-                        )}
+                        <ContextBreadcrumb
+                          crumbs={[
+                            lisans.ulkeAdi ? { level: 'ulke', label: lisans.ulkeAdi } : null,
+                            { level: 'kurum', label: lisans.kurumAdi },
+                            lisans.sinifAdi ? { level: 'sinif', label: lisans.sinifAdi } : null,
+                          ]}
+                        />
                         {lisans.ogretmenAdi && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-slate-500">{t('profil.teacher')}</span>
                             <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
                               <GraduationCap className="size-3.5 text-slate-400" />
                               {lisans.ogretmenAdi}
-                            </span>
-                          </div>
-                        )}
-                        {lisans.sinifAdi && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-500">{t('profil.class')}</span>
-                            <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                              <Users className="size-3.5 text-slate-400" />
-                              {lisans.sinifAdi}
                             </span>
                           </div>
                         )}

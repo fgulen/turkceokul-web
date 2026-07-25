@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { apiHataMesaji } from '@/lib/utils';
 import { SlideOver } from '@/components/slide-over';
 import { KurumLisansDurumu } from '../../kurum-lisans-durumu';
+import { ContextBreadcrumb } from '@/components/context-breadcrumb';
 
 interface PanelKurum {
   id: number;
@@ -96,7 +97,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
   return (
     <div className="bg-[#F3F4F6]">
       <main className="px-4 py-8 max-w-3xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-2">
           <Link
             href="/ulke-temsilcisi?tab=kurumlar"
             className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white transition-colors shrink-0">
@@ -108,6 +109,14 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
             className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-white transition-colors shrink-0">
             <Pencil className="size-3.5" /> Düzenle
           </button>
+        </div>
+        <div className="pl-11 mb-6">
+          <ContextBreadcrumb
+            crumbs={[
+              panel?.name ? { level: 'ulke', label: panel.name } : null,
+              kurum?.name ? { level: 'kurum', label: kurum.name } : null,
+            ]}
+          />
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6">

@@ -18,6 +18,7 @@ import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
 import { LisansKart, type LisansKarti } from '@/components/lisans-kart';
 import { AramaInput, Sayfalama, SortTh, useSiralama, trSirala } from '@/components/staff/table-kit';
+import { ContextBreadcrumb } from '@/components/context-breadcrumb';
 
 interface PanelOgretmen {
   id: number;
@@ -55,6 +56,7 @@ interface KurumPanel {
   id: number;
   name: string;
   sehir: string | null;
+  ulkeAdi: string | null;
   ogretmenler: PanelOgretmen[];
   siniflar: PanelSinif[];
   ogrenciSayisi: number;
@@ -201,6 +203,16 @@ export default function KurumYoneticisiPage() {
               {isLoading ? '...' : panel?.name ?? 'Kurum Paneli'}
             </h1>
             {panel?.sehir && <p className="text-slate-500 text-sm mt-0.5">{panel.sehir}</p>}
+            {!isLoading && panel && (
+              <div className="mt-2">
+                <ContextBreadcrumb
+                  crumbs={[
+                    panel.ulkeAdi ? { level: 'ulke', label: panel.ulkeAdi } : null,
+                    { level: 'kurum', label: panel.name },
+                  ]}
+                />
+              </div>
+            )}
           </div>
           <button
             onClick={() => setKurumDuzenleAcik(true)}
