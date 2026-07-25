@@ -1,20 +1,26 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, GraduationCap, Users, Clock, ArrowRightCircle, ChevronRight } from 'lucide-react';
+import {
+  Building2, GraduationCap, Users, Clock, ArrowRightCircle, ChevronRight,
+  UserPlus, BookOpen, KeyRound, Pencil,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useRouter, usePathname, Link } from '@/navigation';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
+import { SlideOver } from '@/components/slide-over';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
+import { LISANS_TIPI_METIN, LISANS_TIPI_ROZET, type LisansKarti } from '@/components/lisans-kart';
 import { AramaInput, Sayfalama, SortTh, useSiralama, trSirala } from '@/components/staff/table-kit';
 
 interface PanelKurum {
   id: number;
   name: string;
+  sehir: string | null;
   ogretmenSayisi: number;
   ogrenciSayisi: number;
   kurumYoneticisiAdi: string | null;
@@ -68,13 +74,45 @@ interface OgrenciSatiri {
   sinifAdi: string;
 }
 
-type Tab = 'ozet' | 'kurumlar' | 'ogretmenler' | 'ogrenciler';
+interface TemsilciSatiri {
+  id: number;
+  name: string;
+  surname: string | null;
+  email: string;
+  isApproved: boolean;
+  insertDate: string;
+}
+
+interface SinifSatiri {
+  id: number;
+  name: string;
+  kurumId: number;
+  kurumAdi: string;
+  ogrenciSayisi: number;
+  dersKitabiId: string | null;
+}
+
+interface KurumLisansGrubu {
+  kurumId: number;
+  kurumAdi: string;
+  kitaplar: LisansKarti[];
+}
+
+interface LisansSatiri {
+  kurumId: number;
+  kurumAdi: string;
+  kitap: LisansKarti;
+}
+
+type Tab = 'kurumlar' | 'temsilciler' | 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar';
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: 'ozet', label: 'Özet', icon: Clock },
   { key: 'kurumlar', label: 'Kurumlar', icon: Building2 },
+  { key: 'temsilciler', label: 'Temsilciler', icon: UserPlus },
   { key: 'ogretmenler', label: 'Öğretmenler', icon: GraduationCap },
   { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
+  { key: 'siniflar', label: 'Sınıflar', icon: BookOpen },
+  { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
 ];
 
 const SAYFA_BOYUTU = 20;
@@ -103,46 +141,71 @@ export default function UlkeTemsilcisiPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tab: Tab = (searchParams?.get('tab') as Tab) ?? 'ozet';
+  const tab: Tab = (searchParams?.get('tab') as Tab) ?? 'ogretmenler';
 
   const [donusturuluyorId, setDonusturuluyorId] = useState<number | null>(null);
+  const [kurumDavetAcik, setKurumDavetAcik] = useState(false);
+  const [ogretmenDavetAcik, setOgretmenDavetAcik] = useState(false);
+  const [duzenlenecekKurum, setDuzenlenecekKurum] = useState<PanelKurum | null>(null);
+
+  const gecerli = !!user && user.role === 'UlkeTemsilcisi';
 
   function setTab(t: Tab) {
-    router.replace(t === 'ozet' ? pathname : `${pathname}?tab=${t}`);
+    router.replace(t === 'ogretmenler' ? pathname : `${pathname}?tab=${t}`);
   }
 
   const { data: panel, isLoading } = useQuery<UlkePanel>({
     queryKey: ['ulke-temsilcisi-panel'],
     queryFn: () => api.get('/api/ulke-temsilcisi/panel').then(r => r.data),
-    enabled: !!user && user.role === 'UlkeTemsilcisi',
+    enabled: gecerli,
   });
 
   const { data: talepler, isLoading: talepYukleniyor } = useQuery<BekleyenTalep[]>({
     queryKey: ['ulke-temsilcisi-bekleyen-talepler'],
     queryFn: () => api.get('/api/ulke-temsilcisi/bekleyen-talepler').then(r => r.data),
-    enabled: !!user && user.role === 'UlkeTemsilcisi',
+    enabled: gecerli,
   });
 
   // Kitap adları — bekleyen taleplerdeki dersKitabiId'yi okunabilir isme çevirmek için.
   const { data: katalog } = useQuery<{ kitaplar: KatalogKitapAd[] }>({
     queryKey: ['ulke-temsilcisi-katalog-kitap-adlari'],
     queryFn: () => api.get('/api/katalog').then(r => r.data),
-    enabled: !!user && user.role === 'UlkeTemsilcisi',
+    enabled: gecerli,
     staleTime: 5 * 60 * 1000,
   });
   const kitapAdi = (id: string | null) =>
     (id && katalog?.kitaplar.find(k => k.id === id)?.ad) || id || '—';
 
+  const { data: temsilciler, isLoading: temsilcilerYukleniyor } = useQuery<TemsilciSatiri[]>({
+    queryKey: ['ulke-temsilcisi-temsilciler'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/temsilciler').then(r => r.data),
+    enabled: gecerli,
+  });
+
   const { data: ogretmenler, isLoading: ogretmenlerYukleniyor } = useQuery<OgretmenSatiri[]>({
     queryKey: ['ulke-temsilcisi-ogretmenler'],
     queryFn: () => api.get('/api/ulke-temsilcisi/ogretmenler').then(r => r.data),
-    enabled: !!user && user.role === 'UlkeTemsilcisi',
+    enabled: gecerli,
   });
 
   const { data: ogrenciler, isLoading: ogrencilerYukleniyor } = useQuery<OgrenciSatiri[]>({
     queryKey: ['ulke-temsilcisi-ogrenciler'],
     queryFn: () => api.get('/api/ulke-temsilcisi/ogrenciler').then(r => r.data),
-    enabled: !!user && user.role === 'UlkeTemsilcisi',
+    enabled: gecerli,
+  });
+
+  const { data: siniflar, isLoading: siniflarYukleniyor } = useQuery<SinifSatiri[]>({
+    queryKey: ['ulke-temsilcisi-siniflar'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/siniflar').then(r => r.data),
+    enabled: gecerli,
+  });
+
+  // Ulke geneli lisans ozeti — N+1 (kurum basina bir cagri) backend'de yapiliyor,
+  // sadece bu sekmeye girildiginde cekilir.
+  const { data: lisansGruplari, isLoading: lisanslarYukleniyor } = useQuery<KurumLisansGrubu[]>({
+    queryKey: ['ulke-temsilcisi-lisanslar'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/lisanslar').then(r => r.data),
+    enabled: gecerli && tab === 'lisanslar',
   });
 
   const donusturMutation = useMutation({
@@ -162,12 +225,32 @@ export default function UlkeTemsilcisiPage() {
     onSettled: () => setDonusturuluyorId(null),
   });
 
+  const kurumDuzenleMutation = useMutation({
+    mutationFn: (form: { name: string; sehir: string }) =>
+      api.put(`/api/ulke-temsilcisi/kurum/${duzenlenecekKurum!.id}`, { name: form.name, sehir: form.sehir || null }),
+    onSuccess: () => {
+      toast.success('Kurum güncellendi');
+      queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+      setDuzenlenecekKurum(null);
+    },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
+  });
+
   if (!ready) return (
     <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
     </div>
   );
   if (!user) return null;
+
+  const talepSayisi = talepler?.length ?? 0;
+  const rozetSayisi: Partial<Record<Tab, number>> = {
+    kurumlar: panel?.kurumlar.length,
+    temsilciler: temsilciler?.length,
+    ogretmenler: panel?.toplamOgretmen,
+    ogrenciler: panel?.toplamOgrenci,
+    siniflar: siniflar?.length,
+  };
 
   return (
     <div className="bg-[#F3F4F6]">
@@ -179,54 +262,56 @@ export default function UlkeTemsilcisiPage() {
           <p className="text-slate-500 text-sm mt-0.5">Ülke Temsilcisi Paneli</p>
         </div>
 
-        {/* Tab navigasyonu — URL'e yazılır (?tab=), geri/ileri ve bookmark çalışır */}
+        {/* Tab navigasyonu — URL'e yazılır (?tab=), geri/ileri ve bookmark çalışır.
+            Mobilde (sm altı) sadece ikon, metin gizlenir — 6 sekme tek satırda sığmaz. */}
         <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6 overflow-x-auto scrollbar-none">
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                'flex-1 shrink-0 sm:shrink flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
-                tab === t.key ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-              )}
-            >
-              <t.icon className="size-4" />
-              {t.label}
-            </button>
-          ))}
+          {TABS.map(t => {
+            const pendingBadge = t.key === 'kurumlar' && talepSayisi > 0 ? talepSayisi : null;
+            const normalBadge = rozetSayisi[t.key];
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  'flex-1 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-4 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                  tab === t.key ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                <t.icon className="size-4 shrink-0" />
+                <span className="hidden sm:inline">{t.label}</span>
+                {pendingBadge != null ? (
+                  <span className={cn(
+                    'px-1.5 py-0.5 rounded-full text-xs font-bold',
+                    tab === t.key ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700',
+                  )}>
+                    {pendingBadge}
+                  </span>
+                ) : normalBadge != null ? (
+                  <span className={cn(
+                    'px-1.5 py-0.5 rounded-full text-xs font-bold',
+                    tab === t.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500',
+                  )}>
+                    {normalBadge}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
-        {tab === 'ozet' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <button onClick={() => setTab('kurumlar')}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-left hover:bg-slate-50 transition-colors">
-                <div className="text-2xl font-bold text-primary">{panel?.kurumlar.length ?? 0}</div>
-                <div className="text-xs text-slate-500 mt-1">Kurum</div>
-              </button>
-              <button onClick={() => setTab('ogretmenler')}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-left hover:bg-slate-50 transition-colors">
-                <div className="text-2xl font-bold text-slate-700">{panel?.toplamOgretmen ?? 0}</div>
-                <div className="text-xs text-slate-500 mt-1">Öğretmen</div>
-              </button>
-              <button onClick={() => setTab('ogrenciler')}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-left hover:bg-slate-50 transition-colors">
-                <div className="text-2xl font-bold text-slate-700">{panel?.toplamOgrenci ?? 0}</div>
-                <div className="text-xs text-slate-500 mt-1">Öğrenci</div>
-              </button>
-            </div>
-
-            {!talepYukleniyor && !!talepler?.length && (
+        {tab === 'kurumlar' && (
+          <div className="space-y-4">
+            {!talepYukleniyor && talepSayisi > 0 && (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
                   <Clock className="size-4 text-amber-500" />
                   <h2 className="font-semibold text-slate-900">Bekleyen Talepler</h2>
                   <span className="ml-auto text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                    {talepler.length}
+                    {talepSayisi}
                   </span>
                 </div>
                 <div className="divide-y divide-slate-50">
-                  {talepler.map(t => (
+                  {talepler!.map(t => (
                     <div key={t.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -267,22 +352,16 @@ export default function UlkeTemsilcisiPage() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {tab === 'kurumlar' && (
-          <div className="space-y-4">
-            <RoleScopedUserForm
-              baslik="Kurum Yöneticisi Davet Et"
-              aciklama="Ülkenizde yeni bir okul için kurum yöneticisi davet edin."
-              hedefRolSecenekleri={[{ value: 'KurumYoneticisi', label: 'Kurum Yöneticisi' }]}
-            />
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
                 <Building2 className="size-4 text-slate-400" />
                 <h2 className="font-semibold text-slate-900">Kurumlar</h2>
-                <span className="ml-auto text-xs text-slate-400 tabular-nums">{panel?.kurumlar.length ?? 0}</span>
+                <span className="text-xs text-slate-400 tabular-nums">{panel?.kurumlar.length ?? 0}</span>
+                <button onClick={() => setKurumDavetAcik(true)}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity">
+                  <UserPlus className="size-3.5" /> Yeni Kurum Yöneticisi
+                </button>
               </div>
               {isLoading ? (
                 <div className="p-6 space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
@@ -291,32 +370,41 @@ export default function UlkeTemsilcisiPage() {
               ) : (
                 <div className="divide-y divide-slate-50">
                   {panel.kurumlar.map(k => (
-                    <Link
-                      key={k.id}
-                      href={`/ulke-temsilcisi/kurum/${k.id}`}
-                      className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
-                    >
-                      <div>
+                    <div key={k.id} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors group">
+                      <Link href={`/ulke-temsilcisi/kurum/${k.id}`} className="flex-1 min-w-0">
                         <div className="font-medium text-sm text-slate-800">{k.name}</div>
                         <div className="text-xs text-slate-400">
                           {k.kurumYoneticisiAdi ?? 'Kurum yöneticisi atanmamış'}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
+                      </Link>
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="flex items-center gap-1 text-xs text-slate-400">
                           <GraduationCap className="size-3.5" /> {k.ogretmenSayisi}
                         </span>
                         <span className="flex items-center gap-1 text-xs text-slate-400">
                           <Users className="size-3.5" /> {k.ogrenciSayisi}
                         </span>
-                        <ChevronRight className="size-4 text-slate-300" />
+                        <button
+                          onClick={() => setDuzenlenecekKurum(k)}
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Düzenle"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <Link href={`/ulke-temsilcisi/kurum/${k.id}`}>
+                          <ChevronRight className="size-4 text-slate-300" />
+                        </Link>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
+        )}
+
+        {tab === 'temsilciler' && (
+          <TemsilcilerTab veri={temsilciler} yukleniyor={temsilcilerYukleniyor} />
         )}
 
         {tab === 'ogretmenler' && (
@@ -327,6 +415,7 @@ export default function UlkeTemsilcisiPage() {
             bosMesaj="Henüz öğretmen yok."
             ikincilKolonBaslik="Kurum"
             ikincilKolonRender={o => o.kurumAdi}
+            ekleButonu={{ etiket: 'Yeni Öğretmen', onClick: () => setOgretmenDavetAcik(true) }}
           />
         )}
 
@@ -340,7 +429,278 @@ export default function UlkeTemsilcisiPage() {
             ikincilKolonRender={o => `${o.kurumAdi} · ${(o as OgrenciSatiri).sinifAdi}`}
           />
         )}
+
+        {tab === 'siniflar' && (
+          <SiniflarTab veri={siniflar} yukleniyor={siniflarYukleniyor} />
+        )}
+
+        {tab === 'lisanslar' && (
+          <DersKitaplariTab gruplar={lisansGruplari} yukleniyor={lisanslarYukleniyor} />
+        )}
       </main>
+
+      {/* Yeni Ekle standardı: buton → SlideOver (bkz. table-kit.tsx başlık yorumu) */}
+      <SlideOver open={kurumDavetAcik} onClose={() => setKurumDavetAcik(false)} title="Yeni Kurum Yöneticisi" width="sm">
+        <RoleScopedUserForm
+          bare
+          baslik="Kurum Yöneticisi Davet Et"
+          aciklama="Ülkenizde yeni bir okul için kurum yöneticisi davet edin."
+          hedefRolSecenekleri={[{ value: 'KurumYoneticisi', label: 'Kurum Yöneticisi' }]}
+          onOlusturuldu={() => {
+            toast.success('Davet linki oluşturuldu');
+            queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+          }}
+        />
+      </SlideOver>
+
+      <SlideOver open={ogretmenDavetAcik} onClose={() => setOgretmenDavetAcik(false)} title="Yeni Öğretmen" width="sm">
+        <RoleScopedUserForm
+          bare
+          baslik="Öğretmen Davet Et"
+          aciklama="Ülkenizdeki bir okul için öğretmen davet edin."
+          hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
+          onOlusturuldu={() => {
+            toast.success('Davet linki oluşturuldu');
+            queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-ogretmenler'] });
+            queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+          }}
+        />
+      </SlideOver>
+
+      <KurumDuzenleSlideOver
+        kurum={duzenlenecekKurum}
+        onClose={() => setDuzenlenecekKurum(null)}
+        onKaydet={form => kurumDuzenleMutation.mutate(form)}
+        kaydediliyor={kurumDuzenleMutation.isPending}
+      />
+    </div>
+  );
+}
+
+function KurumDuzenleSlideOver({ kurum, onClose, onKaydet, kaydediliyor }: {
+  kurum: PanelKurum | null;
+  onClose: () => void;
+  onKaydet: (form: { name: string; sehir: string }) => void;
+  kaydediliyor: boolean;
+}) {
+  const [form, setForm] = useState({ name: '', sehir: '' });
+
+  useEffect(() => {
+    if (kurum) setForm({ name: kurum.name, sehir: kurum.sehir ?? '' });
+  }, [kurum]);
+
+  return (
+    <SlideOver
+      open={!!kurum}
+      onClose={onClose}
+      title="Kurumu Düzenle"
+      width="sm"
+      footer={
+        <button
+          form="kurum-duzenle-form"
+          type="submit"
+          disabled={kaydediliyor || !form.name.trim()}
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {kaydediliyor ? 'Kaydediliyor…' : 'Kaydet'}
+        </button>
+      }
+    >
+      {kurum && (
+        <form
+          id="kurum-duzenle-form"
+          onSubmit={e => { e.preventDefault(); onKaydet(form); }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Kurum Adı</label>
+            <input
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              autoFocus
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Şehir</label>
+            <input
+              value={form.sehir}
+              onChange={e => setForm(f => ({ ...f, sehir: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+            />
+          </div>
+        </form>
+      )}
+    </SlideOver>
+  );
+}
+
+function TemsilcilerTab({ veri, yukleniyor }: { veri: TemsilciSatiri[] | undefined; yukleniyor: boolean }) {
+  const [arama, setArama] = useState('');
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'insertDate' | 'isApproved'>('name');
+
+  const filtreli = useMemo(() => {
+    const ham = veri ?? [];
+    if (!arama) return ham;
+    return ham.filter(t => metinEslesiyorMu([t.name, t.surname, t.email], arama));
+  }, [veri, arama]);
+  const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+        <h2 className="text-sm font-semibold text-slate-800">Temsilciler</h2>
+        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{sirali.length}</span>
+        <AramaInput value={arama} onChange={setArama} placeholder="Ad, e-posta ara..." />
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ad Soyad</SortTh>
+            <SortTh colKey="insertDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Kayıt Tarihi</SortTh>
+            <SortTh colKey="isApproved" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Durum</SortTh>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {yukleniyor ? (
+            [1, 2].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+          ) : sirali.length === 0 ? (
+            <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Bu ülkeye atanmış başka temsilci yok.</td></tr>
+          ) : (
+            sirali.map(t => (
+              <tr key={t.id} className="odd:bg-white even:bg-slate-50/40">
+                <td className="px-4 py-2">
+                  <div className="font-medium text-slate-900">{t.name} {t.surname}</div>
+                  <div className="text-xs text-slate-400">{t.email}</div>
+                </td>
+                <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{kayitTarihiMetni(t.insertDate)}</td>
+                <td className="px-4 py-2 text-right">
+                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
+                    t.isApproved ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>
+                    {t.isApproved ? 'Aktif' : 'Askıda'}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefined; yukleniyor: boolean }) {
+  const [arama, setArama] = useState('');
+  const [sayfa, setSayfa] = useState(1);
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
+
+  const filtreli = useMemo(() => {
+    const ham = veri ?? [];
+    if (!arama) return ham;
+    return ham.filter(s => metinEslesiyorMu([s.name, s.kurumAdi], arama));
+  }, [veri, arama]);
+  const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+  const toplam = sirali.length;
+  const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
+  const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">Sınıflar</h2>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Sınıf, kurum ara..." />
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
+              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Kurum</SortTh>
+              <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {yukleniyor ? (
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+            ) : sayfalik.length === 0 ? (
+              <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Bu ülkede sınıf yok.</td></tr>
+            ) : (
+              sayfalik.map(s => (
+                <tr key={s.id} className="odd:bg-white even:bg-slate-50/40">
+                  <td className="px-4 py-2 font-medium text-slate-900">{s.name}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{s.kurumAdi}</td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-600">{s.ogrenciSayisi}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+    </div>
+  );
+}
+
+function DersKitaplariTab({ gruplar, yukleniyor }: { gruplar: KurumLisansGrubu[] | undefined; yukleniyor: boolean }) {
+  const [arama, setArama] = useState('');
+  const { sortKey, sortDir, toggleSort } = useSiralama<'kurumAdi' | 'kitapAdi'>('kurumAdi');
+
+  const satirlar: (LisansSatiri & { kitapAdi: string })[] = useMemo(() =>
+    (gruplar ?? []).flatMap(g => g.kitaplar.map(k => ({ kurumId: g.kurumId, kurumAdi: g.kurumAdi, kitap: k, kitapAdi: k.name }))),
+  [gruplar]);
+
+  const filtreli = useMemo(() => {
+    if (!arama) return satirlar;
+    return satirlar.filter(s => metinEslesiyorMu([s.kurumAdi, s.kitapAdi], arama));
+  }, [satirlar, arama]);
+  const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+        <h2 className="text-sm font-semibold text-slate-800">Ders Kitapları</h2>
+        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{sirali.length}</span>
+        <AramaInput value={arama} onChange={setArama} placeholder="Kurum, kitap ara..." />
+        <span className="ml-auto text-xs text-slate-400">Aksiyon için kurum sayfasına gidin</span>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
+            <SortTh colKey="kitapAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
+            <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {yukleniyor ? (
+            [1, 2, 3].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+          ) : sirali.length === 0 ? (
+            <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
+          ) : (
+            sirali.map(s => (
+              <tr key={`${s.kurumId}-${s.kitap.id}`} className="odd:bg-white even:bg-slate-50/40">
+                <td className="px-4 py-2">
+                  <Link href={`/ulke-temsilcisi/kurum/${s.kurumId}`} className="text-slate-900 hover:text-primary transition-colors">
+                    {s.kurumAdi}
+                  </Link>
+                </td>
+                <td className="px-4 py-2 text-slate-700">{s.kitapAdi} <span className="text-xs text-slate-400">{s.kitap.seviye}</span></td>
+                <td className="px-4 py-2 text-right">
+                  {s.kitap.lisansTipi ? (
+                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', LISANS_TIPI_ROZET[s.kitap.lisansTipi])}>
+                      {LISANS_TIPI_METIN[s.kitap.lisansTipi]}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Lisans Yok</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -348,13 +708,14 @@ export default function UlkeTemsilcisiPage() {
 type PersonelSatir = OgretmenSatiri | OgrenciSatiri;
 type PersonelSortKey = 'name' | 'kurumAdi' | 'insertDate' | 'lastLoginDate';
 
-function PersonelListesi({ baslik, veri, yukleniyor, bosMesaj, ikincilKolonBaslik, ikincilKolonRender }: {
+function PersonelListesi({ baslik, veri, yukleniyor, bosMesaj, ikincilKolonBaslik, ikincilKolonRender, ekleButonu }: {
   baslik: string;
   veri: PersonelSatir[] | undefined;
   yukleniyor: boolean;
   bosMesaj: string;
   ikincilKolonBaslik: string;
   ikincilKolonRender: (satir: PersonelSatir) => string;
+  ekleButonu?: { etiket: string; onClick: () => void };
 }) {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
@@ -381,6 +742,12 @@ function PersonelListesi({ baslik, veri, yukleniyor, bosMesaj, ikincilKolonBasli
           <h2 className="text-sm font-semibold text-slate-800">{baslik}</h2>
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
+          {ekleButonu && (
+            <button onClick={ekleButonu.onClick}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+              <UserPlus className="size-3.5" /> {ekleButonu.etiket}
+            </button>
+          )}
         </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">

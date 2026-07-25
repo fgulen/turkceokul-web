@@ -2,6 +2,12 @@
 
 // DataTable şablonunun ortak parçaları (4 Şablon Kuralı: Liste).
 // Küçük veri setleri için client-side sıralama/sayfalama desenini standartlaştırır.
+//
+// Varlık Ekleme standardı: her zaman toolbar'da "Yeni X" butonu → SlideOver
+// (bkz. RoleScopedUserForm `bare` kullanım örnekleri: ulke-temsilcisi/page.tsx,
+// kurum-yoneticisi/page.tsx, super-admin/kullanicilar/page.tsx). Inline/her-zaman-
+// açık form YASAK — sayfa daha önce böyleydi (2026-07-25'te düzeltildi), tek yerde
+// güncelleme hepsine yayılsın diye buraya not düşüldü.
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
