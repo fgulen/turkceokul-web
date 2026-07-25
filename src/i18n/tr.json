@@ -90,7 +90,7 @@
       "benefitsCorporate": [
         "AI stüdyo ile 30 saniyede quiz üret",
         "1 öğretmen + 10 öğrenci ücretsiz",
-        "CEFR A1–C1 tam müfredat erişimi",
+        "CEFR A1–B2 tam müfredat erişimi",
         "Sınıf analitiği ve ilerleme takibi"
       ],
       "benefitsIndividual": [
@@ -100,7 +100,7 @@
       ],
       "benefitsGeneral": [
         "3 kısa adımda ücretsiz hesap",
-        "CEFR A1–C1 tam müfredat",
+        "CEFR A1–B2 tam müfredat",
         "Bireysel veya kurumsal kullanım"
       ],
       "nativeLangQuestion": "Ana diliniz nedir?",
@@ -207,7 +207,7 @@
     "duration": "Süre",
     "scope": "Kapsam",
     "durationVal": "~5dk",
-    "scopeVal": "A1–C1",
+    "scopeVal": "A1–B2",
     "startTest": "Teste Başla",
     "skipToDashboard": "Atla, panoya git",
     "correct": "Doğru!",
@@ -281,6 +281,50 @@
     "motivationClose": "{count} kişiyi geç, bir üst lige çık!",
     "motivationSafe": "Güvenli bölgedesin, devam et.",
     "motivationDanger": "Dikkat! {count} kişiyi geç, düşmekten kaçın."
+  },
+  "profil": {
+    "title": "Profil Ayarları",
+    "subtitle": "Kişisel bilgilerinizi buradan güncelleyin.",
+    "accountSettings": "Hesap Ayarları",
+    "fullName": "Ad Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "phoneNotAdded": "Telefon eklenmedi",
+    "edit": "Düzenle",
+    "updatePassword": "Şifreyi Güncelle",
+    "lastChanged": "Son değişiklik: 3 ay önce",
+    "update": "Güncelle",
+    "languagePreferences": "Dil Tercihleri",
+    "interfaceLanguage": "Arayüz dili: {lang}",
+    "schoolSubscription": "Okul Aboneliği",
+    "institution": "Okul",
+    "country": "Ülke",
+    "teacher": "Öğretmen",
+    "class": "Sınıf",
+    "book": "Kitap",
+    "seatUsage": "{used}/{total} lisans kullanıldı",
+    "daysRemaining": "{count} gün kaldı",
+    "licenseHistory": "Lisans Geçmişi",
+    "expired": "Sona erdi",
+    "licenseTypes": {
+      "Deneme": "Deneme",
+      "Ucretli": "Ücretli",
+      "Sponsorlu": "Sponsorlu"
+    },
+    "changePasswordTitle": "Şifre Değiştir",
+    "currentPassword": "Mevcut Şifre",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Yeni Şifre (Tekrar)",
+    "passwordMismatch": "Şifreler eşleşmiyor",
+    "promoTitle": "Dil Yolculuğuna Devam Et",
+    "promoDesc": "Profilindeki eksik bilgileri tamamlayarak arkadaşlarınla daha iyi etkileşime geçebilirsin.",
+    "quickStats": "Hızlı İstatistikler",
+    "totalXp": "Toplam XP",
+    "streak": "Streak",
+    "streakDays": "{count} gün",
+    "remainingHearts": "Kalan Kalp",
+    "logout": "Çıkış Yap",
+    "avatarAlt": "Profil"
   },
   "etkinlik": {
     "heartDepleted": "Kalbin Bitti!",

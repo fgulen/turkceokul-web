@@ -90,7 +90,7 @@
       "benefitsCorporate": [
         "Generate quizzes in 30s with AI Studio",
         "1 teacher + 10 students free",
-        "Full CEFR A1–C1 curriculum access",
+        "Full CEFR A1–B2 curriculum access",
         "Class analytics and progress tracking"
       ],
       "benefitsIndividual": [
@@ -100,7 +100,7 @@
       ],
       "benefitsGeneral": [
         "Free account in 3 quick steps",
-        "Full CEFR A1–C1 curriculum",
+        "Full CEFR A1–B2 curriculum",
         "Individual or institutional use"
       ],
       "nativeLangQuestion": "What is your native language?",
@@ -207,7 +207,7 @@
     "duration": "Duration",
     "scope": "Scope",
     "durationVal": "~5min",
-    "scopeVal": "A1–C1",
+    "scopeVal": "A1–B2",
     "startTest": "Start Test",
     "skipToDashboard": "Skip to dashboard",
     "correct": "Correct!",
@@ -281,6 +281,50 @@
     "motivationClose": "Pass {count} more players to move up!",
     "motivationSafe": "You're in the safe zone, keep going.",
     "motivationDanger": "Warning! Pass {count} players to avoid demotion."
+  },
+  "profil": {
+    "title": "Profile Settings",
+    "subtitle": "Update your personal information here.",
+    "accountSettings": "Account Settings",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "phoneNotAdded": "No phone added",
+    "edit": "Edit",
+    "updatePassword": "Update Password",
+    "lastChanged": "Last changed: 3 months ago",
+    "update": "Update",
+    "languagePreferences": "Language Preferences",
+    "interfaceLanguage": "Interface language: {lang}",
+    "schoolSubscription": "School Subscription",
+    "institution": "Institution",
+    "country": "Country",
+    "teacher": "Teacher",
+    "class": "Class",
+    "book": "Book",
+    "seatUsage": "{used}/{total} seats used",
+    "daysRemaining": "{count} days left",
+    "licenseHistory": "License History",
+    "expired": "Expired",
+    "licenseTypes": {
+      "Deneme": "Trial",
+      "Ucretli": "Paid",
+      "Sponsorlu": "Sponsored"
+    },
+    "changePasswordTitle": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordMismatch": "Passwords don't match",
+    "promoTitle": "Continue Your Language Journey",
+    "promoDesc": "Complete the missing information in your profile to better connect with friends.",
+    "quickStats": "Quick Stats",
+    "totalXp": "Total XP",
+    "streak": "Streak",
+    "streakDays": "{count} days",
+    "remainingHearts": "Remaining Hearts",
+    "logout": "Log Out",
+    "avatarAlt": "Profile"
   },
   "etkinlik": {
     "heartDepleted": "No Hearts Left!",

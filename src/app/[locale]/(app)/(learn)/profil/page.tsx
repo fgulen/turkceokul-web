@@ -2,13 +2,47 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Camera, Check, ChevronRight, Key, Languages, Library, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
+import { Camera, Check, ChevronRight, Globe, GraduationCap, Key, Languages, LogOut, Mail, Phone, Receipt, Shield, User, Users, Zap } from 'lucide-react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
+interface Lisans {
+  id: number;
+  kurumAdi: string;
+  ulkeAdi: string | null;
+  ogretmenAdi: string | null;
+  sinifAdi: string | null;
+  kitapAdi: string | null;
+  lisansTipi: 'Deneme' | 'Ucretli' | 'Sponsorlu';
+  baslangicTarihi: string;
+  bitisTarihi: string;
+  aktif: boolean;
+  toplamLisans: number;
+  kullanilanLisans: number;
+}
+
+function kalanGunYuzdesi(baslangic: string, bitis: string) {
+  const simdi = Date.now();
+  const b = new Date(baslangic).getTime();
+  const s = new Date(bitis).getTime();
+  const toplamGun = Math.max(1, Math.ceil((s - b) / 86_400_000));
+  const kalanGun = Math.max(0, Math.ceil((s - simdi) / 86_400_000));
+  return { kalanGun, yuzde: Math.min(100, Math.max(0, (kalanGun / toplamGun) * 100)) };
+}
+
+function progressColor(yuzde: number) {
+  if (yuzde > 30) return 'bg-green-500';
+  if (yuzde > 10) return 'bg-amber-500';
+  return 'bg-red-500';
+}
+
 export default function ProfilPage() {
+  const t = useTranslations();
   const { user, logout, updateUser } = useAuthStore();
   const router = useRouter();
   const locale = useLocale();
@@ -24,22 +58,19 @@ export default function ProfilPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [lang, setLang] = useState<'tr' | 'en'>('tr');
 
-  // Mock school subscription data
-  const schoolSubscription = {
-    aktif: true,
-    okulAdi: 'Türkçe Okulu Akademisi',
-    ogretmen: 'Ayşe Kara',
-    sinif: 'A1 - Grupp 3',
-    hesapTipi: 'Öğrenci',
-  };
+  const { data: lisanslar } = useQuery<Lisans[]>({
+    queryKey: ['profil-lisanslarim'],
+    queryFn: () => api.get('/api/profil/lisanslarim').then((r) => r.data),
+    enabled: !!user,
+  });
 
-  // Mock purchase history
-  const purchases = [
-    { id: 1, tarih: '2025-04-15', aciklama: 'Premium Bireysel - 1 Aylık', tutar: '£9.99', durum: 'Tamamlandı' },
-    { id: 2, tarih: '2025-03-01', aciklama: 'Premium Bireysel - 1 Aylık', tutar: '£9.99', durum: 'Tamamlandı' },
-  ];
+  const aktifler = [...(lisanslar ?? [])]
+    .filter((l) => l.aktif)
+    .sort((a, b) => new Date(a.bitisTarihi).getTime() - new Date(b.bitisTarihi).getTime());
+  const gecmisLisanslar = [...(lisanslar ?? [])]
+    .filter((l) => !l.aktif)
+    .sort((a, b) => new Date(b.bitisTarihi).getTime() - new Date(a.bitisTarihi).getTime());
 
   // Load avatar from localStorage
   useEffect(() => {
@@ -108,8 +139,8 @@ export default function ProfilPage() {
       <main className="max-w-[1200px] mx-auto px-6 py-10">
         {/* Greeting */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">Profil Ayarları</h2>
-          <p className="text-slate-500 mt-1">Kişisel bilgilerinizi buradan güncelleyin.</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t('profil.title')}</h2>
+          <p className="text-slate-500 mt-1">{t('profil.subtitle')}</p>
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -118,7 +149,7 @@ export default function ProfilPage() {
             {/* Settings Card */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
               <div className="p-5 border-b border-slate-100 bg-slate-50">
-                <h3 className="font-semibold text-lg text-slate-900">Hesap Ayarları</h3>
+                <h3 className="font-semibold text-lg text-slate-900">{t('profil.accountSettings')}</h3>
               </div>
 
               {/* Name */}
@@ -128,7 +159,7 @@ export default function ProfilPage() {
                     <User className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Ad Soyad</p>
+                    <p className="font-semibold text-slate-900">{t('profil.fullName')}</p>
                     {editName ? (
                       <div className="flex items-center gap-2 mt-2">
                         <input
@@ -155,7 +186,7 @@ export default function ProfilPage() {
                     onClick={() => { setEditName(true); setNameDraft(user.name); }}
                     className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0"
                   >
-                    Düzenle <ChevronRight className="size-4" />
+                    {t('profil.edit')} <ChevronRight className="size-4" />
                   </button>
                 )}
               </div>
@@ -167,7 +198,7 @@ export default function ProfilPage() {
                     <Mail className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">E-posta</p>
+                    <p className="font-semibold text-slate-900">{t('profil.email')}</p>
                     {editEmail ? (
                       <div className="flex items-center gap-2 mt-2">
                         <input
@@ -194,7 +225,7 @@ export default function ProfilPage() {
                     onClick={() => { setEditEmail(true); setEmailDraft(user.email); }}
                     className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0"
                   >
-                    Düzenle <ChevronRight className="size-4" />
+                    {t('profil.edit')} <ChevronRight className="size-4" />
                   </button>
                 )}
               </div>
@@ -206,7 +237,7 @@ export default function ProfilPage() {
                     <Phone className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Telefon</p>
+                    <p className="font-semibold text-slate-900">{t('profil.phone')}</p>
                     {editPhone ? (
                       <div className="flex items-center gap-2 mt-2">
                         <input
@@ -225,7 +256,7 @@ export default function ProfilPage() {
                         </button>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-500">{phoneDraft || 'Telefon eklenmedi'}</p>
+                      <p className="text-sm text-slate-500">{phoneDraft || t('profil.phoneNotAdded')}</p>
                     )}
                   </div>
                 </div>
@@ -234,7 +265,7 @@ export default function ProfilPage() {
                     onClick={() => setEditPhone(true)}
                     className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0"
                   >
-                    Düzenle <ChevronRight className="size-4" />
+                    {t('profil.edit')} <ChevronRight className="size-4" />
                   </button>
                 )}
               </div>
@@ -246,136 +277,146 @@ export default function ProfilPage() {
                     <Key className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Şifreyi Güncelle</p>
-                    <p className="text-sm text-slate-500">Son değişiklik: 3 ay önce</p>
+                    <p className="font-semibold text-slate-900">{t('profil.updatePassword')}</p>
+                    <p className="text-sm text-slate-500">{t('profil.lastChanged')}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowPasswordModal(true)}
                   className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0"
                 >
-                  Güncelle <ChevronRight className="size-4" />
+                  {t('profil.update')} <ChevronRight className="size-4" />
                 </button>
               </div>
 
               {/* Language */}
-              <div className="p-5 flex justify-between items-center hover:bg-slate-50 transition-colors border-b border-slate-100">
+              <div className="p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
                     <Languages className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Dil Tercihleri</p>
-                    <p className="text-sm text-slate-500">Arayüz dili: {lang === 'tr' ? 'Türkçe' : 'English'}</p>
+                    <p className="font-semibold text-slate-900">{t('profil.languagePreferences')}</p>
+                    <p className="text-sm text-slate-500">
+                      {t('profil.interfaceLanguage', { lang: locale === 'tr' ? 'Türkçe' : 'English' })}
+                    </p>
                   </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  {(['tr', 'en'] as const).map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => setLang(l)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                        lang === l
-                          ? 'bg-primary text-white'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
-                      )}
-                    >
-                      {l === 'tr' ? 'TR' : 'EN'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Unknown Words */}
-              <div className="p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                    <Library className="size-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">Bilinmeyen Kelimelerim</p>
-                    <p className="text-sm text-slate-500">Kendi sözlüğünü oluştur</p>
-                  </div>
-                </div>
-                <button className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0">
-                  Görüntüle <ChevronRight className="size-4" />
-                </button>
               </div>
             </div>
 
             {/* School Subscription */}
-            {schoolSubscription.aktif && (
+            {aktifler.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
                   <Shield className="size-5 text-primary" />
-                  <h3 className="font-semibold text-lg text-slate-900">Okul Aboneliği</h3>
+                  <h3 className="font-semibold text-lg text-slate-900">{t('profil.schoolSubscription')}</h3>
                 </div>
-                <div className="p-5 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-500">Okul</span>
-                    <span className="text-sm font-semibold text-slate-900">{schoolSubscription.okulAdi}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-500">Öğretmen</span>
-                    <span className="text-sm font-semibold text-slate-900">{schoolSubscription.ogretmen}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-500">Sınıf</span>
-                    <span className="text-sm font-semibold text-slate-900">{schoolSubscription.sinif}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-500">Hesap Tipi</span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-                      {schoolSubscription.hesapTipi}
-                    </span>
-                  </div>
+                <div className="divide-y divide-slate-100">
+                  {aktifler.map((lisans) => {
+                    const { kalanGun, yuzde } = kalanGunYuzdesi(lisans.baslangicTarihi, lisans.bitisTarihi);
+                    return (
+                      <div key={lisans.id} className="p-5 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-slate-500">{t('profil.institution')}</span>
+                          <span className="text-sm font-semibold text-slate-900">{lisans.kurumAdi}</span>
+                        </div>
+                        {lisans.ulkeAdi && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">{t('profil.country')}</span>
+                            <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
+                              <Globe className="size-3.5 text-slate-400" />
+                              {lisans.ulkeAdi}
+                            </span>
+                          </div>
+                        )}
+                        {lisans.ogretmenAdi && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">{t('profil.teacher')}</span>
+                            <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
+                              <GraduationCap className="size-3.5 text-slate-400" />
+                              {lisans.ogretmenAdi}
+                            </span>
+                          </div>
+                        )}
+                        {lisans.sinifAdi && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">{t('profil.class')}</span>
+                            <span className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
+                              <Users className="size-3.5 text-slate-400" />
+                              {lisans.sinifAdi}
+                            </span>
+                          </div>
+                        )}
+                        {lisans.kitapAdi && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">{t('profil.book')}</span>
+                            <span className="text-sm font-semibold text-slate-900">{lisans.kitapAdi}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-slate-500">{t(`profil.licenseTypes.${lisans.lisansTipi}`)}</span>
+                          <span className="text-xs text-slate-500">
+                            {t('profil.seatUsage', { used: lisans.kullanilanLisans, total: lisans.toplamLisans })}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className={cn('h-full rounded-full transition-all', progressColor(yuzde))}
+                              style={{ width: `${yuzde}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1 text-right">
+                            {t('profil.daysRemaining', { count: kalanGun })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Purchase History */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-              <div className="p-5 border-b border-slate-100 bg-slate-50">
-                <h3 className="font-semibold text-lg text-slate-900">Satın Alma Geçmişi</h3>
-              </div>
-              {purchases.length === 0 ? (
-                <div className="p-8 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                    <Receipt className="size-5" />
-                  </div>
-                  <p className="text-sm text-slate-500">Henüz bir işlem yok</p>
+            {/* License History */}
+            {gecmisLisanslar.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="p-5 border-b border-slate-100 bg-slate-50">
+                  <h3 className="font-semibold text-lg text-slate-900">{t('profil.licenseHistory')}</h3>
                 </div>
-              ) : (
                 <div className="divide-y divide-slate-100">
-                  {purchases.map((p) => (
-                    <div key={p.id} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  {gecmisLisanslar.map((lisans) => (
+                    <div key={lisans.id} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
                           <Receipt className="size-5" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{p.aciklama}</p>
-                          <p className="text-xs text-slate-500">{p.tarih}</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {lisans.kitapAdi ?? lisans.kurumAdi}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(lisans.baslangicTarihi).toLocaleDateString(locale)} –{' '}
+                            {new Date(lisans.bitisTarihi).toLocaleDateString(locale)}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-slate-900">{p.tutar}</p>
-                        <p className="text-xs text-green-600 font-medium">{p.durum}</p>
-                      </div>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 shrink-0">
+                        {t('profil.expired')}
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Promo Image */}
             <div className="relative h-56 w-full rounded-2xl overflow-hidden border border-slate-200">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-emerald-100/50" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex flex-col justify-end p-6">
-                <h3 className="text-white font-semibold text-lg mb-1">Dil Yolculuğuna Devam Et</h3>
+                <h3 className="text-white font-semibold text-lg mb-1">{t('profil.promoTitle')}</h3>
                 <p className="text-white/80 text-sm max-w-md">
-                  Profilindeki eksik bilgileri tamamlayarak arkadaşlarınla daha iyi etkileşime geçebilirsin.
+                  {t('profil.promoDesc')}
                 </p>
               </div>
             </div>
@@ -389,7 +430,7 @@ export default function ProfilPage() {
                 {avatarUrl ? (
                   <Image
                     src={avatarUrl}
-                    alt="Profil"
+                    alt={t('profil.avatarAlt')}
                     fill
                     unoptimized
                     className="rounded-full object-cover border-4 border-primary/10"
@@ -422,18 +463,18 @@ export default function ProfilPage() {
 
             {/* Quick Stats */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6">
-              <h3 className="font-semibold text-slate-900 mb-4">Hızlı İstatistikler</h3>
+              <h3 className="font-semibold text-slate-900 mb-4">{t('profil.quickStats')}</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500">Toplam XP</span>
+                  <span className="text-sm text-slate-500">{t('profil.totalXp')}</span>
                   <span className="text-sm font-bold text-slate-900">{user.puan.toLocaleString('tr')}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500">Streak</span>
-                  <span className="text-sm font-bold text-orange-500">{user.streakCount} gün</span>
+                  <span className="text-sm text-slate-500">{t('profil.streak')}</span>
+                  <span className="text-sm font-bold text-orange-500">{t('profil.streakDays', { count: user.streakCount })}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500">Kalan Kalp</span>
+                  <span className="text-sm text-slate-500">{t('profil.remainingHearts')}</span>
                   <span className="text-sm font-bold text-red-500">{user.kalp} / 5</span>
                 </div>
               </div>
@@ -445,7 +486,7 @@ export default function ProfilPage() {
               className="w-full bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-center gap-2 text-red-500 font-semibold hover:bg-red-50 hover:border-red-200 transition-colors"
             >
               <LogOut className="size-4" />
-              Çıkış Yap
+              {t('profil.logout')}
             </button>
 
             {/* Decorative */}
@@ -461,10 +502,10 @@ export default function ProfilPage() {
         {showPasswordModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPasswordModal(false)}>
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-semibold text-lg text-slate-900 mb-4">Şifre Değiştir</h3>
+              <h3 className="font-semibold text-lg text-slate-900 mb-4">{t('profil.changePasswordTitle')}</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Mevcut Şifre</label>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">{t('profil.currentPassword')}</label>
                   <input
                     type="password"
                     value={currentPassword}
@@ -473,7 +514,7 @@ export default function ProfilPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Yeni Şifre</label>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">{t('profil.newPassword')}</label>
                   <input
                     type="password"
                     value={newPassword}
@@ -482,7 +523,7 @@ export default function ProfilPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Yeni Şifre (Tekrar)</label>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">{t('profil.confirmPassword')}</label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -491,7 +532,7 @@ export default function ProfilPage() {
                   />
                 </div>
                 {newPassword !== confirmPassword && confirmPassword.length > 0 && (
-                  <p className="text-xs text-red-500">Şifreler eşleşmiyor</p>
+                  <p className="text-xs text-red-500">{t('profil.passwordMismatch')}</p>
                 )}
               </div>
               <div className="flex gap-2 mt-5">
@@ -499,14 +540,14 @@ export default function ProfilPage() {
                   onClick={() => setShowPasswordModal(false)}
                   className="flex-1 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
                 >
-                  İptal
+                  {t('Cancel')}
                 </button>
                 <button
                   onClick={handlePasswordChange}
                   disabled={newPassword !== confirmPassword || newPassword.length < 6}
                   className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Kaydet
+                  {t('Save')}
                 </button>
               </div>
             </div>
