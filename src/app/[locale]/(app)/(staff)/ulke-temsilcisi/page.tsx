@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Building2, GraduationCap, Users, ArrowRightCircle, ChevronRight,
-  UserPlus, BookOpen, KeyRound, Pencil, Bell,
+  UserPlus, BookOpen, KeyRound, Pencil, Bell, BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -85,6 +85,17 @@ interface SinifSatiri {
   dersKitabiId: string | null;
 }
 
+interface KurumRaporOzeti {
+  kurumId: number;
+  kurumAdi: string;
+  sehir: string | null;
+  ogrenciSayisi: number;
+  aktifOgrenciSayisi: number;
+  ortalamaIlerleme: number;
+  ortalamaPuan: number;
+  sonAktivite: string | null;
+}
+
 interface KurumLisansGrubu {
   kurumId: number;
   kurumAdi: string;
@@ -97,7 +108,7 @@ interface LisansSatiri {
   kitap: LisansKarti;
 }
 
-type Tab = 'kurumlar' | 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar';
+type Tab = 'kurumlar' | 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'kurumlar', label: 'Kurumlar', icon: Building2 },
@@ -105,6 +116,7 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'siniflar', label: 'Sınıflar', icon: BookOpen },
   { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
+  { key: 'raporlar', label: 'Raporlar', icon: BarChart3 },
 ];
 
 const SAYFA_BOYUTU = 20;
@@ -194,6 +206,12 @@ export default function UlkeTemsilcisiPage() {
     queryKey: ['ulke-temsilcisi-lisanslar'],
     queryFn: () => api.get('/api/ulke-temsilcisi/lisanslar').then(r => r.data),
     enabled: gecerli && tab === 'lisanslar',
+  });
+
+  const { data: raporlar, isLoading: raporlarYukleniyor } = useQuery<KurumRaporOzeti[]>({
+    queryKey: ['ulke-temsilcisi-raporlar'],
+    queryFn: () => api.get('/api/ulke-temsilcisi/raporlar').then(r => r.data),
+    enabled: gecerli && tab === 'raporlar',
   });
 
   const donusturMutation = useMutation({
@@ -386,6 +404,10 @@ export default function UlkeTemsilcisiPage() {
 
         {tab === 'lisanslar' && (
           <DersKitaplariTab gruplar={lisansGruplari} yukleniyor={lisanslarYukleniyor} />
+        )}
+
+        {tab === 'raporlar' && (
+          <UlkeRaporlarTab veri={raporlar} yukleniyor={raporlarYukleniyor} />
         )}
       </main>
 
@@ -759,6 +781,115 @@ function PersonelListesi({ baslik, veri, yukleniyor, bosMesaj, ikincilKolonBasli
       </div>
 
       <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+    </div>
+  );
+}
+
+function ilerlemeRengi(pct: number): string {
+  if (pct >= 80) return 'bg-emerald-500';
+  if (pct >= 50) return 'bg-amber-400';
+  if (pct >= 20) return 'bg-orange-300';
+  return 'bg-slate-200';
+}
+
+function sonAktiviteMetni(tarih: string | null) {
+  if (!tarih) return 'Hiç aktivite yok';
+  return new Date(tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+const SEHIR_BELIRTILMEMIS = 'Şehir belirtilmemiş';
+
+function UlkeRaporlarTab({ veri, yukleniyor }: { veri: KurumRaporOzeti[] | undefined; yukleniyor: boolean }) {
+  const [arama, setArama] = useState('');
+
+  const filtreli = useMemo(() => {
+    const ham = veri ?? [];
+    if (!arama) return ham;
+    return ham.filter(k => metinEslesiyorMu([k.kurumAdi, k.sehir], arama));
+  }, [veri, arama]);
+
+  // Sehir'e gore gruplama — sehri olanlar alfabetik, "Sehir belirtilmemiş" en altta.
+  // Sadece gorsel/siralama amacli: tek /raporlar cevabi client'ta bolunur.
+  const gruplar = useMemo(() => {
+    const map = new Map<string, KurumRaporOzeti[]>();
+    for (const k of filtreli) {
+      const anahtar = k.sehir?.trim() || SEHIR_BELIRTILMEMIS;
+      if (!map.has(anahtar)) map.set(anahtar, []);
+      map.get(anahtar)!.push(k);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => {
+        if (a === SEHIR_BELIRTILMEMIS) return 1;
+        if (b === SEHIR_BELIRTILMEMIS) return -1;
+        return a.localeCompare(b, 'tr');
+      })
+      .map(([sehir, kurumlar]) => ({
+        sehir,
+        kurumlar: trSirala(kurumlar, 'kurumAdi', 'asc'),
+        ortalamaIlerleme: kurumlar.reduce((t, k) => t + k.ortalamaIlerleme, 0) / kurumlar.length,
+      }));
+  }, [filtreli]);
+
+  if (yukleniyor) {
+    return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 rounded-xl bg-slate-100 animate-pulse" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <AramaInput value={arama} onChange={setArama} placeholder="Kurum, şehir ara..." />
+      {gruplar.length === 0 ? (
+        <p className="text-slate-400 text-sm text-center py-12">Henüz veri yok.</p>
+      ) : (
+        gruplar.map(g => (
+          <div key={g.sehir} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+              <h2 className="text-sm font-semibold text-slate-800">{g.sehir}</h2>
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{g.kurumlar.length} kurum</span>
+              {g.sehir !== SEHIR_BELIRTILMEMIS && (
+                <span className="ml-auto text-xs text-slate-400">Şehir ort.: %{Math.round(g.ortalamaIlerleme)}</span>
+              )}
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-2.5 text-left font-medium text-slate-600">Kurum</th>
+                  <th className="px-4 py-2.5 text-center font-medium text-slate-600 hidden sm:table-cell">Öğrenci</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-slate-600">İlerleme</th>
+                  <th className="px-4 py-2.5 text-right font-medium text-slate-600 hidden sm:table-cell">Son Aktivite</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {g.kurumlar.map(k => (
+                  <tr key={k.kurumId} className="odd:bg-white even:bg-slate-50/40">
+                    <td className="px-4 py-2 font-medium text-slate-900">{k.kurumAdi}</td>
+                    <td className="px-4 py-2 text-center text-xs text-slate-600 hidden sm:table-cell">
+                      {k.aktifOgrenciSayisi}/{k.ogrenciSayisi} aktif
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={cn('h-full rounded-full transition-all', ilerlemeRengi(k.ortalamaIlerleme))} style={{ width: `${Math.round(k.ortalamaIlerleme)}%` }} />
+                        </div>
+                        <span className="text-xs font-medium text-slate-500 w-9 text-right">%{Math.round(k.ortalamaIlerleme)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-right text-xs text-slate-400 hidden sm:table-cell">{sonAktiviteMetni(k.sonAktivite)}</td>
+                    <td className="px-4 py-2">
+                      <Link href={`/ulke-temsilcisi/kurum/${k.kurumId}/raporlar`}>
+                        <ChevronRight className="size-4 text-slate-300" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+      <p className="text-xs text-slate-400 px-1">
+        Bu sıralama farklı sayıda etkinlik atanmış kurumları birebir kıyaslamaz, genel eğilimi gösterir.
+      </p>
     </div>
   );
 }

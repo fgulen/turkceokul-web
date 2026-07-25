@@ -5,7 +5,7 @@
 
 import { use, useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, GraduationCap, BookOpen, Pencil } from 'lucide-react';
+import { ArrowLeft, GraduationCap, BookOpen, Pencil, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
@@ -104,6 +104,11 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
             <ArrowLeft className="size-4" />
           </Link>
           <h1 className="text-xl font-bold text-slate-900 flex-1">{kurum?.name ?? '...'}</h1>
+          <Link
+            href={`/ulke-temsilcisi/kurum/${id}/raporlar`}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-white transition-colors shrink-0">
+            <BarChart3 className="size-3.5" /> Raporlar
+          </Link>
           <button
             onClick={() => setDuzenleAcik(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-white transition-colors shrink-0">

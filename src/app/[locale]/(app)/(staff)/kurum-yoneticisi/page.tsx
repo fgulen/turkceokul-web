@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   GraduationCap, CheckCircle, XCircle, Users,
-  BookOpen, KeyRound, Pencil, Trash2, UserPlus
+  BookOpen, KeyRound, Pencil, Trash2, UserPlus, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -52,6 +52,16 @@ interface PanelSinif {
   ogretmenAdi: string | null;
 }
 
+interface SinifRaporOzeti {
+  sinifId: number;
+  sinifAdi: string;
+  ogrenciSayisi: number;
+  aktifOgrenciSayisi: number;
+  ortalamaIlerleme: number;
+  ortalamaPuan: number;
+  sonAktivite: string | null;
+}
+
 interface KurumPanel {
   id: number;
   name: string;
@@ -80,13 +90,14 @@ const BUTON_METIN: Record<string, string> = {
   UcretsizDene: 'Ücretsiz Dene',
 };
 
-type Tab = 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar';
+type Tab = 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'ogretmenler', label: 'Öğretmenler', icon: GraduationCap },
   { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'siniflar', label: 'Sınıflar', icon: BookOpen },
   { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
+  { key: 'raporlar', label: 'Raporlar', icon: BarChart3 },
 ];
 
 const SAYFA_BOYUTU = 20;
@@ -117,6 +128,12 @@ export default function KurumYoneticisiPage() {
     queryKey: ['kurum-yoneticisi-ogrenciler'],
     queryFn: () => api.get('/api/kurum-yoneticisi/ogrenciler').then(r => r.data),
     enabled: !!user && user.role === 'KurumYoneticisi',
+  });
+
+  const { data: raporlar, isLoading: raporlarYukleniyor } = useQuery<SinifRaporOzeti[]>({
+    queryKey: ['kurum-yoneticisi-raporlar'],
+    queryFn: () => api.get('/api/kurum-yoneticisi/raporlar').then(r => r.data),
+    enabled: !!user && user.role === 'KurumYoneticisi' && tab === 'raporlar',
   });
 
   const kurumDuzenleMutation = useMutation({
@@ -279,6 +296,10 @@ export default function KurumYoneticisiPage() {
             onDuzenle={id => setDuzenlenecekSinifId(id)}
             onSil={handleSinifSil}
           />
+        )}
+
+        {tab === 'raporlar' && (
+          <RaporlarTab veri={raporlar} yukleniyor={raporlarYukleniyor} />
         )}
 
         {tab === 'lisanslar' && (
@@ -676,6 +697,88 @@ function SiniflarTab({ veri, yukleniyor, onDuzenle, onSil }: {
       </div>
 
       <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+    </div>
+  );
+}
+
+function ilerlemeRengi(pct: number): string {
+  if (pct >= 80) return 'bg-emerald-500';
+  if (pct >= 50) return 'bg-amber-400';
+  if (pct >= 20) return 'bg-orange-300';
+  return 'bg-slate-200';
+}
+
+function sonAktiviteMetni(tarih: string | null) {
+  if (!tarih) return 'Hiç aktivite yok';
+  return new Date(tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function RaporlarTab({ veri, yukleniyor }: { veri: SinifRaporOzeti[] | undefined; yukleniyor: boolean }) {
+  const [arama, setArama] = useState('');
+  const { sortKey, sortDir, toggleSort } = useSiralama<'sinifAdi' | 'ogrenciSayisi' | 'ortalamaIlerleme' | 'ortalamaPuan'>('sinifAdi');
+
+  const filtreli = useMemo(() => {
+    const ham = veri ?? [];
+    if (!arama) return ham;
+    return ham.filter(s => metinEslesiyorMu([s.sinifAdi], arama));
+  }, [veri, arama]);
+  const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">Raporlar</h2>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{sirali.length}</span>
+          <AramaInput value={arama} onChange={setArama} placeholder="Sınıf ara..." />
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <SortTh colKey="sinifAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
+              <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center" className="hidden sm:table-cell">Öğrenci</SortTh>
+              <SortTh colKey="ortalamaPuan" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center" className="hidden md:table-cell">Ort. Puan</SortTh>
+              <SortTh colKey="ortalamaIlerleme" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>İlerleme</SortTh>
+              <th className="px-4 py-2.5 text-right font-medium text-slate-600 hidden sm:table-cell">Son Aktivite</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {yukleniyor ? (
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+            ) : sirali.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Henüz veri yok.</td></tr>
+            ) : (
+              sirali.map(s => (
+                <tr key={s.sinifId} className="odd:bg-white even:bg-slate-50/40">
+                  <td className="px-4 py-2">
+                    <Link href={`/ogretmen/sinif/${s.sinifId}/raporlar`} className="font-medium text-slate-900 hover:text-primary transition-colors">
+                      {s.sinifAdi}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2 text-center text-xs text-slate-600 hidden sm:table-cell">
+                    {s.aktifOgrenciSayisi}/{s.ogrenciSayisi} aktif
+                  </td>
+                  <td className="px-4 py-2 text-center text-xs font-semibold text-slate-700 hidden md:table-cell">
+                    {s.ogrenciSayisi === 0 ? '—' : Math.round(s.ortalamaPuan)}
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={cn('h-full rounded-full transition-all', ilerlemeRengi(s.ortalamaIlerleme))} style={{ width: `${Math.round(s.ortalamaIlerleme)}%` }} />
+                      </div>
+                      <span className="text-xs font-medium text-slate-500 w-9 text-right">%{Math.round(s.ortalamaIlerleme)}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-400 hidden sm:table-cell">{sonAktiviteMetni(s.sonAktivite)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-slate-400 px-1">
+        Bu sıralama farklı sayıda etkinlik atanmış sınıfları birebir kıyaslamaz, genel eğilimi gösterir.
+      </p>
     </div>
   );
 }
