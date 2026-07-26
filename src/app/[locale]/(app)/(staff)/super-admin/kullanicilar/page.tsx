@@ -30,6 +30,7 @@ interface KullaniciSatir {
   kurumId: number | null;
   ulkeAdi: string | null;
   kurumAdi: string | null;
+  sinifAdi: string | null;
   insertDate: string;
   isApproved: boolean;
 }
@@ -72,6 +73,10 @@ function KullanicilarTab() {
 
   const kullanicilar: KullaniciSatir[] = data?.liste ?? [];
   const toplam: number = data?.toplam ?? 0;
+  // Seçili kullanıcılar zaten aktifse "Onayla" anlamsız/no-op görünüyordu — bulk aksiyon
+  // butonları artık seçim içindeki askıda/aktif alt kümesine göre ayrı ayrı gösteriliyor.
+  const pasifSeciliIdler = kullanicilar.filter(u => secili.has(u.id) && !u.isApproved).map(u => u.id);
+  const aktifSeciliIdler = kullanicilar.filter(u => secili.has(u.id) && u.isApproved).map(u => u.id);
 
   const { data: ulkeler = [] } = useQuery({
     queryKey: ['sa-ulkeler-liste'],
@@ -93,12 +98,27 @@ function KullanicilarTab() {
   });
 
   const topluSilMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-sil', { ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); setTopluOnay(false); },
+    mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-sil', { ids }).then(r => r.data as { silindi: number; basarisiz: number }),
+    onSuccess: ({ silindi, basarisiz }) => {
+      qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] });
+      temizle();
+      setTopluOnay(false);
+      if (basarisiz > 0) {
+        toast.error(`${silindi} kullanıcı silindi, ${basarisiz} kullanıcı ilişkili verilerde (sınıf/geçmiş/lisans) kullanıldığı için silinemedi.`);
+      } else {
+        toast.success(`${silindi} kullanıcı silindi.`);
+      }
+    },
+    onError: () => toast.error('Kullanıcılar silinirken bir hata oluştu.'),
   });
 
   const topluOnaylaMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-onayla', { ids }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); },
+  });
+
+  const topluAskiyaAlMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-askiya-al', { ids }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); },
   });
 
@@ -153,10 +173,18 @@ function KullanicilarTab() {
           <div className="flex items-center gap-2 ml-auto">
             {secili.size > 0 && (
               <>
-                <button onClick={() => topluOnaylaMutation.mutate([...secili])}
-                  className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
-                  Onayla ({secili.size})
-                </button>
+                {pasifSeciliIdler.length > 0 && (
+                  <button onClick={() => topluOnaylaMutation.mutate(pasifSeciliIdler)}
+                    className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
+                    Onayla ({pasifSeciliIdler.length})
+                  </button>
+                )}
+                {aktifSeciliIdler.length > 0 && (
+                  <button onClick={() => topluAskiyaAlMutation.mutate(aktifSeciliIdler)}
+                    className="px-3 py-1.5 bg-amber-600 text-white text-xs rounded-lg hover:bg-amber-700 transition-colors">
+                    Askıya Al ({aktifSeciliIdler.length})
+                  </button>
+                )}
                 <button onClick={() => setTopluOnay(true)}
                   className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
                   Toplu Sil ({secili.size})
@@ -176,6 +204,7 @@ function KullanicilarTab() {
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kullanıcı</SortTh>
               <SortTh colKey="ulke" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Ülke</SortTh>
               <SortTh colKey="kurum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kurum</SortTh>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 hidden md:table-cell">Sınıf</th>
               <SortTh colKey="kayitTarihi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kayıt Tarihi</SortTh>
               <SortTh colKey="rol" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Rol</SortTh>
               <SortTh colKey="durum" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Durum</SortTh>
@@ -195,6 +224,9 @@ function KullanicilarTab() {
                 </td>
                 <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
                   {u.kurumAdi ?? u.ulkeAdi ?? '—'}
+                </td>
+                <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
+                  {u.rol === 'Ogrenci' ? (u.sinifAdi ?? '—') : '—'}
                 </td>
                 <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">
                   {new Date(u.insertDate).toLocaleDateString('tr')}
@@ -226,7 +258,7 @@ function KullanicilarTab() {
               </tr>
             ))}
             {kullanicilar.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400 text-sm">Kullanıcı bulunamadı</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400 text-sm">Kullanıcı bulunamadı</td></tr>
             )}
           </tbody>
         </table>
