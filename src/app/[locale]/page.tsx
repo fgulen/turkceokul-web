@@ -74,8 +74,9 @@ const C = {
       {
         badge: "KURUMSAL ÜCRETSİZ", name: "Ücretsiz", period: "Sonsuza kadar",
         features: [
-          "1 öğretmen + 10 öğrenci",
-          "AI Stüdyo: 10 üretim/ay (tüm AI araçları için ortak limit)",
+          "Sınırsız öğretmen & öğrenci",
+          "Ünite 1 tüm kitaplarda ücretsiz",
+          "AI Stüdyo: 5 üretim/ay (Quiz + Kahoot)",
           "Sınıf yönetimi",
           "Kahoot modu",
         ],
@@ -118,7 +119,7 @@ const C = {
     ctaBadge: "ÜCRETSİZ BAŞLA",
     ctaH2a: "Okulunuz için ilk adımı",
     ctaH2b: "bugün atın.",
-    ctaSub: "1 öğretmen, 10 öğrenci — kurulum 5 dakika. Kredi kartı gerekmez.",
+    ctaSub: "Sınırsız öğretmen ve öğrenci — kurulum 5 dakika. Kredi kartı gerekmez.",
     ctaPrimary: "Kurumsal Ücretsiz Başla",
     ctaSecondary: "Öğrenci Kaydı",
     ctaLogin: "Zaten hesabın var mı?",
@@ -146,8 +147,9 @@ const C = {
       {
         badge: "INSTITUTIONAL FREE", name: "Free", period: "Forever",
         features: [
-          "1 teacher + 10 students",
-          "AI Studio: 10 generations/mo (shared across all AI tools)",
+          "Unlimited teachers & students",
+          "Unit 1 free in every book",
+          "AI Studio: 5 generations/mo (Quiz + Kahoot)",
           "Class management",
           "Kahoot mode",
         ],
@@ -190,7 +192,7 @@ const C = {
     ctaBadge: "START FREE",
     ctaH2a: "Take the first step",
     ctaH2b: "for your school, today.",
-    ctaSub: "1 teacher, 10 students — set up in 5 minutes. No credit card needed.",
+    ctaSub: "Unlimited teachers and students — set up in 5 minutes. No credit card needed.",
     ctaPrimary: "Start Free for Your Institution",
     ctaSecondary: "Student Sign Up",
     ctaLogin: "Already have an account?",

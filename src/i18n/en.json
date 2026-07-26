@@ -89,18 +89,18 @@
     "register": {
       "benefitsCorporate": [
         "Generate quizzes in 30s with AI Studio",
-        "1 teacher + 10 students free",
-        "Full CEFR A1–B2 curriculum access",
+        "Unlimited teachers & students",
+        "Unit 1 free, full curriculum with an institutional licence",
         "Class analytics and progress tracking"
       ],
       "benefitsIndividual": [
         "Level-appropriate books & activities",
-        "Earn XP, climb leagues",
-        "Duels and competitions with peers"
+        "Earn XP, climb the weekly league",
+        "Compete on the leaderboard with peers"
       ],
       "benefitsGeneral": [
         "Free account in 3 quick steps",
-        "Full CEFR A1–B2 curriculum",
+        "Unit 1 free in every book",
         "Individual or institutional use"
       ],
       "nativeLangQuestion": "What is your native language?",
@@ -122,8 +122,8 @@
       "stepAria": "Registration steps",
       "back": "Back",
       "infoTitle": "Your account info",
-      "infoSubCorporate": "Create your institutional account.",
-      "infoSubIndividual": "Create your free account.",
+      "infoSubCorporate": "Create your institutional account. Unit 1 is free in every book; full access requires an institutional licence.",
+      "infoSubIndividual": "Create your free account. Unit 1 is free in every book; full access requires an institutional licence.",
       "infoClassCodeSuccess": "Class code entered successfully!",
       "infoClassCodeDesc": "One last step — enter your name, email and password, and you're in the class.",
       "infoClassCodePrompt": "Got a class code? You can join your class after registering.",
@@ -160,7 +160,7 @@
       "leftTitleCorporate": "Start free for<br></br>your school.",
       "leftTitleIndividual": "Improve your<br></br>Turkish.",
       "leftTitleDefault": "Your Turkish learning<br></br>journey begins.",
-      "leftDescCorporate": "1 teacher, 10 students — no credit card, set up in 5 minutes.",
+      "leftDescCorporate": "Unlimited teachers and students — no credit card, set up in 5 minutes.",
       "leftDescIndividual": "Learn Turkish with a full CEFR curriculum and gamification.",
       "leftDescDefault": "Create your account in 3 quick steps and start right away.",
       "statsGraduates": "Graduates",

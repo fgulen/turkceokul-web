@@ -103,7 +103,7 @@ const features = [
 ];
 
 const steps = [
-  { step: '1', title: 'Hesap aç, sınıf oluştur', desc: '5 dakikada ücretsiz kurumsal hesap. İlk sınıfınıza 10 öğrenci ücretsiz.', color: '#1b75bc' },
+  { step: '1', title: 'Hesap aç, sınıf oluştur', desc: '5 dakikada ücretsiz kurumsal hesap. Öğretmen ve öğrenci sayısı sınırsız.', color: '#1b75bc' },
   { step: '2', title: 'QR ile öğrenci ekle', desc: 'Tahta ya da projektörden QR gösterin, öğrenciler telefondan tarasın.', color: '#7c3aed' },
   { step: '3', title: 'AI ile materyal üretin', desc: 'Konu veya kelime listesi girin. 30 saniyede quiz hazır. Onaylayın, sınıfa gönderin.', color: '#ea580c' },
   { step: '4', title: 'Canlı quiz başlatın', desc: 'Kahoot gibi — gerçek zamanlı liderboard, anlık yarışma heyecanı.', color: '#16a34a' },
@@ -115,8 +115,8 @@ const plans = [
     price: 'Ücretsiz',
     period: 'Sonsuza kadar',
     color: '#414751',
-    features: ['1 öğretmen + 10 öğrenci', 'AI Stüdyo: 10 üretim/ay', 'Canlı Kahoot modu', 'QR katılım'],
-    missing: ['Sınırsız AI üretimi', 'Excel rapor', 'Tam analitik paneli'],
+    features: ['Sınırsız öğretmen & öğrenci', 'Ünite 1 ücretsiz', 'AI Stüdyo: 5 üretim/ay (Quiz + Kahoot)', 'Canlı Kahoot modu', 'QR katılım'],
+    missing: ['Tüm üniteler', 'Sınırsız AI üretimi', 'Excel rapor', 'Tam analitik paneli'],
     cta: 'Ücretsiz Başla',
     href: '/kayit?tip=ogretmen',
     highlight: false,
@@ -147,7 +147,7 @@ const plans = [
 ];
 
 const faqs = [
-  { q: 'Kurumsal hesap açmak ücretsiz mi?', a: 'Evet. 1 sınıf ve 10 öğrenci ücretsiz olarak süresiz kullanılabilir. Sınıf ve öğrenci sayısı artınca Kurumsal Pro planına geçebilirsiniz.' },
+  { q: 'Kurumsal hesap açmak ücretsiz mi?', a: 'Evet. Sınıf ve öğrenci sayısı sınırsızdır, süresiz kullanılabilir. Ücretsiz planda her kitapta Ünite 1 açıktır — tüm üniteler ve gelişmiş özellikler (sınırsız AI, Excel rapor, tam analitik) için Kurumsal Pro planına geçebilirsiniz.' },
   { q: 'Öğrencim sınıfa nasıl katılır?', a: 'İki yol var: (1) Öğretmen panelinden QR kodu açın, öğrenci telefonu ile tarasın. (2) Katılım kodunu paylaşın, öğrenci turkceokulu.com/sinif/katil sayfasına girip kodu yazsın. Ayrıntılı adımlar ve ekran görüntüleri için turkceokulu.com/nasil-calisir sayfasındaki "Sınıf Ekleme" rehberine bakın.' },
   { q: 'QR kodu nasıl çalışır? Özel uygulama gerekiyor mu?', a: 'Hayır, uygulama gerekmez. Öğretmen Paneli → Sınıfım → "QR ile Katıl" butonuna tıklayınca büyük bir QR kodu açılır. Öğrenci telefon kamerasıyla (iOS veya Android — ayrı QR uygulaması şart değil) kodu tarar; tarayıcıda turkceokulu.com/sinif/katil sayfası açılır ve sınıfa katılır. Hesabı yoksa önce kayıt olur, ardından otomatik olarak katılım sayfasına yönlendirilir.' },
   { q: 'AI İçerik Stüdyosu hangi dillerde çalışır?', a: 'Şu an Türkçe içerik üretimi için optimize edilmiştir. Konu Türkçe verilince kelime düzeyine uygun quiz, boşluk doldurma ve kelime listesi üretir.' },

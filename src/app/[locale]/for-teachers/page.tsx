@@ -104,7 +104,7 @@ const features = [
 ];
 
 const steps = [
-  { step: '1', title: 'Open an account, create a class', desc: 'Free institutional account in 5 minutes. First class of 10 students is free.', color: '#1b75bc' },
+  { step: '1', title: 'Open an account, create a class', desc: 'Free institutional account in 5 minutes. Unlimited teachers and students.', color: '#1b75bc' },
   { step: '2', title: 'Add students via QR', desc: 'Show the QR on the board or projector. Students scan with their phones.', color: '#7c3aed' },
   { step: '3', title: 'Generate material with AI', desc: 'Enter a topic or word list. Quiz ready in 30 seconds. Approve, send to class.', color: '#ea580c' },
   { step: '4', title: 'Run a live quiz', desc: 'Kahoot-style — real-time leaderboard, instant competition excitement.', color: '#16a34a' },
@@ -115,8 +115,8 @@ const plans = [
     name: 'Starter',
     price: 'Free',
     period: 'Forever',
-    features: ['1 teacher + 10 students', 'AI Studio: 10 generations/mo', 'Live Kahoot mode', 'QR join'],
-    missing: ['Unlimited AI generation', 'Excel export', 'Full analytics dashboard'],
+    features: ['Unlimited teachers & students', 'Unit 1 free', 'AI Studio: 5 generations/mo (Quiz + Kahoot)', 'Live Kahoot mode', 'QR join'],
+    missing: ['All units', 'Unlimited AI generation', 'Excel export', 'Full analytics dashboard'],
     cta: 'Start Free',
     href: '/kayit?tip=ogretmen',
     highlight: false,
@@ -145,7 +145,7 @@ const plans = [
 ];
 
 const faqs = [
-  { q: 'Is the institutional account free?', a: 'Yes. 1 class and 10 students can be used for free indefinitely. Upgrade to Institutional Pro when you need more classes and students.' },
+  { q: 'Is the institutional account free?', a: 'Yes. Classes and students are unlimited and free indefinitely. The free plan gives access to Unit 1 in every book — upgrade to Institutional Pro for all units, unlimited AI and full analytics.' },
   { q: 'What languages does the AI Content Studio support?', a: 'It is optimised for Turkish content. Enter a topic in Turkish and it generates CEFR-appropriate quizzes, gap-fills and word lists.' },
   { q: 'How many students can join a live quiz at once?', a: 'Up to 50 students simultaneously on the Institutional Pro plan. The limit is removed on the Campus plan.' },
   { q: 'How does integration with Nevai Publishers textbooks work?', a: 'Textbook activation codes give students 6 months of premium access. From the teacher panel you can filter content by the book your class is using.' },
@@ -431,7 +431,7 @@ export default function ForTeachersPage() {
               Transform your classroom, today
             </h2>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.72)', marginBottom: 36, lineHeight: '26px' }}>
-              1 teacher, 10 students — up and running in 5 minutes. No credit card needed.
+              Unlimited teachers and students — up and running in 5 minutes. No credit card needed.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link href="/kayit?tip=ogretmen" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff', color: '#1b75bc', fontSize: 15, fontWeight: 700, padding: '14px 28px', borderRadius: 10, textDecoration: 'none' }}>

@@ -8,6 +8,9 @@ import { KaynakSecici, type KaynakSecim } from '@/components/ogretmen/ai-studio/
 import { YakindaKart } from '@/components/ogretmen/ai-studio/YakindaKart';
 import { KahootBaslatModal } from '@/components/ogretmen/ai-studio/KahootBaslatModal';
 import { KahootHavuz } from '@/components/ogretmen/ai-studio/KahootHavuz';
+import { ProUpgradeModal } from '@/components/ogretmen/ai-studio/ProUpgradeModal';
+import { ProBadge } from '@/components/ui/ProBadge';
+import { PlusBanner } from '@/components/plus-banner';
 import {
   Sparkles, Copy, Check, Download,
   ListChecks, Shuffle, PenLine, Newspaper, Zap,
@@ -32,6 +35,10 @@ const CORE_TABS: TabTanim[] = [
   { id: 'bosluk_doldur', label: 'Boşluk Doldurma', icon: PenLine,    aciklama: 'Boşluk doldurma alıştırmaları' },
   { id: 'bulten',        label: 'Sınıf Bülteni',   icon: Newspaper,  aciklama: 'Sınıf veya öğrenci bazlı veli bülteni' },
 ];
+
+// Freemium: Quiz + Kahoot ücretsizde serbest; diğerleri Kurumsal Pro gerektirir
+// (backend: AiIcerikController IcerikUret/SinifBulteni, 403 premium_gerekli).
+const PRO_GATED_TABS: TabId[] = ['eslestir', 'bosluk_doldur', 'bulten'];
 
 const PDF_IMPORT_TAB: TabTanim = {
   id: 'pdf_import', label: 'MD Aktar', icon: FileUp,
@@ -122,6 +129,7 @@ export default function AIIcerikPage() {
   const [kahootSubTab, setKahootSubTab] = useState<'uret' | 'havuz'>('uret');
   const [modalAcik, setModalAcik] = useState(false);
   const [modalEtkinlikId, setModalEtkinlikId] = useState<string | null>(null);
+  const [proModalOzellik, setProModalOzellik] = useState<string | null>(null);
 
   const mdAktarGorunur = user?.role === 'SuperAdmin' || user?.role === 'Editor';
   const TABS: TabTanim[] = mdAktarGorunur ? [...CORE_TABS, PDF_IMPORT_TAB] : CORE_TABS;
@@ -256,7 +264,7 @@ export default function AIIcerikPage() {
       // ogrenci_sinifta_degil (bülten için seçilen öğrenci sınıfta değil)
       const resp = (err as { response?: { status?: number; data?: { kod?: string; mesaj?: string } } }).response;
       if (resp?.status === 403 && resp.data?.kod === 'limit_asili') {
-        setHata('Aylık AI üretim limitine ulaştın (ücretsiz planda 10 üretim/ay, tüm AI araçları için ortak). Limit her ayın başında yenilenir — sınırsız üretim için Kurumsal Pro\'ya geçebilirsin.');
+        setHata(`Aylık AI üretim limitine ulaştın (ücretsiz planda ${krediData?.toplam ?? 5} üretim/ay, tüm AI araçları için ortak — Word indirme de dahil). Limit her ayın başında yenilenir — sınırsız üretim için Kurumsal Pro'ya geçebilirsin.`);
         return;
       }
       if (resp?.status === 403 && resp.data?.kod === 'premium_gerekli') {
@@ -300,6 +308,11 @@ export default function AIIcerikPage() {
   }
 
   function tabDegistir(id: TabId) {
+    // Freemium: kilitli formata tıklanınca sekme değişmez, canlı önizleme modalı açılır.
+    if (freemium && PRO_GATED_TABS.includes(id)) {
+      setProModalOzellik(TABS.find(t => t.id === id)?.label ?? id);
+      return;
+    }
     setAktifTab(id);
     setHata('');
     setResimli(false);
@@ -414,6 +427,8 @@ export default function AIIcerikPage() {
   return (
     <div className="bg-[#F3F4F6]">
       <main className="px-4 py-8">
+        <PlusBanner className="mb-4" />
+
         {/* Tab bar */}
         <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-1 mb-4">
           <div className="flex gap-1">
@@ -434,6 +449,9 @@ export default function AIIcerikPage() {
               >
                 <Icon className="size-4 shrink-0" />
                 <span className="hidden sm:inline whitespace-nowrap">{label}</span>
+                {freemium && PRO_GATED_TABS.includes(id) && (
+                  <ProBadge className="hidden sm:inline-flex" />
+                )}
                 {sonuclar[id] && aktifTab !== id && (
                   <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
                 )}
@@ -498,14 +516,25 @@ export default function AIIcerikPage() {
             </div>
           ) : (krediData.kalan != null && krediData.toplam != null && (
             <div className={cn(
-              'text-xs mb-3',
+              'flex items-center gap-2 mb-3 text-xs font-medium',
               krediData.kalan > 5
                 ? 'text-slate-400'
                 : krediData.kalan > 0
                   ? 'text-amber-500'
                   : 'text-red-500'
             )}>
-              AI Kredisi (aylık): {krediData.kalan} / {krediData.toplam} — her ay yenilenir
+              <span className="flex gap-0.5" aria-hidden="true">
+                {Array.from({ length: krediData.toplam }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      'inline-block size-2.5 rounded-sm',
+                      i < krediData.kalan! ? 'bg-current opacity-80' : 'bg-slate-200',
+                    )}
+                  />
+                ))}
+              </span>
+              <span>Bu Ay: AI {krediData.kalan} / {krediData.toplam} kaldı — her ay yenilenir (Word indirme de bu kotadan)</span>
             </div>
           ))
         )}
@@ -750,6 +779,12 @@ export default function AIIcerikPage() {
             }}
           />
         )}
+
+        <ProUpgradeModal
+          acik={!!proModalOzellik}
+          ozellikAdi={proModalOzellik ?? ''}
+          onKapat={() => setProModalOzellik(null)}
+        />
 
         {/* Geçmiş kütüphanesi */}
         {(gecmisData?.liste?.length ?? 0) > 0 && (

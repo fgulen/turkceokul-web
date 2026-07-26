@@ -55,6 +55,43 @@ interface EtkinlikListItem {
   bolum: string;
 }
 
+// Kalp yenileme geri sayımı — /api/profil KalpYenilemeZamani + KalpYenilemeGun (lisansa
+// göre değişken: ücretsiz 15dk, premium 2dk) döndürür; sonraki kalp = bu ikisinin toplamı.
+function KalpGeriSayim() {
+  const { data } = useQuery({
+    queryKey: ['profil-kalp-geri-sayim'],
+    queryFn: () => api.get('/api/profil').then(r => r.data as {
+      kalpYenilemeZamani: string | null;
+      kalpYenilemeGun: number;
+    }),
+    staleTime: 0,
+  });
+  const [simdi, setSimdi] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setSimdi(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!data?.kalpYenilemeZamani) return null;
+
+  const hedefMs = new Date(data.kalpYenilemeZamani).getTime() + data.kalpYenilemeGun * 60_000;
+  const kalanSaniye = Math.max(0, Math.round((hedefMs - simdi) / 1000));
+
+  if (kalanSaniye <= 0) {
+    return <p className="text-xs font-semibold text-emerald-600 mb-6">Bir kalp hazır olabilir — tekrar dene!</p>;
+  }
+
+  const dk = Math.floor(kalanSaniye / 60);
+  const sn = kalanSaniye % 60;
+
+  return (
+    <p className="text-xs text-muted-foreground mb-6">
+      Sonraki kalp: <span className="font-semibold text-foreground tabular-nums">{dk}:{String(sn).padStart(2, '0')}</span>
+    </p>
+  );
+}
+
 function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDon: () => void }) {
   const t = useTranslations();
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -95,9 +132,10 @@ function KalpSifirScreen({ onRetry, onGeriDon }: { onRetry: () => void; onGeriDo
           <Heart className="size-16 fill-red-500 text-red-500" />
         </motion.div>
         <h2 className="text-2xl font-extrabold mb-2">{t('etkinlik.heartDepleted')}</h2>
-        <p className="text-muted-foreground text-sm mb-7">
+        <p className="text-muted-foreground text-sm mb-3">
           {t('etkinlik.heartDepletedDesc')}
         </p>
+        <KalpGeriSayim />
         <div className="flex flex-col gap-2">
           <button
             ref={btnRef}
