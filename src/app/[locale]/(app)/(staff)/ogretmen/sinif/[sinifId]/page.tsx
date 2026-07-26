@@ -411,28 +411,27 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
         </Link>
 
         {/* Başlık */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6 flex items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
               <BookOpen className="size-6 text-primary" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">{sinif?.name ?? '...'}</h1>
-              <p className="text-slate-500 text-sm mt-0.5">{sinif?.ogrenciSayisi ?? 0} öğrenci</p>
-              {sinif && (
-                <div className="mt-1.5">
-                  <ContextBreadcrumb
-                    crumbs={[
-                      sinif.ulkeAdi ? { level: 'ulke', label: sinif.ulkeAdi } : null,
-                      sinif.kurumAdi ? { level: 'kurum', label: sinif.kurumAdi } : null,
-                      { level: 'sinif', label: sinif.name },
-                    ]}
-                  />
-                </div>
+            <div className="min-w-0">
+              {sinif ? (
+                <ContextBreadcrumb
+                  crumbs={[
+                    sinif.ulkeAdi ? { level: 'ulke', label: sinif.ulkeAdi } : null,
+                    sinif.kurumAdi ? { level: 'kurum', label: sinif.kurumAdi } : null,
+                    { level: 'sinif', label: sinif.name },
+                  ]}
+                />
+              ) : (
+                <p className="text-sm text-slate-400">Yükleniyor...</p>
               )}
+              <p className="text-slate-500 text-sm mt-1">{sinif?.ogrenciSayisi ?? 0} öğrenci</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-3">
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
               <span className="font-mono font-bold text-lg tracking-widest text-slate-700">
                 {sinif?.katilimKodu ?? '------'}

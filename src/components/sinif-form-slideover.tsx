@@ -141,7 +141,7 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, ulkeId, onBasa
   const olusturMutation = useMutation({
     mutationFn: () => {
       const body: Record<string, unknown> = { name: sinifAdi, dersKitabiId: seciliKitapId };
-      if (rol === 'SuperAdmin') {
+      if (rol === 'SuperAdmin' || rol === 'UlkeTemsilcisi') {
         if (typeof seciliKurumId === 'number') body.kurumId = seciliKurumId;
         if (seciliOgretmenId) body.ogretmenUserId = seciliOgretmenId;
       } else if (rol === 'KurumYoneticisi') {
@@ -286,22 +286,30 @@ export function SinifFormSlideOver({ open, onClose, mod, sinifId, ulkeId, onBasa
                 disabled={!seciliUlkeId && rol === 'SuperAdmin'}
               />
 
-              <SelectField
-                label="Öğretmen"
-                icon={<UserCheck className="size-3.5" />}
-                placeholder={seciliKurumId !== null ? 'Öğretmen seçin (opsiyonel)' : 'Önce kurum seçin'}
-                options={(cascadeOgretmenler ?? []).map(o => ({ value: String(o.id), label: o.ad }))}
-                value={seciliOgretmenId ? String(seciliOgretmenId) : ''}
-                onChange={v => setSeciliOgretmenId(v ? parseInt(v) : null)}
-                disabled={seciliKurumId === null}
-                optional
-              />
+              {seciliKurumId !== null ? (
+                <OgretmenSelect
+                  ogretmenler={cascadeOgretmenler ?? []}
+                  value={seciliOgretmenId}
+                  onChange={setSeciliOgretmenId}
+                />
+              ) : (
+                <SelectField
+                  label="Öğretmen"
+                  icon={<UserCheck className="size-3.5" />}
+                  placeholder="Önce kurum seçin"
+                  options={[]}
+                  value=""
+                  onChange={() => {}}
+                  disabled
+                  optional
+                />
+              )}
 
               {seciliKurumId !== null && cascadeOgretmenler?.length === 0 && (
                 <UyariMesaji text={
                   kurumsuzSecili
-                    ? 'Sistemde kayıtlı ve onaylı bağımsız öğretmen bulunamadı.'
-                    : 'Bu kurumda kayıtlı ve onaylı öğretmen bulunamadı.'
+                    ? 'Sistemde kayıtlı ve onaylı bağımsız öğretmen yok — sınıf kendinize atanacak.'
+                    : 'Bu kurumda kayıtlı ve onaylı başka öğretmen yok — sınıf kendinize atanacak.'
                 } />
               )}
             </>

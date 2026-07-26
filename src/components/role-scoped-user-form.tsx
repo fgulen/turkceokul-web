@@ -84,6 +84,20 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
   const rolEtiketi = DAVET_MESAJI[hedefRol] ?? hedefRol.toLowerCase();
 
+  // Kurum secilmeden KurumYoneticisi daveti gonderilirse davet edilen kisi kayit
+  // olurken kendi kurumunu kendisi olusturur (bkz. DavetService.KabulEtAsync) —
+  // artik "mevcut kurumlardan sec" alternatifi de oldugu icin bu sessiz varsayilanin
+  // farkinda olunmadan secilmesini onlemek adina onay istenir.
+  function davetGonder() {
+    if (hedefRol === 'KurumYoneticisi' && kurumAlaniGorunsun && !kurumSabit && !seciliKurumId) {
+      const onay = window.confirm(
+        'Kurum seçmediniz — davet edilen kişi kayıt olurken kendi kurumunu kendisi oluşturacak. Emin misiniz?',
+      );
+      if (!onay) return;
+    }
+    davetMutation.mutate();
+  }
+
   const icerik = (
     <>
       {scopeYukleniyor ? (
@@ -157,7 +171,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
           )}
 
           <button
-            onClick={() => davetMutation.mutate()}
+            onClick={davetGonder}
             disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId) || (kurumZorunlu && !seciliKurumId)}
             className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
           >

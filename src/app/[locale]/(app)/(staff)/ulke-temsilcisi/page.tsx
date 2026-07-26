@@ -149,6 +149,7 @@ export default function UlkeTemsilcisiPage() {
 
   const [donusturuluyorId, setDonusturuluyorId] = useState<number | null>(null);
   const [kurumDavetAcik, setKurumDavetAcik] = useState(false);
+  const [kurumOlusturAcik, setKurumOlusturAcik] = useState(false);
   const [ogretmenDavetAcik, setOgretmenDavetAcik] = useState(false);
   const [duzenlenecekKurum, setDuzenlenecekKurum] = useState<PanelKurum | null>(null);
   const [talepPanelAcik, setTalepPanelAcik] = useState(false);
@@ -242,6 +243,21 @@ export default function UlkeTemsilcisiPage() {
     onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
+  const kurumOlusturMutation = useMutation({
+    mutationFn: (form: { name: string; sehir: string }) =>
+      api.post('/api/ulke-temsilcisi/kurum', { name: form.name, sehir: form.sehir || null }),
+    onSuccess: () => {
+      toast.success('Kurum oluşturuldu. Şimdi kurum yöneticisi davet edebilir veya deneme başlatabilirsiniz.');
+      // sinif-form-data: RoleScopedUserForm'un (Yeni Kurum Yöneticisi daveti) ve
+      // SinifFormSlideOver'ın Kurum dropdown'u bu query'den besleniyor — invalidate
+      // edilmezse yeni kurum orada görünmeye başlaması sayfa yenilenene kadar gecikir.
+      queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+      queryClient.invalidateQueries({ queryKey: ['sinif-form-data'] });
+      setKurumOlusturAcik(false);
+    },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
+  });
+
   if (!ready) return (
     <div className="py-24 flex items-center justify-center">
       <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
@@ -323,8 +339,12 @@ export default function UlkeTemsilcisiPage() {
                 <Building2 className="size-4 text-slate-400" />
                 <h2 className="font-semibold text-slate-900">Kurumlar</h2>
                 <span className="text-xs text-slate-400 tabular-nums">{panel?.kurumlar.length ?? 0}</span>
+                <button onClick={() => setKurumOlusturAcik(true)}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-50 transition-colors">
+                  <Building2 className="size-3.5" /> Yeni Kurum
+                </button>
                 <button onClick={() => setKurumDavetAcik(true)}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity">
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity">
                   <UserPlus className="size-3.5" /> Yeni Kurum Yöneticisi
                 </button>
               </div>
@@ -444,6 +464,14 @@ export default function UlkeTemsilcisiPage() {
         onClose={() => setDuzenlenecekKurum(null)}
         onKaydet={form => kurumDuzenleMutation.mutate(form)}
         kaydediliyor={kurumDuzenleMutation.isPending}
+      />
+
+      <KurumOlusturSlideOver
+        open={kurumOlusturAcik}
+        onClose={() => setKurumOlusturAcik(false)}
+        onOlustur={form => kurumOlusturMutation.mutate(form)}
+        olusturuluyor={kurumOlusturMutation.isPending}
+        ulkeAdi={panel?.name}
       />
 
       {/* Kurum satırından tek tıkla lisans onayı — tam kurum detay sayfasına gitmeye
@@ -581,6 +609,68 @@ function KurumDuzenleSlideOver({ kurum, onClose, onKaydet, kaydediliyor }: {
           </div>
         </form>
       )}
+    </SlideOver>
+  );
+}
+
+function KurumOlusturSlideOver({ open, onClose, onOlustur, olusturuluyor, ulkeAdi }: {
+  open: boolean;
+  onClose: () => void;
+  onOlustur: (form: { name: string; sehir: string }) => void;
+  olusturuluyor: boolean;
+  ulkeAdi?: string;
+}) {
+  const [form, setForm] = useState({ name: '', sehir: '' });
+
+  useEffect(() => {
+    if (open) setForm({ name: '', sehir: '' });
+  }, [open]);
+
+  return (
+    <SlideOver
+      open={open}
+      onClose={onClose}
+      title="Yeni Kurum"
+      width="sm"
+      footer={
+        <button
+          form="kurum-olustur-form"
+          type="submit"
+          disabled={olusturuluyor || !form.name.trim()}
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {olusturuluyor ? 'Oluşturuluyor…' : 'Oluştur'}
+        </button>
+      }
+    >
+      <form
+        id="kurum-olustur-form"
+        onSubmit={e => { e.preventDefault(); onOlustur(form); }}
+        className="space-y-4"
+      >
+        <p className="text-xs text-slate-400">
+          Boş bir kurum kaydı oluşturur — lisans/deneme veya kurum yöneticisi ataması
+          bu adımda yapılmaz, sonra ayrıca eklenebilir.
+        </p>
+        {ulkeAdi && <p className="text-xs text-slate-500">Ülke: <strong>{ulkeAdi}</strong> (sabit)</p>}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Kurum Adı *</label>
+          <input
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            autoFocus
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Şehir</label>
+          <input
+            value={form.sehir}
+            onChange={e => setForm(f => ({ ...f, sehir: e.target.value }))}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+          />
+        </div>
+      </form>
     </SlideOver>
   );
 }

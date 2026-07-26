@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { ChevronRight, Globe, Building2, GraduationCap, type LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type CrumbLevel = 'ulke' | 'kurum' | 'sinif';
 
@@ -24,6 +25,7 @@ export function ContextBreadcrumb({ crumbs }: { crumbs: (Crumb | null | undefine
   return (
     <div role="group" aria-label="Konum" className="flex items-center gap-1.5 flex-wrap text-sm text-slate-600">
       {visible.map((crumb, i) => {
+        const isLast = i === visible.length - 1;
         const { icon: Icon, badgeClass, title } = LEVEL_CONFIG[crumb.level];
         return (
           <Fragment key={`${crumb.level}-${crumb.label}`}>
@@ -36,7 +38,9 @@ export function ContextBreadcrumb({ crumbs }: { crumbs: (Crumb | null | undefine
               >
                 <Icon className="size-3" aria-hidden="true" />
               </span>
-              <span className="font-medium truncate">{crumb.label}</span>
+              <span className={cn('truncate', isLast ? 'font-semibold text-slate-800' : 'font-medium')}>
+                {crumb.label}
+              </span>
             </span>
           </Fragment>
         );
