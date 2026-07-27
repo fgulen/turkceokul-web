@@ -77,6 +77,10 @@ function KullanicilarTab() {
   // butonları artık seçim içindeki askıda/aktif alt kümesine göre ayrı ayrı gösteriliyor.
   const pasifSeciliIdler = kullanicilar.filter(u => secili.has(u.id) && !u.isApproved).map(u => u.id);
   const aktifSeciliIdler = kullanicilar.filter(u => secili.has(u.id) && u.isApproved).map(u => u.id);
+  // secili sayfa/filtre değişince temizlenmiyor (bkz. useTopluSecim) — Onayla/Askıya-Al zaten
+  // görünen listeye göre süzülüyordu (üstteki iki satır), Toplu Sil ham secili'yi gönderiyordu:
+  // önceki bir sayfada/filtrede seçilip unutulan kullanıcılar da silme isteğine dahil oluyordu.
+  const gorunenSeciliIdler = kullanicilar.filter(u => secili.has(u.id)).map(u => u.id);
 
   const { data: ulkeler = [] } = useQuery({
     queryKey: ['sa-ulkeler-liste'],
@@ -185,10 +189,12 @@ function KullanicilarTab() {
                     Askıya Al ({aktifSeciliIdler.length})
                   </button>
                 )}
-                <button onClick={() => setTopluOnay(true)}
-                  className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
-                  Toplu Sil ({secili.size})
-                </button>
+                {gorunenSeciliIdler.length > 0 && (
+                  <button onClick={() => setTopluOnay(true)}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
+                    Toplu Sil ({gorunenSeciliIdler.length})
+                  </button>
+                )}
               </>
             )}
             <button onClick={() => setShowAdd(true)}
@@ -311,8 +317,8 @@ function KullanicilarTab() {
 
       <DeleteConfirmModal
         open={topluOnay}
-        entityName={`${secili.size} kullanıcı`}
-        onConfirm={() => topluSilMutation.mutate([...secili])}
+        entityName={`${gorunenSeciliIdler.length} kullanıcı`}
+        onConfirm={() => topluSilMutation.mutate(gorunenSeciliIdler)}
         onCancel={() => setTopluOnay(false)}
         loading={topluSilMutation.isPending}
       />
