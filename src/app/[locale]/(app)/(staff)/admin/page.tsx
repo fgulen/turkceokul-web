@@ -1,74 +1,140 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Plus, Users, Building2, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  GraduationCap, Users, Building2, Clock, BookOpen, KeyRound, BarChart3, Globe, Bell, Plus,
+} from 'lucide-react';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
+import { SlideOver } from '@/components/slide-over';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
+import { AramaInput, Sayfalama, SortTh, useSiralama, trSirala } from '@/components/staff/table-kit';
+import { BekleyenSiparisRow, type Siparis } from '@/components/staff/bekleyen-siparis-row';
+import { KurumOlusturSlideOver, KurumDuzenleSlideOver } from '@/components/staff/kurum-form-slideover';
+import {
+  PersonelListesi, SiniflarTab, DersKitaplariTab, KurumRaporlarTab, KurumlarTab, OnayDurumuAksiyon,
+  type OgretmenSatiri, type OgrenciSatiri, type SinifSatiri, type KurumRaporOzeti, type KurumLisansGrubu, type KurumSatiri,
+} from '@/components/staff/kurum-raporlama-tablari';
 
-interface Ogretmen {
-  id: number;
-  email: string;
-  name: string;
-  surname: string | null;
-  insertDate: string;
-  sinifSayisi: number;
-  isApproved?: boolean;
-}
-
-interface Kurum {
+interface Ulke {
   id: number;
   name: string;
-  sehir: string | null;
-  ulkeId: number | null;
-  sinifSayisi: number;
+  visible: boolean;
+  ogretmenId: number | null;
+  ogretmenAdi: string | null;
+  kurumSayisi: number;
+  ogrenciSayisi: number;
 }
 
-type Sekme = 'ogretmenler' | 'bekleyen' | 'kurumlar';
+type Sekme = 'ulkeler' | 'kurumlar' | 'ogretmenler' | 'bekleyen' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
 
 export default function AdminPage() {
   const { user, ready } = useAuthGuard('Koordinator');
   const qc = useQueryClient();
 
   const [sekme, setSekme] = useState<Sekme>('ogretmenler');
-  const [kurumForm, setKurumForm] = useState({ name: '', sehir: '', ulkeId: '' });
+  const [siparisPanelAcik, setSiparisPanelAcik] = useState(false);
+  const [ogretmenDavetAcik, setOgretmenDavetAcik] = useState(false);
+  const [kurumOlusturAcik, setKurumOlusturAcik] = useState(false);
+  const [duzenlenecekKurum, setDuzenlenecekKurum] = useState<KurumSatiri | null>(null);
+  const [ulkeOlusturAcik, setUlkeOlusturAcik] = useState(false);
 
-  const { data: ulkeler } = useQuery<{ id: number; name: string }[]>({
+  // "Yeni Kurum" formundaki Ülke dropdown'u — Ülkeler sekmesindeki zengin listeden
+  // ayrı, sadece id/name.
+  const { data: davetUlkeler } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['davet-ulkeler'],
     queryFn: () => api.get('/api/davet/ulkeler').then(r => r.data),
     enabled: !!user,
   });
 
-  const { data: ogretmenler, isLoading: ogLoading } = useQuery<Ogretmen[]>({
+  const { data: ulkelerData, isLoading: ulkelerYukleniyor } = useQuery<{ liste: Ulke[] }>({
+    queryKey: ['admin-ulkeler'],
+    queryFn: () => api.get('/api/admin/ulkeler').then(r => r.data),
+    enabled: !!user,
+  });
+  const ulkelerListe = ulkelerData?.liste ?? [];
+
+  const { data: bekleyenSiparisler, isLoading: siparislerYukleniyor } = useQuery<Siparis[]>({
+    queryKey: ['admin-siparisler-bekleyen'],
+    queryFn: () => api.get('/api/admin/siparisler', { params: { durum: 'Beklemede' } }).then(r => r.data),
+    enabled: !!user,
+  });
+
+  // Ülke-temsilcisi panelindeki tab'ların ülke-scope'suz (tüm ülkeler) hali —
+  // bkz. kurum-raporlama-tablari.tsx paylaşılan bileşenler.
+  const { data: ogretmenler, isLoading: ogretmenlerYukleniyor } = useQuery<OgretmenSatiri[]>({
     queryKey: ['admin-ogretmenler-hepsi'],
     queryFn: () => api.get('/api/admin/ogretmenler/hepsi').then(r => r.data),
     enabled: !!user,
   });
 
-  const { data: bekleyenler, isLoading: bekLoading } = useQuery<Ogretmen[]>({
+  const { data: bekleyenler, isLoading: bekleyenlerYukleniyor } = useQuery<OgretmenSatiri[]>({
     queryKey: ['admin-bekleyen'],
     queryFn: () => api.get('/api/admin/bekleyen-ogretmenler').then(r => r.data),
     enabled: !!user,
   });
 
-  const { data: kurumlar, isLoading: kurumLoading } = useQuery<Kurum[]>({
+  const { data: kurumlar, isLoading: kurumlarYukleniyor } = useQuery<KurumSatiri[]>({
     queryKey: ['admin-kurumlar'],
     queryFn: () => api.get('/api/admin/kurumlar').then(r => r.data),
     enabled: !!user,
   });
 
+  const { data: ogrenciler, isLoading: ogrencilerYukleniyor } = useQuery<OgrenciSatiri[]>({
+    queryKey: ['admin-ogrenciler'],
+    queryFn: () => api.get('/api/admin/ogrenciler').then(r => r.data),
+    enabled: !!user,
+  });
+
+  const { data: siniflar, isLoading: siniflarYukleniyor } = useQuery<SinifSatiri[]>({
+    queryKey: ['admin-siniflar'],
+    queryFn: () => api.get('/api/admin/siniflar').then(r => r.data),
+    enabled: !!user,
+  });
+
+  const { data: lisansGruplari, isLoading: lisanslarYukleniyor } = useQuery<KurumLisansGrubu[]>({
+    queryKey: ['admin-lisanslar'],
+    queryFn: () => api.get('/api/admin/lisanslar').then(r => r.data),
+    enabled: !!user && sekme === 'lisanslar',
+  });
+
+  const { data: raporlar, isLoading: raporlarYukleniyor } = useQuery<KurumRaporOzeti[]>({
+    queryKey: ['admin-raporlar'],
+    queryFn: () => api.get('/api/admin/raporlar').then(r => r.data),
+    enabled: !!user && sekme === 'raporlar',
+  });
+
   const kurumOlusturMutation = useMutation({
-    mutationFn: () => api.post('/api/admin/kurum-olustur', {
-      name: kurumForm.name,
-      sehir: kurumForm.sehir || undefined,
-      ulkeId: kurumForm.ulkeId ? Number(kurumForm.ulkeId) : undefined,
+    mutationFn: (form: { name: string; sehir: string; ulkeId?: string }) => api.post('/api/admin/kurum-olustur', {
+      name: form.name,
+      sehir: form.sehir || undefined,
+      ulkeId: form.ulkeId ? Number(form.ulkeId) : undefined,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
-      setKurumForm({ name: '', sehir: '', ulkeId: '' });
+      setKurumOlusturAcik(false);
+    },
+  });
+
+  const kurumDuzenleMutation = useMutation({
+    mutationFn: (form: { name: string; sehir: string }) =>
+      api.put(`/api/admin/kurum/${duzenlenecekKurum!.id}`, { name: form.name, sehir: form.sehir || null }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
+      setDuzenlenecekKurum(null);
+    },
+  });
+
+  const ulkeOlusturMutation = useMutation({
+    mutationFn: (name: string) => api.post('/api/admin/ulke', { name }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-ulkeler'] });
+      qc.invalidateQueries({ queryKey: ['davet-ulkeler'] });
+      setUlkeOlusturAcik(false);
     },
   });
 
@@ -92,53 +158,63 @@ export default function AdminPage() {
   if (!user) return null;
 
   const tabs: { key: Sekme; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { key: 'ogretmenler', label: 'Öğretmenler', icon: <GraduationCap className="size-4" /> },
+    { key: 'ulkeler', label: 'Ülkeler', icon: <Globe className="size-4" />, badge: ulkelerListe.length },
+    { key: 'kurumlar', label: 'Kurumlar', icon: <Building2 className="size-4" />, badge: kurumlar?.length },
+    { key: 'ogretmenler', label: 'Öğretmenler', icon: <GraduationCap className="size-4" />, badge: ogretmenler?.length },
     { key: 'bekleyen', label: 'Bekleyen Onay', icon: <Clock className="size-4" />, badge: bekleyenler?.length },
-    { key: 'kurumlar', label: 'Kurumlar', icon: <Building2 className="size-4" /> },
+    { key: 'ogrenciler', label: 'Öğrenciler', icon: <Users className="size-4" />, badge: ogrenciler?.length },
+    { key: 'siniflar', label: 'Sınıflar', icon: <BookOpen className="size-4" />, badge: siniflar?.length },
+    { key: 'lisanslar', label: 'Ders Kitapları', icon: <KeyRound className="size-4" /> },
+    { key: 'raporlar', label: 'Raporlar', icon: <BarChart3 className="size-4" /> },
   ];
+
+  const siparisSayisi = bekleyenSiparisler?.length ?? 0;
 
   return (
     <div className="bg-[#F3F4F6]">
       <TurkishLetterBackdrop variant="admin" opacity={0.04} />
       <main className="px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>
-          <p className="text-slate-500 text-sm mt-1">Öğretmen ve kurum yönetimi</p>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>
+            <p className="text-slate-500 text-sm mt-1">Öğretmen ve kurum yönetimi</p>
+          </div>
+          {!siparislerYukleniyor && siparisSayisi > 0 && (
+            <motion.button
+              onClick={() => setSiparisPanelAcik(true)}
+              title="Bekleyen Siparişler"
+              className="relative shrink-0 size-11 flex items-center justify-center rounded-xl bg-white border border-slate-100 shadow-sm text-amber-500 hover:bg-amber-50 transition-colors"
+              animate={{ rotate: [0, -14, 11, -8, 5, -2, 0] }}
+              transition={{ duration: 0.9, repeat: Infinity, repeatDelay: 3.5, ease: 'easeInOut' }}
+            >
+              <Bell className="size-5" />
+              <motion.span
+                className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[11px] font-bold"
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 0.9, repeat: Infinity, repeatDelay: 3.5, ease: 'easeInOut' }}
+              >
+                {siparisSayisi}
+              </motion.span>
+            </motion.button>
+          )}
         </div>
 
-        {/* İstatistikler */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <div className="text-2xl font-bold text-primary">{ogretmenler?.length ?? 0}</div>
-            <div className="text-xs text-slate-500 mt-1">Öğretmen</div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <div className={cn('text-2xl font-bold', (bekleyenler?.length ?? 0) > 0 ? 'text-amber-500' : 'text-slate-700')}>
-              {bekleyenler?.length ?? 0}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">Bekleyen Onay</div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <div className="text-2xl font-bold text-slate-700">{kurumlar?.length ?? 0}</div>
-            <div className="text-xs text-slate-500 mt-1">Kurum</div>
-          </div>
-        </div>
-
-        {/* Tab navigasyonu */}
-        <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6">
+        {/* Tab navigasyonu — 8 sekme tek satırda sığmaz, mobilde (sm altı) sadece ikon
+            gösterilir ve gerekirse yatay kaydırılır (bkz. ulke-temsilcisi/page.tsx). */}
+        <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6 overflow-x-auto scrollbar-none">
           {tabs.map(t => (
             <button
               key={t.key}
               onClick={() => setSekme(t.key)}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-colors',
+                'flex-1 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-4 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
                 sekme === t.key
                   ? 'bg-primary text-white'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               )}
             >
               {t.icon}
-              {t.label}
+              <span className="hidden sm:inline">{t.label}</span>
               {(t.badge ?? 0) > 0 && (
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-full text-xs font-bold',
@@ -151,191 +227,261 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* ÖĞRETMENLER TAB */}
-        {sekme === 'ogretmenler' && (
-          <div className="space-y-6">
-            <RoleScopedUserForm
-              baslik="Öğretmen Davet Et"
-              aciklama="Öğretmeni sisteme davet etmek için link oluştur, WhatsApp veya e-posta ile paylaş."
-              hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
-              onOlusturuldu={() => qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] })}
-            />
-
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-                <Users className="size-4 text-slate-400" />
-                <h2 className="font-semibold text-slate-900">Tüm Öğretmenler</h2>
-              </div>
-              {ogLoading ? (
-                <div className="p-6 space-y-3">{[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />)}</div>
-              ) : !ogretmenler?.length ? (
-                <p className="text-slate-400 text-sm text-center py-10">Henüz öğretmen yok.</p>
-              ) : (
-                <div className="divide-y divide-slate-50">
-                  {ogretmenler.map(o => (
-                    <div key={o.id} className="flex items-center justify-between px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                          {o.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm text-slate-800">{o.name} {o.surname}</div>
-                          <div className="text-xs text-slate-400">{o.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          'text-xs px-2 py-1 rounded-full font-medium',
-                          o.isApproved ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                        )}>
-                          {o.isApproved ? 'Onaylı' : 'Bekliyor'}
-                        </span>
-                        <span className="text-xs text-slate-400">{o.sinifSayisi} sınıf</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* BEKLEYEN ONAY TAB */}
-        {sekme === 'bekleyen' && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-              <Clock className="size-4 text-amber-500" />
-              <h2 className="font-semibold text-slate-900">Onay Bekleyen Öğretmenler</h2>
-            </div>
-            {bekLoading ? (
-              <div className="p-6 space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-slate-100 animate-pulse" />)}</div>
-            ) : !bekleyenler?.length ? (
-              <div className="text-center py-16">
-                <CheckCircle className="size-10 text-emerald-400 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">Bekleyen öğretmen yok</p>
-                <p className="text-slate-400 text-sm mt-1">Tüm kayıtlar onaylandı.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {bekleyenler.map(o => (
-                  <div key={o.id} className="flex items-center justify-between px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold text-sm">
-                        {o.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm text-slate-800">{o.name} {o.surname}</div>
-                        <div className="text-xs text-slate-400">{o.email}</div>
-                        <div className="text-xs text-slate-300 mt-0.5">
-                          Başvuru: {new Date(o.insertDate).toLocaleDateString('tr')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => reddetMutation.mutate(o.id)}
-                        disabled={reddetMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
-                      >
-                        <XCircle className="size-3.5" />
-                        Reddet
-                      </button>
-                      <button
-                        onClick={() => onaylaMutation.mutate(o.id)}
-                        disabled={onaylaMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                      >
-                        <CheckCircle className="size-3.5" />
-                        Onayla
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* ÜLKELER TAB — silme/düzenleme Super Admin'de kalır, Koordinator ekleyebilir */}
+        {sekme === 'ulkeler' && (
+          <UlkelerTab veri={ulkelerListe} yukleniyor={ulkelerYukleniyor} onYeniUlke={() => setUlkeOlusturAcik(true)} />
         )}
 
         {/* KURUMLAR TAB */}
         {sekme === 'kurumlar' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Plus className="size-4 text-primary" />
-                Yeni Kurum Ekle
-              </h2>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={kurumForm.name}
-                  onChange={e => setKurumForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Kurum adı *"
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <input
-                  type="text"
-                  value={kurumForm.sehir}
-                  onChange={e => setKurumForm(p => ({ ...p, sehir: e.target.value }))}
-                  placeholder="Şehir"
-                  className="w-36 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <select
-                  value={kurumForm.ulkeId}
-                  onChange={e => setKurumForm(p => ({ ...p, ulkeId: e.target.value }))}
-                  className="w-40 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="">Ülke seçiniz *</option>
-                  {(ulkeler ?? []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-                <button
-                  onClick={() => kurumOlusturMutation.mutate()}
-                  disabled={!kurumForm.name || !kurumForm.ulkeId || kurumOlusturMutation.isPending}
-                  className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-                >
-                  <Plus className="size-4" />
-                  Ekle
-                </button>
-              </div>
-            </div>
+          <KurumlarTab
+            veri={kurumlar}
+            yukleniyor={kurumlarYukleniyor}
+            kurumHref={id => `/admin/kurum/${id}`}
+            onYeniKurum={() => setKurumOlusturAcik(true)}
+            onDuzenle={setDuzenlenecekKurum}
+          />
+        )}
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-                <Building2 className="size-4 text-slate-400" />
-                <h2 className="font-semibold text-slate-900">Kurumlar</h2>
-              </div>
-              {kurumLoading ? (
-                <div className="p-6 space-y-3">{[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />)}</div>
-              ) : !kurumlar?.length ? (
-                <p className="text-slate-400 text-sm text-center py-10">Henüz kurum yok.</p>
-              ) : (
-                <div className="divide-y divide-slate-50">
-                  {kurumlar.map(k => (
-                    <a
-                      key={k.id}
-                      href={`/admin/kurum/${k.id}`}
-                      className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
-                          <Building2 className="size-4 text-slate-500" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm text-slate-800">{k.name}</div>
-                          {k.sehir && <div className="text-xs text-slate-400">{k.sehir}</div>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400">{k.sinifSayisi} sınıf</span>
-                        <ChevronRight className="size-4 text-slate-300" />
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        {/* ÖĞRETMENLER TAB */}
+        {sekme === 'ogretmenler' && (
+          <PersonelListesi
+            baslik="Öğretmenler"
+            veri={ogretmenler}
+            yukleniyor={ogretmenlerYukleniyor}
+            bosMesaj="Henüz öğretmen yok."
+            ikincilKolonBaslik="Kurum"
+            ikincilKolonRender={o => (o as OgretmenSatiri).kurumAdi}
+            ekleButonu={{ etiket: 'Yeni Öğretmen', onClick: () => setOgretmenDavetAcik(true) }}
+            sonKolonBaslik="Durum"
+            sonKolonRender={o => (
+              <OnayDurumuAksiyon
+                onaylandi={!!(o as OgretmenSatiri).isApproved}
+                onOnayla={() => onaylaMutation.mutate(o.id)}
+                onReddet={() => reddetMutation.mutate(o.id)}
+              />
+            )}
+          />
+        )}
+
+        {/* BEKLEYEN ONAY TAB — aynı Öğretmenler tablosu, sadece onaysız kayıtlarla */}
+        {sekme === 'bekleyen' && (
+          <PersonelListesi
+            baslik="Bekleyen Onay"
+            veri={bekleyenler}
+            yukleniyor={bekleyenlerYukleniyor}
+            bosMesaj="Bekleyen öğretmen yok."
+            ikincilKolonBaslik="Kurum"
+            ikincilKolonRender={o => (o as OgretmenSatiri).kurumAdi}
+            sonKolonBaslik="Durum"
+            sonKolonRender={o => (
+              <OnayDurumuAksiyon
+                onaylandi={false}
+                onOnayla={() => onaylaMutation.mutate(o.id)}
+                onReddet={() => reddetMutation.mutate(o.id)}
+              />
+            )}
+          />
+        )}
+
+        {/* ÖĞRENCİLER TAB */}
+        {sekme === 'ogrenciler' && (
+          <PersonelListesi
+            baslik="Öğrenciler"
+            veri={ogrenciler}
+            yukleniyor={ogrencilerYukleniyor}
+            bosMesaj="Henüz öğrenci yok."
+            ikincilKolonBaslik="Kurum · Sınıf"
+            ikincilKolonRender={o => `${o.kurumAdi} · ${(o as OgrenciSatiri).sinifAdi}`}
+          />
+        )}
+
+        {/* SINIFLAR TAB */}
+        {sekme === 'siniflar' && (
+          <SiniflarTab veri={siniflar} yukleniyor={siniflarYukleniyor} />
+        )}
+
+        {/* DERS KİTAPLARI (LİSANS) TAB */}
+        {sekme === 'lisanslar' && (
+          <DersKitaplariTab gruplar={lisansGruplari} yukleniyor={lisanslarYukleniyor}
+            kurumHref={id => `/admin/kurum/${id}`} />
+        )}
+
+        {/* RAPORLAR TAB */}
+        {sekme === 'raporlar' && (
+          <KurumRaporlarTab veri={raporlar} yukleniyor={raporlarYukleniyor}
+            kurumHref={id => `/admin/kurum/${id}`} />
         )}
       </main>
+
+      {/* Yeni Ekle standardı: buton → SlideOver (bkz. table-kit.tsx başlık yorumu) */}
+      <SlideOver open={ogretmenDavetAcik} onClose={() => setOgretmenDavetAcik(false)} title="Yeni Öğretmen" width="sm">
+        <RoleScopedUserForm
+          bare
+          baslik="Öğretmen Davet Et"
+          aciklama="Öğretmeni sisteme davet etmek için link oluştur, WhatsApp veya e-posta ile paylaş."
+          hedefRolSecenekleri={[{ value: 'Ogretmen', label: 'Öğretmen' }]}
+          onOlusturuldu={() => {
+            qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
+            setOgretmenDavetAcik(false);
+          }}
+        />
+      </SlideOver>
+
+      <KurumOlusturSlideOver
+        open={kurumOlusturAcik}
+        onClose={() => setKurumOlusturAcik(false)}
+        onOlustur={form => kurumOlusturMutation.mutate(form)}
+        olusturuluyor={kurumOlusturMutation.isPending}
+        ulkeSecenekleri={davetUlkeler}
+      />
+
+      <KurumDuzenleSlideOver
+        kurum={duzenlenecekKurum}
+        onClose={() => setDuzenlenecekKurum(null)}
+        onKaydet={form => kurumDuzenleMutation.mutate(form)}
+        kaydediliyor={kurumDuzenleMutation.isPending}
+      />
+
+      <UlkeOlusturSlideOver
+        open={ulkeOlusturAcik}
+        onClose={() => setUlkeOlusturAcik(false)}
+        onOlustur={name => ulkeOlusturMutation.mutate(name)}
+        olusturuluyor={ulkeOlusturMutation.isPending}
+        hata={ulkeOlusturMutation.error ? apiHataMesaji(ulkeOlusturMutation.error) : null}
+      />
+
+      {/* Bekleyen siparişler — SuperAdmin dashboard'undaki panelin birebir aynısı
+          (fiyat/kapasite düzenleme dahil), sadece Koordinator'a açık uç noktalar üzerinden. */}
+      <SlideOver open={siparisPanelAcik} onClose={() => setSiparisPanelAcik(false)} title="Bekleyen Siparişler" width="md">
+        {!bekleyenSiparisler?.length ? (
+          <p className="text-slate-400 text-sm text-center py-12">Bekleyen sipariş yok.</p>
+        ) : (
+          <div className="space-y-3">
+            {bekleyenSiparisler.map(s => (
+              <BekleyenSiparisRow key={s.id} siparis={s}
+                siparisEndpoint="/api/admin"
+                bekleyenQueryKey={['admin-siparisler-bekleyen']} />
+            ))}
+          </div>
+        )}
+      </SlideOver>
     </div>
+  );
+}
+
+function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor: boolean; onYeniUlke: () => void }) {
+  const [arama, setArama] = useState('');
+  const [sayfa, setSayfa] = useState(1);
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
+
+  const filtreli = useMemo(() => {
+    if (!arama) return veri;
+    const q = arama.toLocaleLowerCase('tr');
+    return veri.filter(u => u.name.toLocaleLowerCase('tr').includes(q) || (u.ogretmenAdi ?? '').toLocaleLowerCase('tr').includes(q));
+  }, [veri, arama]);
+  const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+  const toplam = sirali.length;
+  const SAYFA_BOYUTU = 20;
+  const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
+  const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">Ülkeler</h2>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ülke, sorumlu öğretmen ara..." />
+          <button onClick={onYeniUlke}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+            <Plus className="size-3.5" /> Yeni Ülke
+          </button>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ülke</SortTh>
+              <SortTh colKey="ogretmenAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Sorumlu Öğretmen</SortTh>
+              <SortTh colKey="kurumSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Kurum</SortTh>
+              <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
+              <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {yukleniyor ? (
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+            ) : sayfalik.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
+            ) : (
+              sayfalik.map(u => (
+                <tr key={u.id} className="odd:bg-white even:bg-slate-50/40">
+                  <td className="px-4 py-2 font-medium text-slate-900">{u.name}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{u.ogretmenAdi ?? '—'}</td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-600">{u.kurumSayisi}</td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-600">{u.ogrenciSayisi}</td>
+                  <td className="px-4 py-2 text-right">
+                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', u.visible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
+                      {u.visible ? 'Aktif' : 'Pasif'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+    </div>
+  );
+}
+
+function UlkeOlusturSlideOver({ open, onClose, onOlustur, olusturuluyor, hata }: {
+  open: boolean;
+  onClose: () => void;
+  onOlustur: (name: string) => void;
+  olusturuluyor: boolean;
+  hata: string | null;
+}) {
+  const [name, setName] = useState('');
+
+  return (
+    <SlideOver
+      open={open}
+      onClose={() => { setName(''); onClose(); }}
+      title="Yeni Ülke"
+      width="sm"
+      footer={
+        <button
+          form="ulke-olustur-form"
+          type="submit"
+          disabled={olusturuluyor || !name.trim()}
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {olusturuluyor ? 'Oluşturuluyor…' : 'Oluştur'}
+        </button>
+      }
+    >
+      <form
+        id="ulke-olustur-form"
+        onSubmit={e => { e.preventDefault(); onOlustur(name.trim()); }}
+        className="space-y-4"
+      >
+        <p className="text-xs text-slate-400">
+          Sorumlu öğretmen ataması ve aktif/pasif durumu sonra Super Admin panelinden düzenlenebilir.
+        </p>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Ülke Adı *</label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            autoFocus
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+          />
+        </div>
+        {hata && <p role="alert" className="text-xs text-red-600">{hata}</p>}
+      </form>
+    </SlideOver>
   );
 }
