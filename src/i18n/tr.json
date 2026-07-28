@@ -326,6 +326,38 @@
     "logout": "Çıkış Yap",
     "avatarAlt": "Profil"
   },
+  "sifremiUnuttum": {
+    "title": "Şifremi unuttum",
+    "subtitle": "Sıfırlama bağlantısı gönderelim",
+    "description": "Hesabınızla ilişkili e-posta adresini girin. Şifrenizi sıfırlayabileceğiniz bir bağlantı göndereceğiz.",
+    "emailLabel": "E-posta adresi",
+    "emailPlaceholder": "ornek@email.com",
+    "submit": "Sıfırlama Bağlantısı Gönder",
+    "sending": "Gönderiliyor…",
+    "sentTitle": "E-posta gönderildi",
+    "sentDesc": "<b>{email}</b> adresine şifre sıfırlama bağlantısı gönderdik. Gelen kutunuzu kontrol edin — 1 saat içinde geçerlidir.",
+    "sentSpamHint": "E-posta gelmediyse spam/önemsiz klasörünü kontrol edin.",
+    "backToLogin": "Giriş sayfasına dön"
+  },
+  "sifremiSifirla": {
+    "invalidToken": "Geçersiz veya eksik sıfırlama bağlantısı.",
+    "requestNewLink": "Yeni bağlantı iste",
+    "title": "Yeni şifre belirle",
+    "subtitle": "En az 8 karakter olmalı",
+    "newPasswordLabel": "Yeni şifre",
+    "newPasswordPlaceholder": "En az 8 karakter",
+    "confirmLabel": "Şifre tekrar",
+    "confirmPlaceholder": "Şifreyi tekrar girin",
+    "submit": "Şifremi Güncelle",
+    "saving": "Kaydediliyor…",
+    "successTitle": "Şifre güncellendi",
+    "successDesc": "Yeni şifrenizle giriş yapabilirsiniz.",
+    "loginButton": "Giriş Yap",
+    "errorMinLength": "Şifre en az 8 karakter olmalıdır.",
+    "errorMismatch": "Şifreler eşleşmiyor.",
+    "errorToken": "Bağlantı geçersiz veya süresi dolmuş. Yeni bağlantı isteyin.",
+    "backToLogin": "Giriş sayfasına dön"
+  },
   "etkinlik": {
     "heartDepleted": "Kalbin Bitti!",
     "heartDepletedDesc": "30 dakika bekle ya da başka bir etkinlik yap, kalbin yenilenir.",

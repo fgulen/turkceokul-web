@@ -58,6 +58,7 @@ export interface OgretmenSatiri {
   kurumId: number;
   kurumAdi: string;
   isApproved?: boolean;
+  ulkeAdi: string | null;
 }
 
 export interface OgrenciSatiri {
@@ -69,6 +70,7 @@ export interface OgrenciSatiri {
   insertDate: string;
   kurumAdi: string;
   sinifAdi: string;
+  ulkeAdi: string | null;
 }
 
 export interface SinifSatiri {
@@ -76,6 +78,8 @@ export interface SinifSatiri {
   name: string;
   kurumId: number;
   kurumAdi: string;
+  ulkeAdi: string | null;
+  ogretmenAdi: string | null;
   ogrenciSayisi: number;
   dersKitabiId: string | null;
 }
@@ -123,11 +127,12 @@ function metinEslesiyorMu(alanlar: (string | null)[], arama: string) {
 }
 
 type PersonelSatir = OgretmenSatiri | OgrenciSatiri;
-type PersonelSortKey = 'name' | 'kurumAdi' | 'insertDate' | 'lastLoginDate';
+type PersonelSortKey = 'name' | 'kurumAdi' | 'ulkeAdi' | 'insertDate' | 'lastLoginDate';
 
 export function PersonelListesi({
   baslik, veri, yukleniyor, bosMesaj, ikincilKolonBaslik, ikincilKolonRender, ekleButonu,
   sonKolonBaslik, sonKolonRender,
+  ucuncuKolonBaslik, ucuncuKolonRender,
 }: {
   baslik: string;
   veri: PersonelSatir[] | undefined;
@@ -139,6 +144,9 @@ export function PersonelListesi({
   /** Opsiyonel 5. kolon (örn. "Durum": onayla/reddet aksiyonu) — yalnız ikisi birlikte verilirse render edilir. */
   sonKolonBaslik?: string;
   sonKolonRender?: (satir: PersonelSatir) => React.ReactNode;
+  /** Opsiyonel 3. kolon (örn. "Ülke") — ikincil kolon ile Kayıt Tarihi arasına eklenir. */
+  ucuncuKolonBaslik?: string;
+  ucuncuKolonRender?: (satir: PersonelSatir) => string;
 }) {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
@@ -157,6 +165,7 @@ export function PersonelListesi({
   const toplam = sirali.length;
   const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
   const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
+  const kolonSayisi = 4 + (ucuncuKolonBaslik && ucuncuKolonRender ? 1 : 0) + (sonKolonBaslik && sonKolonRender ? 1 : 0);
 
   return (
     <div className="space-y-4">
@@ -177,6 +186,9 @@ export function PersonelListesi({
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ad Soyad</SortTh>
               <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">{ikincilKolonBaslik}</SortTh>
+              {ucuncuKolonBaslik && ucuncuKolonRender && (
+                <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell">{ucuncuKolonBaslik}</SortTh>
+              )}
               <SortTh colKey="insertDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kayıt Tarihi</SortTh>
               <SortTh colKey="lastLoginDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Son Giriş</SortTh>
               {sonKolonBaslik && sonKolonRender && <th className="px-4 py-2.5 text-right font-medium text-slate-600">{sonKolonBaslik}</th>}
@@ -185,10 +197,10 @@ export function PersonelListesi({
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
               [1, 2, 3].map(i => (
-                <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>
+                <tr key={i}><td colSpan={kolonSayisi} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>
               ))
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">{bosMesaj}</td></tr>
+              <tr><td colSpan={kolonSayisi} className="px-4 py-8 text-center text-slate-400 text-sm">{bosMesaj}</td></tr>
             ) : (
               sayfalik.map(o => (
                 <tr key={o.id} className="odd:bg-white even:bg-slate-50/40">
@@ -199,6 +211,9 @@ export function PersonelListesi({
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">
                     {ikincilKolonRender(o)}
                   </td>
+                  {ucuncuKolonBaslik && ucuncuKolonRender && (
+                    <td className="px-4 py-2 text-xs text-slate-500 hidden lg:table-cell">{ucuncuKolonRender(o)}</td>
+                  )}
                   <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">{kayitTarihiMetni(o.insertDate)}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 text-right">{sonGirisMetni(o.lastLoginDate)}</td>
                   {sonKolonBaslik && sonKolonRender && <td className="px-4 py-2 text-right">{sonKolonRender(o)}</td>}
@@ -218,6 +233,7 @@ export interface KurumSatiri {
   id: number;
   name: string;
   sehir: string | null;
+  ulkeAdi: string | null;
   ogretmenSayisi: number;
   ogrenciSayisi: number;
   kurumYoneticisiAdi: string | null;
@@ -270,6 +286,7 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden sm:table-cell">Ülke</th>
               <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden sm:table-cell">Kurum Yöneticisi</th>
               <SortTh colKey="ogretmenSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğretmen</SortTh>
               <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
@@ -278,9 +295,9 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
           </thead>
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Henüz kurum yok.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Henüz kurum yok.</td></tr>
             ) : (
               sayfalik.map(k => (
                 <tr key={k.id} className="odd:bg-white even:bg-slate-50/40 group">
@@ -290,6 +307,7 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
                     </Link>
                     {k.sehir && <div className="text-xs text-slate-400">{k.sehir}</div>}
                   </td>
+                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{k.ulkeAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{k.kurumYoneticisiAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{k.ogretmenSayisi}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{k.ogrenciSayisi}</td>
@@ -327,12 +345,12 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
 export function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefined; yukleniyor: boolean }) {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
-  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ulkeAdi' | 'ogretmenAdi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
 
   const filtreli = useMemo(() => {
     const ham = veri ?? [];
     if (!arama) return ham;
-    return ham.filter(s => metinEslesiyorMu([s.name, s.kurumAdi], arama));
+    return ham.filter(s => metinEslesiyorMu([s.name, s.kurumAdi, s.ogretmenAdi], arama));
   }, [veri, arama]);
   const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
   const toplam = sirali.length;
@@ -345,26 +363,30 @@ export function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefi
         <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
           <h2 className="text-sm font-semibold text-slate-800">Sınıflar</h2>
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
-          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Sınıf, kurum ara..." />
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Sınıf, kurum, öğretmen ara..." />
         </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
               <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Kurum</SortTh>
+              <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell">Ülke</SortTh>
+              <SortTh colKey="ogretmenAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Öğretmen</SortTh>
               <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Sınıf yok.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Sınıf yok.</td></tr>
             ) : (
               sayfalik.map(s => (
                 <tr key={s.id} className="odd:bg-white even:bg-slate-50/40">
                   <td className="px-4 py-2 font-medium text-slate-900">{s.name}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{s.kurumAdi}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 hidden lg:table-cell">{s.ulkeAdi ?? '—'}</td>
+                  <td className="px-4 py-2 text-xs text-slate-600">{s.ogretmenAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{s.ogrenciSayisi}</td>
                 </tr>
               ))

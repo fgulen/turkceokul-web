@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link, useLocale, useRouter } from '@/navigation';
+import { useTranslations } from 'next-intl';
 import { Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { api } from '@/lib/api';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 
 function SifreSifirlaForm() {
+  const t = useTranslations('sifremiSifirla');
   const searchParams = useSearchParams();
   const token = searchParams.get('token') ?? '';
   const router = useRouter();
@@ -28,9 +30,9 @@ function SifreSifirlaForm() {
   if (!token) {
     return (
       <div className="text-center">
-        <p className="text-destructive text-sm mb-4">Geçersiz veya eksik sıfırlama bağlantısı.</p>
+        <p className="text-destructive text-sm mb-4">{t('invalidToken')}</p>
         <Button className="w-full h-11" onClick={() => router.push('/sifremi-unuttum', { locale })}>
-          Yeni bağlantı iste
+          {t('requestNewLink')}
         </Button>
       </div>
     );
@@ -38,8 +40,8 @@ function SifreSifirlaForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 8) { setError('Şifre en az 8 karakter olmalıdır.'); return; }
-    if (form.password !== form.confirm) { setError('Şifreler eşleşmiyor.'); return; }
+    if (form.password.length < 8) { setError(t('errorMinLength')); return; }
+    if (form.password !== form.confirm) { setError(t('errorMismatch')); return; }
     setError('');
     setLoading(true);
     try {
@@ -47,7 +49,7 @@ function SifreSifirlaForm() {
       setDone(true);
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
-      setError(typeof d === 'string' ? d : 'Bağlantı geçersiz veya süresi dolmuş. Yeni bağlantı isteyin.');
+      setError(typeof d === 'string' ? d : t('errorToken'));
     } finally {
       setLoading(false);
     }
@@ -59,12 +61,12 @@ function SifreSifirlaForm() {
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="size-12 text-green-500" />
         </div>
-        <h2 className="text-xl font-bold mb-2">Şifre güncellendi</h2>
+        <h2 className="text-xl font-bold mb-2">{t('successTitle')}</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          Yeni şifrenizle giriş yapabilirsiniz.
+          {t('successDesc')}
         </p>
         <Button className="w-full h-11" onClick={() => router.push('/giris', { locale })}>
-          Giriş Yap
+          {t('loginButton')}
         </Button>
       </div>
     );
@@ -77,21 +79,21 @@ function SifreSifirlaForm() {
           <KeyRound style={{ width: 18, height: 18, color: '#1b75bc' }} />
         </div>
         <div>
-          <h1 className="text-xl font-bold leading-tight">Yeni şifre belirle</h1>
-          <p className="text-muted-foreground text-xs">En az 8 karakter olmalı</p>
+          <h1 className="text-xl font-bold leading-tight">{t('title')}</h1>
+          <p className="text-muted-foreground text-xs">{t('subtitle')}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1.5">Yeni şifre</label>
+          <label className="block text-sm font-medium mb-1.5">{t('newPasswordLabel')}</label>
           <div className="relative">
             <Input
               type={showPass ? 'text' : 'password'}
               value={form.password}
               onChange={field('password')}
               required
-              placeholder="En az 8 karakter"
+              placeholder={t('newPasswordPlaceholder')}
               autoComplete="new-password"
               autoFocus
               className="pr-10"
@@ -109,13 +111,13 @@ function SifreSifirlaForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">Şifre tekrar</label>
+          <label className="block text-sm font-medium mb-1.5">{t('confirmLabel')}</label>
           <Input
             type={showPass ? 'text' : 'password'}
             value={form.confirm}
             onChange={field('confirm')}
             required
-            placeholder="Şifreyi tekrar girin"
+            placeholder={t('confirmPlaceholder')}
             autoComplete="new-password"
           />
         </div>
@@ -123,7 +125,7 @@ function SifreSifirlaForm() {
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
-          {loading ? 'Kaydediliyor…' : 'Şifremi Güncelle'}
+          {loading ? t('saving') : t('submit')}
         </Button>
       </form>
     </>
@@ -131,6 +133,7 @@ function SifreSifirlaForm() {
 }
 
 export default function SifreSifirlaPage() {
+  const t = useTranslations('sifremiSifirla');
   return (
     <div className="min-h-[100dvh] bg-muted flex items-center justify-center p-4">
       <TurkishLetterBackdrop variant="sifremi-sifirla" />
@@ -148,7 +151,7 @@ export default function SifreSifirlaPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-5">
           <Link href="/giris" className="text-primary hover:underline font-medium">
-            Giriş sayfasına dön
+            {t('backToLogin')}
           </Link>
         </p>
       </div>

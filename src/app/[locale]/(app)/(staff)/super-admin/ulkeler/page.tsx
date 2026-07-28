@@ -16,7 +16,7 @@ import { UlkeDuzenleSlideOver, type UlkeOzet } from './ulke-duzenle';
 
 const SAYFA_BOYUTU = 20;
 
-type SortKey = 'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogrenciSayisi' | 'visible';
+type SortKey = 'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogretmenSayisi' | 'ogrenciSayisi' | 'visible';
 
 interface UlkeSatir {
   id: number;
@@ -24,18 +24,20 @@ interface UlkeSatir {
   ogretmenId: number | null;
   ogretmenAdi: string | null;
   kurumSayisi: number;
+  ogretmenSayisi: number;
   ogrenciSayisi: number;
   visible: boolean;
 }
 
 function csvIndir(satirlar: UlkeSatir[]) {
-  const basliklar = ['Ülke', 'Sorumlu Öğretmen', 'Kurum Sayısı', 'Öğrenci Sayısı', 'Durum'];
+  const basliklar = ['Ülke', 'Sorumlu Öğretmen', 'Kurum Sayısı', 'Öğretmen Sayısı', 'Öğrenci Sayısı', 'Durum'];
   const csv = [
     basliklar.join(';'),
     ...satirlar.map(u => [
       `"${(u.name ?? '').replace(/"/g, '""')}"`,
       `"${(u.ogretmenAdi ?? '').replace(/"/g, '""')}"`,
       u.kurumSayisi ?? 0,
+      u.ogretmenSayisi ?? 0,
       u.ogrenciSayisi ?? 0,
       u.visible ? 'Aktif' : 'Pasif',
     ].join(';')),
@@ -214,6 +216,7 @@ export default function UlkelerListePage() {
               <SortHeader colKey="name">Ülke</SortHeader>
               <SortHeader colKey="ogretmenAdi">Sorumlu Öğretmen</SortHeader>
               <SortHeader colKey="kurumSayisi" align="center">Kurumlar</SortHeader>
+              <SortHeader colKey="ogretmenSayisi" align="center">Öğretmenler</SortHeader>
               <SortHeader colKey="ogrenciSayisi" align="center">Öğrenciler</SortHeader>
               <SortHeader colKey="visible" align="center">Durum</SortHeader>
               <th className="px-4 py-2.5 w-20" />
@@ -237,6 +240,7 @@ export default function UlkelerListePage() {
                 <td className="px-4 py-2.5 font-medium text-slate-800">{u.name}</td>
                 <td className="px-4 py-2.5 text-xs text-slate-500">{u.ogretmenAdi ?? '—'}</td>
                 <td className="px-4 py-2.5 text-center tabular-nums text-slate-700">{u.kurumSayisi}</td>
+                <td className="px-4 py-2.5 text-center tabular-nums text-slate-700">{u.ogretmenSayisi}</td>
                 <td className="px-4 py-2.5 text-center tabular-nums text-slate-700">{u.ogrenciSayisi}</td>
                 <td className="px-4 py-2.5 text-center">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${u.visible ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -264,7 +268,7 @@ export default function UlkelerListePage() {
             ))}
             {!isLoading && sayfadakiler.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-xs text-slate-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-xs text-slate-400">
                   {arama ? `"${arama}" için sonuç bulunamadı` : 'Henüz ülke yok'}
                 </td>
               </tr>

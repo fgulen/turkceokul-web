@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/navigation';
 import { Logo } from '@/components/logo';
 import { Globe } from 'lucide-react';
@@ -29,8 +29,12 @@ const NAV_LINKS: NavLink[] = [
 
 export function LandingNav({ alternateHref, links, ctaLabel, ctaHref }: LandingNavProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const isCustomLinks = links !== undefined;
-  const navLinks = links ?? NAV_LINKS;
+  const navLinks = (links ?? NAV_LINKS).map(l => ({
+    ...l,
+    href: l.href === '/ogretmenler' && locale === 'en' ? '/for-teachers' : l.href,
+  }));
 
   return (
     <nav

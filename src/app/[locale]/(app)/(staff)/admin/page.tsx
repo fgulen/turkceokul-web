@@ -27,6 +27,7 @@ interface Ulke {
   ogretmenId: number | null;
   ogretmenAdi: string | null;
   kurumSayisi: number;
+  ogretmenSayisi: number;
   ogrenciSayisi: number;
 }
 
@@ -252,6 +253,8 @@ export default function AdminPage() {
             bosMesaj="Henüz öğretmen yok."
             ikincilKolonBaslik="Kurum"
             ikincilKolonRender={o => (o as OgretmenSatiri).kurumAdi}
+            ucuncuKolonBaslik="Ülke"
+            ucuncuKolonRender={o => (o as OgretmenSatiri).ulkeAdi ?? '—'}
             ekleButonu={{ etiket: 'Yeni Öğretmen', onClick: () => setOgretmenDavetAcik(true) }}
             sonKolonBaslik="Durum"
             sonKolonRender={o => (
@@ -273,6 +276,8 @@ export default function AdminPage() {
             bosMesaj="Bekleyen öğretmen yok."
             ikincilKolonBaslik="Kurum"
             ikincilKolonRender={o => (o as OgretmenSatiri).kurumAdi}
+            ucuncuKolonBaslik="Ülke"
+            ucuncuKolonRender={o => (o as OgretmenSatiri).ulkeAdi ?? '—'}
             sonKolonBaslik="Durum"
             sonKolonRender={o => (
               <OnayDurumuAksiyon
@@ -293,6 +298,8 @@ export default function AdminPage() {
             bosMesaj="Henüz öğrenci yok."
             ikincilKolonBaslik="Kurum · Sınıf"
             ikincilKolonRender={o => `${o.kurumAdi} · ${(o as OgrenciSatiri).sinifAdi}`}
+            ucuncuKolonBaslik="Ülke"
+            ucuncuKolonRender={o => (o as OgrenciSatiri).ulkeAdi ?? '—'}
           />
         )}
 
@@ -373,7 +380,7 @@ export default function AdminPage() {
 function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor: boolean; onYeniUlke: () => void }) {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
-  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'ogretmenAdi' | 'kurumSayisi' | 'ogretmenSayisi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
 
   const filtreli = useMemo(() => {
     if (!arama) return veri;
@@ -404,21 +411,23 @@ function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ülke</SortTh>
               <SortTh colKey="ogretmenAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Sorumlu Öğretmen</SortTh>
               <SortTh colKey="kurumSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Kurum</SortTh>
+              <SortTh colKey="ogretmenSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğretmen</SortTh>
               <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
               <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
             ) : (
               sayfalik.map(u => (
                 <tr key={u.id} className="odd:bg-white even:bg-slate-50/40">
                   <td className="px-4 py-2 font-medium text-slate-900">{u.name}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{u.ogretmenAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{u.kurumSayisi}</td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-600">{u.ogretmenSayisi}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{u.ogrenciSayisi}</td>
                   <td className="px-4 py-2 text-right">
                     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', u.visible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
