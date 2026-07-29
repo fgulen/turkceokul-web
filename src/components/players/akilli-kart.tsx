@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap } from 'lucide-react';
+import { Zap, MousePointerClick } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
@@ -106,7 +106,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   return (
-    <div className="max-w-sm md:max-w-lg mx-auto">
+    <div className="max-w-xs md:max-w-md mx-auto">
       <GameHUD
         soruNo={index}
         toplamSoru={detaylar.length}
@@ -155,9 +155,9 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
               // eslint-disable-next-line @next/next/no-img-element -- SIZER: görünür yüzlerle (satır ~175/200) birebir aynı native <img> davranışı olmalı, next/image farklı ölçümlenir
               <img src={imgUrl!} alt="" className="w-full h-auto block" />
             )}
-            <div className={cn('flex flex-col items-center gap-2 px-6 py-3', !imageMode && 'min-h-44 justify-center')}>
+            <div className={cn('flex items-center justify-center gap-2 px-6 py-3', !imageMode && 'min-h-44')}>
               <p className="text-3xl font-bold text-center leading-tight">{imageMode ? word : back}</p>
-              {sesUrl && <div className="size-9 rounded-full" />}
+              {sesUrl && <div className="size-9 rounded-full shrink-0" />}
             </div>
           </div>
 
@@ -165,6 +165,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
           <div
             role="button"
             tabIndex={0}
+            aria-label="Kartı çevir"
             onClick={handleFlip}
             onKeyDown={(e) => e.key === 'Enter' && handleFlip()}
             style={{ backfaceVisibility: 'hidden' }}
@@ -182,9 +183,7 @@ export function AkilliKartPlayer({ etkinlik, onComplete }: PlayerProps) {
                 <p className="text-2xl font-bold text-center leading-snug">{word}</p>
               )}
               {imageMode ? (
-                <p className="text-sm font-medium text-muted-foreground">
-                  Bil bakalım — bu hangi kelime?
-                </p>
+                <MousePointerClick className="size-5 text-muted-foreground/60" aria-hidden="true" />
               ) : (
                 <p className="text-[11px] text-muted-foreground uppercase tracking-widest">
                   Çevirmek için tıkla

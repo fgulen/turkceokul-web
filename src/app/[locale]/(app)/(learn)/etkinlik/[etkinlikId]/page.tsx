@@ -520,45 +520,33 @@ export default function EtkinlikPage({
   return (
     <div className="bg-background">
       <main className="max-w-2xl mx-auto px-4 pt-3 pb-8">
-        {/* Header */}
-        <div className="mb-3 flex items-center justify-between">
+        {/* Header — Geri + kısa başlık + Düzenle tek satırda */}
+        <div className="mb-4 flex items-center gap-2">
           <button
             onClick={() => returnUrl ? router.push(returnUrl) : router.back()}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 shrink-0 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Geri"
           >
-            <ArrowLeft className="size-4" />
-            Geri
+            <ArrowLeft className="size-5" />
+            <span className="hidden sm:inline">Geri</span>
           </button>
-          {user && (user.role === 'Koordinator' || user.role === 'SuperAdmin' || user.role === 'Editor') && (
+          {etkinlik && (etkinlik.kitapAdi || etkinlik.uniteAdi) && (
+            <h1 className="flex-1 min-w-0 truncate text-center text-sm font-semibold text-foreground/80">
+              {[etkinlik.kitapAdi?.split(' ')[0], etkinlik.uniteAdi].filter(Boolean).join(' · ')}
+            </h1>
+          )}
+          {user && (user.role === 'Koordinator' || user.role === 'SuperAdmin' || user.role === 'Editor') ? (
             <a
               href={`/${locale}/ogretmen/etkinlik/${etkinlikId}/duzenle`}
-              className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 shrink-0 text-sm text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
             >
               <PenLine className="size-4" />
               <span className="hidden sm:inline">Düzenle</span>
             </a>
+          ) : (
+            <div className="w-4 shrink-0" aria-hidden="true" />
           )}
         </div>
-
-        {/* Üst bilgi: kitap / ünite / bölüm */}
-        {etkinlik && (etkinlik.kitapAdi || etkinlik.uniteAdi) && (
-          <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-            <BookOpen className="size-3.5 shrink-0" />
-            {etkinlik.kitapAdi && <span className="font-medium text-foreground/70">{etkinlik.kitapAdi}</span>}
-            {etkinlik.uniteAdi && (
-              <>
-                <span className="text-muted-foreground/40">/</span>
-                <span>{etkinlik.uniteAdi}</span>
-              </>
-            )}
-            {etkinlik.bolum && (
-              <>
-                <span className="text-muted-foreground/40">/</span>
-                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{etkinlik.bolum}</span>
-              </>
-            )}
-          </div>
-        )}
 
         {/* Content */}
         {isLoading ? (
