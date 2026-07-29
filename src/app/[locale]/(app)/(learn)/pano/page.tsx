@@ -146,12 +146,17 @@ export default function PanoPage() {
 
           {/* Lig */}
           <div className="bg-card border border-border rounded-3xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">{t('pano.myLeague')}</h2>
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">{t('pano.myLeague')}</h2>
+                {lig && (
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    {lig.ligAdi}
+                  </span>
+                )}
+              </div>
               {lig && (
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                  {lig.ligAdi}
-                </span>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('pano.leagueWeeklyHint')}</p>
               )}
             </div>
             {!lig ? (
@@ -169,32 +174,17 @@ export default function PanoPage() {
             ) : (
               <div className="space-y-0.5">
                 {lig.tablo.slice(0, 5).map((s) => (
-                  <div
-                    key={s.sira}
-                    className={cn(
-                      'flex items-center justify-between py-2 px-3 rounded-lg text-sm',
-                      s.benimSatir && 'bg-primary/10 font-semibold'
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'w-5 text-center text-xs font-bold',
-                          s.sira <= 3 ? 'text-primary' : 'text-muted-foreground'
-                        )}
-                      >
-                        {s.sira}
-                      </span>
-                      <span className="truncate max-w-[100px]">{s.name}</span>
-                      {s.benimSatir && (
-                        <span className="text-xs text-primary">{t('pano.youLabel')}</span>
-                      )}
-                    </div>
-                    <span className="text-muted-foreground text-xs shrink-0">
-                      {s.haftalikXp} XP
-                    </span>
-                  </div>
+                  <LigSatirRow key={s.sira} satir={s} />
                 ))}
+                {(() => {
+                  const benim = lig.tablo.find((s) => s.benimSatir);
+                  return benim && benim.sira > 5 ? (
+                    <>
+                      <div className="text-center text-muted-foreground text-xs py-0.5">···</div>
+                      <LigSatirRow satir={benim} />
+                    </>
+                  ) : null;
+                })()}
               </div>
             )}
           </div>
@@ -349,6 +339,36 @@ export default function PanoPage() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function LigSatirRow({ satir }: { satir: LigSatir }) {
+  const t = useTranslations();
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between py-2 px-3 rounded-lg text-sm',
+        satir.benimSatir && 'bg-primary/10 font-semibold'
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'w-5 text-center text-xs font-bold',
+            satir.sira <= 3 ? 'text-primary' : 'text-muted-foreground'
+          )}
+        >
+          {satir.sira}
+        </span>
+        <span className="truncate max-w-[100px]">{satir.name}</span>
+        {satir.benimSatir && (
+          <span className="text-xs text-primary">{t('pano.youLabel')}</span>
+        )}
+      </div>
+      <span className="text-muted-foreground text-xs shrink-0">
+        {satir.haftalikXp} XP
+      </span>
     </div>
   );
 }
