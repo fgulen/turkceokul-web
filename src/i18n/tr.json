@@ -168,7 +168,7 @@
     }
   },
   "pano": {
-    "greeting": "Selam, {name}! 👋",
+    "greeting": "Selam, {name}!",
     "greetingSub": "Bugün ne öğreniyorsun?",
     "streak": "Streak",
     "streakDays": "{count} gün",

@@ -129,7 +129,7 @@ export default function PanoPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           {/* Günlük Görevler */}
-          <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
+          <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6">
             <h2 className="font-semibold text-lg mb-4">{t('pano.dailyTasks')}</h2>
             {gorevLoading ? (
               <div className="space-y-3">
@@ -147,7 +147,7 @@ export default function PanoPage() {
           </div>
 
           {/* Lig */}
-          <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="bg-card border border-border rounded-3xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">{t('pano.myLeague')}</h2>
               {lig && (
@@ -223,7 +223,7 @@ export default function PanoPage() {
                   <Link
                     key={kitap.id}
                     href={devamEtHref}
-                    className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
+                    className="p-5 bg-card border border-border rounded-3xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
                   >
                     <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                       <BookMarked className="size-6 text-primary" />
@@ -285,7 +285,7 @@ export default function PanoPage() {
           {kitapLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
+                <div key={i} className="h-24 rounded-3xl bg-muted animate-pulse" />
               ))}
             </div>
           ) : (
@@ -300,7 +300,7 @@ export default function PanoPage() {
                     <Link
                       key={k.id}
                       href={`/ders/${k.id}`}
-                      className="p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group"
+                      className="p-5 bg-card border border-border rounded-3xl hover:border-primary/40 hover:shadow-md transition-all group"
                     >
                       <div className="flex items-start gap-4">
                         <BookCoverThumb src={coverUrl} alt={k.name} />
@@ -321,7 +321,7 @@ export default function PanoPage() {
                   <Link
                     key={k.id}
                     href="/kayit?tip=bireysel"
-                    className="p-5 bg-card border border-border rounded-2xl opacity-50 hover:opacity-70 transition-opacity relative group"
+                    className="p-5 bg-card border border-border rounded-3xl opacity-50 hover:opacity-70 transition-opacity relative group"
                     title={t('pano.premiumRequired')}
                   >
                     <div className="flex items-start gap-4">
@@ -357,7 +357,7 @@ export default function PanoPage() {
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+    <div className="bg-card border border-border rounded-3xl p-4 flex items-center gap-3">
       {icon}
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>

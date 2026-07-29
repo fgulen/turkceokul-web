@@ -168,7 +168,7 @@
     }
   },
   "pano": {
-    "greeting": "Hi, {name}! 👋",
+    "greeting": "Hi, {name}!",
     "greetingSub": "What are you learning today?",
     "streak": "Streak",
     "streakDays": "{count} days",
