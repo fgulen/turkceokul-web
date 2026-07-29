@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Camera, Check, ChevronRight, GraduationCap, Key, Languages, LogOut, Mail, Phone, Receipt, Shield, User, Zap } from 'lucide-react';
+import { Camera, Check, ChevronRight, GraduationCap, Key, Languages, LogOut, Mail, Phone, Receipt, Shield, User } from 'lucide-react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { PlusBanner } from '@/components/plus-banner';
@@ -135,7 +135,7 @@ export default function ProfilPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F4F6]">
+    <div className="min-h-[100dvh] bg-background">
 
       <main className="max-w-[1200px] mx-auto px-6 py-10">
         {/* Greeting */}
@@ -474,13 +474,6 @@ export default function ProfilPage() {
               <LogOut className="size-4" />
               {t('profil.logout')}
             </button>
-
-            {/* Decorative */}
-            <div className="rounded-2xl overflow-hidden border border-slate-200">
-              <div className="w-full h-36 bg-gradient-to-br from-emerald-100 to-green-50 flex items-center justify-center">
-                <Zap className="size-12 text-primary/20" />
-              </div>
-            </div>
           </div>
         </div>
 
