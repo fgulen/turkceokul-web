@@ -192,9 +192,7 @@
     "completed": "Completed",
     "notCompleted": "Not completed",
     "taskLabels": {
-      "DakikaCalis": "Study 20 min",
-      "EtkinlikHatasiz": "Complete 3 activities flawlessly",
-      "DueloDavet": "Start a duel"
+      "EtkinlikHatasiz": "Complete 3 activities flawlessly"
     },
     "taskReward": "+{count} {type}",
     "xpUnit": "XP",

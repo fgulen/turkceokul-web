@@ -192,9 +192,7 @@
     "completed": "Tamamlandı",
     "notCompleted": "Tamamlanmadı",
     "taskLabels": {
-      "DakikaCalis": "20 dakika çalış",
-      "EtkinlikHatasiz": "3 etkinliği hatasız tamamla",
-      "DueloDavet": "Bir düello başlat"
+      "EtkinlikHatasiz": "3 etkinliği hatasız tamamla"
     },
     "taskReward": "+{count} {type}",
     "xpUnit": "XP",
