@@ -394,5 +394,11 @@
     "combo": "{count} Combo",
     "heartLost": "-{count} Heart",
     "calculating": "Calculating result…"
+  },
+  "cerezBanner": {
+    "mesaj": "This site uses cookies to improve your experience and analyze site traffic.",
+    "gizlilikLink": "Privacy Policy",
+    "reddet": "Decline",
+    "kabulEt": "Accept"
   }
 }

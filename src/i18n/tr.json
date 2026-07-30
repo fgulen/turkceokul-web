@@ -394,5 +394,11 @@
     "combo": "{count} Combo",
     "heartLost": "-{count} Kalp",
     "calculating": "Sonuç hesaplanıyor…"
+  },
+  "cerezBanner": {
+    "mesaj": "Bu site, deneyimini iyileştirmek ve site trafiğini analiz etmek için çerezler kullanır.",
+    "gizlilikLink": "Gizlilik Politikası",
+    "reddet": "Reddet",
+    "kabulEt": "Kabul Et"
   }
 }
