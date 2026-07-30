@@ -400,5 +400,14 @@
     "gizlilikLink": "Gizlilik Politikası",
     "reddet": "Reddet",
     "kabulEt": "Kabul Et"
+  },
+  "lisansKilidi": {
+    "ogrenciBaslik": "Deneme sürümündesin",
+    "ogrenciMesaj": "Ünite 2 ve sonrasına geçmek için tam sürüm gerekiyor. Öğretmenine kurumun lisans başvurusu yapmasını hatırlat, hemen devam edebilirsin.",
+    "ogretmenBaslik": "Deneme sürümündesin",
+    "ogretmenMesaj": "Ünite 2 ve sonrası için kurum koordinatörünüzden lisans başvurusu talep edin.",
+    "yoneticiBaslik": "Tam sürüme geçin",
+    "yoneticiMesaj": "Bu ünite ve sonrasına erişmek için lisansınızı yükseltin.",
+    "yoneticiButon": "Satın Al / Lisansı Yükselt"
   }
 }

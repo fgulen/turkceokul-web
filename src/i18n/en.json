@@ -400,5 +400,14 @@
     "gizlilikLink": "Privacy Policy",
     "reddet": "Decline",
     "kabulEt": "Accept"
+  },
+  "lisansKilidi": {
+    "ogrenciBaslik": "You're on the trial version",
+    "ogrenciMesaj": "Full access is required to move past Unit 1. Ask your teacher to have your institution apply for a license — then you can keep going right away.",
+    "ogretmenBaslik": "You're on the trial version",
+    "ogretmenMesaj": "Ask your institution coordinator to apply for a license to unlock Unit 2 and beyond.",
+    "yoneticiBaslik": "Upgrade to full access",
+    "yoneticiMesaj": "Upgrade your license to access this unit and beyond.",
+    "yoneticiButon": "Buy / Upgrade License"
   }
 }
