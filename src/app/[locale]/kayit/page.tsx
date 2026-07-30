@@ -7,7 +7,7 @@ import { Link, useLocale, useRouter } from "@/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, ArrowRight, ArrowLeft, Check,
-  Building2, GraduationCap, Zap, Users, BookOpen, Brain,
+  Building2, GraduationCap, KeyRound, Zap, Users, BookOpen, Brain,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
@@ -23,6 +23,21 @@ type Tab = "kurumsal" | "bireysel";
 type Step = 1 | 2 | 3;
 type NativeLangValue = "ku" | "ru" | "ar" | "en" | "none";
 type Benefit = { Icon: React.ComponentType<{ className?: string }>; text: string };
+type SeviyeValue = "baslangic" | "orta" | "ileri";
+type YasGrubuValue = "cocuk" | "genc" | "yetiskin";
+
+// Bireysel (sınıfsız) kayıtta toplanan bekleme listesi bilgisi — bireysel plan
+// açıldığında iletişim için (kullanıcı kararı, 2026-07-29).
+const SEVIYE_OPTIONS: { value: SeviyeValue; labelKey: string }[] = [
+  { value: "baslangic", labelKey: "auth.register.levelBaslangic" },
+  { value: "orta", labelKey: "auth.register.levelOrta" },
+  { value: "ileri", labelKey: "auth.register.levelIleri" },
+];
+const YAS_OPTIONS: { value: YasGrubuValue; labelKey: string }[] = [
+  { value: "cocuk", labelKey: "auth.register.ageCocuk" },
+  { value: "genc", labelKey: "auth.register.ageGenc" },
+  { value: "yetiskin", labelKey: "auth.register.ageYetiskin" },
+];
 
 const KURUMSAL_BENEFITS: Benefit[] = [
   { Icon: Zap,      text: "auth.register.benefitsCorporate.0" },
@@ -88,7 +103,10 @@ function KayitForm() {
   const [direction, setDirection] = useState(1);
   const [tab, setTab] = useState<Tab | null>(initialTab);
   const [nativeLanguage, setNativeLanguage] = useState<NativeLangValue | null>(null);
-  const [form, setForm] = useState({ name: "", surname: "", email: "", password: "", kurumAdi: "", kurumKodu: "" });
+  const [form, setForm] = useState({
+    name: "", surname: "", email: "", password: "", kurumAdi: "", kurumKodu: "",
+    beklemeUlke: "", seviye: "" as SeviyeValue | "", yasGrubu: "" as YasGrubuValue | "",
+  });
   const [kurumOpen, setKurumOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -125,6 +143,10 @@ function KayitForm() {
     setStep(2);
   }
 
+  function gotoSinifKatil() {
+    router.push("/sinif/katil", { locale });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!tab) return;
@@ -133,6 +155,10 @@ function KayitForm() {
       return;
     }
     if (form.password.length < 8) { setError(t("auth.register.errorShortPassword")); return; }
+    if (tab === "bireysel" && !sinifKatilRedirect && (!form.beklemeUlke.trim() || !form.seviye || !form.yasGrubu)) {
+      setError(t("auth.register.errorMissingWaitlistInfo"));
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -145,6 +171,9 @@ function KayitForm() {
         ...(tab === "kurumsal" && form.kurumAdi ? { kurumAdi: form.kurumAdi } : {}),
         ...(tab === "kurumsal" && form.kurumKodu ? { kurumKodu: form.kurumKodu.toUpperCase() } : {}),
         ...(nativeLanguage && nativeLanguage !== "none" ? { nativeLanguage } : {}),
+        ...(form.beklemeUlke.trim() && form.seviye && form.yasGrubu
+          ? { beklemeUlke: form.beklemeUlke.trim(), seviye: form.seviye, yasGrubu: form.yasGrubu }
+          : {}),
       };
       const { data } = await api.post("/api/auth/register", payload);
       setAuth(data.user, data.accessToken);
@@ -259,7 +288,7 @@ function KayitForm() {
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
                 {step === 1 && (
-                  <StepRol value={tab} onSelect={selectRole} />
+                  <StepRol value={tab} onSelect={selectRole} onHasCode={gotoSinifKatil} />
                 )}
 
                 {step === 2 && (
@@ -394,54 +423,72 @@ function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect:
   );
 }
 
-function StepRol({ value, onSelect }: { value: Tab | null; onSelect: (t: Tab) => void }) {
+function StepRol({ value, onSelect, onHasCode }: { value: Tab | null; onSelect: (t: Tab) => void; onHasCode: () => void }) {
   const t = useTranslations();
-  const cards: { key: Tab; Icon: React.ComponentType<{ className?: string }>; titleKey: string; subKey: string; benefits: Benefit[] }[] = [
-    { key: "bireysel", Icon: GraduationCap, titleKey: "auth.register.roleStudent", subKey: "auth.register.roleStudentSub", benefits: BIREYSEL_BENEFITS },
-    { key: "kurumsal", Icon: Building2,     titleKey: "auth.register.roleTeacher", subKey: "auth.register.roleTeacherSub", benefits: KURUMSAL_BENEFITS },
-  ];
   return (
     <div>
       <h1 className="type-title tracking-tight text-slate-900 mb-1">{t("auth.register.roleTitle")}</h1>
       <p className="type-body text-slate-500 mb-6">{t("auth.register.roleSubtitle")}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {cards.map(({ key, Icon, titleKey, subKey, benefits }) => {
-          const selected = value === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onSelect(key)}
-              className={cn(
-                "flex min-h-[220px] flex-col items-start gap-3 rounded-2xl border-2 p-5 text-left transition-colors",
-                selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white hover:border-slate-300"
-              )}
-            >
-              <span className={cn(
-                "flex h-11 w-11 items-center justify-center rounded-xl",
-                selected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
-              )}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <div>
-                <div className="text-lg font-extrabold leading-tight text-slate-900">{t(titleKey)}</div>
-                <div className="mt-0.5 text-sm text-slate-500">{t(subKey)}</div>
-              </div>
-              <ul className="mt-1 w-full space-y-1.5">
-                {benefits.slice(0, 3).map(({ text }) => (
-                  <li key={text} className="flex items-start gap-2 text-xs text-slate-500">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    <span>{t(text)}</span>
-                  </li>
-                ))}
-              </ul>
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-3">
+        <RolKart
+          Icon={KeyRound}
+          title={t("auth.register.roleHasCode")}
+          sub={t("auth.register.roleHasCodeSub")}
+          onClick={onHasCode}
+        />
+        <RolKart
+          Icon={GraduationCap}
+          title={t("auth.register.roleNoCode")}
+          sub={t("auth.register.roleNoCodeSub")}
+          selected={value === "bireysel"}
+          onClick={() => onSelect("bireysel")}
+        />
+        <RolKart
+          Icon={Building2}
+          title={t("auth.register.roleTeacher")}
+          sub={t("auth.register.roleTeacherSub")}
+          selected={value === "kurumsal"}
+          onClick={() => onSelect("kurumsal")}
+        />
       </div>
     </div>
   );
 }
+
+function RolKart({ Icon, title, sub, selected, onClick }: {
+  Icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  sub: string;
+  selected?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3.5 rounded-2xl border-2 p-4 text-left transition-colors",
+        selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white hover:border-slate-300"
+      )}
+    >
+      <span className={cn(
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+        selected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
+      )}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div>
+        <div className="text-base font-extrabold leading-tight text-slate-900">{title}</div>
+        <div className="mt-0.5 text-sm text-slate-500">{sub}</div>
+      </div>
+    </button>
+  );
+}
+
+type BilgiForm = {
+  name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string;
+  beklemeUlke: string; seviye: SeviyeValue | ""; yasGrubu: YasGrubuValue | "";
+};
 
 function StepBilgi({
   tab, form, field, setForm, formatKurumKodu,
@@ -449,9 +496,9 @@ function StepBilgi({
   error, loading, sinifKatilRedirect, onSubmit,
 }: {
   tab: Tab;
-  form: { name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string };
-  field: (k: "name" | "surname" | "email" | "password" | "kurumAdi" | "kurumKodu") => (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setForm: React.Dispatch<React.SetStateAction<{ name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string }>>;
+  form: BilgiForm;
+  field: (k: "name" | "surname" | "email" | "password" | "kurumAdi" | "kurumKodu" | "beklemeUlke") => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setForm: React.Dispatch<React.SetStateAction<BilgiForm>>;
   formatKurumKodu: (raw: string) => string;
   showPass: boolean;
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>;
@@ -463,6 +510,12 @@ function StepBilgi({
   onSubmit: (e: React.FormEvent) => void;
 }) {
   const t = useTranslations();
+  // "Sınıf Kodum Yok" dalında form iki fazlı: önce kısa açıklama (Faz A), onaydan
+  // sonra ad/e-posta/şifre + ülke/seviye/yaş (Faz B). Adım değişince (AnimatePresence
+  // key={step}) bu bileşen yeniden mount olur, faz otomatik sıfırlanır.
+  const [beklemeOnaylandi, setBeklemeOnaylandi] = useState(false);
+  const bireyselBeklemeDali = tab === "bireysel" && !sinifKatilRedirect;
+  const formGorunur = tab === "kurumsal" || sinifKatilRedirect || (bireyselBeklemeDali && beklemeOnaylandi);
 
   return (
     <div>
@@ -471,49 +524,100 @@ function StepBilgi({
         {tab === "kurumsal" ? t("auth.register.infoSubCorporate") : t("auth.register.infoSubIndividual")}
       </p>
 
-      {tab === "bireysel" && (
-        sinifKatilRedirect ? (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            className="mb-4 flex items-start gap-3.5 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-primary p-4"
+      {tab === "bireysel" && sinifKatilRedirect && (
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 380, damping: 22 }}
+          className="mb-4 flex items-start gap-3.5 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-primary p-4"
+        >
+          <motion.span
+            className="shrink-0 text-2xl leading-none"
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.1 }}
           >
-            <motion.span
-              className="shrink-0 text-2xl leading-none"
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.1 }}
-            >
-              🎉
-            </motion.span>
-            <div>
-            <div className="mb-1 text-sm font-extrabold text-white">{t("auth.register.infoClassCodeSuccess")}</div>
-            <div className="text-xs leading-relaxed text-white/80">{t("auth.register.infoClassCodeDesc")}</div>
-            </div>
-          </motion.div>
-        ) : (
-          <div className="mb-4 flex flex-col gap-2.5">
-            {/* Bireysel kullanım henüz açık olmadığından AI seviye testi vaadi şimdilik gizli —
-                bireysel plan canlıya çıkınca geri açılacak (kullanıcı kararı, 2026-07-16).
-            <div className="flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5">
-              <Brain className="h-[15px] w-[15px] shrink-0 text-green-600" />
-              <span className="text-sm leading-tight text-green-700">Kayıt sonrası AI seviye testiyle sana uygun kitaplar önerilecek.</span>
-            </div>
-            */}
-            <div className="flex items-center justify-between gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5">
-              <div className="flex items-center gap-2.5">
-                <Users className="h-[15px] w-[15px] shrink-0 text-blue-600" />
-                <span className="text-sm leading-tight text-blue-700">{t("auth.register.infoClassCodePrompt")}</span>
-                </div>
-                <Link href="/sinif/katil" className="whitespace-nowrap border-b border-blue-300 text-[13px] font-bold text-blue-700">
-                  {t("auth.register.infoClassCodeLink")}
-                </Link>
-            </div>
+            🎉
+          </motion.span>
+          <div>
+          <div className="mb-1 text-sm font-extrabold text-white">{t("auth.register.infoClassCodeSuccess")}</div>
+          <div className="text-xs leading-relaxed text-white/80">{t("auth.register.infoClassCodeDesc")}</div>
           </div>
-        )
+        </motion.div>
       )}
 
+      {bireyselBeklemeDali && !beklemeOnaylandi && (
+        <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+              <Users className="h-[18px] w-[18px] text-blue-600" />
+            </span>
+            <p className="text-sm leading-relaxed text-slate-600">{t("auth.register.waitlistDesc")}</p>
+          </div>
+          <Button type="button" onClick={() => setBeklemeOnaylandi(true)} className="h-11 w-full rounded-lg text-sm font-bold">
+            {t("auth.register.waitlistCta")}
+          </Button>
+          <Link href="/sinif/katil" className="text-center text-[13px] font-semibold text-primary">
+            {t("auth.register.waitlistHasCode")}
+          </Link>
+        </div>
+      )}
+
+      {bireyselBeklemeDali && beklemeOnaylandi && (
+        <div className="mb-4 flex flex-col gap-3">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600">{t("auth.register.countryLabel")}</label>
+            <Input
+              type="text"
+              value={form.beklemeUlke}
+              onChange={field("beklemeUlke")}
+              required
+              placeholder={t("auth.register.countryPlaceholder")}
+              autoComplete="country-name"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600">{t("auth.register.levelLabel")}</label>
+            <div className="grid grid-cols-3 gap-2">
+              {SEVIYE_OPTIONS.map(({ value, labelKey }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, seviye: value }))}
+                  className={cn(
+                    "rounded-lg border-2 px-2 py-2 text-xs font-semibold transition-colors",
+                    form.seviye === value ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-500 hover:border-slate-300"
+                  )}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600">{t("auth.register.ageLabel")}</label>
+            <div className="grid grid-cols-3 gap-2">
+              {YAS_OPTIONS.map(({ value, labelKey }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, yasGrubu: value }))}
+                  className={cn(
+                    "rounded-lg border-2 px-2 py-2 text-xs font-semibold transition-colors",
+                    form.yasGrubu === value ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-500 hover:border-slate-300"
+                  )}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {formGorunur && (
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -603,6 +707,7 @@ function StepBilgi({
           )}
         </Button>
       </form>
+      )}
     </div>
   );
 }

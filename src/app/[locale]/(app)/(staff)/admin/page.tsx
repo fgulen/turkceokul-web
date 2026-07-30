@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  GraduationCap, Users, Building2, Clock, BookOpen, KeyRound, BarChart3, Globe, Bell, Plus,
+  GraduationCap, Users, Building2, Clock, BookOpen, KeyRound, BarChart3, Globe, Bell, Plus, Hourglass,
 } from 'lucide-react';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -31,7 +31,7 @@ interface Ulke {
   ogrenciSayisi: number;
 }
 
-type Sekme = 'ulkeler' | 'kurumlar' | 'ogretmenler' | 'bekleyen' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
+type Sekme = 'ulkeler' | 'kurumlar' | 'ogretmenler' | 'bekleyen' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar' | 'bekleme-listesi';
 
 export default function AdminPage() {
   const { user, ready } = useAuthGuard('Koordinator');
@@ -167,6 +167,7 @@ export default function AdminPage() {
     { key: 'siniflar', label: 'Sınıflar', icon: <BookOpen className="size-4" />, badge: siniflar?.length },
     { key: 'lisanslar', label: 'Ders Kitapları', icon: <KeyRound className="size-4" /> },
     { key: 'raporlar', label: 'Raporlar', icon: <BarChart3 className="size-4" /> },
+    { key: 'bekleme-listesi', label: 'Bekleme Listesi', icon: <Hourglass className="size-4" /> },
   ];
 
   const siparisSayisi = bekleyenSiparisler?.length ?? 0;
@@ -319,6 +320,10 @@ export default function AdminPage() {
           <KurumRaporlarTab veri={raporlar} yukleniyor={raporlarYukleniyor}
             kurumHref={id => `/admin/kurum/${id}`} />
         )}
+
+        {/* BEKLEME LİSTESİ TAB — sınıfsız (bireysel) öğrenciler, server-paginated
+            (liste büyüyecek; diğer sekmelerin fetch-all + client-sort desenini kullanmıyor). */}
+        {sekme === 'bekleme-listesi' && <BeklemeListesiTab enabled={!!user} />}
       </main>
 
       {/* Yeni Ekle standardı: buton → SlideOver (bkz. table-kit.tsx başlık yorumu) */}
@@ -434,6 +439,81 @@ function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor
                       {u.visible ? 'Aktif' : 'Pasif'}
                     </span>
                   </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
+    </div>
+  );
+}
+
+interface BeklemeSatiri {
+  id: number;
+  name: string;
+  surname: string | null;
+  email: string;
+  beklemeUlke: string | null;
+  seviye: 'Baslangic' | 'Orta' | 'Ileri' | null;
+  yasGrubu: 'Cocuk' | 'Genc' | 'Yetiskin' | null;
+  insertDate: string;
+}
+
+const SEVIYE_ETIKET: Record<string, string> = { Baslangic: 'Yeni başlıyor', Orta: 'Biraz biliyor', Ileri: 'İleri seviye' };
+const YAS_ETIKET: Record<string, string> = { Cocuk: 'Çocuk (6-12)', Genc: 'Genç (13-17)', Yetiskin: '18 yaş ve üzeri' };
+
+// Sınıfsız (bireysel) öğrenci bekleme listesi — kayıt sırasında toplanan ülke/seviye/
+// yaş bilgisiyle, bireysel plan açıldığında iletişim için. Diğer admin sekmelerinin
+// aksine server-side sayfalanır (liste büyüyecek, fetch-all + client-sort ölçeklenmez).
+function BeklemeListesiTab({ enabled }: { enabled: boolean }) {
+  const [sayfa, setSayfa] = useState(1);
+  const SAYFA_BOYUTU = 50;
+
+  const { data, isLoading } = useQuery<{ toplam: number; liste: BeklemeSatiri[] }>({
+    queryKey: ['admin-bekleme-listesi', sayfa],
+    queryFn: () => api.get('/api/admin/bekleme-listesi', { params: { sayfa, sayfaBoyutu: SAYFA_BOYUTU } }).then(r => r.data),
+    enabled,
+  });
+
+  const toplam = data?.toplam ?? 0;
+  const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">Bekleme Listesi</h2>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
+          <p className="ml-auto text-xs text-slate-400">Sınıfına bağlı olmayan bireysel öğrenciler</p>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600">Ad Soyad</th>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600">E-posta</th>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden sm:table-cell">Ülke</th>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden sm:table-cell">Seviye</th>
+              <th className="px-4 py-2.5 text-left font-medium text-slate-600 hidden md:table-cell">Yaş Grubu</th>
+              <th className="px-4 py-2.5 text-right font-medium text-slate-600">Kayıt Tarihi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {isLoading ? (
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+            ) : !data?.liste.length ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Bekleme listesinde kimse yok.</td></tr>
+            ) : (
+              data.liste.map(o => (
+                <tr key={o.id} className="odd:bg-white even:bg-slate-50/40">
+                  <td className="px-4 py-2 font-medium text-slate-900">{o.name} {o.surname}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500">{o.email}</td>
+                  <td className="px-4 py-2 text-xs text-slate-600 hidden sm:table-cell">{o.beklemeUlke ?? '—'}</td>
+                  <td className="px-4 py-2 text-xs text-slate-600 hidden sm:table-cell">{o.seviye ? SEVIYE_ETIKET[o.seviye] : '—'}</td>
+                  <td className="px-4 py-2 text-xs text-slate-600 hidden md:table-cell">{o.yasGrubu ? YAS_ETIKET[o.yasGrubu] : '—'}</td>
+                  <td className="px-4 py-2 text-right text-xs text-slate-500">{new Date(o.insertDate).toLocaleDateString('tr-TR')}</td>
                 </tr>
               ))
             )}

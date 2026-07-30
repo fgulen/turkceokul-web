@@ -2,14 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { BookMarked, BookOpen, CheckCircle2, Circle, Flame, Heart, Zap, Lock } from 'lucide-react';
+import { BookMarked, BookOpen, CheckCircle2, Circle, Flame, Heart, Zap, Lock, PartyPopper } from 'lucide-react';
 import { bookCoverUrl } from '@/lib/book-covers';
 import { useEffect, useState } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { PlusBanner } from '@/components/plus-banner';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { Link } from '@/navigation';
+import { Link, useRouter, useLocale } from '@/navigation';
 
 interface Gorev {
   gorevTipi: string;
@@ -91,8 +91,20 @@ export default function PanoPage() {
     enabled: !!user,
   });
 
+  // Sınıfsız (bireysel) öğrenci artık kataloğu görmez — bekleme listesi kararı
+  // (docs/superpowers/specs/2026-07-29-bireysel-bekleme-listesi-design.md).
+  const { data: profilDurum } = useQuery<{ sinifaBagliMi: boolean | null }>({
+    queryKey: ['profil-sinif-durumu'],
+    queryFn: () => api.get('/api/profil').then((r) => r.data),
+    enabled: !!user && user.role === 'Ogrenci',
+  });
+
   if (!ready) return <div className="min-h-[100dvh] flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
+
+  if (user.role === 'Ogrenci' && profilDurum?.sinifaBagliMi === false) {
+    return <BeklemeEkrani />;
+  }
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -339,6 +351,50 @@ export default function PanoPage() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function BeklemeEkrani() {
+  const t = useTranslations();
+  const router = useRouter();
+  const locale = useLocale();
+  const [kod, setKod] = useState('');
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const k = kod.trim();
+    router.push(k ? `/sinif/katil?kod=${encodeURIComponent(k)}` : '/sinif/katil', { locale });
+  }
+
+  return (
+    <div className="min-h-[100dvh] bg-background flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center">
+        <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-primary/10">
+          <PartyPopper className="size-8 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t('pano.bekleme.title')}</h1>
+        <p className="text-muted-foreground mb-8">{t('pano.bekleme.desc')}</p>
+
+        <form onSubmit={handleSubmit} className="text-left">
+          <label className="mb-1.5 block text-sm font-semibold text-foreground">{t('pano.bekleme.kodLabel')}</label>
+          <div className="flex gap-2">
+            <input
+              value={kod}
+              onChange={(e) => setKod(e.target.value)}
+              placeholder={t('pano.bekleme.kodPlaceholder')}
+              className="flex-1 h-11 px-3 rounded-lg border border-input bg-background text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 font-mono tracking-wide"
+            />
+            <button
+              type="submit"
+              disabled={kod.trim().length < 4}
+              className="h-11 shrink-0 rounded-lg bg-primary px-4 text-sm font-bold text-white transition-opacity disabled:opacity-40"
+            >
+              {t('pano.bekleme.kodCta')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
