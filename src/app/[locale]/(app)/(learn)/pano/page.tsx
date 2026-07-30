@@ -268,20 +268,6 @@ export default function PanoPage() {
             )}
           </div>
 
-          {!cefrLevel && (
-            <div className="mb-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-4">
-              <p className="text-sm text-amber-800">
-                {t('pano.levelTestPrompt')}
-              </p>
-              <Link
-                href="/seviye-testi"
-                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
-              >
-                {t('pano.startTest')}
-              </Link>
-            </div>
-          )}
-
           {kitapLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
