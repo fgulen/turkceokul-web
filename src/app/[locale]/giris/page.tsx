@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 import { safeRedirect } from '@/lib/safe-redirect';
+import { homePathForRole } from '@/lib/role-home';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 
 export default function GirisPage() {
@@ -39,13 +40,7 @@ export default function GirisPage() {
         window.location.href = redirect;
         return;
       }
-      const role = data.user?.role;
-      if (role === 'SuperAdmin') router.push('/super-admin', { locale });
-      else if (role === 'Koordinator') router.push('/admin', { locale });
-      else if (role === 'KurumYoneticisi') router.push('/kurum-yoneticisi', { locale });
-      else if (role === 'UlkeTemsilcisi') router.push('/ulke-temsilcisi', { locale });
-      else if (role === 'Ogretmen') router.push('/ogretmen', { locale });
-      else router.push('/pano', { locale });
+      router.push(homePathForRole(data.user.role), { locale });
     } catch (err) {
       const d = (err as { response?: { data?: unknown } }).response?.data;
       setError(typeof d === 'string' ? d : t('auth.login.errorInvalid'));

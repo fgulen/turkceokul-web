@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter, useLocale } from '@/navigation';
 import { useAuthStore } from '@/stores/auth';
+import { homePathForRole } from '@/lib/role-home';
 
 export function useAuthGuard(
   requiredRole?: 'Ogretmen' | 'Koordinator' | 'SuperAdmin' | 'Editor',
@@ -35,18 +36,12 @@ export function useAuthGuard(
       if (!yetkili) { router.replace('/pano'); return; }
     }
 
-    // noRoleRedirect=true: içerik sayfaları (okuma, ders) — rol yönlendirmesi yapma
+    // noRoleRedirect=true: içerik sayfaları (okuma, ders) — rol yönlendirmesi yapma.
+    // Diğer durumda (ör. /pano, /lig, /kahoot/katil) herkes kendi rol home'una döner —
+    // Ogretmen/staff rolleri öğrenci pano'sunda kalamaz.
     if (!requiredRole && !noRoleRedirect) {
-      if (user.role === 'SuperAdmin') {
-        router.replace('/super-admin');
-      } else if (user.role === 'KurumYoneticisi') {
-        router.replace('/kurum-yoneticisi');
-      } else if (user.role === 'UlkeTemsilcisi') {
-        router.replace('/ulke-temsilcisi');
-      } else if (user.role === 'Koordinator') {
-        router.replace('/admin'); // URL /admin kalıyor, sadece rol ismi değişti
-      }
-      // Ogretmen, Editor /pano'ya erişebilir
+      const home = homePathForRole(user.role);
+      if (home !== '/pano') router.replace(home);
     }
   }, [hydrated, user, router, locale, requiredRole, noRoleRedirect]);
 

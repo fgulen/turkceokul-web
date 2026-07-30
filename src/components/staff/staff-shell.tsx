@@ -11,6 +11,7 @@ import { ImpersonationBanner } from '@/components/impersonation-banner';
 import { Breadcrumb } from '@/components/staff/breadcrumb';
 import { CommandPalette } from '@/components/staff/command-palette';
 import { cn } from '@/lib/utils';
+import { homePathForRole } from '@/lib/role-home';
 
 const SIDEBAR_COOKIE = 'staff-sidebar';
 
@@ -124,7 +125,7 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
           >
             <Menu className="size-5" />
           </button>
-          <Link href="/pano" className="shrink-0">
+          <Link href={user ? homePathForRole(user.role) : '/pano'} className="shrink-0">
             <Logo size="md" />
           </Link>
           <div className="hidden md:block w-px h-6 bg-slate-200 mx-1" />
