@@ -4,7 +4,7 @@ import { use, useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
-import { useRouter, useLocale } from '@/navigation';
+import { Link, useRouter } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -366,7 +366,6 @@ export default function EtkinlikPage({
   const { etkinlikId } = use(params);
   const { user, ready } = useAuthGuard(undefined, true);
   const router = useRouter();
-  const locale = useLocale();
   const searchParams = useSearchParams();
 
   const uniteId = searchParams.get('uniteId');
@@ -536,13 +535,13 @@ export default function EtkinlikPage({
             </h1>
           )}
           {user && (user.role === 'Koordinator' || user.role === 'SuperAdmin' || user.role === 'Editor') ? (
-            <a
-              href={`/${locale}/ogretmen/etkinlik/${etkinlikId}/duzenle`}
+            <Link
+              href={`/ogretmen/etkinlik/${etkinlikId}/duzenle`}
               className="inline-flex items-center gap-1.5 shrink-0 text-sm text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
             >
               <PenLine className="size-4" />
               <span className="hidden sm:inline">Düzenle</span>
-            </a>
+            </Link>
           ) : (
             <div className="w-4 shrink-0" aria-hidden="true" />
           )}
