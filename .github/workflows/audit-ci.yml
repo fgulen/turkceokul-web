@@ -1,0 +1,194 @@
+name: Audit CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: audit-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: turkceokulunew
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -uroot -ptestpass"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout web
+        uses: actions/checkout@v4
+        with:
+          path: web
+
+      - name: Checkout API
+        uses: actions/checkout@v4
+        with:
+          repository: fgulen/api
+          token: ${{ secrets.GH_PAT }}
+          path: api
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Web lint
+        id: lint
+        run: |
+          npx eslint . --max-warnings=0 2>&1 | tee ../audit-lint.txt
+          exit ${PIPESTATUS[0]}
+        working-directory: web
+        continue-on-error: true
+
+      - name: Web type check
+        id: typecheck
+        run: |
+          npx tsc --noEmit 2>&1 | tee ../audit-typecheck.txt
+          exit ${PIPESTATUS[0]}
+        working-directory: web
+        continue-on-error: true
+
+      - name: Web build (production)
+        id: build
+        run: |
+          NEXT_PUBLIC_API_URL=http://localhost:5221 \
+          NEXT_PUBLIC_R2_URL=http://localhost:5221 \
+          npm run build 2>&1 | tee ../audit-build.txt
+        working-directory: web
+        continue-on-error: true
+
+      - name: npm audit
+        id: npmaudit
+        run: |
+          npm audit --audit-level=high 2>&1 | tee ../audit-npm.txt
+          exit ${PIPESTATUS[0]}
+        working-directory: web
+        continue-on-error: true
+
+      - name: Build API
+        id: apibuild
+        run: dotnet build --configuration Release 2>&1 | tee ../audit-apibuild.txt
+        working-directory: api
+        continue-on-error: true
+
+      - name: Restore & build API tests
+        run: dotnet restore && dotnet build --configuration Release 2>&1 | tee ../audit-apibuild.txt
+        working-directory: api/TurkceOkulu.Api.Tests
+        continue-on-error: true
+
+      - name: Setup API secrets
+        run: |
+          dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+            "server=localhost;port=3306;database=turkceokulunew;user=root;password=testpass"
+          dotnet user-secrets set "Jwt:Key" "test-jwt-key-for-ci-at-least-32-chars!!"
+          dotnet user-secrets set "Jwt:Issuer" "TurkceOkulu"
+          dotnet user-secrets set "Jwt:Audience" "TurkceOkulu"
+          dotnet user-secrets set "AppSettings:AnthropicApiKey" "sk-test-fake"
+          dotnet user-secrets set "AppSettings:DeepLApiKey" "fake-deepL-key"
+          dotnet user-secrets set "AppSettings:ResendApiKey" "re_test_fake"
+        working-directory: api
+
+      - name: Run API unit tests
+        id: apitests
+        run: |
+          dotnet test --configuration Release --no-build \
+            --logger "trx;LogFileName=../audit-apitester.Results.xml" 2>&1 | tee ../audit-apitester.txt
+          # exit code yakala — test basarisiz olsa bile devam
+        working-directory: api/TurkceOkulu.Api.Tests
+        continue-on-error: true
+
+      - name: NuGet audit
+        id: nugetaudit
+        run: |
+          dotnet list package --vulnerable 2>&1 | tee ../audit-nuget.txt
+        working-directory: api
+        continue-on-error: true
+
+      - name: Start API
+        run: |
+          ASPNETCORE_ENVIRONMENT=Production \
+          ASPNETCORE_URLS=http://localhost:5221 \
+          dotnet run --configuration Release &
+          sleep 15
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:5221/health
+        working-directory: api
+        continue-on-error: true
+
+      - name: Start web preview
+        run: |
+          npm run build && npm run start &
+          sleep 5
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+        working-directory: web
+        continue-on-error: true
+
+      - name: Run Playwright audit tests
+        id: playwright
+        run: |
+          npx playwright test e2e/security.spec.ts e2e/rate-limiting.spec.ts \
+            e2e/test-unitesi-a11y.spec.ts 2>&1 | tee ../audit-playwright.txt
+        working-directory: web
+        continue-on-error: true
+
+      - name: Lighthouse CI
+        id: lighthouse
+        run: |
+          npx lhci autorun --config=lighthouserc.json 2>&1 | tee ../audit-lighthouse.txt || true
+        working-directory: web
+        continue-on-error: true
+
+      - name: Collect artifacts
+        if: always()
+        run: |
+          mkdir -p audit-artifacts
+          for f in audit-*.txt; do
+            [ -f "$f" ] && cp "$f" audit-artifacts/
+          done
+          # Lighthouse raporu
+          cp -r web/.lighthouseci audit-artifacts/ 2>/dev/null || true
+          # Test raporlari
+          cp web/test-results/a11y-bulgular.json audit-artifacts/ 2>/dev/null || true
+          cp web/test-results audit-artifacts/ --recursive 2>/dev/null || true
+
+      - name: Generate audit score
+        id: score
+        shell: pwsh
+        run: |
+          $env:CI = "true"
+          & "web/scripts/audit-ci.ps1" -ReportPath "audit-artifacts/audit-raporu.json"
+        continue-on-error: true
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: audit-artifacts/
+          retention-days: 30
