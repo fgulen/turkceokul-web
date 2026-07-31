@@ -133,14 +133,26 @@ jobs:
 
       - name: Start API
         run: |
-          # nohup+disown ZORUNLU: adim biterken shell'in kapanmasi arka plandaki
-          # dotnet process'ini de oldururdu (SIGHUP) — Playwright adimina gelindiginde
-          # API artik ayakta olmuyordu (ECONNREFUSED ::1:5221, gorulen gercek hata).
+          # nohup+disown: adim biterken shell'in kapanmasi arka plandaki dotnet
+          # process'ini SIGHUP ile oldurmesin diye (klasik CI arka-plan-surec tuzagi).
           ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://localhost:5221 \
             nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
           disown
-          sleep 15
-          curl -s -o /dev/null -w "API health: %{http_code}\n" http://localhost:5221/health
+
+          # Sabit sleep yerine poll: migration+seed her CI'da sifirdan calisiyor,
+          # tek denemelik 15sn her zaman yetmeyebilir. 60sn'ye kadar 3sn araliklarla dene,
+          # basarisiz olursa dotnet'in kendi log'unu bas (gercek hatayi gormek icin).
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5221/health || true)
+            if [ "$code" = "200" ]; then
+              echo "API health: $code (deneme $i/20)"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "API 60sn icinde ayaga kalkmadi. dotnet run cikti (son 100 satir):"
+          tail -100 /tmp/api-run.log
+          exit 1
         working-directory: api
         continue-on-error: true
 
@@ -149,8 +161,18 @@ jobs:
           npm run build
           nohup npm run start > /tmp/web-start.log 2>&1 &
           disown
-          sleep 5
-          curl -s -o /dev/null -w "Web preview: %{http_code}\n" http://localhost:3000
+
+          for i in $(seq 1 15); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || true)
+            if [ "$code" = "200" ]; then
+              echo "Web preview: $code (deneme $i/15)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Web preview 30sn icinde ayaga kalkmadi. npm start cikti (son 100 satir):"
+          tail -100 /tmp/web-start.log
+          exit 1
         working-directory: web
         continue-on-error: true
 
