@@ -148,6 +148,19 @@ jobs:
           dotnet ef database update --connection "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
         working-directory: api
 
+      - name: Diagnose - verify schema directly
+        run: |
+          # GECICI teshis adimi: migration hemen ustte "Done." diyor ama Start API'nin
+          # yaptigi sorgular hala "Unknown column GoogleId" veriyor — ayni baglanti
+          # bilgisiyle ayni semaya mi bakiliyor, DOGRUDAN dogrulamak icin.
+          echo "--- users tablosunda GoogleId var mi? ---"
+          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "USE turkceokulunew; SHOW COLUMNS FROM users LIKE 'GoogleId';"
+          echo "--- __efmigrationshistory son 3 satir ---"
+          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "USE turkceokulunew; SELECT MigrationId FROM __efmigrationshistory ORDER BY MigrationId DESC LIMIT 3;"
+          echo "--- hangi host/port'a baglaniyoruz, DNS cozumlemesi ---"
+          getent hosts localhost || true
+          getent hosts 127.0.0.1 || true
+
       - name: Start API
         env:
           # Bu degerlerin hicbiri launchSettings'ten etkilenmiyor (sadece
