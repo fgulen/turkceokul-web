@@ -150,7 +150,10 @@ test.describe('Input Validation — SQL injection ve XSS payload\'ları', () => 
       data: {},
       failOnStatusCode: false,
     });
-    expect(res.status()).toBe(400);
+    // 400 (validation) bekliyoruz; 429 de kabul — bu dosyadaki diger login
+    // testleri (rate-limiting.spec.ts dahil) ayni IP-bazli /api/auth/login
+    // limitini (prod: 5/dk) paylasiyor, ayni desen "Asiri uzun input" testinde de var.
+    expect([400, 429]).toContain(res.status());
   });
 });
 
