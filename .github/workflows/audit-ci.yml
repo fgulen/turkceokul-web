@@ -103,18 +103,6 @@ jobs:
         working-directory: api/TurkceOkulu.Api.Tests
         continue-on-error: true
 
-      - name: Setup API secrets
-        run: |
-          dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
-            "server=localhost;port=3306;database=turkceokulunew;user=root;password=testpass"
-          dotnet user-secrets set "Jwt:Key" "test-jwt-key-for-ci-at-least-32-chars!!"
-          dotnet user-secrets set "Jwt:Issuer" "TurkceOkulu"
-          dotnet user-secrets set "Jwt:Audience" "TurkceOkulu"
-          dotnet user-secrets set "AppSettings:AnthropicApiKey" "sk-test-fake"
-          dotnet user-secrets set "AppSettings:DeepLApiKey" "fake-deepL-key"
-          dotnet user-secrets set "AppSettings:ResendApiKey" "re_test_fake"
-        working-directory: api
-
       - name: Run API unit tests
         id: apitests
         run: |
@@ -132,11 +120,33 @@ jobs:
         continue-on-error: true
 
       - name: Start API
+        env:
+          # Onceki "Setup API secrets" adimi dotnet user-secrets kullaniyordu — ama
+          # WebApplication.CreateBuilder user-secrets'i SADECE Development ortaminda
+          # otomatik yukler, bu adim ASPNETCORE_ENVIRONMENT=Production calistiriyor,
+          # yani hicbiri hic okunmuyordu. USTUNE, anahtar adlari da appsettings.json'daki
+          # gercek yapiyla uyusmuyordu (ConnectionStrings:DefaultConnection yerine
+          # ConnectionStrings:Default, AppSettings:AnthropicApiKey yerine Anthropic:ApiKey
+          # vb.) — Jwt:Secret hicbir zaman set edilmemis, appsettings.json'daki 23
+          # karakterlik CHANGE_ME_MIN_32_CHARS placeholder'i kaliyor, Program.cs'in
+          # kendi 32-karakter guvenlik kontrolune takilip API'nin acilista crash
+          # olmasina yol aciyordu (once "API health: 000" olarak gorulmustu, log
+          # gorunurlugu eklenince gercek "Jwt:Secret en az 32 karakter olmali" hatasi
+          # cikti). Ortam degiskenleri (__ = section ayraci) her ortamda okunur,
+          # anahtar adlari appsettings.json ile birebir.
+          ASPNETCORE_ENVIRONMENT: Production
+          ASPNETCORE_URLS: http://localhost:5221
+          ConnectionStrings__Default: "Server=localhost;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
+          Jwt__Secret: "test-jwt-key-for-ci-at-least-32-chars!!"
+          Jwt__Issuer: "TurkceOkulu"
+          Jwt__Audience: "TurkceOkulu"
+          Anthropic__ApiKey: "sk-test-fake"
+          DeepL__ApiKey: "fake-deepL-key"
+          Resend__ApiKey: "re_test_fake"
         run: |
           # nohup+disown: adim biterken shell'in kapanmasi arka plandaki dotnet
           # process'ini SIGHUP ile oldurmesin diye (klasik CI arka-plan-surec tuzagi).
-          ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://localhost:5221 \
-            nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
+          nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
           disown
 
           # Sabit sleep yerine poll: migration+seed her CI'da sifirdan calisiyor,
