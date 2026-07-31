@@ -119,6 +119,19 @@ jobs:
         working-directory: api
         continue-on-error: true
 
+      - name: Reset CI database
+        run: |
+          # 2026-07-31 gozlemi: ayni "mysql:8.0" servisi ard arda workflow_dispatch
+          # kosularinda BEKLENMEDIK sekilde onceki turdan __EFMigrationsHistory
+          # kaydini tasiyor gibi davrandi (iki ayri fresh-run denemesinde de "Applying
+          # migration" satiri hic basilmadi, sanki her sey zaten migrate edilmisti) —
+          # halbuki lokal denemede (DROP+CREATE DATABASE ile garantili bos sema)
+          # tum 42 migration sorunsuz uygulandi. Kok nedeni GH Actions runner/servis
+          # tarafinda netlesmedi; CI'yi guvenilir kilmak icin sema burada acikca
+          # sifirlaniyor — hangi nedenle olursa olsun bir sonraki adim garanti bos
+          # bir veritabaniyla basliyor.
+          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "DROP DATABASE IF EXISTS turkceokulunew; CREATE DATABASE turkceokulunew CHARACTER SET utf8mb4;"
+
       - name: Start API
         env:
           # Onceki "Setup API secrets" adimi dotnet user-secrets kullaniyordu — ama
