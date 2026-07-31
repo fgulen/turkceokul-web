@@ -154,6 +154,7 @@ jobs:
           # ASPNETCORE_ENVIRONMENT etkileniyor) — ayrintili aciklama "Apply migrations
           # explicitly" adiminda. Anahtar adlari appsettings.json ile birebir
           # (ConnectionStrings:Default, Jwt:Secret, Anthropic:ApiKey vb.).
+          ASPNETCORE_ENVIRONMENT: Production
           ASPNETCORE_URLS: http://localhost:5221
           ConnectionStrings__Default: "Server=localhost;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
           Jwt__Secret: "test-jwt-key-for-ci-at-least-32-chars!!"
@@ -165,11 +166,12 @@ jobs:
         run: |
           # nohup+disown: adim biterken shell'in kapanmasi arka plandaki dotnet
           # process'ini SIGHUP ile oldurmesin diye (klasik CI arka-plan-surec tuzagi).
-          # ASPNETCORE_ENVIRONMENT KASITLI OLARAK verilmiyor — launchSettings zaten
-          # Development'a zorluyor, onunla savasmak yerine artik buna gore tasarlandi
-          # (migrasyonlar zaten yukaridaki adimda ayrica, launchSettings'ten bagimsiz
-          # uygulandi; DataSeeder.Seed()'in Development'ta calismasi zararsiz).
-          nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
+          # --launch-profile "" : launchSettings.json'un profilini (ve onun sabit
+          # ASPNETCORE_ENVIRONMENT=Development enjeksiyonunu) devre disi birakir —
+          # yukaridaki env: blogundaki Production degeri artik gercekten uygulanir.
+          # Migrasyonlar zaten onceki adimda ayrica/bagimsiz uygulandi; API artik
+          # kendi Development-gated migrate+seed denemesini hic yapmayacak.
+          nohup dotnet run --configuration Release --launch-profile "" > /tmp/api-run.log 2>&1 &
           disown
 
           # Sabit sleep yerine poll: migration+seed her CI'da sifirdan calisiyor,
