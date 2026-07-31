@@ -99,7 +99,7 @@ jobs:
         continue-on-error: true
 
       - name: Restore & build API tests
-        run: dotnet restore && dotnet build --configuration Release 2>&1 | tee ../audit-apibuild.txt
+        run: dotnet restore && dotnet build --configuration Release 2>&1 | tee ../../audit-apitestbuild.txt
         working-directory: api/TurkceOkulu.Api.Tests
         continue-on-error: true
 
@@ -119,7 +119,7 @@ jobs:
         id: apitests
         run: |
           dotnet test --configuration Release --no-build \
-            --logger "trx;LogFileName=../audit-apitester.Results.xml" 2>&1 | tee ../audit-apitester.txt
+            --logger "trx;LogFileName=../audit-apitester.Results.xml" 2>&1 | tee ../../audit-apitester.txt
           # exit code yakala — test basarisiz olsa bile devam
         working-directory: api/TurkceOkulu.Api.Tests
         continue-on-error: true

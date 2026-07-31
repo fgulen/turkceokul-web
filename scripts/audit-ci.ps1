@@ -42,6 +42,13 @@ function Read-File-Safe($path) {
   return $null
 }
 
+# CI runner (Linux) '/' kullanir, lokal (Windows) '\' — sabit "*\klasor\*" wildcard'i
+# Linux'ta hicbir zaman eslesmez ve node_modules/bin/obj disarida birakilamaz. Regex
+# her iki ayirici ile de calisir.
+function Exclude-BuildDirs($fullName) {
+  return $fullName -notmatch '[\\/](node_modules|bin|obj|\.git)[\\/]'
+}
+
 function Score-Color($score) {
   if ($score -ge 80) { return "Green" }
   elseif ($score -ge 60) { return "Yellow" }
@@ -136,12 +143,14 @@ $perf.Puan = if ($perf.Bulgular.Count -gt 0) { [math]::Round(($perf.Bulgular | F
 $guv = $KATEGORILER | Where-Object { $_.Ad -eq "Guvenlik" }
 
 # 2a. npm audit
+# npm 10+ artik "found N vulnerabilities" degil, sadece "N vulnerabilities (...)" yaziyor —
+# "found " onekini opsiyonel yapiyoruz (eski/yeni npm surumleriyle uyumlu).
 $npmAudit = Read-File-Safe (Join-Path $ROOT "audit-npm.txt")
-if ($npmAudit -and ($npmAudit -match "found 0 vulnerabilities")) {
+if ($npmAudit -and ($npmAudit -match "(?:found\s+)?0\s+vulnerabilities")) {
   Add-Bulgu $guv "npm Audit" 100 "0 bilinen guvenlik acigi" "success"
 } elseif ($npmAudit) {
   $vulnCount = 0
-  if ($npmAudit -match "found (\d+) vulnerabilities") { $vulnCount = [int]$Matches[1] }
+  if ($npmAudit -match "(?:found\s+)?(\d+)\s+vulnerabilities") { $vulnCount = [int]$Matches[1] }
   $hasHigh = $npmAudit -match "high"
   $hasCritical = $npmAudit -match "critical"
   $npmScore = if ($hasCritical) { 10 } elseif ($hasHigh) { 30 } else { 80 }
@@ -263,7 +272,7 @@ $kod = $KATEGORILER | Where-Object { $_.Ad -eq "KodKalitesi" }
 $todoCount = 0
 foreach ($dir in @($WEB, $API)) {
   if (-not (Test-Path $dir)) { continue }
-  $files = Get-ChildItem $dir -Recurse -Include @("*.ts","*.tsx","*.js","*.jsx","*.cs") -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\node_modules\*" -and $_.FullName -notlike "*\bin\*" -and $_.FullName -notlike "*\obj\*" -and $_.FullName -notlike "*\.git\*" }
+  $files = Get-ChildItem $dir -Recurse -Include @("*.ts","*.tsx","*.js","*.jsx","*.cs") -ErrorAction SilentlyContinue | Where-Object { Exclude-BuildDirs $_.FullName }
   foreach ($f in $files) {
     try { $content = [System.IO.File]::ReadAllText($f.FullName) } catch { continue }
     $todoCount += [regex]::Matches($content, '\bTODO\b').Count
@@ -291,7 +300,7 @@ if (-not $buyukController) {
 # 4c. Console.Error
 $ceCount = 0
 if (Test-Path $API) {
-  $csFiles = Get-ChildItem $API -Recurse -Filter "*.cs" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\node_modules\*" -and $_.FullName -notlike "*\bin\*" -and $_.FullName -notlike "*\obj\*" -and $_.FullName -notlike "*\.git\*" }
+  $csFiles = Get-ChildItem $API -Recurse -Filter "*.cs" -ErrorAction SilentlyContinue | Where-Object { Exclude-BuildDirs $_.FullName }
   foreach ($f in $csFiles) {
     try { $content = [System.IO.File]::ReadAllText($f.FullName) } catch { continue }
     $ceCount += [regex]::Matches($content, 'Console\.Error').Count
