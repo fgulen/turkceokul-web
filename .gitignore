@@ -49,6 +49,9 @@ next-env.d.ts
 # a11y taramasi - uretilen veri, commit etme
 e2e/test-unitesi-idler.tsv
 
+# etkinlik-player smoke testi run-takip durumu - her calistirmada degisir, commit etme
+e2e/etkinlik-player/tested-activities.json
+
 # playwright test raporu - uretilen, commit etme
 /playwright-report/
 
