@@ -133,19 +133,24 @@ jobs:
 
       - name: Start API
         run: |
-          ASPNETCORE_ENVIRONMENT=Production \
-          ASPNETCORE_URLS=http://localhost:5221 \
-          dotnet run --configuration Release &
+          # nohup+disown ZORUNLU: adim biterken shell'in kapanmasi arka plandaki
+          # dotnet process'ini de oldururdu (SIGHUP) — Playwright adimina gelindiginde
+          # API artik ayakta olmuyordu (ECONNREFUSED ::1:5221, gorulen gercek hata).
+          ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://localhost:5221 \
+            nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
+          disown
           sleep 15
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:5221/health
+          curl -s -o /dev/null -w "API health: %{http_code}\n" http://localhost:5221/health
         working-directory: api
         continue-on-error: true
 
       - name: Start web preview
         run: |
-          npm run build && npm run start &
+          npm run build
+          nohup npm run start > /tmp/web-start.log 2>&1 &
+          disown
           sleep 5
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+          curl -s -o /dev/null -w "Web preview: %{http_code}\n" http://localhost:3000
         working-directory: web
         continue-on-error: true
 
