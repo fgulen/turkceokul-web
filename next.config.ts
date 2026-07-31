@@ -187,6 +187,8 @@ const nextConfig: NextConfig = {
       `media-src 'self' ${r2Origin}`,
       "font-src 'self' data:",
       `connect-src 'self' ${apiOrigin} ${apiWsOrigin} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io`,
+      // İletişim sayfasındaki Google Maps embed'i için — default-src bunu kapsamaz, frame-src ayrı belirtilmeli.
+      "frame-src https://www.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "object-src 'none'",

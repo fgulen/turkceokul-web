@@ -1,12 +1,13 @@
 // web/src/app/[locale]/iletisim/page.tsx
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Mail, MapPin } from 'lucide-react';
 import { LandingNav } from '@/components/landing-nav';
 import { LandingFooter } from '@/components/landing-footer';
-import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 
 const BASE = 'https://turkceokulu.com';
+const ADDRESS = '335 Clifton Avenue, Clifton, NJ 07011, United States';
+const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(ADDRESS)}&output=embed`;
 
 export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> }
@@ -48,12 +49,22 @@ const C = {
   tr: {
     h1: 'İletişim',
     sub: 'Bize aşağıdaki bilgilerle ulaşabilirsiniz.',
+    companyLine: 'Nevai Yayınları (Türkçe Okulu)',
+    addressLines: ['335 Clifton Avenue', 'Clifton, NJ 07011', 'Amerika Birleşik Devletleri'],
+    emailPrivacyLabel: 'Gizlilik ve veri talepleri',
+    emailGeneralLabel: 'Genel iletişim',
+    mapTitle: 'Nevai Yayınları konum haritası',
     kurumsalText: 'Kurumsal talepler için',
     kurumsalCta: 'Teklif Al',
   },
   en: {
     h1: 'Contact',
     sub: 'You can reach us with the details below.',
+    companyLine: 'Nevai Publishing (Türkçe Okulu)',
+    addressLines: ['335 Clifton Avenue', 'Clifton, NJ 07011', 'United States'],
+    emailPrivacyLabel: 'Privacy & data requests',
+    emailGeneralLabel: 'General enquiries',
+    mapTitle: 'Nevai Publishing location map',
     kurumsalText: 'For institutional requests,',
     kurumsalCta: 'Get a Quote',
   },
@@ -76,7 +87,49 @@ export default async function IletisimPage(
       </section>
 
       <section className="mx-auto max-w-3xl px-4 pb-10 md:px-10">
-        <BrainstormPlaceholder alan="İletişim Bilgileri (resmî e-posta / adres / telefon)" />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+              <div>
+                <p className="font-semibold text-slate-900">{c.companyLine}</p>
+                {c.addressLines.map((line) => (
+                  <p key={line} className="text-sm text-slate-600">{line}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <div className="flex items-start gap-3">
+              <Mail className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{c.emailPrivacyLabel}</p>
+                  <a href="mailto:privacy@turkceokulu.com" className="text-sm font-medium text-slate-900 hover:underline">
+                    privacy@turkceokulu.com
+                  </a>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{c.emailGeneralLabel}</p>
+                  <a href="mailto:iletisim@nevai.co" className="text-sm font-medium text-slate-900 hover:underline">
+                    iletisim@nevai.co
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+          <iframe
+            src={MAP_EMBED_SRC}
+            title={c.mapTitle}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-[320px] w-full"
+          />
+        </div>
       </section>
 
       <section className="mx-auto max-w-3xl px-4 pb-20 text-center md:px-10">
