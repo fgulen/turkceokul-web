@@ -121,33 +121,39 @@ jobs:
 
       - name: Reset CI database
         run: |
-          # 2026-07-31 gozlemi: ayni "mysql:8.0" servisi ard arda workflow_dispatch
-          # kosularinda BEKLENMEDIK sekilde onceki turdan __EFMigrationsHistory
-          # kaydini tasiyor gibi davrandi (iki ayri fresh-run denemesinde de "Applying
-          # migration" satiri hic basilmadi, sanki her sey zaten migrate edilmisti) —
-          # halbuki lokal denemede (DROP+CREATE DATABASE ile garantili bos sema)
-          # tum 42 migration sorunsuz uygulandi. Kok nedeni GH Actions runner/servis
-          # tarafinda netlesmedi; CI'yi guvenilir kilmak icin sema burada acikca
-          # sifirlaniyor — hangi nedenle olursa olsun bir sonraki adim garanti bos
-          # bir veritabaniyla basliyor.
           mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "DROP DATABASE IF EXISTS turkceokulunew; CREATE DATABASE turkceokulunew CHARACTER SET utf8mb4;"
+
+      - name: Apply migrations explicitly
+        run: |
+          # KOK NEDEN (2026-07-31, uzun bir debug turu sonunda bulundu): api/Properties/
+          # launchSettings.json TUM profillerde ASPNETCORE_ENVIRONMENT=Development'i
+          # SABIT set ediyor — "Start API" adiminin kendi env: blogundaki Production
+          # degeri `dotnet run` tarafindan SESSIZCE eziliyordu (CLAUDE.md'de dotnet-ef
+          # icin zaten dokumante edilmis ayni tuzak: "launchSettings.json Development'i
+          # zorluyor"). Sonuc: Program.cs'teki migrasyon+seed bloğu `if (isDevelopment)`
+          # ile calisiyordu (evet, yaniltici sekilde) AMA connection string de
+          # appsettings.Development.json'daki YEREL (127.0.0.1, farkli sifre) degerle
+          # karisip DB durumu on gorulemez hale geliyordu — "Applying migration" satiri
+          # hic basilmadan "Unknown column" hatalari cikmasinin sebebi buydu (once DB
+          # servisinin state tasidigini sandik, degildi — 3 ayri "Reset CI database"
+          # denemesi de ayni sonucu verdi, hep aynı kok nedene isaret etti).
+          #
+          # Fix: migration'lari uygulamanin kendi launchSettings-etkilenmis surecine
+          # BIRAKMAK yerine, `dotnet ef database update --connection` ile ACIKCA, tek
+          # seferlik calistiriyoruz — bu komut launchSettings'i hic gormüyor, sadece
+          # verilen connection string'i kullaniyor (ayni CLAUDE.md gotcha'sinin onerdigi
+          # cozum). API sonra bu ONCEDEN TAMAMEN MIGRATE EDILMIS semaya karsi baslar.
+          dotnet tool install --global dotnet-ef
+          export PATH="$PATH:/home/runner/.dotnet/tools"
+          dotnet ef database update --connection "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
+        working-directory: api
 
       - name: Start API
         env:
-          # Onceki "Setup API secrets" adimi dotnet user-secrets kullaniyordu — ama
-          # WebApplication.CreateBuilder user-secrets'i SADECE Development ortaminda
-          # otomatik yukler, bu adim ASPNETCORE_ENVIRONMENT=Production calistiriyor,
-          # yani hicbiri hic okunmuyordu. USTUNE, anahtar adlari da appsettings.json'daki
-          # gercek yapiyla uyusmuyordu (ConnectionStrings:DefaultConnection yerine
-          # ConnectionStrings:Default, AppSettings:AnthropicApiKey yerine Anthropic:ApiKey
-          # vb.) — Jwt:Secret hicbir zaman set edilmemis, appsettings.json'daki 23
-          # karakterlik CHANGE_ME_MIN_32_CHARS placeholder'i kaliyor, Program.cs'in
-          # kendi 32-karakter guvenlik kontrolune takilip API'nin acilista crash
-          # olmasina yol aciyordu (once "API health: 000" olarak gorulmustu, log
-          # gorunurlugu eklenince gercek "Jwt:Secret en az 32 karakter olmali" hatasi
-          # cikti). Ortam degiskenleri (__ = section ayraci) her ortamda okunur,
-          # anahtar adlari appsettings.json ile birebir.
-          ASPNETCORE_ENVIRONMENT: Production
+          # Bu degerlerin hicbiri launchSettings'ten etkilenmiyor (sadece
+          # ASPNETCORE_ENVIRONMENT etkileniyor) — ayrintili aciklama "Apply migrations
+          # explicitly" adiminda. Anahtar adlari appsettings.json ile birebir
+          # (ConnectionStrings:Default, Jwt:Secret, Anthropic:ApiKey vb.).
           ASPNETCORE_URLS: http://localhost:5221
           ConnectionStrings__Default: "Server=localhost;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
           Jwt__Secret: "test-jwt-key-for-ci-at-least-32-chars!!"
@@ -159,6 +165,10 @@ jobs:
         run: |
           # nohup+disown: adim biterken shell'in kapanmasi arka plandaki dotnet
           # process'ini SIGHUP ile oldurmesin diye (klasik CI arka-plan-surec tuzagi).
+          # ASPNETCORE_ENVIRONMENT KASITLI OLARAK verilmiyor — launchSettings zaten
+          # Development'a zorluyor, onunla savasmak yerine artik buna gore tasarlandi
+          # (migrasyonlar zaten yukaridaki adimda ayrica, launchSettings'ten bagimsiz
+          # uygulandi; DataSeeder.Seed()'in Development'ta calismasi zararsiz).
           nohup dotnet run --configuration Release > /tmp/api-run.log 2>&1 &
           disown
 
