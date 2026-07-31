@@ -156,7 +156,13 @@ jobs:
           # (ConnectionStrings:Default, Jwt:Secret, Anthropic:ApiKey vb.).
           ASPNETCORE_ENVIRONMENT: Production
           ASPNETCORE_URLS: http://localhost:5221
-          ConnectionStrings__Default: "Server=localhost;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
+          # 127.0.0.1, "localhost" DEGIL: "Apply migrations explicitly" adimi hep
+          # 127.0.0.1 kullanip 42/42 basarili oldu; "localhost" kullanan bu adim ise
+          # HER SEFERINDE eski/eksik semaya bagliymis gibi davrandi (Unknown column
+          # GoogleId — migrasyonlarin hic gormedigi bir DB'ye bağlaniyormus gibi).
+          # Bu runner'da "localhost" muhtemelen ::1'e cozumleniyor, mysql servisi ise
+          # sadece IPv4 uzerinden guvenilir — ayni adres kullanilarak hizalandi.
+          ConnectionStrings__Default: "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
           Jwt__Secret: "test-jwt-key-for-ci-at-least-32-chars!!"
           Jwt__Issuer: "TurkceOkulu"
           Jwt__Audience: "TurkceOkulu"
