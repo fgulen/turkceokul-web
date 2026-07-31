@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Volume2, CheckCircle2, XCircle } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
-import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { PlayingBars, NextButton, NavCounter, ActivityHint } from './ui';
 
-interface Answer { detayId: string; secilen: string; dogru: string; sonuc: boolean }
+interface Answer { detayId: string; secilenId: string; sonuc: boolean }
 
 export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -20,32 +20,27 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [combo, setCombo] = useState(0);
 
-  // Ses seçenekleri tüm aktivite boyunca aynı sırada karışık kalır
-  const sesSecenekleri = useMemo(
-    () => detaylar
-      .map((d) => ({
-        id: d.id,
-        audioSrc: d.sesLink || d.kelime1 || '', // sesLink yoksa kelime1'i dene
-        kelime1: d.kelime1 ?? '',
-      }))
-      .sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  // Ses havuzu artık sunucudan geliyor (etkinlik.sesSecenekleri, id ile keyleniyor —
+  // 2026-07-31 cevap-gizli mimari fix'i: d.kelime1 bu tipte hedef ses kimliğiydi ve
+  // her detayda ham gidiyordu, current.kelime1 === opt.kelime1 karşılaştırması hiç
+  // oynamadan doğru cevabı ifşa ediyordu). Gönderilen "cevap" artık seçilen havuz
+  // üyesinin Id'si; gerçek eşleşme kontrolEt/Cevapla'da sunucu tarafında doğrulanıyor.
+  const sesSecenekleri = etkinlik.sesSecenekleri ?? [];
 
   const [index, setIndex] = useState(0);
-  const [secilen, setSecilen] = useState<string | null>(null);   // seçili kelime1
+  const [secilenId, setSecilenId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false); // state async/batched — hızlı çift tıklamada senkron guard bu
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const current = detaylar[index];
   const imgUrl = toMediaUrl(current.resimLink);
-  const correct = current.kelime1 ?? '';
   const isLast = index === detaylar.length - 1;
 
-  function handleOpt(audioSrc: string, kelime1: string, optId: string) {
+  function handleOpt(audioSrc: string | null, optId: string) {
     // Önce ses çal
     const url = toMediaUrl(audioSrc);
     if (url) {
@@ -61,12 +56,22 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
       setPlayingId(optId);
     }
     // Sonra seç
-    setSecilen(kelime1);
+    setSecilenId(optId);
   }
 
-  function handleIleri() {
-    if (!secilen) return;
-    const isCorrect = secilen === correct;
+  async function handleIleri() {
+    if (!secilenId || pendingRef.current) return;
+    pendingRef.current = true;
+    setPending(true);
+
+    let isCorrect = false;
+    try {
+      ({ sonuc: isCorrect } = await kontrolEt(etkinlik.id, current.id, secilenId));
+    } catch {
+      isCorrect = false;
+    }
+    pendingRef.current = false;
+    setPending(false);
     play(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
@@ -80,8 +85,7 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
 
     const newAnswers = [...answers, {
       detayId: current.id,
-      secilen,
-      dogru: correct,
+      secilenId,
       sonuc: isCorrect,
     }];
     setAnswers(newAnswers);
@@ -90,13 +94,13 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
       setShowSummary(true);
     } else {
       setIndex(index + 1);
-      setSecilen(null);
+      setSecilenId(null);
       setPlayingId(null);
     }
   }
 
   function handleTamamla() {
-    const cevaplar: Cevap[] = answers.map((a) => ({ id: a.detayId, cevap: a.secilen }));
+    const cevaplar: Cevap[] = answers.map((a) => ({ id: a.detayId, cevap: a.secilenId }));
     onComplete(cevaplar);
   }
 
@@ -142,7 +146,7 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
             Sonu Gör →
           </button>
           <button
-            onClick={() => { setAnswers([]); setIndex(0); setSecilen(null); setPlayingId(null); setShowSummary(false); }}
+            onClick={() => { setAnswers([]); setIndex(0); setSecilenId(null); setPlayingId(null); setShowSummary(false); }}
             className="w-full py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             Baştan Yap
@@ -189,14 +193,15 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
       {/* Ses seçenekleri — tüm karta tıklanınca hem çalar hem seçer */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         {sesSecenekleri.map((opt) => {
-          const isSelected = secilen === opt.kelime1;
+          const isSelected = secilenId === opt.id;
           const isPlaying = playingId === opt.id;
 
           return (
             <button
               key={opt.id}
               type="button"
-              onClick={() => handleOpt(opt.audioSrc, opt.kelime1, opt.id)}
+              disabled={pending}
+              onClick={() => handleOpt(opt.audioSrc, opt.id)}
               className={cn(
                 'flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-sm transition-all duration-200',
                 isSelected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50',
@@ -216,7 +221,7 @@ export function ResminSesiHangisiPlayer({ etkinlik, onComplete }: PlayerProps) {
         })}
       </div>
 
-      <NextButton isLast={isLast} onClick={handleIleri} disabled={!secilen} />
+      <NextButton isLast={isLast} onClick={handleIleri} disabled={!secilenId || pending} />
       <NavCounter index={index} total={detaylar.length} />
     </div>
   );

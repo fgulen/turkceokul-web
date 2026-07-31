@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Zap } from 'lucide-react';
 import { cn, toMediaUrl, diyalogMetinClass, duzMetneCevir } from '@/lib/utils';
-import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
@@ -14,9 +14,8 @@ import { PlayingBars } from './ui';
 // Veri yapısı:
 //   description = soru metni ("Günaydın")
 //   sesLink     = kelimenin sesi (opsiyonel)
-//   kelime1     = DOĞRU resim yolu
-//   kelime2..4  = YANLIŞ seçenekler (resim yolları)
-// Backend: d.Kelime1 == cevap kontrolü
+//   secenekler  = resim yolları (sunucuda karıştırılmış, hangisinin doğru olduğu
+//                 client'a gönderilmiyor — bkz. kontrolEt, 2026-07-31 cevap-gizli mimari fix'i)
 
 const XP_BASE = 10;
 
@@ -39,27 +38,30 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null); // seçilen image path
+  const [correctReveal, setCorrectReveal] = useState<string | null>(null);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
   const burstId = useRef(0);
 
   const current = detaylar[index];
-  const correct = current.kelime1 ?? '';
   const sesUrl = toMediaUrl(current.sesLink);
-
-  // Seçenekler: kelime1..kelimeN = resim yolları, karıştırılmış
-  const options = useMemo(() => {
-    return getKelimeler(current).sort(() => Math.random() - 0.5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  const options = current.secenekler ?? [];
 
   const cols = options.length <= 2 ? 2 : options.length <= 4 ? 2 : 3;
 
-  function handleSelect(imgPath: string) {
+  async function handleSelect(imgPath: string) {
     if (selected !== null) return;
     setSelected(imgPath);
-    const isCorrect = imgPath === correct;
+
+    let isCorrect = false;
+    try {
+      const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, imgPath);
+      isCorrect = sonuc;
+      setCorrectReveal(dogruCevap);
+    } catch {
+      setCorrectReveal(imgPath);
+    }
     play(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
@@ -82,6 +84,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       } else {
         setIndex(index + 1);
         setSelected(null);
+        setCorrectReveal(null);
         setBurst(null);
       }
     }, 900);
@@ -155,31 +158,33 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       >
         {options.map((imgPath, optIndex) => {
           const url = toMediaUrl(imgPath);
-          const isCorrect = imgPath === correct;
+          const locked = selected !== null; // seçilir seçilmez kilitlenir, renk sunucu yanıtını bekler
+          const revealed = locked && correctReveal !== null;
+          const isCorrect = imgPath === correctReveal;
           const isSelected = selected === imgPath;
-          const revealed = selected !== null;
 
           return (
             <motion.button
               key={imgPath}
               onClick={() => handleSelect(imgPath)}
-              disabled={revealed}
+              disabled={locked}
               aria-label={`Seçenek ${optIndex + 1}`}
               animate={
-                isSelected && isCorrect
+                revealed && isSelected && isCorrect
                   ? { scale: [1, 1.06, 0.97, 1] }
-                  : isSelected && !isCorrect
+                  : revealed && isSelected && !isCorrect
                   ? { x: [0, -8, 8, -6, 6, -3, 3, 0] }
                   : {}
               }
               transition={{ duration: 0.38, type: 'tween' }}
               className={cn(
                 'relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-muted',
-                !revealed && 'border-border hover:border-primary hover:shadow-md cursor-pointer',
-                isSelected && isCorrect && 'border-[--correct]',
-                isSelected && !isCorrect && 'border-destructive',
-                !isSelected && revealed && isCorrect && 'border-[--correct]',
-                !isSelected && revealed && !isCorrect && 'opacity-40 border-border',
+                !locked && 'border-border hover:border-primary hover:shadow-md cursor-pointer',
+                locked && !revealed && isSelected && 'border-primary',
+                revealed && isSelected && isCorrect && 'border-[--correct]',
+                revealed && isSelected && !isCorrect && 'border-destructive',
+                revealed && !isSelected && isCorrect && 'border-[--correct]',
+                revealed && !isSelected && !isCorrect && 'opacity-40 border-border',
               )}
             >
               {url ? (
@@ -203,7 +208,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                   </div>
                 </div>
               )}
-              {isSelected && !isCorrect && (
+              {revealed && isSelected && !isCorrect && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="size-9 rounded-full bg-white flex items-center justify-center shadow">
                     <span className="text-lg font-bold text-destructive">✗</span>

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
-import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
@@ -16,29 +16,25 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [correctReveal, setCorrectReveal] = useState<string | null>(null);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  // cevap alanı varsa kullan, yoksa kelime1 (eski etkinlikler için)
-  const correct = current.cevap ?? current.kelime1 ?? '';
+  const options = current.secenekler ?? [];
 
-  const options = useMemo(() => {
-    const list = getKelimeler(current);
-    // Fisher-Yates shuffle
-    const arr = [...list];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
-  function handleSelect(opt: string) {
+  async function handleSelect(opt: string) {
     if (selected !== null) return;
     setSelected(opt);
-    const isCorrect = opt === correct;
+
+    let isCorrect = false;
+    try {
+      const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, opt);
+      isCorrect = sonuc;
+      setCorrectReveal(dogruCevap);
+    } catch {
+      setCorrectReveal(opt);
+    }
     play(isCorrect ? 'correct' : 'wrong');
 
     let newKalp = localKalp;
@@ -60,6 +56,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       } else {
         setIndex(index + 1);
         setSelected(null);
+        setCorrectReveal(null);
       }
     }, 700);
   }
@@ -100,7 +97,8 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
 
       <div className="flex flex-wrap gap-3 justify-center">
         {options.map((opt) => {
-          const isCorrect = opt === correct;
+          const revealed = selected !== null && correctReveal !== null;
+          const isCorrect = opt === correctReveal;
           const isSelected = opt === selected;
           return (
             <button
@@ -110,10 +108,11 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
               className={cn(
                 'px-5 py-2.5 rounded-xl border-2 font-medium text-sm transition-all',
                 selected === null && 'border-border hover:border-primary hover:bg-primary/5',
-                isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
-                !isSelected && selected !== null && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                !isSelected && selected !== null && !isCorrect && 'opacity-40',
+                isSelected && !revealed && 'border-primary bg-primary/5',
+                revealed && isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
+                revealed && !isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && !isSelected && !isCorrect && 'opacity-40',
               )}
             >
               {opt}

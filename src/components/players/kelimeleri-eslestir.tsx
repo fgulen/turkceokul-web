@@ -1,59 +1,68 @@
 ﻿'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { ActivityHint } from './ui';
-import { type PlayerProps, type Cevap } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 
 export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const { play } = useGameSound();
 
-  // Right column: her sağ seçenek benzersiz bir rid taşır. Aynı kelime1 değeri birden
-  // fazla çiftte geçebilir; eşleştirme değere DEĞİL bu instance'a (rid) göre yapılır —
-  // aksi halde duplicate değerde tek eşleşme ikisini birden "kullanıldı" yapıp aktivite
-  // tamamlanamıyordu (ayrıca key={val} duplicate React key uyarısı veriyordu).
+  // Right column: sunucuda karıştırılmış, detaylardan kopuk bir değer listesi
+  // (etkinlik.sagSecenekleri — 2026-07-31 cevap-gizli mimari fix'i: d.kelime1 artık
+  // aynı objede description ile birlikte gitmiyor, aksi halde hangi solun hangi sağla
+  // eşleştiği hiç oynamadan JSON'dan okunabilirdi). Her sağ seçenek benzersiz bir rid
+  // (dizideki index) taşır — aynı değer birden fazla çiftte geçebilir, eşleştirme
+  // değere DEĞİL bu instance'a göre yapılır.
   const rightOptions = useMemo(
-    () => detaylar
-      .map((d, i) => ({ value: d.kelime1 ?? '', rid: i }))
-      .sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    () => (etkinlik.sagSecenekleri ?? []).map((value, rid) => ({ value, rid })),
+    [etkinlik.sagSecenekleri],
   );
 
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
-  const [matched, setMatched] = useState<Map<string, number>>(new Map()); // detayId → sağ seçenek rid
+  const [matched, setMatched] = useState<Map<string, { rid: number; value: string }>>(new Map());
   const [wrongLeft, setWrongLeft] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
 
   function handleLeft(id: string) {
-    if (matched.has(id)) return;
+    if (matched.has(id) || pendingRef.current) return;
     setSelectedLeft(id === selectedLeft ? null : id);
   }
 
-  function handleRight(rid: number, value: string) {
-    if (!selectedLeft) return;
-    if ([...matched.values()].includes(rid)) return; // bu sağ seçenek zaten kullanıldı
+  async function handleRight(rid: number, value: string) {
+    if (!selectedLeft || pendingRef.current) return;
+    if ([...matched.values()].some((m) => m.rid === rid)) return; // bu sağ seçenek zaten kullanıldı
 
-    const correctKelime = detaylar.find((d) => d.id === selectedLeft)?.kelime1;
+    const leftId = selectedLeft;
+    pendingRef.current = true;
+    setPending(true);
 
-    if (value === correctKelime) {
+    let dogru = false;
+    try {
+      ({ sonuc: dogru } = await kontrolEt(etkinlik.id, leftId, value));
+    } catch {
+      dogru = false; // ağ hatasında güvenli taraf: eşleşmeyi kabul etme, kullanıcı tekrar dener
+    }
+
+    pendingRef.current = false;
+    setPending(false);
+
+    if (dogru) {
       play('correct');
-      const next = new Map(matched).set(selectedLeft, rid);
+      const next = new Map(matched).set(leftId, { rid, value });
       setMatched(next);
       setSelectedLeft(null);
 
       if (next.size === detaylar.length) {
-        // Sol öğe d'nin doğru cevabı = d.kelime1 (eşleşen değer zaten kelime1)
-        const cevaplar: Cevap[] = detaylar.map((d) => ({
-          id: d.id,
-          cevap: d.kelime1 ?? '',
-        }));
+        const cevaplar: Cevap[] = [...next.entries()].map(([id, m]) => ({ id, cevap: m.value }));
         setTimeout(() => onComplete(cevaplar), 400);
       }
     } else {
       play('wrong');
-      setWrongLeft(selectedLeft);
+      setWrongLeft(leftId);
       setTimeout(() => {
         setWrongLeft(null);
         setSelectedLeft(null);
@@ -61,7 +70,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
     }
   }
 
-  const usedRids = new Set(matched.values());
+  const usedRids = new Set([...matched.values()].map((m) => m.rid));
   const progressPct = (matched.size / detaylar.length) * 100;
 
   return (
@@ -88,7 +97,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
               <button
                 key={d.id}
                 onClick={() => handleLeft(d.id)}
-                disabled={isMatched}
+                disabled={isMatched || pending}
                 className={cn(
                   'w-full p-4 rounded-xl border-2 text-sm font-medium text-left transition-all',
                   isMatched && 'opacity-50 cursor-default',
@@ -112,7 +121,7 @@ export function KelimeleriEslestirPlayer({ etkinlik, onComplete }: PlayerProps) 
               <button
                 key={opt.rid}
                 onClick={() => handleRight(opt.rid, opt.value)}
-                disabled={isUsed}
+                disabled={isUsed || pending}
                 className={cn(
                   'w-full p-4 rounded-xl border-2 text-sm font-medium text-left transition-all',
                   isUsed && 'opacity-50 cursor-default',

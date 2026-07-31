@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { cn, toMediaUrl, diyalogMetinClass, duzMetneCevir } from '@/lib/utils';
-import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
+import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { useAuthStore } from '@/stores/auth';
 import { GameHUD } from '@/components/game/game-hud';
@@ -28,6 +28,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [correctReveal, setCorrectReveal] = useState<string | null>(null); // sunucudan gelen gerçek doğru cevap
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
@@ -35,26 +36,21 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   const { play } = useGameSound();
 
   const current = detaylar[index];
-
-  const options = useMemo(() => {
-    const list = getKelimeler(current).slice(0, 4);
-    // Fisher-Yates shuffle
-    const arr = [...list];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
-  const correct = current.cevap ?? current.kelime1 ?? '';
+  const options = current.secenekler ?? [];
   const imgUrl = toMediaUrl(current.resimLink);
 
-  function handleSelect(opt: string) {
+  async function handleSelect(opt: string) {
     if (selected !== null) return;
-    setSelected(opt);
-    const isCorrect = opt === correct;
+    setSelected(opt); // butonları hemen kilitle — doğru/yanlış rengi sunucu yanıtını bekliyor
+
+    let isCorrect = false;
+    try {
+      const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, opt);
+      isCorrect = sonuc;
+      setCorrectReveal(dogruCevap);
+    } catch {
+      setCorrectReveal(opt); // ağ hatasında rengi bozmamak için seçileni "doğru" gibi göster, asıl sonuç cevapla'da netleşir
+    }
     play(isCorrect ? 'correct' : 'wrong');
 
     let newKalp = localKalp;
@@ -79,6 +75,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       } else {
         setIndex(index + 1);
         setSelected(null);
+        setCorrectReveal(null);
       }
     }, 950);
   }
@@ -148,7 +145,9 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       {/* Cevap butonları */}
       <div className="grid grid-cols-2 gap-3">
         {options.map((opt) => {
-          const isCorrect = opt === correct;
+          // Sunucu yanıtı gelene kadar (correctReveal===null) renk yok — sadece seçim kilidi.
+          const revealed = selected !== null && correctReveal !== null;
+          const isCorrect = opt === correctReveal;
           const isSelected = opt === selected;
 
           return (
@@ -159,15 +158,16 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
               className={cn(
                 'py-4 px-3 rounded-xl border-2 font-medium text-sm transition-colors duration-150',
                 selected === null && 'border-border hover:border-primary hover:bg-primary/5',
-                isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
-                !isSelected && selected !== null && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                !isSelected && selected !== null && !isCorrect && 'opacity-35 border-border',
+                isSelected && !revealed && 'border-primary bg-primary/5',
+                revealed && isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
+                revealed && !isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && !isSelected && !isCorrect && 'opacity-35 border-border',
               )}
               animate={
-                isSelected && isCorrect
+                revealed && isSelected && isCorrect
                   ? { scale: [1, 1.07, 0.97, 1] }
-                  : isSelected && !isCorrect
+                  : revealed && isSelected && !isCorrect
                   ? { x: [0, -10, 10, -7, 7, -4, 4, 0] }
                   : {}
               }
