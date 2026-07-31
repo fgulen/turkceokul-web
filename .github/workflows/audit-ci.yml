@@ -213,6 +213,11 @@ jobs:
           # Test raporlari
           cp web/test-results/a11y-bulgular.json audit-artifacts/ 2>/dev/null || true
           cp web/test-results audit-artifacts/ --recursive 2>/dev/null || true
+          # API/web arka plan surec loglari — sunucu tarafi hatalarini gormeden
+          # Playwright'in "500 döndü" gibi client-gorunumlu hatalarini debug etmek
+          # imkansizdi (bkz. madde 60 register-500 arastirmasi).
+          cp /tmp/api-run.log audit-artifacts/ 2>/dev/null || true
+          cp /tmp/web-start.log audit-artifacts/ 2>/dev/null || true
 
       - name: Generate audit score
         id: score
