@@ -166,12 +166,12 @@ jobs:
         run: |
           # nohup+disown: adim biterken shell'in kapanmasi arka plandaki dotnet
           # process'ini SIGHUP ile oldurmesin diye (klasik CI arka-plan-surec tuzagi).
-          # --launch-profile "" : launchSettings.json'un profilini (ve onun sabit
-          # ASPNETCORE_ENVIRONMENT=Development enjeksiyonunu) devre disi birakir —
-          # yukaridaki env: blogundaki Production degeri artik gercekten uygulanir.
-          # Migrasyonlar zaten onceki adimda ayrica/bagimsiz uygulandi; API artik
-          # kendi Development-gated migrate+seed denemesini hic yapmayacak.
-          nohup dotnet run --configuration Release --launch-profile "" > /tmp/api-run.log 2>&1 &
+          # `dotnet run` YERINE derlenmis DLL'i DOGRUDAN calistiriyoruz — launchSettings.json
+          # SADECE `dotnet run` tarafindan okunuyor, dogrudan DLL calistirmada (tipki
+          # Railway/prod'da oldugu gibi) hic devreye girmiyor. --launch-profile ""
+          # denemesi bile Development'i degistirmedi (2026-07-31, dogrulandi) — bu
+          # kesin/garanti cozum, ayni prod'un calisma sekli.
+          nohup dotnet bin/Release/net8.0/TurkceOkulu.Api.dll > /tmp/api-run.log 2>&1 &
           disown
 
           # Sabit sleep yerine poll: migration+seed her CI'da sifirdan calisiyor,
