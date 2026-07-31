@@ -148,24 +148,6 @@ jobs:
           dotnet ef database update --connection "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
         working-directory: api
 
-      - name: Diagnose - verify schema directly
-        run: |
-          # GECICI teshis adimi, 2. tur: ilk tur "__efmigrationshistory doesn't exist"
-          # verdi ama connection/DB seviyesinde degil TABLO seviyesinde hata (1146) —
-          # yani ayni sunucuya/DB'ye baglanildi. Suphe: lower_case_table_names.
-          # MySQL 8 Linux'ta varsayilan 0 (case-sensitive); EF Core tabloyu
-          # `__EFMigrationsHistory` (buyuk harfli) olarak yaratiyor, biz kucuk harfle
-          # sorguladik — Linux'ta bu FARKLI iki isim. SHOW TABLES ile gercek isimleri
-          # ve @@lower_case_table_names degerini dogrudan gorelim.
-          echo "--- @@lower_case_table_names ---"
-          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "SELECT @@lower_case_table_names;"
-          echo "--- SHOW TABLES (turkceokulunew, gercek isimler) ---"
-          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "USE turkceokulunew; SHOW TABLES;"
-          echo "--- users tablosunda GoogleId var mi? ---"
-          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "USE turkceokulunew; SHOW COLUMNS FROM users LIKE 'GoogleId';"
-          echo "--- __EFMigrationsHistory (doğru case) son 3 satir ---"
-          mysql -h127.0.0.1 -P3306 -uroot -ptestpass -e "USE turkceokulunew; SELECT MigrationId FROM \`__EFMigrationsHistory\` ORDER BY MigrationId DESC LIMIT 3;"
-
       - name: Start API
         env:
           # Bu degerlerin hicbiri launchSettings'ten etkilenmiyor (sadece
