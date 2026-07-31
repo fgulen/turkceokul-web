@@ -13,17 +13,30 @@ import { loginAsSuperAdmin } from './helpers/auth';
 //   yine de tek worker en guvenli yol).
 // - timeout=90000: login + axe analyze agir player sayfalarinda 30sn'lik varsayilani asabiliyor.
 // - retries=1: Windows'ta nadir worker crash (0xC0000142) icin; dedupe sayesinde retry bulgu cogaltmaz.
-const tsv = fs.readFileSync(path.join(__dirname, 'test-unitesi-idler.tsv'), 'utf8');
+// TSV .gitignore'da (uretilen veri) — CI'da hic bulunmayabilir. Eskiden burada
+// senkron fs.readFileSync modul yukleme aninda firlatiyordu; bu TEK dosyanin
+// import hatasi ayni `npx playwright test` cagrisindaki DIGER spec dosyalarini
+// (security.spec.ts, rate-limiting.spec.ts) da hic calistirmadan tum runu
+// dusuruyordu. Artik dosya yoksa sessizce atlanir, digerleri etkilenmez.
+const tsvPath = path.join(__dirname, 'test-unitesi-idler.tsv');
+const tsvVarMi = fs.existsSync(tsvPath);
 const tipBasinaIlk = new Map<string, string>();
-for (const satir of tsv.split('\n').filter(Boolean)) {
-  // CRLF TSV: satir sonundaki \r'i at (yoksa tip adlari gizli \r tasir, --grep eslesmez)
-  const [id, tip] = satir.replace(/\r$/, '').split('\t');
-  if (id && tip && id !== 'Id' && !tipBasinaIlk.has(tip)) tipBasinaIlk.set(tip, id);
+if (tsvVarMi) {
+  const tsv = fs.readFileSync(tsvPath, 'utf8');
+  for (const satir of tsv.split('\n').filter(Boolean)) {
+    // CRLF TSV: satir sonundaki \r'i at (yoksa tip adlari gizli \r tasir, --grep eslesmez)
+    const [id, tip] = satir.replace(/\r$/, '').split('\t');
+    if (id && tip && id !== 'Id' && !tipBasinaIlk.has(tip)) tipBasinaIlk.set(tip, id);
+  }
+} else {
+  console.warn(`[test-unitesi-a11y] ${tsvPath} bulunamadi — bu dosya atlanacak. Once uretici sorguyu calistir.`);
 }
 
 const bulgular: { etkinlikId: string; ruleId: string; impact: string; nodeIndex: number; aciklama: string }[] = [];
 
 test.describe('Test ünitesi a11y', () => {
+  test.skip(!tsvVarMi, 'test-unitesi-idler.tsv bulunamadi — once uretici sorguyu calistir (bkz. dosya basi yorum)');
+
   test.beforeEach(async ({ page }) => { await loginAsSuperAdmin(page); });
 
   for (const [tip, id] of tipBasinaIlk) {
