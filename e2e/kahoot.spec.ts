@@ -4,6 +4,8 @@ test.describe.configure({ timeout: 180_000 });
 
 const TEACHER_EMAIL = 'ogretmen@turkceokulu.com';
 const TEACHER_PASS = 'Ogretmen123!';
+const STUDENT_EMAIL = 'ogrenci1@turkceokulu.com';
+const STUDENT_PASS = 'Ogrenci123!';
 
 async function login(page: Page, email: string, password: string) {
   await page.goto('/tr/giris');
@@ -38,16 +40,26 @@ async function extractPin(page: Page): Promise<string> {
   return '';
 }
 
-/** Student joins the teacher's Kahoot game via PIN */
-async function joinGame(studentPage: Page, pin: string) {
+/**
+ * Logs in as a real student in an ISOLATED BrowserContext and joins the game via PIN.
+ * Must NOT use context.newPage() on the teacher's context — auth.ts persists the user
+ * to localStorage and the refresh token lives in an httpOnly cookie, both shared across
+ * pages in one BrowserContext. A same-context "student" page silently resolves as the
+ * teacher and hits the same auth-guard role-home redirect instead of a real student
+ * session — see the auth-guard hypothesis above.
+ */
+async function joinGame(browser: import('@playwright/test').Browser, pin: string) {
+  const studentContext = await browser.newContext();
+  const studentPage = await studentContext.newPage();
+  await login(studentPage, STUDENT_EMAIL, STUDENT_PASS);
   await studentPage.goto('/tr/kahoot/katil');
   await studentPage.getByPlaceholder('ABCD12').pressSequentially(pin, { delay: 50 });
   await studentPage.waitForTimeout(300);
   const joinBtn = studentPage.getByRole('button', { name: 'Oyuna Katıl' });
   await expect(joinBtn).toBeEnabled({ timeout: 5000 });
   await joinBtn.click();
-  // Wait until either join confirmation OR lobby starts
   await studentPage.waitForTimeout(2000);
+  return { studentPage, studentContext };
 }
 
 /** Clicks the first visible answer option on the student page */
@@ -102,57 +114,59 @@ test.describe('Kahoot — Canlı Sınıf Oyunu', () => {
     await login(page, TEACHER_EMAIL, TEACHER_PASS);
   });
 
-  // TODO (2026-08-01): TEST 1/4/5 "Oyuna Katıl" adımında "element(s) not found" ile
-  // düşüyor — pin.length===6 zaten startQuiz() içinde doğrulanmış, yani disabled değil,
-  // buton DOM'dan tamamen kayboluyor (redirect/state değişimi olası). TEST 2/6 ise farklı
-  // bir noktada (ABCD12 input'u hiç bulunamıyor) düşüyor — tekdüze bir selector kayması
-  // değil, iki ayrı sorun. Öğretmen-taraflı oyun oluşturma/PIN üretimi ile iki context
-  // arası zamanlama şüpheli; ayrı bir oturumda ele alınmalı (bkz. TEST 3 geçiyor).
-  test.skip('TEST 1: Demo modu — mutlu yol akışı', async ({ page, context }) => {
+  test('TEST 1: Demo modu — mutlu yol akışı', async ({ page, browser }) => {
     const teacher = page;
     const pin = await startQuiz(teacher);
 
-    const studentPage = await context.newPage();
-    await joinGame(studentPage, pin);
+    const { studentPage, studentContext } = await joinGame(browser, pin);
+    try {
+      await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
+      await teacher.waitForTimeout(3000);
+      await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
 
-    await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
-    await teacher.waitForTimeout(3000);
-    await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
-
-    for (let i = 0; i < 5; i++) {
-      await answerFirstOption(studentPage);
-      await studentPage.waitForTimeout(1500);
-      if (i < 4) {
-        await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
-        await teacher.waitForTimeout(2000);
+      for (let i = 0; i < 5; i++) {
+        await answerFirstOption(studentPage);
+        await studentPage.waitForTimeout(1500);
+        if (i < 4) {
+          await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
+          await teacher.waitForTimeout(2000);
+        }
       }
-    }
 
-    await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
-    await teacher.waitForTimeout(2000);
-    await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
-    await expect(studentPage.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+      await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
+      await teacher.waitForTimeout(2000);
+      await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+      await expect(studentPage.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+    } finally {
+      await studentContext.close();
+    }
   });
 
-  // TODO: bkz. TEST 1'in üstündeki not.
-  test.skip('TEST 2: Geçersiz PIN — hata mesajı', async ({ page }) => {
-    await page.goto('/tr/kahoot/katil');
+  test('TEST 2: Geçersiz PIN — hata mesajı', async ({ browser }) => {
+    const studentContext = await browser.newContext();
+    const studentPage = await studentContext.newPage();
+    try {
+      await login(studentPage, STUDENT_EMAIL, STUDENT_PASS);
+      await studentPage.goto('/tr/kahoot/katil');
 
-    const joinBtn = page.getByRole('button', { name: 'Oyuna Katıl' });
-    const pinInput = page.getByPlaceholder('ABCD12');
+      const joinBtn = studentPage.getByRole('button', { name: 'Oyuna Katıl' });
+      const pinInput = studentPage.getByPlaceholder('ABCD12');
 
-    await pinInput.fill('AB');
-    await expect(joinBtn).toBeDisabled();
+      await pinInput.fill('AB');
+      await expect(joinBtn).toBeDisabled();
 
-    await pinInput.fill('abc123');
-    const val = await page.evaluate(() => (document.querySelector('input') as HTMLInputElement).value);
-    expect(val).toBe('ABC123');
+      await pinInput.fill('abc123');
+      const val = await studentPage.evaluate(() => (document.querySelector('input') as HTMLInputElement).value);
+      expect(val).toBe('ABC123');
 
-    await pinInput.fill('XXXXXX');
-    await expect(joinBtn).toBeEnabled();
-    await joinBtn.click();
-    await page.waitForTimeout(2000);
-    await expect(page.getByText('Oyun kodu bulunamadı')).toBeVisible();
+      await pinInput.fill('XXXXXX');
+      await expect(joinBtn).toBeEnabled();
+      await joinBtn.click();
+      await studentPage.waitForTimeout(2000);
+      await expect(studentPage.getByText('Oyun kodu bulunamadı')).toBeVisible();
+    } finally {
+      await studentContext.close();
+    }
   });
 
   test('TEST 3: Oyuncusuz oyun başlatılamaz', async ({ page }) => {
@@ -162,29 +176,29 @@ test.describe('Kahoot — Canlı Sınıf Oyunu', () => {
     await expect(page.getByRole('button', { name: 'Oyunu Başlat' })).toBeDisabled();
   });
 
-  // TODO: bkz. TEST 1'in üstündeki not.
-  test.skip('TEST 4: Süre aşımı — cevap sonrası timer bitince', async ({ page, context }) => {
+  test('TEST 4: Süre aşımı — cevap sonrası timer bitince', async ({ page, browser }) => {
     const teacher = page;
     const pin = await startQuiz(teacher);
 
-    const studentPage = await context.newPage();
-    await joinGame(studentPage, pin);
+    const { studentPage, studentContext } = await joinGame(browser, pin);
+    try {
+      await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
+      await teacher.waitForTimeout(3000);
+      await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
 
-    await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
-    await teacher.waitForTimeout(3000);
-    await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
+      // Let the 60s timer expire
+      await teacher.waitForTimeout(62000);
 
-    // Let the 60s timer expire
-    await teacher.waitForTimeout(62000);
+      await expect(teacher.getByRole('button', { name: 'Sonraki Soru' })).toBeVisible({ timeout: 10000 });
 
-    await expect(teacher.getByRole('button', { name: 'Sonraki Soru' })).toBeVisible({ timeout: 10000 });
-
-    await answerFirstOption(studentPage);
-    await studentPage.waitForTimeout(2000);
+      await answerFirstOption(studentPage);
+      await studentPage.waitForTimeout(2000);
+    } finally {
+      await studentContext.close();
+    }
   });
 
-  // TODO: bkz. TEST 1'in üstündeki not.
-  test.skip('TEST 5: Gerçek etkinlik seçme ve oynama', async ({ page, context }) => {
+  test('TEST 5: Gerçek etkinlik seçme ve oynama', async ({ page, browser }) => {
     const teacher = page;
     await teacher.goto('/tr/ogretmen/sinif/1/canli');
 
@@ -199,49 +213,52 @@ test.describe('Kahoot — Canlı Sınıf Oyunu', () => {
     const pin = await extractPin(teacher);
     expect(pin.length).toBe(6);
 
-    const studentPage = await context.newPage();
-    await joinGame(studentPage, pin);
+    const { studentPage, studentContext } = await joinGame(browser, pin);
+    try {
+      await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
+      await teacher.waitForTimeout(3000);
+      await expect(teacher.getByText(/Soru\s*1\s*\/\s*2/i)).toBeVisible({ timeout: 10000 });
 
-    await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
-    await teacher.waitForTimeout(3000);
-    await expect(teacher.getByText(/Soru\s*1\s*\/\s*2/i)).toBeVisible({ timeout: 10000 });
+      await answerFirstOption(studentPage);
+      await studentPage.waitForTimeout(1500);
 
-    await answerFirstOption(studentPage);
-    await studentPage.waitForTimeout(1500);
+      await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
+      await teacher.waitForTimeout(2000);
 
-    await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
-    await teacher.waitForTimeout(2000);
+      await answerFirstOption(studentPage);
+      await studentPage.waitForTimeout(1500);
 
-    await answerFirstOption(studentPage);
-    await studentPage.waitForTimeout(1500);
-
-    await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
-    await teacher.waitForTimeout(2000);
-    await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+      await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
+      await teacher.waitForTimeout(2000);
+      await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+    } finally {
+      await studentContext.close();
+    }
   });
 
-  // TODO: bkz. TEST 1'in üstündeki not.
-  test.skip('TEST 6: Bağlantı kopması — öğretmen refresh + devam', async ({ page, context }) => {
+  test('TEST 6: Bağlantı kopması — öğretmen refresh + devam', async ({ page, browser }) => {
     const teacher = page;
     const pin = await startQuiz(teacher);
 
-    const studentPage = await context.newPage();
-    await joinGame(studentPage, pin);
+    const { studentPage, studentContext } = await joinGame(browser, pin);
+    try {
+      await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
+      await teacher.waitForTimeout(3000);
+      await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
 
-    await teacher.getByRole('button', { name: 'Oyunu Başlat' }).click();
-    await teacher.waitForTimeout(3000);
-    await expect(teacher.getByText(/Soru\s*1\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
+      await teacher.reload();
+      await teacher.waitForTimeout(6000);
 
-    await teacher.reload();
-    await teacher.waitForTimeout(6000);
+      await expect(teacher.getByRole('button', { name: 'Sonraki Soru' })).toBeVisible({ timeout: 15000 });
+      await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
+      await teacher.waitForTimeout(3000);
+      await expect(teacher.getByText(/Soru\s*2\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
 
-    await expect(teacher.getByRole('button', { name: 'Sonraki Soru' })).toBeVisible({ timeout: 15000 });
-    await teacher.getByRole('button', { name: 'Sonraki Soru' }).click();
-    await teacher.waitForTimeout(3000);
-    await expect(teacher.getByText(/Soru\s*2\s*\/\s*5/i)).toBeVisible({ timeout: 10000 });
-
-    await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
-    await teacher.waitForTimeout(2000);
-    await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+      await teacher.getByRole('button', { name: 'Oyunu Bitir' }).click();
+      await teacher.waitForTimeout(2000);
+      await expect(teacher.getByText('Oyun Bitti!')).toBeVisible({ timeout: 5000 });
+    } finally {
+      await studentContext.close();
+    }
   });
 });
