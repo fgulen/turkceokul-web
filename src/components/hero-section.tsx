@@ -58,48 +58,30 @@ function HeroCopy({ locale }: { locale: string }) {
 
   return (
     <div>
-      <motion.a
+      <a
         href="https://nevai.co/"
         target="_blank"
         rel="noopener noreferrer"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
         className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-blue-100 px-3.5 py-[5px] text-[11px] font-bold tracking-[0.06em] text-[#1e3a5f] transition-colors hover:bg-blue-200"
       >
         <BookOpen className="h-3 w-3" />
         {T.badge}
-      </motion.a>
+      </a>
 
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-        className="type-hero mb-5 tracking-tight text-slate-900"
-      >
+      <h1 className="type-hero mb-5 tracking-tight text-slate-900">
         {T.h1a}
         <br />
         <span className="bg-[linear-gradient(130deg,#1b75bc_0%,#57dffe_55%,#1565a8_100%)] bg-clip-text text-transparent">
           {T.h1b}
         </span>
-      </motion.h1>
+      </h1>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05, duration: 0.15 }}
-        className="mb-6"
-      >
+      <div className="mb-6">
         <SegmentSwitcher locale={locale} />
-      </motion.div>
+      </div>
 
       {/* Segment'e göre değişen alt metin — iki metin de DOM'da kalır, opacity ile geçiş (CLS 0) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.15 }}
-        className="relative mb-7 min-h-[140px] max-w-xl sm:min-h-[84px]"
-      >
+      <div className="relative mb-7 min-h-[140px] max-w-xl sm:min-h-[84px]">
         {(Object.keys(T.segments) as Segment[]).map((key) => (
           <p
             key={key}
@@ -112,15 +94,10 @@ function HeroCopy({ locale }: { locale: string }) {
             {T.segments[key].subtitle}
           </p>
         ))}
-      </motion.div>
+      </div>
 
       {/* Segment'e göre değişen birincil CTA — aynı desen: ikisi de DOM'da, opacity ile geçiş */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.15 }}
-        className="relative mb-8 h-[46px] w-[280px] max-w-full"
-      >
+      <div className="relative mb-8 h-[46px] w-[280px] max-w-full">
         {(Object.keys(T.segments) as Segment[]).map((key) => (
           <Link
             key={key}
@@ -136,7 +113,7 @@ function HeroCopy({ locale }: { locale: string }) {
             <ArrowRight className="h-[15px] w-[15px]" />
           </Link>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -158,12 +135,7 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
         <HeroCopy locale={locale} />
 
         {/* Right: illustration */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="relative px-5 py-11 md:pl-6 md:pr-5"
-        >
+        <div className="relative px-5 py-11 md:pl-6 md:pr-5">
           <div className="relative overflow-hidden rounded-[20px] shadow-[0_8px_48px_rgba(27,117,188,0.18)]">
             <Image
               src={HERO_IMAGE_SRC}
@@ -177,15 +149,10 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
           </div>
 
           {/* XP badge — floating mid-left; ürün arayüzünden bir kesit (gerçek/tekil bir istatistik iddiası değil) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25, duration: 0.15 }}
-            className="absolute top-[38%] -left-5 hidden lg:block"
-          >
+          <div className="absolute top-[38%] -left-5 hidden lg:block">
             <motion.div
               animate={{ y: [0, -7, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               className={cn("rounded-xl px-3.5 py-2.5", GLASS)}
             >
               <div className="mb-1 text-[9px] font-bold tracking-[0.07em] text-slate-400">{T.todayXp}</div>
@@ -194,8 +161,8 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
                 <span className="text-[22px] font-black leading-tight text-primary">+240</span>
               </div>
             </motion.div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </section>
   );
