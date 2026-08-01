@@ -232,7 +232,7 @@ jobs:
       - name: Lighthouse CI
         id: lighthouse
         run: |
-          npx lhci autorun --config=lighthouserc.json 2>&1 | tee ../audit-lighthouse.txt || true
+          npx @lhci/cli autorun --config=lighthouserc.json 2>&1 | tee ../audit-lighthouse.txt || true
         working-directory: web
         continue-on-error: true
 
