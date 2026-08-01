@@ -49,7 +49,10 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
     } catch {
-      setCorrectReveal(opt); // ağ hatasında rengi bozmamak için seçileni "doğru" gibi göster, asıl sonuç cevapla'da netleşir
+      // Ağ hatasında güvenli taraf: correctReveal null kalır (revealed=false), hiçbir
+      // buton yeşil/kırmızı boyanmaz — önceki "seçileni doğru göster" davranışı yeşil
+      // vurgu + yanlış-cevap sesi + kalp kaybını aynı anda üretiyordu (çelişkili UI).
+      isCorrect = false;
     }
     play(isCorrect ? 'correct' : 'wrong');
 

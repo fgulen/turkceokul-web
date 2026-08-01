@@ -33,7 +33,10 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
     } catch {
-      setCorrectReveal(opt);
+      // Ağ hatasında güvenli taraf: correctReveal null kalır, hiçbir buton yeşil/kırmızı
+      // boyanmaz (bkz. quiz.tsx aynı fix) — önceki davranış yeşil vurgu + kalp kaybını
+      // aynı anda üretiyordu.
+      isCorrect = false;
     }
     play(isCorrect ? 'correct' : 'wrong');
 

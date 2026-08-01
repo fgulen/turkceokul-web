@@ -60,7 +60,9 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
     } catch {
-      setCorrectReveal(imgPath);
+      // Ağ hatasında güvenli taraf: correctReveal null kalır (bkz. quiz.tsx aynı fix) —
+      // önceki davranış seçileni yeşil gösterirken kalp de düşürüyordu (çelişkili UI).
+      isCorrect = false;
     }
     play(isCorrect ? 'correct' : 'wrong');
 
