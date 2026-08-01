@@ -187,17 +187,29 @@ if ($lintErrorCount -eq 0 -and $lintLog) {
 }
 
 # 2d. Security tests
+# Onceki regex "security.spec.ts.*?(\d+) passed" ariyordu ama audit-ci.yml artik
+# 3 spec dosyasini TEK Playwright calistirmasinda birlestiriyor (security+rate-limiting+
+# a11y) — birlesik ozet satiri ("18 passed") dosya adini hic icermiyor, regex asla
+# eslesmiyor, skor sessizce "sonuc yok" (50) varsayilanina dusuyor (18/18 gecmisken bile).
+# Fix: dosya bazinda satir-satir sayim. Sonuc satirlari "N [chromium] › e2e/security.spec.ts..."
+# formatinda (N=sira no, bosluktan hemen sonra parantez) — basarisizlik-detay bloklarindaki
+# tekrar basliklar ("N) [chromium] › ...") sayidan sonra ")" geldigi icin \s+\[chromium\]
+# ile eslesmiyor, cift saymiyor. Basarisizlik glyph'i (Playwright surumune gore ✘/✗
+# degisebilir) TAHMIN EDILMIYOR — total-passed-skipped cikarmasiyla glyph-bagimsiz tespit.
 $playwrightLog = Read-File-Safe (Join-Path $ROOT "audit-playwright.txt")
-$secPassed = 0; $secFailed = 0
+$secPassed = 0; $secFailed = 0; $secSkipped = 0
 if ($playwrightLog) {
-  if ($playwrightLog -match "security.spec.ts.*?(\d+) passed") { $secPassed = [int]$Matches[1] }
-  if ($playwrightLog -match "security.spec.ts.*?(\d+) failed") { $secFailed = [int]$Matches[1] }
+  $secLines = ($playwrightLog -split "`r?`n") | Where-Object { $_ -match '\d+\s+\[chromium\]' -and $_ -match 'e2e/security\.spec\.ts' }
+  $secTotal = $secLines.Count
+  $secPassed = ($secLines | Where-Object { $_ -match '^\s*✓' }).Count
+  $secSkipped = ($secLines | Where-Object { $_ -match '^\s*-\s' }).Count
+  $secFailed = $secTotal - $secPassed - $secSkipped
 }
 if ($secFailed -eq 0 -and $secPassed -gt 0) {
-  Add-Bulgu $guv "Security Tests" 100 "Tum IDOR/JWT/Input testleri gecti ($secPassed passed)" "success"
+  Add-Bulgu $guv "Security Tests" 100 "Tum IDOR/JWT/Input testleri gecti ($secPassed passed, $secSkipped skipped)" "success"
 } elseif ($secPassed -gt 0) {
   $secScore = [math]::Max(0, 100 - ($secFailed * 20))
-  Add-Bulgu $guv "Security Tests" $secScore "$secFailed/$($secFailed+$secPassed) guvenlik testi BASARISIZ" "critical"
+  Add-Bulgu $guv "Security Tests" $secScore "$secFailed/$($secFailed+$secPassed+$secSkipped) guvenlik testi BASARISIZ" "critical"
 } else {
   Add-Bulgu $guv "Security Tests" 50 "Security test sonucu yok" "warning"
 }
