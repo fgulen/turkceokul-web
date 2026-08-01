@@ -51,6 +51,17 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
     setArranged((prev) => prev.filter((_, i) => i !== pos));
   }
 
+  function moveWord(pos: number, direction: -1 | 1) {
+    if (submitted) return;
+    const target = pos + direction;
+    setArranged((prev) => {
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[pos], next[target]] = [next[target], next[pos]];
+      return next;
+    });
+  }
+
   function handleSubmit() {
     if (!allPlaced || submitted) return;
     setSubmitted(true);
@@ -112,29 +123,58 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
               const isCorrectPos = submitted && word === correctWords[pos];
               const isWrongPos = submitted && !isCorrectPos;
               return (
-                <motion.button
+                <motion.div
                   key={`arr-${shuffledIdx}`}
                   layout
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.15 }}
-                  type="button"
-                  onClick={() => removeWord(pos)}
-                  disabled={submitted}
                   className={cn(
-                    'w-full text-left px-4 py-3 rounded-xl border-2 font-medium text-sm leading-snug transition-all',
-                    !submitted &&
-                      'bg-primary/10 border-primary text-primary cursor-pointer hover:bg-primary/20 active:scale-[0.99]',
+                    'flex items-center gap-1 rounded-xl border-2 font-medium text-sm leading-snug transition-all',
+                    !submitted && 'bg-primary/10 border-primary text-primary',
                     isCorrectPos &&
-                      'bg-[--correct]/15 border-[--correct] text-[--correct] cursor-default',
+                      'bg-[--correct]/15 border-[--correct] text-[--correct]',
                     isWrongPos &&
-                      'bg-destructive/10 border-destructive text-destructive cursor-default',
+                      'bg-destructive/10 border-destructive text-destructive',
                   )}
                 >
-                  <span className="opacity-40 text-xs mr-2">{pos + 1}.</span>
-                  {word}
-                </motion.button>
+                  <button
+                    type="button"
+                    onClick={() => removeWord(pos)}
+                    disabled={submitted}
+                    className={cn(
+                      'flex-1 min-w-0 text-left px-4 py-3',
+                      !submitted && 'cursor-pointer hover:bg-primary/20 active:scale-[0.99]',
+                      submitted && 'cursor-default',
+                    )}
+                  >
+                    <span className="opacity-40 text-xs mr-2">{pos + 1}.</span>
+                    {word}
+                  </button>
+                  {!submitted && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => moveWord(pos, -1)}
+                        disabled={pos === 0}
+                        aria-label="Yukarı taşı"
+                        className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg hover:bg-primary/20 disabled:opacity-30 disabled:hover:bg-transparent"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveWord(pos, 1)}
+                        disabled={pos === arranged.length - 1}
+                        aria-label="Aşağı taşı"
+                        className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg hover:bg-primary/20 disabled:opacity-30 disabled:hover:bg-transparent mr-1"
+                      >
+                        ▼
+                      </button>
+                    </>
+                  )}
+                </motion.div>
               );
             })}
           </AnimatePresence>
