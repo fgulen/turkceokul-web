@@ -236,6 +236,31 @@ jobs:
         working-directory: web
         continue-on-error: true
 
+      - name: Lighthouse LCP teshis ozeti
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = ".lighthouseci";
+            if (!fs.existsSync(dir)) { console.log("NO .lighthouseci DIR"); process.exit(0); }
+            const files = fs.readdirSync(dir).filter(f => f.startsWith("lhr-") && f.endsWith(".json"));
+            console.log("lhr dosya sayisi:", files.length);
+            for (const f of files) {
+              const lh = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8"));
+              const a = lh.audits;
+              console.log(`\n=== ${lh.requestedUrl} ===`);
+              console.log("LCP element:", JSON.stringify(a["largest-contentful-paint-element"]?.details?.items?.[0]?.node?.snippet || "yok"));
+              console.log("Server response time:", a["server-response-time"]?.numericValue, "ms -", a["server-response-time"]?.score);
+              console.log("Render-blocking resources:", a["render-blocking-resources"]?.numericValue, "ms savings -", (a["render-blocking-resources"]?.details?.items||[]).map(i=>i.url));
+              console.log("Unused JS:", (a["unused-javascript"]?.details?.items||[]).slice(0,3).map(i=>`${i.url} (${Math.round(i.wastedBytes/1024)}kB)`));
+              console.log("Unminified JS:", a["unminified-javascript"]?.score);
+              console.log("LCP phases (TTFB/load-delay/load-time/render-delay):", JSON.stringify(a["largest-contentful-paint-element"]?.details?.debugData || a["lcp-lazy-loaded"]?.score));
+              console.log("Network requests (top 5 by transferSize):", (a["network-requests"]?.details?.items||[]).sort((x,y)=>(y.transferSize||0)-(x.transferSize||0)).slice(0,5).map(i=>`${i.url} ${Math.round((i.transferSize||0)/1024)}kB`));
+            }
+          ' 2>&1 | tee ../audit-lcp-teshis.txt || true
+        working-directory: web
+        continue-on-error: true
+
       - name: Collect artifacts
         if: always()
         run: |
