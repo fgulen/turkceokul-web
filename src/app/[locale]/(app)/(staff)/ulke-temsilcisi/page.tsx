@@ -14,6 +14,7 @@ import { useRouter, usePathname } from '@/navigation';
 import { api } from '@/lib/api';
 import { cn, apiHataMesaji } from '@/lib/utils';
 import { SlideOver } from '@/components/slide-over';
+import { ConfirmActionModal } from '@/components/confirm-action-modal';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { KurumOlusturSlideOver, KurumDuzenleSlideOver } from '@/components/staff/kurum-form-slideover';
 import {
@@ -383,11 +384,14 @@ function BekleyenTaleplerPanel({ talepler, kitapAdi, donusturuluyorId, onDonustu
   donusturuluyorId: number | null;
   onDonustur: (id: number) => void;
 }) {
+  const [donusturOnayTalep, setDonusturOnayTalep] = useState<BekleyenTalep | null>(null);
+
   if (!talepler.length) {
     return <p className="text-slate-400 text-sm text-center py-12">Bekleyen talep yok.</p>;
   }
 
   return (
+    <>
     <div className="divide-y divide-slate-100 -mx-6">
       {talepler.map(t => (
         <div key={t.id} className="flex flex-col gap-3 px-6 py-4">
@@ -414,7 +418,7 @@ function BekleyenTaleplerPanel({ talepler, kitapAdi, donusturuluyorId, onDonustu
           <div className="shrink-0">
             {t.lead ? (
               <button
-                onClick={() => onDonustur(t.id)}
+                onClick={() => setDonusturOnayTalep(t)}
                 disabled={donusturuluyorId === t.id}
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
               >
@@ -428,5 +432,27 @@ function BekleyenTaleplerPanel({ talepler, kitapAdi, donusturuluyorId, onDonustu
         </div>
       ))}
     </div>
+
+    <ConfirmActionModal
+      open={!!donusturOnayTalep}
+      tone="primary"
+      title="Kuruma dönüştür"
+      message={
+        <>
+          <strong>{donusturOnayTalep?.kurumAdi}</strong> adlı demo talebi kalıcı bir <strong>Kurum</strong> kaydına
+          dönüştürülecek ve otomatik bir deneme lisansı açılacak. Bu işlem geri alınamaz — devam etmeden önce
+          kurum adını ve yetkiliyi bir kez daha kontrol edin.
+        </>
+      }
+      confirmLabel="Evet, dönüştür"
+      onConfirm={() => {
+        if (!donusturOnayTalep) return;
+        const id = donusturOnayTalep.id;
+        setDonusturOnayTalep(null);
+        onDonustur(id);
+      }}
+      onCancel={() => setDonusturOnayTalep(null)}
+    />
+    </>
   );
 }

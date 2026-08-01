@@ -63,6 +63,7 @@ export const STAFF_NAV: NavGroup[] = [
     label: 'Satış',
     items: [
       { href: '/super-admin/kurumsal',          label: 'Kurumsal Satış',    icon: Package,      roles: ['SuperAdmin'] },
+      { href: '/admin/kurumsal',                label: 'Kurumsal Satış',    icon: Package,      roles: ['Koordinator'] },
       { href: '/super-admin/paketler',          label: 'Paketler',          icon: Package,      roles: ['SuperAdmin'] },
       { href: '/super-admin/kampanyalar',       label: 'Kampanyalar',       icon: Megaphone,    roles: ['SuperAdmin'] },
       { href: '/super-admin/hacim-indirimleri', label: 'Hacim İndirimleri', icon: TrendingDown, roles: ['SuperAdmin'] },
