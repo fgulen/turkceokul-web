@@ -5,12 +5,15 @@ import { useState } from 'react';
 import Image from 'next/image';
 import type { KatalogKitap } from '@/lib/katalog-api';
 import { bookCoverUrl } from '@/lib/book-covers';
+import { toMediaUrl } from '@/lib/utils';
 import { DemoTalepModal } from '@/components/satis/DemoTalepModal';
 
 interface Props {
   kitap: KatalogKitap;
   birimFiyatEurCent: number;
   locale: string;
+  /** Kitabın serideki 1-tabanlı sırası — statik kapak fallback'inde (c1/c2/... vb.) doğru görseli seçmek için. */
+  seriNo?: number;
 }
 
 const C = {
@@ -29,14 +32,18 @@ function spineColor(seed: string): string {
   return SPINE_PALETTE[Math.abs(hash) % SPINE_PALETTE.length];
 }
 
-export function KitapKarti({ kitap, birimFiyatEurCent, locale }: Props) {
+export function KitapKarti({ kitap, birimFiyatEurCent, locale, seriNo = 1 }: Props) {
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Kapak fallback zinciri: API kapak görseli → BOOK_COVERS (seri adına göre) → düz renk sırt.
-  const fallbackCover = kitap.seri ? bookCoverUrl(kitap.seri) : '';
-  const coverSrc = kitap.kapakResimUrl || fallbackCover || '';
+  // Kapak fallback zinciri: API kapak görseli (öğretmen serbest URL'i) → resmi
+  // ThumbnailPicture (R2/CDN, toMediaUrl ile çözülür) → BOOK_COVERS (seri + seriNo'ya
+  // göre, statik c1-c4/y1-y5/h1-h4) → düz renk sırt. seriNo geçilmezse (default 1)
+  // seri içindeki TÜM kitaplar aynı statik kapağı alır — bu yüzden çağıran taraf
+  // (KatalogContent) rafın içindeki gerçek sırayı geçmek zorunda.
+  const fallbackCover = kitap.seri ? bookCoverUrl(kitap.seri, seriNo) : '';
+  const coverSrc = toMediaUrl(kitap.kapakResimUrl) || toMediaUrl(kitap.thumbnailPicture) || fallbackCover || '';
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-primary/40">

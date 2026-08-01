@@ -81,9 +81,9 @@ function KitapRafi({
         {range && <span className="text-xs font-semibold text-slate-400">CEFR {range}</span>}
       </div>
       <div className="flex gap-4 overflow-x-auto pb-3">
-        {kitaplar.map((k) => (
+        {kitaplar.map((k, idx) => (
           <div key={k.id} className="w-40 flex-shrink-0 sm:w-44 md:w-48">
-            <KitapKarti kitap={k} birimFiyatEurCent={birimFiyatEurCent} locale={locale} />
+            <KitapKarti kitap={k} birimFiyatEurCent={birimFiyatEurCent} locale={locale} seriNo={idx + 1} />
           </div>
         ))}
       </div>

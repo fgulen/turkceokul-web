@@ -8,6 +8,7 @@ export interface KatalogKitap {
   seviye?: string;
   seri?: string;
   kapakResimUrl?: string;
+  thumbnailPicture?: string;
   kitapTuru: string;
 }
 
