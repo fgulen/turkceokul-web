@@ -98,7 +98,7 @@ if ($buildLog) {
 }
 
 # 1c. Lighthouse
-$lhDir = Join-Path $ROOT ".lighthouseci"
+$lhDir = Join-Path $WEB ".lighthouseci"
 if ((-not $SkipPlaywright) -and (Test-Path $lhDir)) {
   $lhRapor = Get-ChildItem $lhDir -Filter "lhr-*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if ($lhRapor) {
@@ -149,8 +149,13 @@ $npmAudit = Read-File-Safe (Join-Path $ROOT "audit-npm.txt")
 if ($npmAudit -and ($npmAudit -match "(?:found\s+)?0\s+vulnerabilities")) {
   Add-Bulgu $guv "npm Audit" 100 "0 bilinen guvenlik acigi" "success"
 } elseif ($npmAudit) {
+  # npm 11'de ozet formati degisti: tek severity varsa "N <sev> severity vulnerabilities"
+  # (orn. "2 moderate severity vulnerabilities"), birden fazla severity varsa eski
+  # "N vulnerabilities (X low, Y moderate, ...)" formati. Ikisi de destekleniyor —
+  # eski regex sadece ikinciyi yakaliyordu, tek-severity durumunda vulnCount 0'da kalip
+  # "0 vulnerability" gibi yanlis bir mesaj basiyordu (skoru etkilemiyordu, sadece metni).
   $vulnCount = 0
-  if ($npmAudit -match "(?:found\s+)?(\d+)\s+vulnerabilities") { $vulnCount = [int]$Matches[1] }
+  if ($npmAudit -match "(?m)^(?:found\s+)?(\d+)\s+(?:\w+\s+severity\s+)?vulnerabilities") { $vulnCount = [int]$Matches[1] }
   $hasHigh = $npmAudit -match "high"
   $hasCritical = $npmAudit -match "critical"
   $npmScore = if ($hasCritical) { 10 } elseif ($hasHigh) { 30 } else { 80 }
