@@ -66,8 +66,8 @@ export async function fetchKitaplar(request: APIRequestContext, token: string): 
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok()) return [];
-  const data: any[] = await res.json();
-  return data.map((d: any) => ({ id: d.id, name: d.name }));
+  const data = (await res.json()) as Array<{ id: number; name: string }>;
+  return data.map((d: { id: number; name: string }) => ({ id: d.id, name: d.name }));
 }
 
 /** Fetches all units for a given book */
@@ -76,8 +76,8 @@ export async function fetchUniteler(request: APIRequestContext, token: string, k
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok()) return [];
-  const data: any[] = await res.json();
-  return data.map((d: any) => ({ id: d.id, name: d.name }));
+  const data = (await res.json()) as Array<{ id: number; name: string }>;
+  return data.map((d: { id: number; name: string }) => ({ id: d.id, name: d.name }));
 }
 
 /** Fetches activities for a unit */
@@ -93,8 +93,8 @@ export async function fetchEtkinlikler(
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok()) return [];
-  const data: any[] = await res.json();
-  return data.map((h: any) => ({
+  const data = (await res.json()) as Array<{ id: string; name: string; etkinlikTuru: string }>;
+  return data.map((h: { id: string; name: string; etkinlikTuru: string }) => ({
     id: h.id,
     etkinlikAdi: h.name,
     etkinlikTuru: h.etkinlikTuru,

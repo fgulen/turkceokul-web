@@ -15,7 +15,7 @@
  *   6. Duyuru CRUD (yayınla → listele → sil)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, APIRequestContext } from '@playwright/test';
 import { loginAsTeacher } from './helpers/auth';
 
 const API_BASE = 'http://localhost:5221';
@@ -34,7 +34,7 @@ let eklenenOgrenciId: number | null = null;
 
 test.describe.configure({ timeout: 120_000 });
 
-async function getTeacherToken(request: any): Promise<string | null> {
+async function getTeacherToken(request: APIRequestContext): Promise<string | null> {
   const res = await request.post(`${API_BASE}/api/auth/login`, {
     data: { email: 'ogretmen@turkceokulu.com', password: 'Ogretmen123!' },
     timeout: TIMEOUT, failOnStatusCode: false,
@@ -214,11 +214,11 @@ test.describe('Sınıf Yönetimi — CRUD', () => {
       headers, timeout: TIMEOUT, failOnStatusCode: false,
     });
     expect(res.status()).toBe(200);
-    const data = await res.json();
+    const data = (await res.json()) as Array<{ id: number; name: string }>;
     expect(Array.isArray(data)).toBe(true);
-    const bulunan = data.find((s: any) => s.id === sinifId);
+    const bulunan = data.find((s: { id: number; name: string }) => s.id === sinifId);
     expect(bulunan).toBeDefined();
-    expect(bulunan.name).toContain('E2E Test Sınıfı');
+    expect(bulunan!.name).toContain('E2E Test Sınıfı');
   });
 });
 
@@ -277,10 +277,10 @@ test.describe('Ödev Yönetimi — CRUD', () => {
       headers, timeout: TIMEOUT, failOnStatusCode: false,
     });
     expect(res.status()).toBe(200);
-    const data = await res.json();
+    const data = (await res.json()) as Array<{ id: number; baslik: string }>;
     expect(Array.isArray(data)).toBe(true);
     if (odevId) {
-      const bulunan = data.find((o: any) => o.id === odevId);
+      const bulunan = data.find((o: { id: number; baslik: string }) => o.id === odevId);
       expect(bulunan).toBeDefined();
     }
   });
@@ -312,10 +312,10 @@ test.describe('Duyuru Yönetimi — CRUD', () => {
       headers, timeout: TIMEOUT, failOnStatusCode: false,
     });
     expect(res.status()).toBe(200);
-    const data = await res.json();
+    const data = (await res.json()) as Array<{ id: number; icerik: string }>;
     expect(Array.isArray(data)).toBe(true);
     if (duyuruId) {
-      const bulunan = data.find((d: any) => d.id === duyuruId);
+      const bulunan = data.find((d: { id: number; icerik: string }) => d.id === duyuruId);
       expect(bulunan).toBeDefined();
     }
   });

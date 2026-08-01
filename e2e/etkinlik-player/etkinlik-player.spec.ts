@@ -67,7 +67,7 @@ test.describe('Etkinlik Player — Rastgele Aktivite Testi', () => {
     const all = await fetchAllActivities(request, accessToken);
     expect(all.length).toBeGreaterThan(0);
 
-    let testedIds = readTestedIds();
+    const testedIds = readTestedIds();
     activitiesByType = pickRandomUntestedPerType(all, testedIds);
 
     if (activitiesByType.size === 0) {

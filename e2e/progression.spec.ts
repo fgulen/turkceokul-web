@@ -178,9 +178,9 @@ test.describe('Etkinlik Cevaplama — XP/Combo/Kalp', () => {
       headers, timeout: TIMEOUT, failOnStatusCode: false,
     });
     if (uniteRes.status() !== 200) return;
-    const uniteler = await uniteRes.json();
+    const uniteler = (await uniteRes.json()) as Array<{ kilitli?: boolean; lisansKilidi?: boolean; id: number }>;
     const acikUnite = Array.isArray(uniteler)
-      ? uniteler.find((u: any) => !u.kilitli && !u.lisansKilidi)
+      ? uniteler.find((u: { kilitli?: boolean; lisansKilidi?: boolean; id: number }) => !u.kilitli && !u.lisansKilidi)
       : null;
     if (!acikUnite) return;
 

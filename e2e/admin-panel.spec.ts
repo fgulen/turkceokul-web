@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, APIRequestContext } from '@playwright/test';
 
 const API_BASE = 'http://localhost:5221';
 const TIMEOUT = 10000;
@@ -8,7 +8,7 @@ let olusanKurumId: number | null = null;
 
 test.describe.configure({ timeout: 120_000 });
 
-async function getAdminToken(request: any): Promise<string | null> {
+async function getAdminToken(request: APIRequestContext): Promise<string | null> {
   const res = await request.post(`${API_BASE}/api/auth/login`, {
     data: { email: 'admin@turkceokulu.com', password: 'Admin123!' },
     timeout: TIMEOUT, failOnStatusCode: false,

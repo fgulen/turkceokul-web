@@ -27,13 +27,13 @@
  *  19. TR pano (login sonrası)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 const testAccount = { email: 'ogrenci1@turkceokulu.com', password: 'Ogrenci123!' };
 
 test.describe.configure({ timeout: 60_000 });
 
-async function login(page: any, locale: string) {
+async function login(page: Page, locale: string) {
   await page.goto(`/${locale}/giris`);
   const emailPlaceholder = locale === 'tr' ? 'ornek@email.com' : 'you@example.com';
   await page.getByPlaceholder(emailPlaceholder).fill(testAccount.email);

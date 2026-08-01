@@ -22,7 +22,7 @@
  *   11. Token refresh — API üzerinden
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 const API_BASE = 'http://localhost:5221';
 
@@ -37,7 +37,7 @@ function uniqueEmail(prefix = 'authtest'): string {
   return `${prefix}_${emailCounter}@example.com`;
 }
 
-async function kayitAdimlari(page: any, role: 'bireysel' | 'kurumsal', email: string) {
+async function kayitAdimlari(page: Page, role: 'bireysel' | 'kurumsal', email: string) {
   await page.goto('/tr/kayit');
 
   // Step 1: Rol seçimi
