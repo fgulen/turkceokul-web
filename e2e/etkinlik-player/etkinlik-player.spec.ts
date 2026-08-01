@@ -26,6 +26,34 @@ const API_BASE = 'http://localhost:5221';
 
 test.describe.configure({ timeout: 300_000 });
 
+type AktiviteSonucu = 'OK' | { uyari: string };
+
+async function checkActivity(page: import('@playwright/test').Page, activity: Etkinlik): Promise<AktiviteSonucu> {
+  const url = `/tr/etkinlik/${activity.id}?uniteId=${activity.uniteId}&kitapId=${activity.kitapId}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForTimeout(3000);
+
+  const error = await pageHasError(page);
+  if (error) return { uyari: `sayfa yüklenemedi: ${error}` };
+
+  const bodyText = await page.evaluate(() => document.body.innerText);
+  const hasContent = bodyText.length > 200;
+  const buttonCount = await page.getByRole('button').count();
+  const hasButton = buttonCount > 1;
+
+  if (!(hasContent && hasButton)) {
+    return { uyari: 'player içeriği beklenenden az' };
+  }
+
+  const startBtn = page.getByRole('button', { name: /Başla|Devam Et/i });
+  if (await startBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+    await startBtn.first().click({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+  }
+
+  return 'OK';
+}
+
 test.describe('Etkinlik Player — Rastgele Aktivite Testi', () => {
   let activitiesByType: Map<string, Etkinlik>;
 
@@ -57,66 +85,69 @@ test.describe('Etkinlik Player — Rastgele Aktivite Testi', () => {
     }
   });
 
-  // TODO (2026-08-01): harness'in aktivite-başına ayrı timeout'u yok — tek bir yavaş/takılan
-  // aktivite (2026-08-01 run'unda KelimeleriGrupla, "Başla/Devam" butonunu hiç bulamadı)
-  // tüm test.describe.configure'daki 300s bütçeyi tüketip sonraki tüm denemeleri
-  // "Target page, context or browser has been closed" ile cascade-fail ediyor (17/28
-  // geçmişti, kalan 11'i browser kapandığı için düşürdü). Fix: her aktivite denemesini
-  // kendi kısa timeout'una sarıp hata olursa sonraki türe geç.
-  test.skip('Tüm aktivite türleri smoke testi', async ({ page }) => {
+  test('Tüm aktivite türleri smoke testi', async ({ page, context }) => {
     await loginAsTeacher(page);
 
     const entries = [...activitiesByType.entries()];
     const results: string[] = [];
     let tested = 0;
     let passed = 0;
+    let activePage = page;
+
+    // Toplam bütçe 300s (test.describe.configure). login + beforeAll overhead için
+    // 40s pay bırak, kalanı aktivite sayısına böl; tek aktivite 8-20s arasında sınırlı kalsın.
+    const perActivityBudgetMs = Math.max(8000, Math.min(20000, Math.floor(260_000 / Math.max(1, entries.length))));
 
     for (const [tur, activity] of entries) {
       tested++;
       const label = `[${tested}/${activitiesByType.size}] ${tur} — "${activity.etkinlikAdi}"`;
 
       try {
-        const url = `/tr/etkinlik/${activity.id}?uniteId=${activity.uniteId}&kitapId=${activity.kitapId}`;
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        await page.waitForTimeout(3000);
+        const checkPromise = checkActivity(activePage, activity);
+        // Kaybeden tarafa sessiz bir .catch() tak: checkActivity, race timeout'la
+        // kazanıldıktan SONRA reject ederse, referansı hiçbir yerde await edilmediği
+        // için Node bunu unhandledRejection olarak yükseltir ve Playwright'ta sahte
+        // bir test hatası gibi görünür. Bu satır o geç-reject'i sessizce yutar; race'in
+        // kendisi hâlâ önce biteni (gerçek sonuç ya da timeout) kullanır.
+        checkPromise.catch(() => {});
 
-        const error = await pageHasError(page);
-        if (error) {
-          results.push(`  ⚠ ${label} — sayfa yüklenemedi: ${error}`);
-          recordTested(activity.id, tur, activity.etkinlikAdi);
-          continue;
-        }
+        const sonuc = await Promise.race([
+          checkPromise,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`activity-timeout (${perActivityBudgetMs}ms)`)), perActivityBudgetMs)
+          ),
+        ]);
 
-        // Check if player rendered: there should be interactive content
-        const bodyText = await page.evaluate(() => document.body.innerText);
-        const hasContent = bodyText.length > 200;
-        const hasButton = await page.getByRole('button').count() > 1;
-
-        if (hasContent && hasButton) {
+        if (sonuc === 'OK') {
           passed++;
-          results.push(`  ✅ ${label} — player yüklendi (${bodyText.length} karakter, ${await page.getByRole('button').count()} buton)`);
-
-          // Try to dismiss perde/start curtain
-          const startBtn = page.getByRole('button', { name: /Başla|Devam Et/i });
-          if (await startBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
-            await startBtn.first().click();
-            await page.waitForTimeout(1500);
-            results.push(`       perde geçildi, içerik yüklendi`);
-          }
+          results.push(`  ✅ ${label} — player yüklendi`);
         } else {
-          results.push(`  ⚠ ${label} — player içeriği beklenenden az`);
+          results.push(`  ⚠ ${label} — ${sonuc.uyari}`);
         }
-
         recordTested(activity.id, tur, activity.etkinlikAdi);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         results.push(`  ❌ ${label} — hata: ${msg.slice(0, 120)}`);
+        recordTested(activity.id, tur, activity.etkinlikAdi);
 
-        // Refresh page to recover from crashes
+        // Sayfa askıda kalmış olabilir (bloklu JS main thread) — mevcut sayfayı
+        // kapatmayı dene, olmazsa taze bir sayfa aç. Böylece tek bir çökük deneme
+        // sonraki tüm türleri "browser has been closed" cascade'ine sürüklemiyor.
+        // Bilinen risk: her recovery bir yeniden-login (network) ekliyor, bu
+        // perActivityBudgetMs hesabına dahil değil — art arda birkaç hata olursa
+        // kümülatif recovery süresi 300s'lik toplam bütçeyi zorlayabilir. Kabul
+        // edilebilir risk (recovery sadece hata durumunda tetikleniyor, mutlak
+        // en kötü durum bile "birkaç ekstra login" mertebesinde); sorun çıkarsa
+        // sonraki iyileştirme recovery'de re-login'i atlayıp sadece navigate denemek.
         try {
-          await page.goto('/tr/pano', { timeout: 10000 });
-          await page.waitForTimeout(2000);
-        } catch { /* ignore */ }
+          await activePage.close({ runBeforeUnload: false });
+        } catch { /* zaten kapalı/yanıt vermiyor — yok say */ }
+        try {
+          activePage = await context.newPage();
+          await loginAsTeacher(activePage);
+        } catch (recoverErr) {
+          results.push(`  ❌ [recovery] taze sayfa açılamadı: ${recoverErr instanceof Error ? recoverErr.message : String(recoverErr)}`);
+        }
       }
     }
 
