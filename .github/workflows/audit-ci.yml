@@ -106,7 +106,11 @@ jobs:
       - name: Run API unit tests
         id: apitests
         run: |
+          # RequiresLocalMySql: CI'da schema/migration'dan once calisiyor + yerel dev
+          # sifresi kullaniyor (bkz. AIControllerKrediMySqlIntegrationTests.cs basi yorum) —
+          # gercek bir dev-only entegrasyon testi, CI'da hep patlar, disarida birakiliyor.
           dotnet test --configuration Release --no-build \
+            --filter "Category!=RequiresLocalMySql" \
             --logger "trx;LogFileName=../audit-apitester.Results.xml" 2>&1 | tee ../../audit-apitester.txt
           # exit code yakala — test basarisiz olsa bile devam
         working-directory: api/TurkceOkulu.Api.Tests
