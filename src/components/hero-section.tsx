@@ -64,6 +64,7 @@ function HeroCopy({ locale }: { locale: string }) {
         rel="noopener noreferrer"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
         className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-blue-100 px-3.5 py-[5px] text-[11px] font-bold tracking-[0.06em] text-[#1e3a5f] transition-colors hover:bg-blue-200"
       >
         <BookOpen className="h-3 w-3" />
@@ -73,7 +74,7 @@ function HeroCopy({ locale }: { locale: string }) {
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ duration: 0.15 }}
         className="type-hero mb-5 tracking-tight text-slate-900"
       >
         {T.h1a}
@@ -86,7 +87,7 @@ function HeroCopy({ locale }: { locale: string }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.05, duration: 0.15 }}
         className="mb-6"
       >
         <SegmentSwitcher locale={locale} />
@@ -96,7 +97,7 @@ function HeroCopy({ locale }: { locale: string }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
+        transition={{ delay: 0.1, duration: 0.15 }}
         className="relative mb-7 min-h-[140px] max-w-xl sm:min-h-[84px]"
       >
         {(Object.keys(T.segments) as Segment[]).map((key) => (
@@ -117,7 +118,7 @@ function HeroCopy({ locale }: { locale: string }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.15, duration: 0.15 }}
         className="relative mb-8 h-[46px] w-[280px] max-w-full"
       >
         {(Object.keys(T.segments) as Segment[]).map((key) => (
@@ -160,7 +161,7 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
+          transition={{ duration: 0.2 }}
           className="relative px-5 py-11 md:pl-6 md:pr-5"
         >
           <div className="relative overflow-hidden rounded-[20px] shadow-[0_8px_48px_rgba(27,117,188,0.18)]">
@@ -179,7 +180,7 @@ export function HeroSection({ locale = "tr" }: { locale?: string }) {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.75 }}
+            transition={{ delay: 0.25, duration: 0.15 }}
             className="absolute top-[38%] -left-5 hidden lg:block"
           >
             <motion.div
