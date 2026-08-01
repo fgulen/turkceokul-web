@@ -249,12 +249,16 @@ jobs:
               const lh = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8"));
               const a = lh.audits;
               console.log(`\n=== ${lh.requestedUrl} ===`);
-              console.log("LCP element:", JSON.stringify(a["largest-contentful-paint-element"]?.details?.items?.[0]?.node?.snippet || "yok"));
+              const lcpDetails = a["largest-contentful-paint-element"]?.details;
+              const lcpElNode = lcpDetails?.items?.[0]?.items?.[0]?.node;
+              const lcpPhases = lcpDetails?.items?.[1]?.items;
+              console.log("LCP element:", JSON.stringify(lcpElNode?.snippet || lcpElNode?.nodeLabel || "yok"), "selector:", JSON.stringify(lcpElNode?.selector || "yok"));
+              console.log("LCP breakdown [TTFB,loadDelay,loadTime,renderDelay]:", JSON.stringify((lcpPhases||[]).map(p=>p.timing)));
               console.log("Server response time:", a["server-response-time"]?.numericValue, "ms -", a["server-response-time"]?.score);
               console.log("Render-blocking resources:", a["render-blocking-resources"]?.numericValue, "ms savings -", (a["render-blocking-resources"]?.details?.items||[]).map(i=>i.url));
               console.log("Unused JS:", (a["unused-javascript"]?.details?.items||[]).slice(0,3).map(i=>`${i.url} (${Math.round(i.wastedBytes/1024)}kB)`));
               console.log("Unminified JS:", a["unminified-javascript"]?.score);
-              console.log("LCP phases (TTFB/load-delay/load-time/render-delay):", JSON.stringify(a["largest-contentful-paint-element"]?.details?.debugData || a["lcp-lazy-loaded"]?.score));
+              console.log("RAW lcpDetails.items (fallback, ilk 2000 char):", JSON.stringify(lcpDetails?.items).slice(0,2000));
               console.log("Network requests (top 5 by transferSize):", (a["network-requests"]?.details?.items||[]).sort((x,y)=>(y.transferSize||0)-(x.transferSize||0)).slice(0,5).map(i=>`${i.url} ${Math.round((i.transferSize||0)/1024)}kB`));
             }
           ' 2>&1 | tee ../audit-lcp-teshis.txt || true
