@@ -17,6 +17,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [correctReveal, setCorrectReveal] = useState<string | null>(null);
+  const [guessSonuc, setGuessSonuc] = useState<boolean | null>(null);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
 
@@ -32,6 +33,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
       const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, opt);
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
+      setGuessSonuc(sonuc);
     } catch {
       // Ağ hatasında güvenli taraf: correctReveal null kalır, hiçbir buton yeşil/kırmızı
       // boyanmaz (bkz. quiz.tsx aynı fix) — önceki davranış yeşil vurgu + kalp kaybını
@@ -60,6 +62,7 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
         setIndex(index + 1);
         setSelected(null);
         setCorrectReveal(null);
+        setGuessSonuc(null);
       }
     }, 700);
   }
@@ -100,9 +103,12 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
 
       <div className="flex flex-wrap gap-3 justify-center">
         {options.map((opt) => {
-          const revealed = selected !== null && correctReveal !== null;
-          const isCorrect = opt === correctReveal;
+          // Sunucu yanlış tahminde artık dogruCevap döndürmüyor (2026-08-01 fix) — hangi
+          // şıkkın doğru olduğu başka bir şıkta asla gösterilemez, yalnızca kendi seçimin
+          // doğru/yanlış olduğu (guessSonuc) işaretlenir.
           const isSelected = opt === selected;
+          const revealed = selected !== null && guessSonuc !== null;
+          const isCorrectOption = correctReveal !== null && opt === correctReveal;
           return (
             <button
               key={opt}
@@ -112,10 +118,9 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
                 'px-5 py-2.5 rounded-xl border-2 font-medium text-sm transition-all',
                 selected === null && 'border-border hover:border-primary hover:bg-primary/5',
                 isSelected && !revealed && 'border-primary bg-primary/5',
-                revealed && isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                revealed && isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
-                revealed && !isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                revealed && !isSelected && !isCorrect && 'opacity-40',
+                revealed && isSelected && isCorrectOption && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && isSelected && !isCorrectOption && 'border-destructive bg-destructive/10 text-destructive',
+                revealed && !isSelected && 'opacity-40',
               )}
             >
               {opt}

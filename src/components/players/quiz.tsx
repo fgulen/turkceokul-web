@@ -28,7 +28,12 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [correctReveal, setCorrectReveal] = useState<string | null>(null); // sunucudan gelen gerçek doğru cevap
+  // sunucu artık yalnızca doğru bilindiğinde dogruCevap döndürüyor (2026-08-01 fix —
+  // yanlışta göndermek her deneme cevabı ifşa ediyordu) — bu yüzden yanlış cevapta null
+  // gelir ve başka bir şıkkı asla yeşil boyamaz. guessSonuc kendi seçimini kırmızı/yeşil
+  // işaretlemek için ayrı tutuluyor.
+  const [correctReveal, setCorrectReveal] = useState<string | null>(null);
+  const [guessSonuc, setGuessSonuc] = useState<boolean | null>(null);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
@@ -48,10 +53,11 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, opt);
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
+      setGuessSonuc(sonuc);
     } catch {
-      // Ağ hatasında güvenli taraf: correctReveal null kalır (revealed=false), hiçbir
-      // buton yeşil/kırmızı boyanmaz — önceki "seçileni doğru göster" davranışı yeşil
-      // vurgu + yanlış-cevap sesi + kalp kaybını aynı anda üretiyordu (çelişkili UI).
+      // Ağ hatasında güvenli taraf: correctReveal null kalır, hiçbir buton yeşil/kırmızı
+      // boyanmaz — önceki "seçileni doğru göster" davranışı yeşil vurgu + yanlış-cevap
+      // sesi + kalp kaybını aynı anda üretiyordu (çelişkili UI).
       isCorrect = false;
     }
     play(isCorrect ? 'correct' : 'wrong');
@@ -79,6 +85,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
         setIndex(index + 1);
         setSelected(null);
         setCorrectReveal(null);
+        setGuessSonuc(null);
       }
     }, 950);
   }
@@ -148,10 +155,13 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
       {/* Cevap butonları */}
       <div className="grid grid-cols-2 gap-3">
         {options.map((opt) => {
-          // Sunucu yanıtı gelene kadar (correctReveal===null) renk yok — sadece seçim kilidi.
-          const revealed = selected !== null && correctReveal !== null;
-          const isCorrect = opt === correctReveal;
+          // Sunucu yanlış tahminde artık dogruCevap döndürmüyor (2026-08-01 fix — her
+          // denemede gerçek cevabı ifşa ediyordu) — bu yüzden "hangi şık doğruydu"
+          // artık asla başka bir şıkta gösterilemez, yalnızca kendi seçimin doğru/yanlış
+          // olduğu (guessSonuc) işaretlenir.
           const isSelected = opt === selected;
+          const revealed = selected !== null && guessSonuc !== null;
+          const isCorrectOption = correctReveal !== null && opt === correctReveal;
 
           return (
             <motion.button
@@ -162,15 +172,14 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
                 'py-4 px-3 rounded-xl border-2 font-medium text-sm transition-colors duration-150',
                 selected === null && 'border-border hover:border-primary hover:bg-primary/5',
                 isSelected && !revealed && 'border-primary bg-primary/5',
-                revealed && isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                revealed && isSelected && !isCorrect && 'border-destructive bg-destructive/10 text-destructive',
-                revealed && !isSelected && isCorrect && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
-                revealed && !isSelected && !isCorrect && 'opacity-35 border-border',
+                revealed && isSelected && isCorrectOption && 'border-[--correct] bg-[--correct]/10 text-[--correct]',
+                revealed && isSelected && !isCorrectOption && 'border-destructive bg-destructive/10 text-destructive',
+                revealed && !isSelected && 'opacity-35 border-border',
               )}
               animate={
-                revealed && isSelected && isCorrect
+                revealed && isSelected && isCorrectOption
                   ? { scale: [1, 1.07, 0.97, 1] }
-                  : revealed && isSelected && !isCorrect
+                  : revealed && isSelected && !isCorrectOption
                   ? { x: [0, -10, 10, -7, 7, -4, 4, 0] }
                   : {}
               }

@@ -39,6 +39,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [selected, setSelected] = useState<string | null>(null); // seçilen image path
   const [correctReveal, setCorrectReveal] = useState<string | null>(null);
+  const [guessSonuc, setGuessSonuc] = useState<boolean | null>(null);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
   const [burst, setBurst] = useState<BurstData | null>(null);
@@ -59,6 +60,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
       const { sonuc, dogruCevap } = await kontrolEt(etkinlik.id, current.id, imgPath);
       isCorrect = sonuc;
       setCorrectReveal(dogruCevap);
+      setGuessSonuc(sonuc);
     } catch {
       // Ağ hatasında güvenli taraf: correctReveal null kalır (bkz. quiz.tsx aynı fix) —
       // önceki davranış seçileni yeşil gösterirken kalp de düşürüyordu (çelişkili UI).
@@ -87,6 +89,7 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
         setIndex(index + 1);
         setSelected(null);
         setCorrectReveal(null);
+        setGuessSonuc(null);
         setBurst(null);
       }
     }, 900);
@@ -159,10 +162,13 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {options.map((imgPath, optIndex) => {
+          // Sunucu yanlış tahminde artık dogruCevap döndürmüyor (2026-08-01 fix) — hangi
+          // resmin doğru olduğu seçilmeyen bir seçenekte asla gösterilemez, yalnızca kendi
+          // seçiminin doğru/yanlış olduğu (guessSonuc) işaretlenir.
           const url = toMediaUrl(imgPath);
           const locked = selected !== null; // seçilir seçilmez kilitlenir, renk sunucu yanıtını bekler
-          const revealed = locked && correctReveal !== null;
-          const isCorrect = imgPath === correctReveal;
+          const revealed = locked && guessSonuc !== null;
+          const isCorrectOption = correctReveal !== null && imgPath === correctReveal;
           const isSelected = selected === imgPath;
 
           return (
@@ -172,9 +178,9 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
               disabled={locked}
               aria-label={`Seçenek ${optIndex + 1}`}
               animate={
-                revealed && isSelected && isCorrect
+                revealed && isSelected && isCorrectOption
                   ? { scale: [1, 1.06, 0.97, 1] }
-                  : revealed && isSelected && !isCorrect
+                  : revealed && isSelected && !isCorrectOption
                   ? { x: [0, -8, 8, -6, 6, -3, 3, 0] }
                   : {}
               }
@@ -183,10 +189,9 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                 'relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-muted',
                 !locked && 'border-border hover:border-primary hover:shadow-md cursor-pointer',
                 locked && !revealed && isSelected && 'border-primary',
-                revealed && isSelected && isCorrect && 'border-[--correct]',
-                revealed && isSelected && !isCorrect && 'border-destructive',
-                revealed && !isSelected && isCorrect && 'border-[--correct]',
-                revealed && !isSelected && !isCorrect && 'opacity-40 border-border',
+                revealed && isSelected && isCorrectOption && 'border-[--correct]',
+                revealed && isSelected && !isCorrectOption && 'border-destructive',
+                revealed && !isSelected && 'opacity-40 border-border',
               )}
             >
               {url ? (
@@ -203,14 +208,14 @@ export function ResimlerdenBiriniSecmePlayer({ etkinlik, onComplete }: PlayerPro
                 </div>
               )}
 
-              {revealed && isCorrect && (
+              {revealed && isSelected && isCorrectOption && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="size-9 rounded-full bg-white flex items-center justify-center shadow">
                     <span className="text-lg font-bold" style={{ color: 'var(--correct)' }}>✓</span>
                   </div>
                 </div>
               )}
-              {revealed && isSelected && !isCorrect && (
+              {revealed && isSelected && !isCorrectOption && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="size-9 rounded-full bg-white flex items-center justify-center shadow">
                     <span className="text-lg font-bold text-destructive">✗</span>
