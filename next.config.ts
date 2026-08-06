@@ -175,12 +175,18 @@ const nextConfig: NextConfig = {
     // kalıyor; bu CSP clickjacking/mixed-content/veri-sızıntısı gibi diğer sınıfları kapatıyor. Post-MVP: nonce'a geç.
     // 'unsafe-eval' SADECE dev'de: Next.js dev bundler'ı (webpack eval-source-map / React Refresh)
     // modülleri eval() ile sarıyor — prod build'de gerekmiyor, prod'a asla sızmamalı.
+    // okuma/pdf-flipbook.tsx (OkumaKitabi PDF görüntüleyici) pdf.js kütüphanesini ve
+    // worker'ını bundle'a dahil etmek yerine cdn.jsdelivr.net'ten dinamik yüklüyor —
+    // script-src ve worker-src bu YÜZDEN bu origin'i içermeli, yoksa CSP tarayıcıda
+    // sessizce engelliyor ve kullanıcıya "PDF yüklenemedi." hatası dönüyor.
+    const PDFJS_CDN = 'https://cdn.jsdelivr.net';
     const scriptSrc = process.env.NODE_ENV === 'development'
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-      : "script-src 'self' 'unsafe-inline'";
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${PDFJS_CDN}`
+      : `script-src 'self' 'unsafe-inline' ${PDFJS_CDN}`;
     const csp = [
       "default-src 'self'",
       scriptSrc,
+      `worker-src 'self' ${PDFJS_CDN}`,
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: ${r2Origin}`,
       `media-src 'self' ${r2Origin}`,
