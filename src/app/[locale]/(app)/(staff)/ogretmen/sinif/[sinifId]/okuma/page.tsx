@@ -9,6 +9,8 @@ import { CheckCircle2, Lock, Unlock, AlertTriangle, ChevronLeft, BookOpen, X, Pl
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
+import { ProBadge } from '@/components/ui/ProBadge';
+import { ProUpgradeModal } from '@/components/ogretmen/ai-studio/ProUpgradeModal';
 
 interface BolumDurumu {
   id: string;
@@ -25,10 +27,21 @@ interface OgrenciRow {
   tamamlananBolum: number;
 }
 
-interface OkumaIlerleme {
-  atama: { dersKitabiId: string; baslik: string; teslimTarihi: string | null } | null;
+interface AtamaIlerleme {
+  id: number;
+  dersKitabiId: string;
+  baslik: string;
+  teslimTarihi: string | null;
+  quizZorunlu: boolean;
+  etkinlikAktif: boolean;
+  kilitli: boolean;
   bolumler: { id: string; name: string; orderNo: number }[];
   ogrenciler: OgrenciRow[];
+}
+
+interface OkumaIlerleme {
+  atamalar: AtamaIlerleme[];
+  denemeMi: boolean;
 }
 
 function KitapAtaModal({
@@ -169,6 +182,8 @@ export default function OkumaIlerlemePage({
   const [ataModalAcik, setAtaModalAcik] = useState(false);
   const [seciliKitapIdler, setSeciliKitapIdler] = useState<string[]>([]);
   const [teslimTarihi, setTeslimTarihi] = useState('');
+  const [uyariAcik, setUyariAcik] = useState(false);
+  const [proModalAcik, setProModalAcik] = useState(false);
 
   const { data, isLoading, isError } = useQuery<OkumaIlerleme>({
     queryKey: ['ogretmen-okuma', sinifId],
@@ -185,27 +200,60 @@ export default function OkumaIlerlemePage({
     setSeciliKitapIdler(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
-  // ataMut: Task 10'da sıralı-POST + Deneme uyarı akışıyla tekrar ele alınacak.
-  // Şimdilik state/fetch değişikliğinin derlenebilir kalması için isPending burada tutuluyor.
   const ataMut = useMutation({
-    mutationFn: (kitapId: string) => {
-      const kitap = kitaplar?.find(k => k.id === kitapId);
-      return api.post('/api/ogretmen/okuma/ata', {
-        sinifId: parseInt(sinifId, 10),
-        dersKitabiId: kitapId,
-        baslik: kitap?.name ?? kitapId,
-        teslimTarihi: teslimTarihi || null,
-        quizZorunlu: false,
-      });
+    mutationFn: async (kitapIdler: string[]) => {
+      for (const kitapId of kitapIdler) {
+        const kitap = kitaplar?.find(k => k.id === kitapId);
+        await api.post('/api/ogretmen/okuma/ata', {
+          sinifId: parseInt(sinifId, 10),
+          dersKitabiId: kitapId,
+          baslik: kitap?.name ?? kitapId,
+          teslimTarihi: teslimTarihi || null,
+          quizZorunlu: false,
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] });
       setAtaModalAcik(false);
       setSeciliKitapIdler([]);
       setTeslimTarihi('');
-      toast.success('Kitap sınıfa atandı.');
+      toast.success('Kitaplar sınıfa atandı.');
     },
-    onError: () => toast.error('Kitap atanamadı. Lütfen tekrar deneyin.'),
+    onError: () => toast.error('Kitaplar atanamadı. Lütfen tekrar deneyin.'),
+  });
+
+  function handleAtaTiklandi() {
+    const sinifinHicKitabiYok = (data?.atamalar.length ?? 0) === 0;
+    if (data?.denemeMi && sinifinHicKitabiYok && seciliKitapIdler.length > 0) {
+      setUyariAcik(true);
+      return;
+    }
+    ataMut.mutate(seciliKitapIdler);
+  }
+
+  const ilkKitapAdi = kitaplar?.find(k => k.id === seciliKitapIdler[0])?.name ?? '';
+
+  const degistirMut = useMutation({
+    mutationFn: ({ eskiAtamaId, yeniAtamaId }: { eskiAtamaId: number; yeniAtamaId: number }) =>
+      api.put(`/api/ogretmen/sinif/${sinifId}/okuma-atama/${eskiAtamaId}/etkinlik-degistir`, { yeniAtamaId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] });
+      toast.success('Etkileşimli kitap değiştirildi.');
+    },
+    onError: (err: unknown) => {
+      const kod = (err as { response?: { data?: { kod?: string } } })?.response?.data?.kod;
+      toast.error(kod === 'etkinlik_kilitli'
+        ? 'Bu kitabın etkinliklerini deneyen bir öğrenci olduğu için değiştirilemez.'
+        : 'Değiştirilemedi. Lütfen tekrar deneyin.');
+    },
+  });
+
+  const aktifToggleMut = useMutation({
+    mutationFn: ({ atamaId, aktif }: { atamaId: number; aktif: boolean }) =>
+      api.put(`/api/ogretmen/sinif/${sinifId}/okuma-atama/${atamaId}/etkinlik-aktif`, { aktif }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] }),
+    onError: () => toast.error('Değiştirilemedi. Lütfen tekrar deneyin.'),
   });
 
   const bolumAcMut = useMutation({
@@ -244,7 +292,7 @@ export default function OkumaIlerlemePage({
 
   if (!data) return null;
 
-  if (!data.atama) {
+  if (data.atamalar.length === 0) {
     return (
       <div className="bg-[#F3F4F6]">
         <div className="max-w-[1000px] mx-auto px-4 py-8">
@@ -280,184 +328,266 @@ export default function OkumaIlerlemePage({
             isPending={ataMut.isPending}
             onToggle={toggleKitap}
             onTeslimTarihi={setTeslimTarihi}
-            // TODO(Task 10): sıralı-POST + Deneme uyarı akışıyla değiştirilecek.
-            onAta={() => console.log(seciliKitapIdler)}
+            onAta={handleAtaTiklandi}
             onKapat={() => { setAtaModalAcik(false); setSeciliKitapIdler([]); setTeslimTarihi(''); }}
           />
+        )}
+
+        {uyariAcik && (
+          <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+              <h3 className="font-bold text-slate-900">Emin misiniz?</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                <strong>{ilkKitapAdi}</strong> kitabını seçtiğiniz için ücretsiz etkileşimli
+                aktiviteleri alacaksınız. Bu nedenle seçtiğiniz kitabın PDF versiyonunu
+                inceleyip öğrenci seviyenize uygun olup olmadığından emin olunuz.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setUyariAcik(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={() => { setUyariAcik(false); ataMut.mutate(seciliKitapIdler); }}
+                  className="px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Seçin
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
   }
 
-  const gecikmisMi =
-    data.atama.teslimTarihi && new Date(data.atama.teslimTarihi) < new Date();
-
   return (
     <div className="bg-[#F3F4F6]">
       <div className="max-w-[1000px] mx-auto px-4 py-8 space-y-6">
-        {/* Geri + Başlık */}
+        {/* Geri */}
         <div>
           <Link
             href={`/ogretmen/sinif/${sinifId}`}
-            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
           >
             <ChevronLeft className="size-4" />
             Sınıfa dön
           </Link>
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-10 bg-blue-50 rounded-2xl flex items-center justify-center">
-                <BookOpen className="size-5 text-blue-500" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">{data.atama.baslik}</h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {data.bolumler.length} bölüm · {data.ogrenciler.length} öğrenci
-                </p>
-              </div>
-            </div>
-            {data.atama.teslimTarihi && (
-              <div className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold',
-                gecikmisMi
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-slate-100 text-slate-600',
-              )}>
-                {gecikmisMi && <AlertTriangle className="size-3" />}
-                Son tarih: {new Date(data.atama.teslimTarihi).toLocaleDateString('tr-TR')}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Matris tablosu */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="text-left py-3 px-5 font-medium text-slate-500 whitespace-nowrap">
-                    Öğrenci
-                  </th>
-                  {data.bolumler.map(b => (
-                    <th
-                      key={b.id}
-                      className="text-center py-3 px-3 font-medium text-slate-500 min-w-[90px]"
-                    >
-                      <span className="text-xs leading-tight block">
-                        {b.name.length > 14 ? b.name.slice(0, 12) + '…' : b.name}
-                      </span>
-                    </th>
-                  ))}
-                  <th className="text-right py-3 px-5 font-medium text-slate-500 whitespace-nowrap">
-                    İlerleme
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.ogrenciler.map(ogr => {
-                  const risk = riskSeviyesi(ogr.sonGiris);
-                  const gunOnce = ogr.sonGiris
-                    ? Math.round((Date.now() - new Date(ogr.sonGiris).getTime()) / 86400000)
-                    : null;
+        {data.atamalar.map(atama => {
+          const gecikmisMi =
+            atama.teslimTarihi && new Date(atama.teslimTarihi) < new Date();
 
-                  return (
-                    <tr
-                      key={ogr.userId}
-                      className={cn(
-                        'border-b border-slate-100 last:border-0 transition-colors',
-                        risk === 'risk' ? 'bg-orange-50/60' : 'hover:bg-slate-50/60',
-                      )}
+          return (
+            <div key={atama.id} className="space-y-4">
+              {/* Başlık */}
+              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4">
+                  <div className="size-10 bg-blue-50 rounded-2xl flex items-center justify-center">
+                    <BookOpen className="size-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-slate-900">{atama.baslik}</h1>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {atama.bolumler.length} bölüm · {atama.ogrenciler.length} öğrenci
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {data.denemeMi && !atama.kilitli && data.atamalar.length > 1 && (
+                    <select
+                      onChange={e => {
+                        const yeniAtamaId = parseInt(e.target.value, 10);
+                        if (yeniAtamaId) degistirMut.mutate({ eskiAtamaId: atama.id, yeniAtamaId });
+                      }}
+                      defaultValue=""
+                      className="text-xs px-3 py-1.5 rounded-lg border border-slate-200"
                     >
-                      {/* Öğrenci adı */}
-                      <td className="py-3 px-5 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          {risk === 'risk' && (
-                            <AlertTriangle className="size-3.5 text-orange-400 shrink-0" />
-                          )}
-                          <div>
-                            <p className="font-medium text-slate-800">{ogr.ad}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                              {ogr.tamamlananBolum}/{data.bolumler.length} bölüm
-                              {gunOnce !== null && (
-                                <> · {gunOnce === 0 ? 'bugün' : `${gunOnce} gün önce`}</>
+                      <option value="" disabled>Kitabı Değiştir</option>
+                      {data.atamalar.filter(a => a.id !== atama.id).map(a => (
+                        <option key={a.id} value={a.id}>{a.baslik}</option>
+                      ))}
+                    </select>
+                  )}
+                  {atama.teslimTarihi && (
+                    <div className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold',
+                      gecikmisMi
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-slate-100 text-slate-600',
+                    )}>
+                      {gecikmisMi && <AlertTriangle className="size-3" />}
+                      Son tarih: {new Date(atama.teslimTarihi).toLocaleDateString('tr-TR')}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!atama.etkinlikAktif && (
+                data.denemeMi ? (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center space-y-3">
+                    <ProBadge className="inline-flex" />
+                    <p className="text-sm text-slate-500">
+                      Bu kitabın etkileşimli aktiviteleri Deneme&apos;de kilitli. Sınırsız etkileşimli
+                      kitap için Kurumsal Pro&apos;ya geçin.
+                    </p>
+                    <button
+                      onClick={() => setProModalAcik(true)}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Kurumsal Pro&apos;ya geç
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center justify-between">
+                    <p className="text-sm text-slate-600">Bu kitabın etkinlikleri henüz aktif değil.</p>
+                    <button
+                      onClick={() => aktifToggleMut.mutate({ atamaId: atama.id, aktif: true })}
+                      disabled={aktifToggleMut.isPending}
+                      className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                    >
+                      Etkinlikleri Aktif Et
+                    </button>
+                  </div>
+                )
+              )}
+
+              {/* Matris tablosu */}
+              {atama.etkinlikAktif && (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          <th className="text-left py-3 px-5 font-medium text-slate-500 whitespace-nowrap">
+                            Öğrenci
+                          </th>
+                          {atama.bolumler.map(b => (
+                            <th
+                              key={b.id}
+                              className="text-center py-3 px-3 font-medium text-slate-500 min-w-[90px]"
+                            >
+                              <span className="text-xs leading-tight block">
+                                {b.name.length > 14 ? b.name.slice(0, 12) + '…' : b.name}
+                              </span>
+                            </th>
+                          ))}
+                          <th className="text-right py-3 px-5 font-medium text-slate-500 whitespace-nowrap">
+                            İlerleme
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {atama.ogrenciler.map(ogr => {
+                          const risk = riskSeviyesi(ogr.sonGiris);
+                          const gunOnce = ogr.sonGiris
+                            ? Math.round((Date.now() - new Date(ogr.sonGiris).getTime()) / 86400000)
+                            : null;
+
+                          return (
+                            <tr
+                              key={ogr.userId}
+                              className={cn(
+                                'border-b border-slate-100 last:border-0 transition-colors',
+                                risk === 'risk' ? 'bg-orange-50/60' : 'hover:bg-slate-50/60',
                               )}
-                              {ogr.sonGiris === null && ' · hiç girmedi'}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                            >
+                              {/* Öğrenci adı */}
+                              <td className="py-3 px-5 whitespace-nowrap">
+                                <div className="flex items-center gap-2.5">
+                                  {risk === 'risk' && (
+                                    <AlertTriangle className="size-3.5 text-orange-400 shrink-0" />
+                                  )}
+                                  <div>
+                                    <p className="font-medium text-slate-800">{ogr.ad}</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                      {ogr.tamamlananBolum}/{atama.bolumler.length} bölüm
+                                      {gunOnce !== null && (
+                                        <> · {gunOnce === 0 ? 'bugün' : `${gunOnce} gün önce`}</>
+                                      )}
+                                      {ogr.sonGiris === null && ' · hiç girmedi'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
 
-                      {/* Bölüm hücreleri — master listeye göre hizalanır */}
-                      {data.bolumler.map(masterBolum => {
-                        const b = ogr.bolumler.find(x => x.id === masterBolum.id);
-                        const durum = b?.durum ?? 'kilitli';
-                        return (
-                          <td key={masterBolum.id} className="text-center py-3 px-3">
-                            {durum === 'tamamlandi' && (
-                              <CheckCircle2 className="size-5 text-emerald-500 mx-auto" />
-                            )}
-                            {durum === 'acildi' && (
-                              <div className="flex flex-col items-center gap-0.5">
-                                <Unlock className="size-4 text-blue-400 mx-auto" />
-                                <span className="text-[10px] text-blue-400 leading-none">açıldı</span>
-                              </div>
-                            )}
-                            {durum === 'kilitli' && (
-                              <button
-                                onClick={() =>
-                                  bolumAcMut.mutate({ uniteId: masterBolum.id, userId: ogr.userId })
-                                }
-                                disabled={bolumAcMut.isPending}
-                                className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50 min-h-[44px] min-w-[44px] justify-center"
-                                title={`${ogr.ad} için "${masterBolum.name}" bölümünü aç`}
-                              >
-                                <Lock className="size-4 text-slate-300 group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] text-slate-300 group-hover:text-primary transition-colors leading-none">
-                                  Aç
+                              {/* Bölüm hücreleri — master listeye göre hizalanır */}
+                              {atama.bolumler.map(masterBolum => {
+                                const b = ogr.bolumler.find(x => x.id === masterBolum.id);
+                                const durum = b?.durum ?? 'kilitli';
+                                return (
+                                  <td key={masterBolum.id} className="text-center py-3 px-3">
+                                    {durum === 'tamamlandi' && (
+                                      <CheckCircle2 className="size-5 text-emerald-500 mx-auto" />
+                                    )}
+                                    {durum === 'acildi' && (
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <Unlock className="size-4 text-blue-400 mx-auto" />
+                                        <span className="text-[10px] text-blue-400 leading-none">açıldı</span>
+                                      </div>
+                                    )}
+                                    {durum === 'kilitli' && (
+                                      <button
+                                        onClick={() =>
+                                          bolumAcMut.mutate({ uniteId: masterBolum.id, userId: ogr.userId })
+                                        }
+                                        disabled={bolumAcMut.isPending}
+                                        className="group flex flex-col items-center gap-0.5 mx-auto disabled:opacity-50 min-h-[44px] min-w-[44px] justify-center"
+                                        title={`${ogr.ad} için "${masterBolum.name}" bölümünü aç`}
+                                      >
+                                        <Lock className="size-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                        <span className="text-[10px] text-slate-300 group-hover:text-primary transition-colors leading-none">
+                                          Aç
+                                        </span>
+                                      </button>
+                                    )}
+                                  </td>
+                                );
+                              })}
+
+                              {/* İlerleme yüzdesi */}
+                              <td className="py-3 px-5 text-right whitespace-nowrap">
+                                <span
+                                  className={cn(
+                                    'text-xs font-semibold px-2 py-0.5 rounded-full',
+                                    ogr.tamamlananBolum === atama.bolumler.length
+                                      ? 'bg-emerald-100 text-emerald-700'
+                                      : risk === 'risk'
+                                      ? 'bg-orange-100 text-orange-700'
+                                      : 'bg-slate-100 text-slate-600',
+                                  )}
+                                >
+                                  {atama.bolumler.length > 0
+                                    ? Math.round((ogr.tamamlananBolum / atama.bolumler.length) * 100)
+                                    : 0}
+                                  %
                                 </span>
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
+                              </td>
+                            </tr>
+                          );
+                        })}
 
-                      {/* İlerleme yüzdesi */}
-                      <td className="py-3 px-5 text-right whitespace-nowrap">
-                        <span
-                          className={cn(
-                            'text-xs font-semibold px-2 py-0.5 rounded-full',
-                            ogr.tamamlananBolum === data.bolumler.length
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : risk === 'risk'
-                              ? 'bg-orange-100 text-orange-700'
-                              : 'bg-slate-100 text-slate-600',
-                          )}
-                        >
-                          {data.bolumler.length > 0
-                            ? Math.round((ogr.tamamlananBolum / data.bolumler.length) * 100)
-                            : 0}
-                          %
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {data.ogrenciler.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={data.bolumler.length + 2}
-                      className="py-10 text-center text-slate-400 text-sm"
-                    >
-                      Bu sınıfta henüz öğrenci yok.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        {atama.ogrenciler.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={atama.bolumler.length + 2}
+                              className="py-10 text-center text-slate-400 text-sm"
+                            >
+                              Bu sınıfta henüz öğrenci yok.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Açıklama */}
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
@@ -479,6 +609,12 @@ export default function OkumaIlerlemePage({
           </span>
         </div>
       </div>
+
+      <ProUpgradeModal
+        acik={proModalAcik}
+        ozellikAdi="Sınırsız Etkileşimli Okuma Kitabı"
+        onKapat={() => setProModalAcik(false)}
+      />
     </div>
   );
 }
