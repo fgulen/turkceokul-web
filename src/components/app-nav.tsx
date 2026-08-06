@@ -9,6 +9,8 @@ import { useAuthStore, AuthUser } from '@/stores/auth';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import { homePathForRole } from '@/lib/role-home';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 const AVATAR_COLORS: Record<string, string> = {
   SuperAdmin: 'bg-purple-600',
@@ -98,22 +100,23 @@ export function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => v
 
 // ─── Shared nav helpers ───────────────────────────────────────────────────────
 
-interface NLProps { href: string; label: string; active: boolean; icon?: React.ReactNode }
-function NL({ href, label, active, icon }: NLProps) {
+interface NLProps { href: string; label: string; active: boolean; icon?: React.ReactNode; badge?: boolean }
+function NL({ href, label, active, icon, badge }: NLProps) {
   return (
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors relative',
         active ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
       )}
     >
       {icon}{label}
+      {badge && <span className="absolute top-1 right-1 size-1.5 rounded-full bg-red-500" />}
     </Link>
   );
 }
 
-interface MBItem { href: string; Icon: React.ElementType; label: string; active: boolean }
+interface MBItem { href: string; Icon: React.ElementType; label: string; active: boolean; badge?: boolean }
 function MobileBar({ items }: { items: MBItem[] }) {
   return (
     <nav
@@ -121,7 +124,7 @@ function MobileBar({ items }: { items: MBItem[] }) {
       // iOS Safari: fixed konumlu öğelerin scroll sırasında kaybolmasını önler
       style={{ WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}
     >
-      {items.map(({ href, Icon, label, active }) => (
+      {items.map(({ href, Icon, label, active, badge }) => (
         <Link
           key={href}
           href={href}
@@ -130,8 +133,9 @@ function MobileBar({ items }: { items: MBItem[] }) {
             active ? 'text-primary' : 'text-slate-400',
           )}
         >
-          <div className={cn('flex items-center justify-center w-10 h-7 rounded-xl transition-colors', active && 'bg-primary/10')}>
+          <div className={cn('flex items-center justify-center w-10 h-7 rounded-xl transition-colors relative', active && 'bg-primary/10')}>
             <Icon className={cn('size-5', active ? 'text-primary' : 'text-slate-400')} />
+            {badge && <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-red-500" />}
           </div>
           {label}
         </Link>
@@ -149,6 +153,14 @@ export function AppNav() {
   const [mounted, setMounted] = useState(false);
   const [xpPulse, setXpPulse] = useState(false);
   const prevPuan = useRef<number | null>(null);
+
+  const { data: okumaAtamalar } = useQuery<{ toplamBolum: number; tamamlananBolum: number }[]>({
+    queryKey: ['okuma-atamalar-badge'],
+    queryFn: () => api.get('/api/okuma/atamalar').then(r => r.data),
+    enabled: !!user && user.role === 'Ogrenci',
+    staleTime: 60_000,
+  });
+  const okumaBildirimVar = (okumaAtamalar ?? []).some(a => a.tamamlananBolum < a.toplamBolum);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -215,7 +227,7 @@ export function AppNav() {
             {user.role === 'Ogrenci' && <>
               <NL href="/pano"              label={t('nav.app.dashboard')}  active={pathname === '/pano'} />
               <NL href="/lig"               label={t('League')}         active={pathname === '/lig'} icon={<Trophy className="size-3.5" />} />
-              <NL href="/okuma"             label={t('nav.app.reading')}    active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} />
+              <NL href="/okuma"             label={t('nav.app.reading')}    active={!!pathname?.startsWith('/okuma')} icon={<BookOpen className="size-3.5" />} badge={okumaBildirimVar} />
               <NL href="/kahoot/katil"      label="Kahoot"                  active={!!pathname?.startsWith('/kahoot')} icon={<Wifi className="size-3.5" />} />
             </>}
           </nav>
@@ -308,7 +320,7 @@ export function AppNav() {
       <MobileBar items={[
         { href: '/pano',               Icon: LayoutDashboard, label: t('nav.app.dashboard'), active: pathname === '/pano' },
         { href: '/lig',                Icon: Trophy,          label: t('League'), active: pathname === '/lig' },
-        { href: '/okuma',              Icon: BookOpen,        label: t('nav.app.reading'), active: !!pathname?.startsWith('/okuma') },
+        { href: '/okuma',              Icon: BookOpen,        label: t('nav.app.reading'), active: !!pathname?.startsWith('/okuma'), badge: okumaBildirimVar },
         { href: '/kahoot/katil',       Icon: Wifi,            label: 'Kahoot', active: !!pathname?.startsWith('/kahoot') },
       ]} />
     )}
