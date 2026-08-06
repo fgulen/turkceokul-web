@@ -34,20 +34,20 @@ interface OkumaIlerleme {
 function KitapAtaModal({
   kitaplar,
   yukleniyor,
-  seciliKitapId,
+  seciliKitapIdler,
   teslimTarihi,
   isPending,
-  onSecim,
+  onToggle,
   onTeslimTarihi,
   onAta,
   onKapat,
 }: {
   kitaplar: OkumaKitap[];
   yukleniyor: boolean;
-  seciliKitapId: string | null;
+  seciliKitapIdler: string[];
   teslimTarihi: string;
   isPending: boolean;
-  onSecim: (id: string) => void;
+  onToggle: (id: string) => void;
   onTeslimTarihi: (v: string) => void;
   onAta: () => void;
   onKapat: () => void;
@@ -55,9 +55,8 @@ function KitapAtaModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
-        {/* Başlık */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h2 className="font-bold text-slate-900">Okuma Kitabı Seç</h2>
+          <h2 className="font-bold text-slate-900">Okuma Kitapları Seç</h2>
           <button
             onClick={onKapat}
             className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
@@ -66,50 +65,53 @@ function KitapAtaModal({
           </button>
         </div>
 
-        {/* Kitap listesi */}
         <div className="overflow-y-auto flex-1 p-5 space-y-2">
           {yukleniyor && (
             <p className="text-sm text-slate-400 text-center py-8">Kitaplar yükleniyor...</p>
           )}
           {!yukleniyor && kitaplar.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-8">Sistemde okuma kitabı bulunamadı.</p>
+            <p className="text-sm text-slate-400 text-center py-8">
+              Kurumunuzun eriştiği seviyede okuma kitabı bulunamadı.
+            </p>
           )}
-          {kitaplar.map(k => (
-            <button
-              key={k.id}
-              onClick={() => onSecim(k.id)}
-              className={cn(
-                'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all',
-                seciliKitapId === k.id
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                  : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
-              )}
-            >
-              {k.thumbnailPicture ? (
-                <Image
-                  src={k.thumbnailPicture}
-                  alt={k.name}
-                  width={48}
-                  height={48}
-                  className="size-12 rounded-lg object-cover shrink-0"
-                />
-              ) : (
-                <div className="size-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                  <BookOpen className="size-6 text-slate-400" />
+          {kitaplar.map(k => {
+            const secili = seciliKitapIdler.includes(k.id);
+            return (
+              <button
+                key={k.id}
+                onClick={() => onToggle(k.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all',
+                  secili
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                    : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
+                )}
+              >
+                <div className={cn(
+                  'size-5 rounded-md border-2 shrink-0 flex items-center justify-center',
+                  secili ? 'bg-primary border-primary' : 'border-slate-300',
+                )}>
+                  {secili && <CheckCircle2 className="size-3.5 text-white" />}
                 </div>
-              )}
-              <div className="min-w-0">
-                <p className="font-semibold text-slate-800 text-sm leading-tight">{k.name}</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {k.seviye && <span className="mr-2">{k.seviye}</span>}
-                  {k.toplamBolum} bölüm
-                </p>
-              </div>
-            </button>
-          ))}
+                {k.thumbnailPicture ? (
+                  <Image src={k.thumbnailPicture} alt={k.name} width={48} height={48} className="size-12 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="size-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                    <BookOpen className="size-6 text-slate-400" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-800 text-sm leading-tight">{k.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {k.seviye && <span className="mr-2">{k.seviye}</span>}
+                    {k.toplamBolum} bölüm
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Teslim tarihi + Ata */}
         <div className="p-5 border-t border-slate-100 space-y-3">
           <div>
             <label className="text-xs font-medium text-slate-500 block mb-1.5">
@@ -123,21 +125,16 @@ function KitapAtaModal({
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <button
-              onClick={onKapat}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
+            <button onClick={onKapat} className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
               İptal
             </button>
             <button
               onClick={onAta}
-              disabled={!seciliKitapId || isPending}
+              disabled={seciliKitapIdler.length === 0 || isPending}
               className="flex items-center gap-1.5 px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors"
             >
-              {isPending && (
-                <div className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              )}
-              Ata
+              {isPending && <div className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+              {seciliKitapIdler.length > 1 ? `${seciliKitapIdler.length} Kitabı Ata` : 'Ata'}
             </button>
           </div>
         </div>
@@ -170,7 +167,7 @@ export default function OkumaIlerlemePage({
   const qc = useQueryClient();
 
   const [ataModalAcik, setAtaModalAcik] = useState(false);
-  const [seciliKitapId, setSeciliKitapId] = useState<string | null>(null);
+  const [seciliKitapIdler, setSeciliKitapIdler] = useState<string[]>([]);
   const [teslimTarihi, setTeslimTarihi] = useState('');
 
   const { data, isLoading, isError } = useQuery<OkumaIlerleme>({
@@ -179,11 +176,17 @@ export default function OkumaIlerlemePage({
   });
 
   const { data: kitaplar, isLoading: kitaplarYukleniyor } = useQuery<OkumaKitap[]>({
-    queryKey: ['okuma-kitaplar'],
-    queryFn: () => api.get('/api/okuma/kitaplar').then(r => r.data),
+    queryKey: ['okuma-kitaplar-atanabilir', sinifId],
+    queryFn: () => api.get(`/api/ogretmen/sinif/${sinifId}/okuma-kitaplari`).then(r => r.data),
     enabled: ataModalAcik,
   });
 
+  function toggleKitap(id: string) {
+    setSeciliKitapIdler(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  // ataMut: Task 10'da sıralı-POST + Deneme uyarı akışıyla tekrar ele alınacak.
+  // Şimdilik state/fetch değişikliğinin derlenebilir kalması için isPending burada tutuluyor.
   const ataMut = useMutation({
     mutationFn: (kitapId: string) => {
       const kitap = kitaplar?.find(k => k.id === kitapId);
@@ -198,7 +201,7 @@ export default function OkumaIlerlemePage({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ogretmen-okuma', sinifId] });
       setAtaModalAcik(false);
-      setSeciliKitapId(null);
+      setSeciliKitapIdler([]);
       setTeslimTarihi('');
       toast.success('Kitap sınıfa atandı.');
     },
@@ -272,13 +275,14 @@ export default function OkumaIlerlemePage({
           <KitapAtaModal
             kitaplar={kitaplar ?? []}
             yukleniyor={kitaplarYukleniyor}
-            seciliKitapId={seciliKitapId}
+            seciliKitapIdler={seciliKitapIdler}
             teslimTarihi={teslimTarihi}
             isPending={ataMut.isPending}
-            onSecim={setSeciliKitapId}
+            onToggle={toggleKitap}
             onTeslimTarihi={setTeslimTarihi}
-            onAta={() => seciliKitapId && ataMut.mutate(seciliKitapId)}
-            onKapat={() => { setAtaModalAcik(false); setSeciliKitapId(null); setTeslimTarihi(''); }}
+            // TODO(Task 10): sıralı-POST + Deneme uyarı akışıyla değiştirilecek.
+            onAta={() => console.log(seciliKitapIdler)}
+            onKapat={() => { setAtaModalAcik(false); setSeciliKitapIdler([]); setTeslimTarihi(''); }}
           />
         )}
       </div>
