@@ -366,8 +366,8 @@ export default function OkumaIlerlemePage({
   return (
     <div className="bg-[#F3F4F6]">
       <div className="max-w-[1000px] mx-auto px-4 py-8 space-y-6">
-        {/* Geri */}
-        <div>
+        {/* Geri + Kitap Ata */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <Link
             href={`/ogretmen/sinif/${sinifId}`}
             className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
@@ -375,6 +375,13 @@ export default function OkumaIlerlemePage({
             <ChevronLeft className="size-4" />
             Sınıfa dön
           </Link>
+          <button
+            onClick={() => setAtaModalAcik(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="size-4" />
+            Kitap Ata
+          </button>
         </div>
 
         {data.atamalar.map(atama => {
@@ -615,6 +622,47 @@ export default function OkumaIlerlemePage({
         ozellikAdi="Sınırsız Etkileşimli Okuma Kitabı"
         onKapat={() => setProModalAcik(false)}
       />
+
+      {ataModalAcik && (
+        <KitapAtaModal
+          kitaplar={kitaplar ?? []}
+          yukleniyor={kitaplarYukleniyor}
+          seciliKitapIdler={seciliKitapIdler}
+          teslimTarihi={teslimTarihi}
+          isPending={ataMut.isPending}
+          onToggle={toggleKitap}
+          onTeslimTarihi={setTeslimTarihi}
+          onAta={handleAtaTiklandi}
+          onKapat={() => { setAtaModalAcik(false); setSeciliKitapIdler([]); setTeslimTarihi(''); }}
+        />
+      )}
+
+      {uyariAcik && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="font-bold text-slate-900">Emin misiniz?</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              <strong>{ilkKitapAdi}</strong> kitabını seçtiğiniz için ücretsiz etkileşimli
+              aktiviteleri alacaksınız. Bu nedenle seçtiğiniz kitabın PDF versiyonunu
+              inceleyip öğrenci seviyenize uygun olup olmadığından emin olunuz.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setUyariAcik(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Vazgeç
+              </button>
+              <button
+                onClick={() => { setUyariAcik(false); ataMut.mutate(seciliKitapIdler); }}
+                className="px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Seçin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

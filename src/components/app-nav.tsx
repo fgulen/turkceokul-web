@@ -154,13 +154,15 @@ export function AppNav() {
   const [xpPulse, setXpPulse] = useState(false);
   const prevPuan = useRef<number | null>(null);
 
-  const { data: okumaAtamalar } = useQuery<{ toplamBolum: number; tamamlananBolum: number }[]>({
+  const { data: okumaAtamalar } = useQuery<{ toplamBolum: number; tamamlananBolum: number; etkinlikAktif: boolean }[]>({
     queryKey: ['okuma-atamalar-badge'],
     queryFn: () => api.get('/api/okuma/atamalar').then(r => r.data),
     enabled: !!user && user.role === 'Ogrenci',
     staleTime: 60_000,
   });
-  const okumaBildirimVar = (okumaAtamalar ?? []).some(a => a.tamamlananBolum < a.toplamBolum);
+  // PDF-only (etkinlikAktif=false) atamalarda bölüm tamamlama imkânı yok — bunları
+  // sayarsak bildirim hiç kaybolmaz (tamamlananBolum hep 0 kalır).
+  const okumaBildirimVar = (okumaAtamalar ?? []).some(a => a.etkinlikAktif && a.tamamlananBolum < a.toplamBolum);
 
   useEffect(() => { setMounted(true); }, []);
 
