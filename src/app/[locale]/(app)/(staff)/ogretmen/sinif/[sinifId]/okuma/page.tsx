@@ -397,7 +397,7 @@ export default function OkumaIlerlemePage({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {data.denemeMi && !atama.kilitli && data.atamalar.length > 1 && (
+                  {data.denemeMi && atama.etkinlikAktif && !atama.kilitli && data.atamalar.length > 1 && (
                     <select
                       onChange={e => {
                         const yeniAtamaId = parseInt(e.target.value, 10);
