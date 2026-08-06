@@ -189,12 +189,22 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
       />
 
       {/* Okuma kitapları rafı — ders kitapları serilerinden ayrı gösterilir */}
-      <KitapRafi
-        title={c.okumaKitaplariTitle}
-        kitaplar={okumaKitaplari}
-        birimFiyatEurCent={katalog.birimFiyatEurCent}
-        locale={locale}
-      />
+      {okumaKitaplari.length > 0 && (
+        <>
+          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
+              Hediye
+            </span>
+            PDF versiyonları hediye · 1 kitap etkileşimli ücretsiz
+          </p>
+          <KitapRafi
+            title={c.okumaKitaplariTitle}
+            kitaplar={okumaKitaplari}
+            birimFiyatEurCent={katalog.birimFiyatEurCent}
+            locale={locale}
+          />
+        </>
+      )}
 
       {/* CTA — Faz 2'de sepet/sipariş formuna bağlanacak */}
       <div className="mt-4 rounded-[20px] bg-gradient-to-br from-[#1e3a5f] via-primary to-sky-500 px-6 py-12 text-center">
