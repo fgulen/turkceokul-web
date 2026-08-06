@@ -24,6 +24,8 @@ const C = {
     paketlerTitle: 'Paketler',
     kitaplarOther: 'Diğer Kitaplar',
     okumaKitaplariTitle: 'Okuma Kitapları',
+    okumaKitaplariHediyeBadge: 'Hediye',
+    okumaKitaplariHediyeNot: 'PDF versiyonları hediye · 1 kitap etkileşimli ücretsiz',
     ctaTitle: 'Kurumunuz için teklif alın',
     ctaSub: 'Satış ekibimiz 48 saat içinde sizinle iletişime geçer. Ödeme: havale.',
     ctaButton: 'Teklif Al',
@@ -38,6 +40,8 @@ const C = {
     paketlerTitle: 'Packages',
     kitaplarOther: 'Other Books',
     okumaKitaplariTitle: 'Reading Books',
+    okumaKitaplariHediyeBadge: 'Free',
+    okumaKitaplariHediyeNot: 'PDF versions are a gift · 1 interactive book free',
     ctaTitle: 'Get a quote for your institution',
     ctaSub: 'Our sales team will reach out within 48 hours. Payment: bank transfer.',
     ctaButton: 'Request a Quote',
@@ -192,10 +196,10 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
       {okumaKitaplari.length > 0 && (
         <>
           <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-              Hediye
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold">
+              {c.okumaKitaplariHediyeBadge}
             </span>
-            PDF versiyonları hediye · 1 kitap etkileşimli ücretsiz
+            {c.okumaKitaplariHediyeNot}
           </p>
           <KitapRafi
             title={c.okumaKitaplariTitle}
