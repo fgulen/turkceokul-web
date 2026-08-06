@@ -26,6 +26,7 @@ interface KitapDetay {
     toplamBolum: number;
   };
   kutuphaneKitapId: string | null;
+  etkinlikAktif: boolean;
   bolumler: Bolum[];
 }
 
@@ -89,7 +90,7 @@ export default function KitapDetayPage({
     );
   }
 
-  const { kitap, kutuphaneKitapId, bolumler } = data;
+  const { kitap, kutuphaneKitapId, etkinlikAktif, bolumler } = data;
   const tamamlanan = bolumler.filter((b) => b.tamamlandi).length;
   const pct =
     kitap.toplamBolum > 0
@@ -149,72 +150,96 @@ export default function KitapDetayPage({
         </div>
       </div>
 
-      {/* Okumaya Başla / Devam Et butonu */}
-      {aktifBolum && (
-        <Link
-          href={`/okuma/kitap/${kitapId}/bolum/${aktifBolum.id}`}
-          className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
-        >
-          <Play className="size-4 fill-current" />
-          {tumTamamlandi
-            ? 'Tekrar Oku'
-            : tamamlanan === 0
-              ? 'Okumaya Başla'
-              : 'Devam Et'}
-        </Link>
-      )}
+      {etkinlikAktif ? (
+        <>
+          {/* Okumaya Başla / Devam Et butonu */}
+          {aktifBolum && (
+            <Link
+              href={`/okuma/kitap/${kitapId}/bolum/${aktifBolum.id}`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
+            >
+              <Play className="size-4 fill-current" />
+              {tumTamamlandi
+                ? 'Tekrar Oku'
+                : tamamlanan === 0
+                  ? 'Okumaya Başla'
+                  : 'Devam Et'}
+            </Link>
+          )}
 
-      {/* PDF/EPUB versiyonu — eşleştirme varsa */}
-      {kutuphaneKitapId && (
-        <Link
-          href={`/okuma/${kutuphaneKitapId}`}
-          className="flex items-center justify-center gap-2 w-full rounded-xl border border-border py-3 font-semibold text-foreground hover:bg-muted/50 transition-colors min-h-[48px]"
-        >
-          <BookOpen className="size-4" />
-          Kitabı Oku (PDF)
-        </Link>
-      )}
+          {/* PDF/EPUB versiyonu — eşleştirme varsa */}
+          {kutuphaneKitapId && (
+            <Link
+              href={`/okuma/${kutuphaneKitapId}`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl border border-border py-3 font-semibold text-foreground hover:bg-muted/50 transition-colors min-h-[48px]"
+            >
+              <BookOpen className="size-4" />
+              Kitabı Oku (PDF)
+            </Link>
+          )}
 
-      {/* Bölüm listesi */}
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Bölümler
-        </h2>
-        {bolumler.map((b) => (
-          <div key={b.id}>
-            {b.kilitli ? (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-muted/30 opacity-60 min-h-[48px]">
-                <Lock className="size-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{b.name}</span>
-              </div>
-            ) : (
-              <Link
-                href={`/okuma/kitap/${kitapId}/bolum/${b.id}`}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-xl border hover:shadow-sm transition-shadow min-h-[48px]',
-                  b.tamamlandi
-                    ? 'bg-emerald-50 border-emerald-200'
-                    : 'bg-card border-border'
-                )}
-              >
-                {b.tamamlandi ? (
-                  <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+          {/* Bölüm listesi */}
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Bölümler
+            </h2>
+            {bolumler.map((b) => (
+              <div key={b.id}>
+                {b.kilitli ? (
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-muted/30 opacity-60 min-h-[48px]">
+                    <Lock className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{b.name}</span>
+                  </div>
                 ) : (
-                  <Play className="size-4 shrink-0 text-primary" />
+                  <Link
+                    href={`/okuma/kitap/${kitapId}/bolum/${b.id}`}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-xl border hover:shadow-sm transition-shadow min-h-[48px]',
+                      b.tamamlandi
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-card border-border'
+                    )}
+                  >
+                    {b.tamamlandi ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+                    ) : (
+                      <Play className="size-4 shrink-0 text-primary" />
+                    )}
+                    <span
+                      className={cn(
+                        'text-sm font-medium',
+                        b.tamamlandi && 'text-emerald-800'
+                      )}
+                    >
+                      {b.name}
+                    </span>
+                  </Link>
                 )}
-                <span
-                  className={cn(
-                    'text-sm font-medium',
-                    b.tamamlandi && 'text-emerald-800'
-                  )}
-                >
-                  {b.name}
-                </span>
-              </Link>
-            )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-start gap-3 px-4 py-4 rounded-xl border border-border bg-muted/30">
+            <AlertCircle className="size-5 shrink-0 text-muted-foreground mt-0.5" />
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Etkileşimli alıştırmalar öğretmeniniz tarafından henüz açılmamıştır,
+              kitabınızı PDF olarak okuyabilirsiniz.
+            </p>
+          </div>
+
+          {kutuphaneKitapId && (
+            <Link
+              href={`/okuma/${kutuphaneKitapId}`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-semibold hover:bg-primary/90 transition-colors min-h-[48px]"
+            >
+              <BookOpen className="size-4" />
+              Kitabı Oku (PDF)
+            </Link>
+          )}
+        </>
+      )}
     </div>
   );
 }
