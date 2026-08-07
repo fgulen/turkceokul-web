@@ -601,6 +601,7 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
       if (temsilciMod === 'mevcut' && seciliOgretmen) {
         await api.put(`/api/admin/ulke/${ulkeId}/temsilci`, { userId: seciliOgretmen.id });
         toast.success(`${seciliOgretmen.ad} artık "${ulkeAdi}" temsilcisi`);
+        onOlusturuldu();
         setGonderiliyor(false);
         onClose();
         return;
