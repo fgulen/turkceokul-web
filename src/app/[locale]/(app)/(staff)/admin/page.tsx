@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   GraduationCap, Users, Building2, Clock, BookOpen, KeyRound, BarChart3, Globe, Bell, Plus, Hourglass,
+  Share2, Mail, X,
 } from 'lucide-react';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -136,15 +138,6 @@ export default function AdminPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
       setDuzenlenecekKurum(null);
-    },
-  });
-
-  const ulkeOlusturMutation = useMutation({
-    mutationFn: (name: string) => api.post('/api/admin/ulke', { name }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-ulkeler'] });
-      qc.invalidateQueries({ queryKey: ['davet-ulkeler'] });
-      setUlkeOlusturAcik(false);
     },
   });
 
@@ -368,9 +361,12 @@ export default function AdminPage() {
       <UlkeOlusturSlideOver
         open={ulkeOlusturAcik}
         onClose={() => setUlkeOlusturAcik(false)}
-        onOlustur={name => ulkeOlusturMutation.mutate(name)}
-        olusturuluyor={ulkeOlusturMutation.isPending}
-        hata={ulkeOlusturMutation.error ? apiHataMesaji(ulkeOlusturMutation.error) : null}
+        onOlusturuldu={() => {
+          qc.invalidateQueries({ queryKey: ['admin-ulkeler'] });
+          qc.invalidateQueries({ queryKey: ['davet-ulkeler'] });
+          qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
+        }}
+        ogretmenler={ogretmenler}
       />
 
       {/* Bekleyen siparişler — SuperAdmin dashboard'undaki panelin birebir aynısı
@@ -536,51 +532,244 @@ function BeklemeListesiTab({ enabled }: { enabled: boolean }) {
   );
 }
 
-function UlkeOlusturSlideOver({ open, onClose, onOlustur, olusturuluyor, hata }: {
+function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
   open: boolean;
   onClose: () => void;
-  onOlustur: (name: string) => void;
-  olusturuluyor: boolean;
-  hata: string | null;
+  /** Ülke oluşturulduğunda çağrılır — temsilci adımı ayrı başarısız olsa bile
+   *  ülke zaten var olduğu için parent cache'i tazelemeli. */
+  onOlusturuldu: () => void;
+  /** "Mevcut kullanıcıdan seç" araması bu listeden client-side filtrelenir. */
+  ogretmenler: OgretmenSatiri[] | undefined;
 }) {
   const [name, setName] = useState('');
+  const [temsilciMod, setTemsilciMod] = useState<'yok' | 'mevcut' | 'davet'>('yok');
+  const [ogretmenQuery, setOgretmenQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [seciliOgretmen, setSeciliOgretmen] = useState<{ id: number; ad: string } | null>(null);
+  const [asama, setAsama] = useState<'form' | 'davet-hazir'>('form');
+  const [davetUrl, setDavetUrl] = useState<string | null>(null);
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setName('');
+    setTemsilciMod('yok');
+    setOgretmenQuery('');
+    setShowDropdown(false);
+    setSeciliOgretmen(null);
+    setAsama('form');
+    setDavetUrl(null);
+    setGonderiliyor(false);
+    setHata(null);
+  }, [open]);
+
+  const adaylar = useMemo(() => {
+    if (!ogretmenler || !ogretmenQuery.trim()) return [];
+    const q = ogretmenQuery.toLocaleLowerCase('tr');
+    return ogretmenler
+      .filter(o => o.isApproved)
+      .filter(o => `${o.name} ${o.surname ?? ''}`.toLocaleLowerCase('tr').includes(q) || o.email.toLocaleLowerCase('tr').includes(q))
+      .slice(0, 8);
+  }, [ogretmenler, ogretmenQuery]);
+
+  async function gonder() {
+    setHata(null);
+    setGonderiliyor(true);
+
+    let ulkeId: number;
+    let ulkeAdi: string;
+    try {
+      const res = await api.post('/api/admin/ulke', { name: name.trim() });
+      ulkeId = res.data.id;
+      ulkeAdi = res.data.name;
+    } catch (err) {
+      setGonderiliyor(false);
+      setHata(apiHataMesaji(err));
+      return;
+    }
+
+    onOlusturuldu();
+
+    if (temsilciMod === 'yok') {
+      setGonderiliyor(false);
+      onClose();
+      return;
+    }
+
+    try {
+      if (temsilciMod === 'mevcut' && seciliOgretmen) {
+        await api.put(`/api/admin/ulke/${ulkeId}/temsilci`, { userId: seciliOgretmen.id });
+        toast.success(`${seciliOgretmen.ad} artık "${ulkeAdi}" temsilcisi`);
+        setGonderiliyor(false);
+        onClose();
+        return;
+      }
+
+      const davetRes = await api.post('/api/davet/olustur', { hedefRol: 'UlkeTemsilcisi', ulkeId });
+      setGonderiliyor(false);
+      setDavetUrl(davetRes.data.url);
+      setAsama('davet-hazir');
+    } catch (err) {
+      setGonderiliyor(false);
+      setHata(`"${ulkeAdi}" oluşturuldu ama temsilci ataması başarısız oldu: ${apiHataMesaji(err)}. Ülkeler listesinden tekrar deneyebilirsiniz.`);
+    }
+  }
+
+  const gonderilebilir = !!name.trim() && !(temsilciMod === 'mevcut' && !seciliOgretmen);
 
   return (
     <SlideOver
       open={open}
-      onClose={() => { setName(''); onClose(); }}
-      title="Yeni Ülke"
+      onClose={onClose}
+      title={asama === 'davet-hazir' ? 'Davet Linki Hazır' : 'Yeni Ülke'}
       width="sm"
       footer={
-        <button
-          form="ulke-olustur-form"
-          type="submit"
-          disabled={olusturuluyor || !name.trim()}
-          className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
-          {olusturuluyor ? 'Oluşturuluyor…' : 'Oluştur'}
-        </button>
+        asama === 'davet-hazir' ? (
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+          >
+            Kapat
+          </button>
+        ) : (
+          <button
+            form="ulke-olustur-form"
+            type="submit"
+            disabled={gonderiliyor || !gonderilebilir}
+            className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {gonderiliyor ? 'Oluşturuluyor…' : 'Oluştur'}
+          </button>
+        )
       }
     >
-      <form
-        id="ulke-olustur-form"
-        onSubmit={e => { e.preventDefault(); onOlustur(name.trim()); }}
-        className="space-y-4"
-      >
-        <p className="text-xs text-slate-400">
-          Sorumlu öğretmen ataması ve aktif/pasif durumu sonra Super Admin panelinden düzenlenebilir.
-        </p>
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Ülke Adı *</label>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            autoFocus
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
-          />
+      {asama === 'davet-hazir' && davetUrl ? (
+        <div className="space-y-3">
+          <div className="px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 break-all font-mono border border-slate-200">
+            {davetUrl}
+          </div>
+          <div className="flex gap-2">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Merhaba! Ülke temsilcisi olarak davet edildiniz. Kayıt için: ${davetUrl}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white rounded-xl text-xs font-semibold hover:bg-green-600 transition-colors"
+            >
+              <Share2 className="size-3.5" />
+              WhatsApp
+            </a>
+            <a
+              href={`mailto:?subject=Davet&body=${encodeURIComponent(`Merhaba!\n\nÜlke temsilcisi olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
+            >
+              <Mail className="size-3.5" />
+              E-posta
+            </a>
+          </div>
         </div>
-        {hata && <p role="alert" className="text-xs text-red-600">{hata}</p>}
-      </form>
+      ) : (
+        <form
+          id="ulke-olustur-form"
+          onSubmit={e => { e.preventDefault(); gonder(); }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Ülke Adı *</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              autoFocus
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Ülke Temsilcisi</label>
+            <div className="flex gap-1.5 mb-2">
+              {([
+                { key: 'yok', label: 'Şimdi atama' },
+                { key: 'mevcut', label: 'Mevcut kullanıcı' },
+                { key: 'davet', label: 'Davet oluştur' },
+              ] as const).map(o => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setTemsilciMod(o.key)}
+                  className={cn(
+                    'flex-1 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    temsilciMod === o.key
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {temsilciMod === 'mevcut' && (
+              <div>
+                {seciliOgretmen ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-100 rounded-lg">
+                    <span className="text-xs font-medium text-purple-800 flex-1">{seciliOgretmen.ad}</span>
+                    <button type="button" onClick={() => { setSeciliOgretmen(null); setOgretmenQuery(''); }}
+                      className="text-purple-400 hover:text-purple-600">
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      value={ogretmenQuery}
+                      onChange={e => { setOgretmenQuery(e.target.value); setShowDropdown(true); }}
+                      onFocus={() => setShowDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                      placeholder="Öğretmen ara (isim veya e-posta)…"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                    {showDropdown && adaylar.length > 0 && (
+                      <div className="absolute z-20 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto">
+                        {adaylar.map(o => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => {
+                              setSeciliOgretmen({ id: o.id, ad: `${o.name} ${o.surname ?? ''}`.trim() });
+                              setOgretmenQuery('');
+                              setShowDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-purple-50 flex items-baseline gap-1 transition-colors"
+                          >
+                            <span className="text-xs font-medium text-slate-800">{o.name} {o.surname}</span>
+                            <span className="text-[11px] text-slate-400">({o.email})</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!seciliOgretmen && (
+                  <p className="text-xs text-slate-400 mt-1">Yalnızca onaylı öğretmenler arasından seçilebilir.</p>
+                )}
+              </div>
+            )}
+
+            {temsilciMod === 'davet' && (
+              <p className="text-xs text-slate-400">
+                Oluştur&apos;a bastığınızda WhatsApp/e-posta ile paylaşılabilir bir davet linki üretilir.
+              </p>
+            )}
+
+            {temsilciMod === 'yok' && (
+              <p className="text-xs text-slate-400">Temsilci ataması sonra Ülkeler listesinden de yapılabilir.</p>
+            )}
+          </div>
+
+          {hata && <p role="alert" className="text-xs text-red-600">{hata}</p>}
+        </form>
+      )}
     </SlideOver>
   );
 }
