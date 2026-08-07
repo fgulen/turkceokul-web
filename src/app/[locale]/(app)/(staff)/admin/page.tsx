@@ -613,7 +613,8 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
       setAsama('davet-hazir');
     } catch (err) {
       setGonderiliyor(false);
-      setHata(`"${ulkeAdi}" oluşturuldu ama temsilci ataması başarısız oldu: ${apiHataMesaji(err)}. Ülkeler listesinden tekrar deneyebilirsiniz.`);
+      toast.error(`"${ulkeAdi}" oluşturuldu ama temsilci ataması başarısız oldu: ${apiHataMesaji(err)}. Ülkeler listesinden tekrar deneyebilirsiniz.`);
+      onClose();
     }
   }
 
