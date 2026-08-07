@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useRouter, usePathname } from '@/navigation';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { SlideOver } from '@/components/slide-over';
 import { api } from '@/lib/api';
@@ -36,8 +38,15 @@ type Sekme = 'ulkeler' | 'kurumlar' | 'ogretmenler' | 'bekleyen' | 'ogrenciler' 
 export default function AdminPage() {
   const { user, ready } = useAuthGuard('Koordinator');
   const qc = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const sekme: Sekme = (searchParams?.get('tab') as Sekme) ?? 'ogretmenler';
 
-  const [sekme, setSekme] = useState<Sekme>('ogretmenler');
+  function setSekme(t: Sekme) {
+    router.replace(t === 'ogretmenler' ? pathname : `${pathname}?tab=${t}`);
+  }
+
   const [siparisPanelAcik, setSiparisPanelAcik] = useState(false);
   const [ogretmenDavetAcik, setOgretmenDavetAcik] = useState(false);
   const [kurumOlusturAcik, setKurumOlusturAcik] = useState(false);
@@ -201,8 +210,9 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Tab navigasyonu — 8 sekme tek satırda sığmaz, mobilde (sm altı) sadece ikon
-            gösterilir ve gerekirse yatay kaydırılır (bkz. ulke-temsilcisi/page.tsx). */}
+        {/* Tab navigasyonu — URL'e yazılır (?tab=), geri/ileri ve bookmark çalışır
+            (bkz. ulke-temsilcisi/page.tsx). 9 sekme tek satırda sığmaz, mobilde (sm
+            altı) sadece ikon gösterilir ve gerekirse yatay kaydırılır. */}
         <div className="flex gap-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-1 mb-6 overflow-x-auto scrollbar-none">
           {tabs.map(t => (
             <button
