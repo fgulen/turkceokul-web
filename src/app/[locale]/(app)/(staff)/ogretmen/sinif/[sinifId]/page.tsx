@@ -6,7 +6,7 @@ import { Link, useLocale } from '@/navigation';
 import { toast } from 'sonner';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
-  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info,
+  Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info, Gift,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
@@ -24,6 +24,7 @@ interface Sinif {
   ogrenciSayisi: number;
   kurumAdi: string | null;
   ulkeAdi: string | null;
+  okumaKitabiVarMi: boolean;
 }
 
 interface OgrenciOzet {
@@ -475,6 +476,23 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
           {/* Genel */}
           {tab === 'genel' && (
             <div className="space-y-4">
+              {sinif && !sinif.okumaKitabiVarMi && (
+                <Link
+                  href={`/ogretmen/sinif/${id}/okuma`}
+                  className="flex items-center justify-between gap-4 p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                      <Gift className="size-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-slate-800 text-sm">Bu sınıfa henüz okuma kitabı atanmadı</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Ders kitabı lisansınız kapsamında okuma kitabı PDF&apos;leri ücretsiz — hemen atayın</div>
+                    </div>
+                  </div>
+                  <ArrowLeft className="size-5 text-slate-300 group-hover:text-primary rotate-180 transition-colors shrink-0" />
+                </Link>
+              )}
               <h2 className="font-semibold text-slate-900">Sınıf Bilgileri</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[

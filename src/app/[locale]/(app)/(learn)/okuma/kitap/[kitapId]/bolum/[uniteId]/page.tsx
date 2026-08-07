@@ -136,12 +136,16 @@ export default function BolumPage({
           </span>
         ) : null}
 
-        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: asama === 'metin' ? '33%' : asama === 'quiz' ? '67%' : '100%' }}
-          />
-        </div>
+        {/* Quiz aşamasında kendi ilerleme çubuğunu gösteriyor (bkz. MikroQuiz) —
+            burada da bir çubuk göstermek üst üste iki bar'a neden oluyordu. */}
+        {asama !== 'quiz' && (
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: asama === 'metin' ? '33%' : '100%' }}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Metin aşaması ── */}
