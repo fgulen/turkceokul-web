@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Check } from 'lucide-react';
 import type { KatalogKitap } from '@/lib/katalog-api';
 import { bookCoverUrl } from '@/lib/book-covers';
 import { toMediaUrl } from '@/lib/utils';
@@ -14,11 +15,14 @@ interface Props {
   locale: string;
   /** Kitabın serideki 1-tabanlı sırası — statik kapak fallback'inde (c1/c2/... vb.) doğru görseli seçmek için. */
   seriNo?: number;
+  /** Okuma kitapları ayrı fiyatlanmıyor — herhangi bir ders kitabı lisansıyla dahil geliyor
+   * (bkz. TURKCEOKULU_MODERNIZASYON_PLANI.md madde 73). true ise fiyat/CTA yerine "dahil" rozeti gösterilir. */
+  dahil?: boolean;
 }
 
 const C = {
-  tr: { cta: 'Demo / Teklif Talep Et' },
-  en: { cta: 'Request Demo / Quote' },
+  tr: { cta: 'Demo / Teklif Talep Et', dahilRozeti: 'Ders kitabı lisansıyla dahil' },
+  en: { cta: 'Request Demo / Quote', dahilRozeti: 'Included with any course-book licence' },
 };
 
 // "Düz renk sırt" — kapak görseli hiç yoksa (API'de kapakResimUrl boş, seri de
@@ -32,7 +36,7 @@ function spineColor(seed: string): string {
   return SPINE_PALETTE[Math.abs(hash) % SPINE_PALETTE.length];
 }
 
-export function KitapKarti({ kitap, birimFiyatEurCent, locale, seriNo = 1 }: Props) {
+export function KitapKarti({ kitap, birimFiyatEurCent, locale, seriNo = 1, dahil = false }: Props) {
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
   const [modalOpen, setModalOpen] = useState(false);
@@ -72,7 +76,7 @@ export function KitapKarti({ kitap, birimFiyatEurCent, locale, seriNo = 1 }: Pro
         <div className="pointer-events-none absolute inset-x-1 bottom-0 h-2 rounded-full bg-black/15 blur-[3px]" />
       </div>
 
-      <div className="text-sm font-bold leading-5 text-slate-900">{kitap.ad}</div>
+      <div className="min-h-[2.5rem] text-sm font-bold leading-5 text-slate-900 line-clamp-2">{kitap.ad}</div>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {kitap.seviye && (
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-[0.04em] text-primary">
@@ -81,28 +85,37 @@ export function KitapKarti({ kitap, birimFiyatEurCent, locale, seriNo = 1 }: Pro
         )}
         {kitap.seri && <span className="text-[11px] text-slate-400">{kitap.seri}</span>}
       </div>
-      <div className="mt-2.5 text-[13px] font-bold text-slate-900">
-        €{(birimFiyatEurCent / 100).toFixed(2)}{' '}
-        <span className="text-[11px] font-medium text-slate-400">
-          / {isEn ? 'student / year' : 'öğrenci / yıl'}
-        </span>
-      </div>
+      {dahil ? (
+        <div className="mt-2.5 flex items-center gap-1.5 text-[12px] font-semibold text-green-700">
+          <Check className="h-3.5 w-3.5 flex-shrink-0" />
+          {c.dahilRozeti}
+        </div>
+      ) : (
+        <>
+          <div className="mt-2.5 text-[13px] font-bold text-slate-900">
+            €{(birimFiyatEurCent / 100).toFixed(2)}{' '}
+            <span className="text-[11px] font-medium text-slate-400">
+              / {isEn ? 'student / year' : 'öğrenci / yıl'}
+            </span>
+          </div>
 
-      <button
-        type="button"
-        onClick={() => setModalOpen(true)}
-        className="mt-3 w-full rounded-[10px] border border-primary bg-white px-3 py-[9px] text-xs font-bold text-primary"
-      >
-        {c.cta}
-      </button>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="mt-3 w-full rounded-[10px] border border-primary bg-white px-3 py-[9px] text-xs font-bold text-primary"
+          >
+            {c.cta}
+          </button>
 
-      {modalOpen && (
-        <DemoTalepModal
-          kitapId={kitap.id}
-          kitapAdi={kitap.ad}
-          locale={locale}
-          onClose={() => setModalOpen(false)}
-        />
+          {modalOpen && (
+            <DemoTalepModal
+              kitapId={kitap.id}
+              kitapAdi={kitap.ad}
+              locale={locale}
+              onClose={() => setModalOpen(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

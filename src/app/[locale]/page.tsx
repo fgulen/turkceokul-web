@@ -76,6 +76,7 @@ const C = {
         features: [
           "Sınırsız öğretmen & öğrenci",
           "Ünite 1 tüm kitaplarda ücretsiz",
+          "Okuma kitapları: PDF ücretsiz",
           "AI Stüdyo: 5 üretim/ay (Quiz + Kahoot)",
           "Sınıf yönetimi",
           "Kahoot modu",
@@ -87,6 +88,7 @@ const C = {
         recommended: "ÖNERİLEN",
         features: [
           "AI Stüdyo: sınırsız",
+          "Okuma kitapları: etkileşimli etkinlikler",
           "Analitik paneli",
           "Tek tıkla Excel raporu",
           "Öncelikli destek",
@@ -149,6 +151,7 @@ const C = {
         features: [
           "Unlimited teachers & students",
           "Unit 1 free in every book",
+          "Reading books: free PDF",
           "AI Studio: 5 generations/mo (Quiz + Kahoot)",
           "Class management",
           "Kahoot mode",
@@ -160,6 +163,7 @@ const C = {
         recommended: "RECOMMENDED",
         features: [
           "AI Studio: unlimited",
+          "Reading books: interactive activities",
           "Analytics dashboard",
           "One-click Excel report",
           "Priority support",

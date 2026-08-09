@@ -69,11 +69,13 @@ function KitapRafi({
   kitaplar,
   birimFiyatEurCent,
   locale,
+  dahil = false,
 }: {
   title: string;
   kitaplar: KatalogKitap[];
   birimFiyatEurCent: number;
   locale: string;
+  dahil?: boolean;
 }) {
   if (kitaplar.length === 0) return null;
   const range = cefrRange(kitaplar);
@@ -87,7 +89,7 @@ function KitapRafi({
       <div className="flex gap-4 overflow-x-auto pb-3">
         {kitaplar.map((k, idx) => (
           <div key={k.id} className="w-40 flex-shrink-0 sm:w-44 md:w-48">
-            <KitapKarti kitap={k} birimFiyatEurCent={birimFiyatEurCent} locale={locale} seriNo={idx + 1} />
+            <KitapKarti kitap={k} birimFiyatEurCent={birimFiyatEurCent} locale={locale} seriNo={idx + 1} dahil={dahil} />
           </div>
         ))}
       </div>
@@ -206,6 +208,7 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
             kitaplar={okumaKitaplari}
             birimFiyatEurCent={katalog.birimFiyatEurCent}
             locale={locale}
+            dahil
           />
         </>
       )}
