@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
+import { audienceNavLinks } from '@/config/audience-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
@@ -179,10 +180,7 @@ export default function OgretmenlerPage() {
         <LandingNav
           locale="tr"
           alternateHref="/en/for-teachers"
-          links={[
-            { label: 'Öğrenciler', href: '/turkce-ogren' },
-            { label: 'Öğretmenler', href: '/ogretmenler', active: true },
-          ]}
+          links={audienceNavLinks('tr', 'teachers')}
           ctaLabel="Ücretsiz Dene"
           ctaHref="/kayit?tip=ogretmen"
         />

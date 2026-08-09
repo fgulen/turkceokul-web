@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
+import { audienceNavLinks } from '@/config/audience-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
@@ -177,10 +178,7 @@ export default function ForTeachersPage() {
         <LandingNav
           locale="en"
           alternateHref="/tr/ogretmenler"
-          links={[
-            { label: 'Students', href: '/learn-turkish-online' },
-            { label: 'Teachers', href: '/for-teachers', active: true },
-          ]}
+          links={audienceNavLinks('en', 'teachers')}
           ctaLabel="Try Free"
           ctaHref="/kayit?tip=ogretmen"
         />

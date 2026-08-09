@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
 import { LandingNav } from '@/components/landing-nav';
+import { audienceNavLinks } from '@/config/audience-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { KatalogContent } from '@/components/satis/KatalogContent';
 import { getKatalog, type Katalog } from '@/lib/katalog-api';
@@ -111,11 +112,7 @@ export default async function KurumsalSatisPage(
       <LandingNav
         locale={locale}
         alternateHref={isEn ? '/tr/kurumsal-satis' : '/en/kurumsal-satis'}
-        links={[
-          { label: isEn ? 'Students' : 'Öğrenciler', href: isEn ? '/learn-turkish-online' : '/turkce-ogren' },
-          { label: isEn ? 'Teachers' : 'Öğretmenler', href: isEn ? '/for-teachers' : '/ogretmenler' },
-          { label: isEn ? 'Institutional Sales' : 'Kurumsal Satış', href: '/kurumsal-satis', active: true },
-        ]}
+        links={audienceNavLinks(locale, 'institutional')}
         ctaLabel={isEn ? 'Get a Quote' : 'Teklif Al'}
         ctaHref="/kayit?tip=kurumsal-pro"
       />

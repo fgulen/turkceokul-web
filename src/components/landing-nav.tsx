@@ -4,12 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/navigation';
 import { Logo } from '@/components/logo';
 import { Globe } from 'lucide-react';
-
-interface NavLink {
-  label: string;
-  href: string;
-  active?: boolean;
-}
+import type { NavLink } from '@/config/audience-nav';
 
 interface LandingNavProps {
   locale: string;

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Link } from '@/navigation';
 import { LandingNav } from '@/components/landing-nav';
+import { audienceNavLinks } from '@/config/audience-nav';
 import { LandingFooter } from '@/components/landing-footer';
 import { BrainstormPlaceholder } from '@/components/brainstorm-placeholder';
 import {
@@ -107,7 +108,7 @@ export default function LearnTurkishOnlinePage() {
       <div style={{ background: '#f9fafb', color: '#1e1b1c' }}>
 
         {/* Nav */}
-        <LandingNav locale="en" alternateHref="/tr/turkce-ogren" links={[]} />
+        <LandingNav locale="en" alternateHref="/tr/turkce-ogren" links={audienceNavLinks('en', 'students')} />
 
         {/* Hero */}
         <section style={{ background: 'linear-gradient(160deg, #eff6ff 0%, #fff 60%)', padding: '72px 0 60px' }}>
