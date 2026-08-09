@@ -17,6 +17,7 @@ interface DersKitabi {
   seviye: string;
   orderNo: number;
   thumbnailPicture?: string | null;
+  kapakResimUrl?: string | null;
   description?: string | null;
 }
 
@@ -142,7 +143,7 @@ export default function KutuphanePage() {
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {seridekiKitaplar.map((k, idx) => {
-                      const coverUrl = toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(seri, idx + 1);
+                      const coverUrl = toMediaUrl(k.kapakResimUrl) ?? toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(seri, idx + 1);
                       const active = isStaff || !cefrLevel || k.seviye === cefrLevel;
 
                       if (active) {

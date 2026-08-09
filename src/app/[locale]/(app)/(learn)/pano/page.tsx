@@ -42,6 +42,7 @@ interface DersKitabi {
   seviye: string;
   orderNo: number;
   thumbnailPicture?: string | null;
+  kapakResimUrl?: string | null;
 }
 
 interface OkumaKitabi {
@@ -278,7 +279,7 @@ export default function PanoPage() {
               {(kitaplar ?? []).map((k, idx, arr) => {
                 // Seri içi sırayı hesapla (1-tabanlı)
                 const seriesIdx = arr.filter((x, i) => i < idx && x.kitapSeti === k.kitapSeti).length + 1;
-                const coverUrl = toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(k.kitapSeti, seriesIdx);
+                const coverUrl = toMediaUrl(k.kapakResimUrl) ?? toMediaUrl(k.thumbnailPicture) ?? bookCoverUrl(k.kitapSeti, seriesIdx);
                 const active = !cefrLevel || k.seviye === cefrLevel;
                 if (active) {
                   return (
