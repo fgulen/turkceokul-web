@@ -7,13 +7,8 @@
 // öge render edilmez, bu yüzden sayfanın CLS'ine etkisi yok.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X, Loader2, CheckCircle2 } from 'lucide-react';
-
-interface Ulke {
-  id: number;
-  name: string;
-}
 
 interface Props {
   kitapId: string;
@@ -31,7 +26,6 @@ const C = {
     yetkiliEmail: 'E-posta',
     telefon: 'Telefon (opsiyonel)',
     ulke: 'Ülke',
-    ulkeSec: 'Seçiniz',
     submit: 'Gönder',
     submitting: 'Gönderiliyor...',
     success: 'Talebiniz alındı. Ülke temsilcimiz sizinle iletişime geçecek.',
@@ -48,7 +42,6 @@ const C = {
     yetkiliEmail: 'Email',
     telefon: 'Phone (optional)',
     ulke: 'Country',
-    ulkeSec: 'Select',
     submit: 'Send',
     submitting: 'Sending...',
     success: 'Your request has been received. Our country representative will contact you.',
@@ -63,24 +56,16 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
 
-  const [ulkeler, setUlkeler] = useState<Ulke[]>([]);
   const [kurumAdi, setKurumAdi] = useState('');
   const [yetkiliAdi, setYetkiliAdi] = useState('');
   const [yetkiliEmail, setYetkiliEmail] = useState('');
   const [telefon, setTelefon] = useState('');
-  const [ulkeId, setUlkeId] = useState('');
+  const [ulkeAdi, setUlkeAdi] = useState('');
   const [website, setWebsite] = useState(''); // honeypot
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/katalog/ulkeler')
-      .then((r) => r.json())
-      .then((data: Ulke[]) => setUlkeler(data))
-      .catch(() => setUlkeler([]));
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,7 +80,7 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
           yetkiliAdi,
           yetkiliEmail,
           telefon: telefon || undefined,
-          ulkeId: ulkeId ? Number(ulkeId) : undefined,
+          ulkeAdi,
           dersKitabiId: kitapId,
           website,
         }),
@@ -207,17 +192,14 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
 
             <div>
               <label className="block text-xs font-medium mb-1 text-[#414751]">{c.ulke}</label>
-              <select
+              <input
+                type="text"
                 required
-                value={ulkeId}
-                onChange={(e) => setUlkeId(e.target.value)}
+                maxLength={100}
+                value={ulkeAdi}
+                onChange={(e) => setUlkeAdi(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b75bc]/30"
-              >
-                <option value="">{c.ulkeSec}</option>
-                {ulkeler.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Honeypot — görsel olarak gizli, botlar doldurur. Autocomplete kapalı. */}
