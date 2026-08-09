@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Shield, LayoutDashboard, Building2, Globe, Users, Sparkles,
   Library, BookOpen, Package, Megaphone, TrendingDown,
-  BarChart3, ScrollText,
+  BarChart3, ScrollText, Compass,
 } from 'lucide-react';
 import type { UserRole } from '@/stores/auth';
 
@@ -79,9 +79,11 @@ export const STAFF_NAV: NavGroup[] = [
   {
     label: 'Sistem',
     items: [
-      { href: '/super-admin/raporlar',   label: 'Raporlar',          icon: BarChart3,  roles: ['SuperAdmin'] },
-      { href: '/super-admin/loglar',     label: 'Loglar',            icon: ScrollText, roles: ['SuperAdmin'] },
-      { href: '/super-admin/ai-ayarlar', label: 'AI Yapılandırma',   icon: Sparkles,   roles: ['SuperAdmin'] },
+      { href: '/super-admin/raporlar',     label: 'Raporlar',          icon: BarChart3,  roles: ['SuperAdmin'] },
+      { href: '/super-admin/loglar',       label: 'Loglar',            icon: ScrollText, roles: ['SuperAdmin'] },
+      { href: '/super-admin/ai-ayarlar',   label: 'AI Yapılandırma',   icon: Sparkles,   roles: ['SuperAdmin'] },
+      { href: '/super-admin/nasil-calisir', label: 'Nasıl Çalışır',    icon: Compass,    roles: ['SuperAdmin'] },
+      { href: '/admin/nasil-calisir',       label: 'Nasıl Çalışır',    icon: Compass,    roles: ['Koordinator'] },
     ],
   },
 ];
@@ -109,6 +111,7 @@ export const SEGMENT_LABELS: Record<string, string> = {
   'kurumsal': 'Kurumsal Satış',
   'loglar': 'Loglar',
   'ai-ayarlar': 'AI Yapılandırma',
+  'nasil-calisir': 'Nasıl Çalışır',
   'ai-icerik': 'AI İçerik Stüdyosu',
   'kutuphane': 'Kütüphane',
   'sinif': 'Sınıf',
