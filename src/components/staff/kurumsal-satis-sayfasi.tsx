@@ -274,6 +274,26 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
+  const [yeniUlkeAcikMi, setYeniUlkeAcikMi] = useState(false);
+  const [yeniUlkeAdi, setYeniUlkeAdi] = useState('');
+  const [sonucMesaji, setSonucMesaji] = useState<{ mesaj: string; davetUrl?: string } | null>(null);
+
+  const yeniUlkeMutation = useMutation({
+    mutationFn: () => api.post(`${apiBase}/siparis/${s!.id}/yeni-ulke-ve-temsilci`, { ulkeAdi: yeniUlkeAdi }),
+    onMutate: () => setHata(null),
+    onSuccess: (res) => {
+      const { ulkeAdi: acilanUlke, davetUrl, baglanmisLeadSayisi, mailGonderildi } = res.data;
+      setYeniUlkeAcikMi(false);
+      invalidate();
+      if (mailGonderildi) {
+        setSonucMesaji({ mesaj: `${acilanUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı, davet ${s!.yetkiliEmail} adresine gönderildi.` });
+      } else {
+        setSonucMesaji({ mesaj: `${acilanUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı. Mail gönderilemedi — linki kopyalayıp manuel paylaşın:`, davetUrl });
+      }
+    },
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
+  });
+
   // Kapasite değişince 400ms sonra tutarı otomatik hesapla (hacim indirimi/kampanya dahil).
   useEffect(() => {
     const t = setTimeout(() => setKapasiteDebounced(kapasite), 400);
@@ -342,6 +362,7 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   function kapat() {
     setDuzenleAcik(false);
     setHata(null);
+    setSonucMesaji(null);
     onClose();
   }
 
@@ -410,6 +431,10 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
                   Mevcut Ülkeye Bağla
                 </button>
+                <button type="button" onClick={() => { setYeniUlkeAcikMi(v => !v); setYeniUlkeAdi(s!.yeniUlkeAdi ?? ''); }}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
+                  Yeni Ülke Aç + Temsilci Yap
+                </button>
               </div>
               {baglaAcik && (
                 <div className="flex items-center gap-2 pt-1">
@@ -424,6 +449,23 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                     disabled={!seciliUlkeId || ulkeBaglaMutation.isPending}
                     className="px-2.5 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors">
                     {ulkeBaglaMutation.isPending ? 'Bağlanıyor…' : 'Onayla'}
+                  </button>
+                </div>
+              )}
+              {yeniUlkeAcikMi && (
+                <div className="space-y-2 pt-1 border-t border-orange-200 mt-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-orange-700 mb-0.5">Ülke Adı</label>
+                    <input type="text" value={yeniUlkeAdi} onChange={e => setYeniUlkeAdi(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs" />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Temsilci daveti şu adrese gönderilecek: <strong>{s!.yetkiliEmail}</strong>
+                  </p>
+                  <button type="button" onClick={() => yeniUlkeMutation.mutate()}
+                    disabled={!yeniUlkeAdi.trim() || yeniUlkeMutation.isPending}
+                    className="px-2.5 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors">
+                    {yeniUlkeMutation.isPending ? 'Oluşturuluyor…' : 'Ülkeyi Aç ve Daveti Gönder'}
                   </button>
                 </div>
               )}
@@ -479,6 +521,22 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   {fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${fiyatOnerisi.hacimIndirimiOrani}` : ''}
                   {fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${fiyatOnerisi.kampanyaIndirimOrani}` : ''}) — üzerine elle yazılabilir
                 </span>
+              )}
+            </div>
+          )}
+
+          {sonucMesaji && (
+            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-xs text-green-800 space-y-1.5">
+              <p>{sonucMesaji.mesaj}</p>
+              {sonucMesaji.davetUrl && (
+                <div className="flex items-center gap-2">
+                  <input readOnly value={sonucMesaji.davetUrl}
+                    className="flex-1 border border-green-300 rounded px-2 py-1 text-[11px] bg-white" />
+                  <button type="button" onClick={() => navigator.clipboard.writeText(sonucMesaji.davetUrl!)}
+                    className="px-2 py-1 text-[11px] bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                    Kopyala
+                  </button>
+                </div>
               )}
             </div>
           )}
