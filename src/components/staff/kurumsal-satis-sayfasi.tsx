@@ -270,13 +270,22 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const ulkeBaglaMutation = useMutation({
     mutationFn: () => api.put(`${apiBase}/siparis/${s!.id}/ulke-bagla`, { ulkeId: Number(seciliUlkeId) }),
     onMutate: () => setHata(null),
-    onSuccess: () => { setBaglaAcik(false); setSeciliUlkeId(''); invalidate(); onClose(); },
+    onSuccess: (res) => {
+      setBaglaAcik(false);
+      setSeciliUlkeId('');
+      invalidate();
+      if (res.data.temsilciVarMi) {
+        onClose();
+      } else {
+        setSonucMesaji({ mesaj: 'Bu ülkenin henüz temsilcisi yok, talep kimsenin kuyruğuna düşmeyecek.', tone: 'warning' });
+      }
+    },
     onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
 
   const [yeniUlkeAcikMi, setYeniUlkeAcikMi] = useState(false);
   const [yeniUlkeAdi, setYeniUlkeAdi] = useState('');
-  const [sonucMesaji, setSonucMesaji] = useState<{ mesaj: string; davetUrl?: string } | null>(null);
+  const [sonucMesaji, setSonucMesaji] = useState<{ mesaj: string; davetUrl?: string; tone?: 'success' | 'warning' } | null>(null);
 
   const yeniUlkeMutation = useMutation({
     mutationFn: () => api.post(`${apiBase}/siparis/${s!.id}/yeni-ulke-ve-temsilci`, { ulkeAdi: yeniUlkeAdi }),
@@ -526,7 +535,11 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
           )}
 
           {sonucMesaji && (
-            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-xs text-green-800 space-y-1.5">
+            <div className={`border rounded-lg px-3 py-2.5 text-xs space-y-1.5 ${
+              sonucMesaji.tone === 'warning'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-green-50 border-green-200 text-green-800'
+            }`}>
               <p>{sonucMesaji.mesaj}</p>
               {sonucMesaji.davetUrl && (
                 <div className="flex items-center gap-2">
