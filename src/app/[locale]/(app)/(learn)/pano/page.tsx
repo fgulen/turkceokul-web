@@ -49,6 +49,7 @@ interface OkumaKitabi {
   name: string;
   seviye: string;
   thumbnailPicture: string | null;
+  kapakResimUrl?: string | null;
   toplamBolum: number;
   tamamlananBolum: number;
 }
@@ -225,9 +226,7 @@ export default function PanoPage() {
                     href={devamEtHref}
                     className="p-5 bg-card border border-border rounded-3xl hover:border-primary/40 hover:shadow-md transition-all group flex items-start gap-4"
                   >
-                    <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <BookMarked className="size-6 text-primary" />
-                    </div>
+                    <OkumaKitapKapak kitap={kitap} />
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -442,6 +441,32 @@ function BookCoverThumb({ src, alt }: { src: string; alt: string }) {
       <img
         src={src}
         alt={alt}
+        className="w-full h-full object-contain"
+        onError={() => setErr(true)}
+      />
+    </div>
+  );
+}
+
+// Okuma kitabı kapağı: kapakResimUrl (öğretmen/R2 kapağı) → thumbnailPicture → ikon fallback.
+// BookCoverThumb'un aynısı ama okuma kitapları kapakResimUrl'den gelir (ders kitapları
+// seri bazlı statik kapak kullanır). Okuma sayfasındaki w-16 h-20 ile birebir aynı boyut.
+function OkumaKitapKapak({ kitap }: { kitap: OkumaKitabi }) {
+  const [err, setErr] = useState(false);
+  const src = toMediaUrl(kitap.kapakResimUrl) || toMediaUrl(kitap.thumbnailPicture);
+  if (!src || err) {
+    return (
+      <div className="w-16 h-20 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <BookMarked className="size-6 text-primary" />
+      </div>
+    );
+  }
+  return (
+    <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0 shadow-sm bg-white">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={kitap.name}
         className="w-full h-full object-contain"
         onError={() => setErr(true)}
       />

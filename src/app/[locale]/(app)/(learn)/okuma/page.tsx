@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Link } from '@/navigation';
 import { BookOpen, CheckCircle2, Calendar } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface OkumaKitap {
@@ -13,6 +13,7 @@ interface OkumaKitap {
   name: string;
   seviye: string;
   thumbnailPicture: string | null;
+  kapakResimUrl?: string | null;
   toplamBolum: number;
   tamamlananBolum: number;
 }
@@ -23,6 +24,7 @@ interface OkumaAtama {
   kitapAdi: string;
   seviye: string;
   thumbnailPicture: string | null;
+  kapakResimUrl?: string | null;
   teslimTarihi: string | null;
   toplamBolum: number;
   tamamlananBolum: number;
@@ -114,18 +116,18 @@ export default function OkumaPage() {
                 href={`/okuma/kitap/${kitap.id}`}
                 className="group flex gap-4 rounded-xl border border-border bg-card p-4 hover:shadow-md transition-shadow"
               >
-                {kitap.thumbnailPicture ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={kitap.thumbnailPicture}
-                    alt={kitap.name}
-                    className="w-16 h-20 object-cover rounded-md shrink-0"
-                  />
-                ) : (
-                  <div className="w-16 h-20 bg-muted rounded-md shrink-0 flex items-center justify-center">
-                    <BookOpen className="size-6 text-muted-foreground" />
-                  </div>
-                )}
+                {(() => {
+                  const coverSrc = toMediaUrl(kitap.kapakResimUrl) || toMediaUrl(kitap.thumbnailPicture);
+                  if (coverSrc) {
+                    // eslint-disable-next-line @next/next/no-img-element
+                    return <img src={coverSrc} alt={kitap.name} className="w-16 h-20 object-cover rounded-md shrink-0" />;
+                  }
+                  return (
+                    <div className="w-16 h-20 bg-muted rounded-md shrink-0 flex items-center justify-center">
+                      <BookOpen className="size-6 text-muted-foreground" />
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">

@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Link } from '@/navigation';
 import { use } from 'react';
 import { CheckCircle2, Lock, Play, BookOpen, ChevronLeft, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Button } from '@/components/ui/button';
 
@@ -23,6 +23,7 @@ interface KitapDetay {
     name: string;
     seviye: string;
     thumbnailPicture: string | null;
+    kapakResimUrl?: string | null;
     toplamBolum: number;
   };
   kutuphaneKitapId: string | null;
@@ -118,10 +119,10 @@ export default function KitapDetayPage({
 
       {/* Kitap başlık kartı */}
       <div className="flex gap-4">
-        {kitap.thumbnailPicture ? (
+        {toMediaUrl(kitap.kapakResimUrl) || toMediaUrl(kitap.thumbnailPicture) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={kitap.thumbnailPicture}
+            src={toMediaUrl(kitap.kapakResimUrl) || toMediaUrl(kitap.thumbnailPicture)!}
             alt={kitap.name}
             className="w-20 h-28 object-cover rounded-lg shrink-0"
           />
