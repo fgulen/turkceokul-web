@@ -26,7 +26,8 @@ interface Siparis {
   tarih: string;
   yetkiliAdi: string | null;
   yetkiliEmail: string | null;
-  ulkeAdi: string;
+  ulkeAdi: string | null;
+  yeniUlkeAdi: string | null;
   telefon: string | null;
   egitimYili: string;
   sinifSayisi: number;
@@ -75,6 +76,7 @@ interface Props {
 export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKeys }: Props) {
 
   const [durum, setDurum] = useState<Durum>('Tumu');
+  const [sadeceUlkesiEksik, setSadeceUlkesiEksik] = useState(false);
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
   const { sortKey, sortDir, toggleSort } = useSiralama<SortKey>('tarih', () => setSayfa(1), 'desc');
@@ -94,13 +96,14 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
   const gorunen = useMemo(() => {
     const q = arama.trim().toLocaleLowerCase('tr');
     let liste = (siparisler as Siparis[]).filter(s => durum === 'Tumu' || s.durum === durum);
+    if (sadeceUlkesiEksik) liste = liste.filter(s => !s.ulkeAdi && s.yeniUlkeAdi);
     if (q) {
       liste = liste.filter(s =>
         [s.kurumAdi, s.ulkeAdi, s.yetkiliAdi, s.yetkiliEmail]
           .some(v => (v ?? '').toLocaleLowerCase('tr').includes(q)));
     }
     return trSirala(liste, sortKey, sortDir);
-  }, [siparisler, durum, arama, sortKey, sortDir]);
+  }, [siparisler, durum, arama, sortKey, sortDir, sadeceUlkesiEksik]);
 
   const totalPages = Math.max(1, Math.ceil(gorunen.length / SAYFA_BOYUTU));
   const guvenliSayfa = Math.min(sayfa, totalPages);
@@ -154,6 +157,15 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
         ))}
       </div>
 
+      <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+          <input type="checkbox" checked={sadeceUlkesiEksik}
+            onChange={e => { setSadeceUlkesiEksik(e.target.checked); setSayfa(1); }}
+            className="rounded border-slate-300" />
+          Sadece Ülkesi Eksik
+        </label>
+      </div>
+
       {/* Tablo */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -180,7 +192,13 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
                     <span className="ml-2 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[10px] font-medium align-middle">LEAD</span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-xs text-slate-500">{s.ulkeAdi ?? '—'}</td>
+                <td className="px-4 py-2.5 text-xs text-slate-500">
+                  {s.ulkeAdi ?? (
+                    s.yeniUlkeAdi
+                      ? <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[10px] font-medium">⚠ Ülkesi Eksik: {s.yeniUlkeAdi}</span>
+                      : '—'
+                  )}
+                </td>
                 <td className="px-4 py-2.5 text-xs text-slate-500">{s.yetkiliAdi ?? '—'}</td>
                 <td className="px-4 py-2.5 text-center tabular-nums text-slate-700">{s.ogrenciKapasite}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">{euro(s.toplamTutar)}</td>
@@ -239,6 +257,22 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const lead = s?.kurumId == null;
   const beklemede = s?.durum === 'Beklemede';
   const iptalEdilmis = s?.durum === 'Iptal';
+  const ulkesiEksik = lead && beklemede && !s?.ulkeAdi && !!s?.yeniUlkeAdi;
+  const [baglaAcik, setBaglaAcik] = useState(false);
+  const [seciliUlkeId, setSeciliUlkeId] = useState('');
+
+  const { data: ulkelerListesi = [] } = useQuery({
+    queryKey: ['ulkeler-tumu', apiBase],
+    queryFn: () => api.get(`${apiBase}/ulkeler`, { params: { pageSize: 500 } }).then(r => r.data.liste as { id: number; name: string }[]),
+    enabled: baglaAcik,
+  });
+
+  const ulkeBaglaMutation = useMutation({
+    mutationFn: () => api.put(`${apiBase}/siparis/${s!.id}/ulke-bagla`, { ulkeId: Number(seciliUlkeId) }),
+    onMutate: () => setHata(null),
+    onSuccess: () => { setBaglaAcik(false); setSeciliUlkeId(''); invalidate(); onClose(); },
+    onError: (err: unknown) => setHata(apiHataMesaji(err)),
+  });
 
   // Kapasite değişince 400ms sonra tutarı otomatik hesapla (hacim indirimi/kampanya dahil).
   useEffect(() => {
@@ -364,6 +398,36 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
             <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
               Lead sipariş — onaylanmadan önce kuruma dönüştürülmeli (ülke temsilcisi paneli).
             </p>
+          )}
+
+          {ulkesiEksik && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2.5 space-y-2">
+              <p className="text-xs text-orange-700">
+                Bu talebin ülkesi eşleşmedi: <strong>{s!.yeniUlkeAdi}</strong>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setBaglaAcik(v => !v)}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
+                  Mevcut Ülkeye Bağla
+                </button>
+              </div>
+              {baglaAcik && (
+                <div className="flex items-center gap-2 pt-1">
+                  <select value={seciliUlkeId} onChange={e => setSeciliUlkeId(e.target.value)}
+                    className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                    <option value="">Ülke seçin…</option>
+                    {ulkelerListesi.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => ulkeBaglaMutation.mutate()}
+                    disabled={!seciliUlkeId || ulkeBaglaMutation.isPending}
+                    className="px-2.5 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors">
+                    {ulkeBaglaMutation.isPending ? 'Bağlanıyor…' : 'Onayla'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           <div>
