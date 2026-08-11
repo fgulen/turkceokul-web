@@ -34,6 +34,19 @@ function SinifKatilContent() {
     onSuccess: (data) => setJoined(data),
   });
 
+  // Giriş yapılmamış ziyaretçi kayıt formuna gönderilmeden önce kodun gerçekten var
+  // olduğunu doğrular — daha önce bu kontrol hiç yapılmıyordu, rastgele bir kod bile
+  // kayıt sayfasında "başarıyla girdin" mesajı gösteriyordu (asıl doğrulama ancak
+  // hesap oluşturulduktan sonra arka planda yapılıyordu).
+  const dogrulaMutation = useMutation({
+    mutationFn: (k: string) => api.get(`/api/sinif/dogrula?kod=${encodeURIComponent(k)}`),
+    onSuccess: (_data, k) => {
+      useAuthStore.getState().logout();
+      const returnTo = encodeURIComponent(`${window.location.pathname}?kod=${encodeURIComponent(k)}`);
+      router.push(`/kayit?tip=bireysel&redirect=${returnTo}` as Parameters<typeof router.push>[0]);
+    },
+  });
+
   useEffect(() => {
     const urlKod = searchParams.get('kod');
     if (urlKod) setKod(urlKod.toUpperCase());
@@ -54,13 +67,11 @@ function SinifKatilContent() {
     const k = kod.trim().toUpperCase();
     if (k.length < 4) return;
 
-    // Giriş yapılmamışsa kayıt sayfasına yönlendir; kodu URL'e göm (manuel giriş dahil)
+    // Giriş yapılmamışsa: önce kodu doğrula, geçerliyse kayıt sayfasına yönlendir.
     // !user: hiç kullanıcı yok. user && !hasSessionHint(): localStorage'ta stale user
-    // var ama geçerli oturum cookie'si yok — yine kayıt sayfasına yönlendir.
+    // var ama geçerli oturum cookie'si yok — yine bu dala düşer.
     if (_hasHydrated && (!user || !hasSessionHint())) {
-      useAuthStore.getState().logout();
-      const returnTo = encodeURIComponent(`${window.location.pathname}?kod=${encodeURIComponent(k)}`);
-      router.push(`/kayit?tip=bireysel&redirect=${returnTo}` as Parameters<typeof router.push>[0]);
+      dogrulaMutation.mutate(k);
       return;
     }
 
@@ -83,8 +94,9 @@ function SinifKatilContent() {
   }
 
   const errorMsg = (() => {
-    if (!katilMutation.error) return null;
-    const d = (katilMutation.error as { response?: { data?: unknown } }).response?.data;
+    const error = katilMutation.error ?? dogrulaMutation.error;
+    if (!error) return null;
+    const d = (error as { response?: { data?: unknown } }).response?.data;
     if (typeof d === 'string') return d;
     if (d && typeof d === 'object') {
       const obj = d as Record<string, unknown>;
@@ -125,10 +137,10 @@ function SinifKatilContent() {
 
           <Button
             type="submit"
-            disabled={kod.trim().length < 4 || katilMutation.isPending}
+            disabled={kod.trim().length < 4 || katilMutation.isPending || dogrulaMutation.isPending}
             className="w-full h-14 text-lg font-semibold"
           >
-            {katilMutation.isPending ? t('joining') : t('joinButton')}
+            {katilMutation.isPending || dogrulaMutation.isPending ? t('joining') : t('joinButton')}
           </Button>
         </form>
 

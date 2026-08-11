@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 
@@ -11,6 +11,7 @@ export function CookieBanner() {
   // İlk render'da (SSR + hydration) gizli varsayılır, mount'ta localStorage kontrolü
   // yapılır — aksi halde sunucu/istemci içeriği uyuşmazlığı (hydration mismatch) olur.
   const [gorunur, setGorunur] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setGorunur(!localStorage.getItem(ONAY_KEY));
@@ -21,10 +22,31 @@ export function CookieBanner() {
     setGorunur(false);
   }
 
+  // Banner'ın gerçek yüksekliğini --cerez-banner-h'e yazar — perde-giris.tsx gibi
+  // fixed-bottom aksiyon butonları bunu pay bırakıp banner'ın altında kalmaz (z-index
+  // banner'da daha yüksek olduğu için tıklamayı banner yakalıyordu, bkz. e2e a11y bulgusu).
+  useEffect(() => {
+    if (!gorunur) {
+      document.documentElement.style.setProperty('--cerez-banner-h', '0px');
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const guncelle = () => document.documentElement.style.setProperty('--cerez-banner-h', `${el.offsetHeight}px`);
+    guncelle();
+    const ro = new ResizeObserver(guncelle);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.setProperty('--cerez-banner-h', '0px');
+    };
+  }, [gorunur]);
+
   if (!gorunur) return null;
 
   return (
     <div
+      ref={ref}
       role="region"
       aria-label={t('mesaj')}
       className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 backdrop-blur-sm shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"

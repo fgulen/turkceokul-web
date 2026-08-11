@@ -121,8 +121,8 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
         </div>
       </div>
 
-      {/* Başla butonu */}
-      <div className="px-4 py-4 border-t shrink-0">
+      {/* Başla butonu — cerez banner'ı gösterirken üstüne binmesin diye pay bırakılır */}
+      <div className="px-4 pt-4 border-t shrink-0" style={{ paddingBottom: 'calc(var(--cerez-banner-h, 0px) + 1rem)' }}>
         <button
           onClick={handleBasla}
           className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-lg hover:bg-primary/90 active:scale-[0.98] transition-all"

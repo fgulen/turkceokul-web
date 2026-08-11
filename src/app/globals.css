@@ -9,6 +9,12 @@ body {
   max-width: 100vw;
 }
 
+/* CookieBanner kendi yüksekliğini burada günceller — fixed-bottom aksiyon butonları
+   (bkz. perde-giris.tsx) banner'ın altında kalmasın diye bu değeri pay olarak kullanır. */
+:root {
+  --cerez-banner-h: 0px;
+}
+
 /* Edge/IE'nin yerleşik şifre-göster ikonu custom Eye/EyeOff butonuyla çakışıp iki ikon gösteriyordu */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
