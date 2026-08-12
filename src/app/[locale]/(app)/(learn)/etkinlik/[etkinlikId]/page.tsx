@@ -8,7 +8,7 @@ import { Link, useRouter } from '@/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, Zap, Heart, PenLine, BookOpen, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { PerdeGiris } from '@/components/perde-giris';
+import { PerdeGiris, PERDE_UCRETSIZ_ACILMA } from '@/components/perde-giris';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useGameSound } from '@/hooks/use-game-sound';
@@ -579,8 +579,10 @@ export default function EtkinlikPage({
                 >
                   <BookOpen className="size-3.5" />
                   İpucuna Bak
-                  {perdeAcimaSayisi > 0 && (
-                    <span className="ml-1 text-destructive font-semibold">−{perdeAcimaSayisi} XP</span>
+                  {perdeAcimaSayisi > PERDE_UCRETSIZ_ACILMA && (
+                    <span className="ml-1 text-destructive font-semibold">
+                      −{perdeAcimaSayisi - PERDE_UCRETSIZ_ACILMA} XP
+                    </span>
                   )}
                 </button>
               </div>
@@ -598,6 +600,7 @@ export default function EtkinlikPage({
             etkinlik={etkinlik}
             onBasla={handlePerdeBasla}
             acilmaSayisi={perdeAcimaSayisi}
+            kitapId={kitapId ?? undefined}
           />
         )}
       </AnimatePresence>

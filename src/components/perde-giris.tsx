@@ -7,20 +7,47 @@ import { toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { AudioPlayButton } from '@/components/players/ui';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { useWordClickTranslate } from '@/hooks/use-word-click-translate';
+import { TranslationPopup } from '@/components/okuma/translation-popup';
 import type { EtkinlikData } from '@/types/etkinlik';
+
+// Ücretsiz ipucu hakkı — bu sayıya kadar gönüllü tekrar açılış XP kesmez.
+// API tarafındaki eşleniği: EtkinlikService.cs — PERDE_UCRETSIZ_ACILMA (aynı değerde tutulmalı).
+export const PERDE_UCRETSIZ_ACILMA = 5;
 
 interface Props {
   etkinlik: EtkinlikData;
   onBasla: () => void;
-  // 0 = ilk zorunlu açılış (ceza yok), >0 = gönüllü tekrar (her biri -1 XP)
+  // 0 = ilk zorunlu açılış (ceza yok), 1-5 = ücretsiz gönüllü tekrar, 6+ = her biri -1 XP
   acilmaSayisi: number;
+  kitapId?: string;
 }
 
-export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
+function formatTime(s: number) {
+  if (!Number.isFinite(s) || s < 0) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi, kitapId }: Props) {
   const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { play } = useGameSound();
   const ilkAcilis = acilmaSayisi === 0;
+  const asilanHakSayisi = Math.max(0, acilmaSayisi - PERDE_UCRETSIZ_ACILMA);
+
+  const bookId = kitapId ?? etkinlik.id;
+  const {
+    loading: translating,
+    result: translationResult,
+    activeWord,
+    anchorRect,
+    handleMouseUp: handleMetinMouseUp,
+    close: closeTranslation,
+  } = useWordClickTranslate(bookId);
 
   useEffect(() => {
     if (!ilkAcilis) return;
@@ -33,23 +60,28 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
   const videoUrl = toMediaUrl(etkinlik.videoLink);
   const metin = etkinlik.description;
 
-  function handlePlay() {
-    if (!sesUrl) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setPlaying(false);
-      return;
-    }
-    const a = new Audio(sesUrl);
-    audioRef.current = a;
-    setPlaying(true);
-    a.play();
-    a.onended = () => { setPlaying(false); audioRef.current = null; };
+  useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
+    setPlaying(false);
+  }, [sesUrl]);
+
+  function handleTogglePlay() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) audio.pause();
+    else audio.play();
+  }
+
+  function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
+    const audio = audioRef.current;
+    const t = Number(e.target.value);
+    if (audio) audio.currentTime = t;
+    setCurrentTime(t);
   }
 
   function handleBasla() {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    audioRef.current?.pause();
     onBasla();
   }
 
@@ -68,9 +100,15 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
           <span>İpucu</span>
         </div>
         {!ilkAcilis && (
-          <span className="text-xs font-semibold text-destructive">
-            −1 XP (toplam: −{acilmaSayisi})
-          </span>
+          asilanHakSayisi > 0 ? (
+            <span className="text-xs font-semibold text-destructive">
+              −{asilanHakSayisi} XP
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">
+              İpucu {acilmaSayisi}/{PERDE_UCRETSIZ_ACILMA}
+            </span>
+          )
         )}
       </div>
 
@@ -97,14 +135,49 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
             <img
               src={resimUrl}
               alt="Bağlam görseli"
-              className="w-full h-auto rounded-xl object-cover"
+              className="mx-auto block h-auto max-h-56 w-auto max-w-full rounded-xl object-contain"
             />
           )}
 
           {sesUrl && (
-            <div className="flex items-center gap-3 bg-muted rounded-xl px-4 py-3">
-              <AudioPlayButton playing={playing} onPlay={handlePlay} />
-              <span className="text-sm text-muted-foreground">Sesi dinle</span>
+            <div className="flex flex-col gap-2 bg-muted rounded-xl px-4 py-3">
+              <audio
+                ref={audioRef}
+                src={sesUrl}
+                preload="metadata"
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onEnded={() => setPlaying(false)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                className="hidden"
+              />
+              <div className="flex items-center gap-3">
+                <AudioPlayButton playing={playing} onPlay={handleTogglePlay} />
+                <span className="text-sm text-muted-foreground">Sesi dinle</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs tabular-nums text-muted-foreground w-9 text-right shrink-0">
+                  {formatTime(currentTime)}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 0}
+                  step={0.1}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  aria-label="Ses konumu"
+                  className="flex-1 h-1.5 rounded-full bg-border accent-primary
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:size-5
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
+                    [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary"
+                />
+                <span className="text-xs tabular-nums text-muted-foreground w-9 shrink-0">
+                  {formatTime(duration)}
+                </span>
+              </div>
             </div>
           )}
 
@@ -114,12 +187,24 @@ export function PerdeGiris({ etkinlik, onBasla, acilmaSayisi }: Props) {
 
           {metin && (
             <div
-              className="rounded-xl bg-muted/50 border border-border px-4 py-3 text-sm leading-relaxed [&_p]:mb-2 [&_br]:block"
+              className="rounded-xl bg-muted/50 border border-border px-4 py-3 text-sm leading-relaxed [&_p]:mb-2 [&_br]:block selection:bg-yellow-200 selection:text-yellow-900"
+              onMouseUp={handleMetinMouseUp}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(metin) }}
             />
           )}
         </div>
       </div>
+
+      {activeWord && (
+        <TranslationPopup
+          word={activeWord}
+          result={translationResult}
+          loading={translating}
+          onClose={closeTranslation}
+          theme="light"
+          anchorRect={anchorRect}
+        />
+      )}
 
       {/* Başla butonu — cerez banner'ı gösterirken üstüne binmesin diye pay bırakılır */}
       <div className="px-4 pt-4 border-t shrink-0" style={{ paddingBottom: 'calc(var(--cerez-banner-h, 0px) + 1rem)' }}>

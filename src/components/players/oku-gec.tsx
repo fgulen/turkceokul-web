@@ -1,24 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ImageOff, BookOpen, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PlayerProps } from '@/types/etkinlik';
 import { toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
-import { useWordTranslation } from '@/hooks/use-word-translation';
+import { useWordClickTranslate } from '@/hooks/use-word-click-translate';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
 import { PlayingBars } from './ui';
-
-function getWordAtPoint(x: number, y: number): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const range = (document as any).caretRangeFromPoint?.(x, y) as Range | undefined;
-  if (!range) return '';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (range as any).expand?.('word');
-  return range.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim();
-}
 
 export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -31,7 +22,9 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const bookId = kitapId ?? etkinlik.id;
-  const { loading: translating, result: translationResult, activeWord, translate, close: closeTranslation } = useWordTranslation(bookId);
+  const { loading: translating, result: translationResult, activeWord, anchorRect, handleMouseUp: handleTextMouseUp, close: closeTranslation } = useWordClickTranslate(bookId, (word) => {
+    setTiklananKelimeler(prev => prev.includes(word) ? prev : [...prev, word]);
+  });
 
   const current = detaylar[index];
   const progress = ((index + 1) / detaylar.length) * 100;
@@ -89,24 +82,6 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
       }
     };
   }, []);
-
-  const handleTextMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Önce seçili metin var mı bak (mobil long-press / desktop drag)
-    const selection = window.getSelection();
-    const selectedText = selection?.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim() ?? '';
-    if (selectedText && selectedText.split(/\s+/).length === 1 && selectedText.length > 1) {
-      translate(selectedText);
-      setTiklananKelimeler(prev => prev.includes(selectedText) ? prev : [...prev, selectedText]);
-      selection?.removeAllRanges();
-      return;
-    }
-
-    // Seçim yoksa caretRangeFromPoint ile tıklanan kelimeyi bul
-    const word = getWordAtPoint(e.clientX, e.clientY);
-    if (!word || word.split(/\s+/).length !== 1 || word.length < 2) return;
-    translate(word);
-    setTiklananKelimeler(prev => prev.includes(word) ? prev : [...prev, word]);
-  }, [translate]);
 
   function next() {
     stopAudio();
@@ -286,6 +261,7 @@ export function OkuGecPlayer({ etkinlik, onComplete, kitapId, uniteId }: PlayerP
           loading={translating}
           onClose={closeTranslation}
           theme="light"
+          anchorRect={anchorRect}
         />
       )}
     </div>

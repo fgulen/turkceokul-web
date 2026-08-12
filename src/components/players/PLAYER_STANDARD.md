@@ -215,6 +215,44 @@ olmaz — çünkü fazla kolon satır yüksekliğini azaltır, dokunma zorlaşı
 
 ---
 
+## 11. Sözlük / Kelime Tıklama (word-click dictionary)
+
+Metin içinde tek kelimeye tıklayınca/seçince anlık çeviri gösteren her yer (perde, `OkuGec`,
+okuma kitabı metni) **tek bir hook** kullanır — üç ayrı kopya yazma:
+
+```tsx
+import { useWordClickTranslate } from '@/hooks/use-word-click-translate';
+import { TranslationPopup } from '@/components/okuma/translation-popup';
+
+const bookId = kitapId ?? etkinlik.id;   // çeviri cache anahtarı
+const { loading, result, activeWord, anchorRect, handleMouseUp, close } =
+  useWordClickTranslate(bookId /*, onWordPicked?: (word, context) => void */);
+
+<div onMouseUp={handleMouseUp} dangerouslySetInnerHTML={{ __html: sanitizeHtml(metin) }} />
+
+{activeWord && (
+  <TranslationPopup
+    word={activeWord}
+    result={result}
+    loading={loading}
+    onClose={close}
+    theme="light"
+    anchorRect={anchorRect}   // ZORUNLU — vermezsen popup ekranın altına sabitlenir
+  />
+)}
+```
+
+**`anchorRect` zorunlu.** `TranslationPopup` `anchorRect` almazsa "EPUB / anchor yok" fallback'ine
+düşer ve popup ekranın altına ortalanır — kullanıcı hangi kelimeye baktığını göremez. Kelimenin
+hemen altına (veya üstte yer yoksa üstüne) yapıştırmak için hook'un döndürdüğü `anchorRect`'i
+her zaman geçir.
+
+**Kelimeyi kalıcı sözlüğe kaydetme** (okuma kitabı `/api/okuma/kelime`) opsiyoneldir — sadece
+`uniteId` bağlamı olan gerçek okuma akışlarında yapılır (bkz. `okuma-metin.tsx`). Perde ve
+`OkuGec` gibi anlık bakma amaçlı yerlerde kaydetme, sadece çeviriyi göster.
+
+---
+
 ## Audit Durumu (2026-06-18)
 
 | Player | Wrapper | Progress | Ses | Tablet | Notlar |

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
-import { useWordTranslation } from '@/hooks/use-word-translation';
+import { useWordClickTranslate } from '@/hooks/use-word-click-translate';
 import { TranslationPopup } from '@/components/okuma/translation-popup';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { cn } from '@/lib/utils';
@@ -17,31 +17,6 @@ interface OkumaMetinProps {
   onBitti: () => void;
 }
 
-function getCaretRange(x: number, y: number): Range | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (typeof (document as any).caretRangeFromPoint === 'function') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (document as any).caretRangeFromPoint(x, y) as Range;
-  }
-  // Firefox fallback
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pos = (document as any).caretPositionFromPoint?.(x, y);
-  if (!pos) return null;
-  const r = document.createRange();
-  r.setStart(pos.offsetNode, pos.offset);
-  r.setEnd(pos.offsetNode, pos.offset);
-  return r;
-}
-
-function getWordAtPoint(x: number, y: number): { word: string; range: Range | null } {
-  const range = getCaretRange(x, y);
-  if (!range) return { word: '', range: null };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (range as any).expand?.('word');
-  const word = range.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim();
-  return { word, range };
-}
-
 export function OkumaMetin({
   uniteId,
   kitapId,
@@ -49,68 +24,36 @@ export function OkumaMetin({
   onKelimeTiklandi,
   onBitti,
 }: OkumaMetinProps) {
+  const [kaydilenKelimeler, setKaydilenKelimeler] = useState<Set<string>>(new Set());
+
   const {
     loading: translating,
     result: translationResult,
     activeWord,
-    translate,
+    anchorRect,
+    handleMouseUp,
     close: closeTranslation,
-  } = useWordTranslation(kitapId);
-
-  const [kaydilenKelimeler, setKaydilenKelimeler] = useState<Set<string>>(new Set());
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>, paragraf: string) => {
-      // Önce seçili metin var mı bak (mobil long-press / desktop drag)
-      const selection = window.getSelection();
-      const selectedText =
-        selection?.toString().replace(/[.,!?;:"'()\n\r«»—–]/g, '').trim() ?? '';
-
-      let word = '';
-      let rect: DOMRect | null = null;
-      if (selectedText && selectedText.split(/\s+/).length === 1 && selectedText.length > 1) {
-        word = selectedText;
-        // selection'dan rect al
-        const selRange = selection?.getRangeAt(0) ?? null;
-        rect = selRange?.getBoundingClientRect() ?? null;
-        selection?.removeAllRanges();
-      } else {
-        const result = getWordAtPoint(e.clientX, e.clientY);
-        word = result.word;
-        rect = result.range?.getBoundingClientRect() ?? null;
-      }
-
-      if (!word || word.split(/\s+/).length !== 1 || word.length < 2) return;
-
-      setAnchorRect(rect);
-
-      // Çeviriyi başlat (async — state üzerinden sonuç gelir)
-      translate(word);
-
-      // Kelimeyi arka planda kaydet (hata durumunda UI etkilenmez)
-      const normalized = word.toLocaleLowerCase('tr');
-      if (!kaydilenKelimeler.has(normalized)) {
-        const ornekCumle = paragraf.replace(/<[^>]*>/g, '').slice(0, 200);
-        api
-          .post('/api/okuma/kelime', {
-            uniteId,
-            kelimeTR: normalized,
-            ornekCumle,
-            ceviriAR: null,
-            ceviriRU: null,
-          })
-          .then(() => {
-            setKaydilenKelimeler((prev) => new Set([...prev, normalized]));
-            onKelimeTiklandi?.(normalized);
-          })
-          .catch(() => {
-            // sessizce geç — kelime kaydı kritik değil
-          });
-      }
-    },
-    [translate, kaydilenKelimeler, uniteId, onKelimeTiklandi]
-  );
+  } = useWordClickTranslate<string>(kitapId, (word, paragraf) => {
+    // Kelimeyi arka planda kaydet (hata durumunda UI etkilenmez)
+    const normalized = word.toLocaleLowerCase('tr');
+    if (kaydilenKelimeler.has(normalized)) return;
+    const ornekCumle = paragraf.replace(/<[^>]*>/g, '').slice(0, 200);
+    api
+      .post('/api/okuma/kelime', {
+        uniteId,
+        kelimeTR: normalized,
+        ornekCumle,
+        ceviriAR: null,
+        ceviriRU: null,
+      })
+      .then(() => {
+        setKaydilenKelimeler((prev) => new Set([...prev, normalized]));
+        onKelimeTiklandi?.(normalized);
+      })
+      .catch(() => {
+        // sessizce geç — kelime kaydı kritik değil
+      });
+  });
 
   return (
     <div className="relative">
