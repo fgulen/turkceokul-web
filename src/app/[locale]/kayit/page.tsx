@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, useLocale, useRouter } from "@/navigation";
@@ -13,8 +14,11 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
-import { GlobeCanvas } from "@/components/globe-canvas";
 import { useAuthStore } from "@/stores/auth";
+
+// Sadece lg+ panelde görünen dekoratif WebGL küre — statik import mobil/tablet
+// bundle'ına da `cobe` kütüphanesini eklerdi (Core Web Vitals deploy-blocker kuralı).
+const GlobeCanvas = dynamic(() => import("@/components/globe-canvas").then((m) => m.GlobeCanvas), { ssr: false });
 import { api } from "@/lib/api";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { cn, gecerliIsimMi } from "@/lib/utils";
