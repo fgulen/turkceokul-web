@@ -32,11 +32,12 @@ export function GlobeCanvas({ className }: { className?: string }) {
       dark: 1,
       diffuse: 1.15,
       mapSamples: 12000,
-      mapBrightness: 6,
-      baseColor: [0.15, 0.42, 0.68],
-      markerColor: [0.34, 0.87, 1],
-      glowColor: [0.34, 0.87, 1],
-      opacity: 0.85,
+      mapBrightness: 14,
+      mapBaseBrightness: 0.1,
+      baseColor: [0.2, 0.5, 0.85],
+      markerColor: [1, 1, 1],
+      glowColor: [0, 0, 0],
+      opacity: 1,
     });
 
     let frameId: number | null = null;

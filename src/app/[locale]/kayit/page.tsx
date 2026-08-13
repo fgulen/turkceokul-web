@@ -203,7 +203,7 @@ function KayitForm() {
       <div className="hidden lg:flex w-[42%] flex-col relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-primary to-[#0ea5e9] p-12">
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-28 -right-28 z-0 h-[440px] w-[440px]"
+          className="pointer-events-none absolute -bottom-36 -right-36 z-0 h-[560px] w-[560px] mix-blend-screen"
         >
           <GlobeCanvas />
         </div>
