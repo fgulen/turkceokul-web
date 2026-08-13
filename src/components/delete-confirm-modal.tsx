@@ -1,8 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
+
+export interface DeleteImpactSatir {
+  label: string;
+  count: number;
+}
 
 interface Props {
   open: boolean;
@@ -10,17 +15,28 @@ interface Props {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  /** İlk silme denemesi 409 (bağımlılık var) dönerse çağıran taraf bunu set eder —
+   *  modal etki listesini gösterir, buton "Hepsini birlikte sil"e döner, bir sonraki
+   *  onConfirm çağıranın tarafında zorla=true ile tekrar denenir. */
+  impact?: DeleteImpactSatir[] | null;
 }
 
-export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, loading }: Props) {
+export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, loading, impact }: Props) {
   const [input, setInput] = useState('');
+
+  // Modal aynı bileşen örneğinde açılıp kapanıyor (parent koşullu render etmiyor,
+  // `open` sadece null döndürüyor) — her yeni açılışta girdiyi sıfırla. onConfirm
+  // sonrası HEMEN temizlemiyoruz artık: 409 (bağımlılık var) dönerse aynı "DELETE"
+  // yazısı geçerli kalır, admin "Hepsini birlikte sil"e tekrar yazmadan basabilir.
+  useEffect(() => {
+    if (open) setInput('');
+  }, [open]);
 
   if (!open) return null;
 
   function handleConfirm() {
     if (input !== 'DELETE') return;
     onConfirm();
-    setInput('');
   }
 
   function handleCancel() {
@@ -49,6 +65,15 @@ export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, load
           <p className="text-sm text-red-700 font-mono break-all">{entityName}</p>
         </div>
 
+        {impact && impact.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
+            <p className="text-xs font-semibold text-amber-800 mb-1.5">Bununla birlikte:</p>
+            <ul className="text-xs text-amber-700 space-y-0.5">
+              {impact.map(i => <li key={i.label}>• {i.count} {i.label}</li>)}
+            </ul>
+          </div>
+        )}
+
         <p className="text-sm text-slate-600 mb-3">
           Bu işlem geri alınamaz. Devam etmek için aşağıya{' '}
           <span className="font-mono font-bold text-slate-900">DELETE</span> yazın.
@@ -76,7 +101,7 @@ export function DeleteConfirmModal({ open, entityName, onConfirm, onCancel, load
             disabled={input !== 'DELETE' || loading}
             className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Siliniyor...' : 'Sil'}
+            {loading ? 'Siliniyor...' : impact && impact.length > 0 ? 'Hepsini birlikte sil' : 'Sil'}
           </button>
         </div>
       </div>

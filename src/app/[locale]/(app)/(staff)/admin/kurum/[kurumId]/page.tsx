@@ -1,10 +1,10 @@
 ﻿'use client';
 
 import { use, useState } from 'react';
-import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Users, GraduationCap, CheckCircle, Save } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 

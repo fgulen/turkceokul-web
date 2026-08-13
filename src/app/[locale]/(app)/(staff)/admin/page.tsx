@@ -43,10 +43,10 @@ export default function AdminPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const sekme: Sekme = (searchParams?.get('tab') as Sekme) ?? 'ogretmenler';
+  const sekme: Sekme = (searchParams?.get('tab') as Sekme) ?? 'ulkeler';
 
   function setSekme(t: Sekme) {
-    router.replace(t === 'ogretmenler' ? pathname : `${pathname}?tab=${t}`);
+    router.replace(t === 'ulkeler' ? pathname : `${pathname}?tab=${t}`);
   }
 
   const [siparisPanelAcik, setSiparisPanelAcik] = useState(false);
@@ -130,6 +130,7 @@ export default function AdminPage() {
       qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
       setKurumOlusturAcik(false);
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const kurumDuzenleMutation = useMutation({
@@ -139,6 +140,7 @@ export default function AdminPage() {
       qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
       setDuzenlenecekKurum(null);
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const onaylaMutation = useMutation({
@@ -147,6 +149,7 @@ export default function AdminPage() {
       qc.invalidateQueries({ queryKey: ['admin-bekleyen'] });
       qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const reddetMutation = useMutation({
@@ -155,6 +158,7 @@ export default function AdminPage() {
       qc.invalidateQueries({ queryKey: ['admin-bekleyen'] });
       qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   if (!ready) return <div className="py-24 flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;

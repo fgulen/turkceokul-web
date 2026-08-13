@@ -5,8 +5,10 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { apiHataMesaji } from '@/lib/utils';
 import { SlideOver } from '@/components/slide-over';
 
 export interface UlkeOzet {
@@ -73,6 +75,7 @@ export function UlkeDuzenleSlideOver({ ulke, onClose, onDirtyChange }: Props) {
       qc.invalidateQueries({ queryKey: ['sa-ulkeler'] });
       onClose();
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   return (

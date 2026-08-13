@@ -8,11 +8,14 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Globe, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api';
-import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
+import { apiHataMesaji } from '@/lib/utils';
+import { DeleteConfirmModal, type DeleteImpactSatir } from '@/components/delete-confirm-modal';
 import { AramaInput, Sayfalama, useSiralama } from '@/components/staff/table-kit';
 import { UlkeDuzenleSlideOver, type UlkeOzet } from './ulke-duzenle';
+import { ulkeSilImpact, ulkeTemsilciHatasi } from './panels';
 
 const SAYFA_BOYUTU = 20;
 
@@ -64,6 +67,7 @@ export default function UlkelerListePage() {
   const [editUlke, setEditUlke] = useState<UlkeOzet | null>(null);
   const editUlkeDirtyRef = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
   const [secili, setSecili] = useState<Set<number>>(new Set());
   const [topluOnay, setTopluOnay] = useState(false);
   const [topluHata, setTopluHata] = useState('');
@@ -89,13 +93,24 @@ export default function UlkelerListePage() {
       setYeniAd('');
       setShowAdd(false);
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const silMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/super-admin/ulke/${id}`),
+    mutationFn: ({ id, zorla }: { id: number; zorla: boolean }) =>
+      api.delete(`/api/super-admin/ulke/${id}`, { params: zorla ? { zorla: true } : undefined }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sa-ulkeler'] });
       setDeleteTarget(null);
+      setDeleteImpact(null);
+    },
+    onError: (err: unknown) => {
+      const temsilciMesaji = ulkeTemsilciHatasi(err);
+      if (temsilciMesaji) { toast.error(temsilciMesaji); setDeleteImpact(null); return; }
+      const impact = ulkeSilImpact(err);
+      if (impact) { setDeleteImpact(impact); return; }
+      setDeleteImpact(null);
+      toast.error(apiHataMesaji(err));
     },
   });
 
@@ -258,7 +273,7 @@ export default function UlkelerListePage() {
                       <Pencil className="size-3.5" />
                     </button>
                     <button
-                      onClick={e => { e.stopPropagation(); setDeleteTarget({ id: u.id, name: u.name }); }}
+                      onClick={e => { e.stopPropagation(); setDeleteTarget({ id: u.id, name: u.name }); setDeleteImpact(null); }}
                       className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition-colors">
                       <Trash2 className="size-3.5" />
                     </button>
@@ -302,8 +317,9 @@ export default function UlkelerListePage() {
     <DeleteConfirmModal
       open={!!deleteTarget}
       entityName={deleteTarget?.name ?? ''}
-      onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
-      onCancel={() => setDeleteTarget(null)}
+      impact={deleteImpact}
+      onConfirm={() => deleteTarget && silMutation.mutate({ id: deleteTarget.id, zorla: !!deleteImpact })}
+      onCancel={() => { setDeleteTarget(null); setDeleteImpact(null); }}
       loading={silMutation.isPending}
     />
     </>

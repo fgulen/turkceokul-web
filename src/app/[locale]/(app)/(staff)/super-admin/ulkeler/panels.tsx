@@ -10,7 +10,8 @@ import {
   Trash2, X, Plus,
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
+import { apiHataMesaji } from '@/lib/utils';
+import { DeleteConfirmModal, type DeleteImpactSatir } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { SinifFormSlideOver } from '@/components/sinif-form-slideover';
@@ -62,6 +63,51 @@ interface KurumSinifSatir {
   name: string;
   ogrenciSayisi: number;
   efektifKitapAdi: string | null;
+}
+
+// Sınıf/Kurum/Ülke silme 409'unu (bağımlılık var) DeleteConfirmModal'ın impact listesine
+// çevirir — Sınıf/Kurum/Ülke sayfalarının hepsi bu üç fonksiyonu paylaşır (ulkeler/page.tsx,
+// ulkeler/[ulkeId]/page.tsx, panels.tsx). Her satır ancak sayı>0 ise eklenir — 0 sayılı bir
+// satırı ("0 sınıf silinecek" gibi) göstermek yanıltıcı olurdu.
+function sinifSilImpact(err: unknown): DeleteImpactSatir[] | null {
+  const resp = (err as { response?: { status?: number; data?: { ogrenciSayisi?: number } } })?.response;
+  if (resp?.status !== 409 || resp.data?.ogrenciSayisi == null) return null;
+  const rows: DeleteImpactSatir[] = [];
+  if (resp.data.ogrenciSayisi) rows.push({ label: 'öğrenci bekleme listesine düşecek', count: resp.data.ogrenciSayisi });
+  return rows.length ? rows : null;
+}
+
+export function kurumSilImpact(err: unknown): DeleteImpactSatir[] | null {
+  const resp = (err as { response?: { status?: number; data?: Record<string, number> } })?.response;
+  if (resp?.status !== 409 || resp.data?.sinifSayisi == null) return null;
+  const d = resp.data;
+  const rows: DeleteImpactSatir[] = [];
+  if (d.sinifSayisi) rows.push({ label: 'sınıf silinecek', count: d.sinifSayisi });
+  if (d.ogrenciSayisi) rows.push({ label: 'öğrenci bekleme listesine düşecek', count: d.ogrenciSayisi });
+  if (d.ogretmenSayisi) rows.push({ label: 'öğretmen kurumsuz kalacak', count: d.ogretmenSayisi });
+  if (d.lisansSayisi) rows.push({ label: 'lisans kalıcı silinecek', count: d.lisansSayisi });
+  if (d.siparisSayisi) rows.push({ label: 'sipariş kalıcı silinecek', count: d.siparisSayisi });
+  return rows.length ? rows : null;
+}
+
+export function ulkeSilImpact(err: unknown): DeleteImpactSatir[] | null {
+  const resp = (err as { response?: { status?: number; data?: Record<string, number> } })?.response;
+  if (resp?.status !== 409 || resp.data?.temsilciSayisi != null || resp.data?.kurumSayisi == null) return null;
+  const d = resp.data;
+  const rows: DeleteImpactSatir[] = [];
+  if (d.kurumSayisi) rows.push({ label: 'kurum ülkesiz kalacak', count: d.kurumSayisi });
+  if (d.ogretmenSayisi) rows.push({ label: 'öğretmen ülkesiz kalacak', count: d.ogretmenSayisi });
+  return rows.length ? rows : null;
+}
+
+// Ülke silme 409'unda temsilci atanmışsa (SilmeDurumu.TemsilciVar) zorla'yla bile aşılamaz —
+// impact listesi yerine engelleyici bir hata mesajı döner.
+export function ulkeTemsilciHatasi(err: unknown): string | null {
+  const resp = (err as { response?: { status?: number; data?: { temsilciSayisi?: number } } })?.response;
+  if (resp?.status === 409 && resp.data?.temsilciSayisi != null) {
+    return `${resp.data.temsilciSayisi} ülke temsilcisi atanmış — önce temsilciyi başka role alın veya taşıyın.`;
+  }
+  return null;
 }
 
 export function TemsilcilerPanel({ ulkeId, ulkeAdi }: { ulkeId: number; ulkeAdi: string }) {
@@ -166,9 +212,20 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
     }).then(r => r.data?.liste ?? []),
   });
 
+  // topluSilParalel Promise.allSettled kullanır, hiç reject etmez — başarısızlar (bağımlılık
+  // var: sınıf/öğretmen/lisans/sipariş) dönen sayıya yansır, onSuccess'te toast ile gösterilir.
+  // Toplu silmede "zorla" yok — bağımlılığı olan bir kurum toplu seçimde atlanır, admin
+  // tekil satırdan "Hepsini birlikte sil" akışını kullanmalı.
   const topluSilMutation = useMutation({
     mutationFn: (ids: number[]) => topluSilParalel(ids, id => api.delete(`/api/super-admin/kurum/${id}`)),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kurumlar', ulkeId] }); temizle(); setTopluOnay(false); },
+    onSuccess: (hataliSayisi) => {
+      qc.invalidateQueries({ queryKey: ['sa-kurumlar', ulkeId] });
+      temizle();
+      setTopluOnay(false);
+      if (hataliSayisi > 0) {
+        toast.error(`${hataliSayisi} kurum silinemedi (bağlı sınıf/öğretmen/lisans/sipariş olabilir) — tekil silmeyi deneyin.`);
+      }
+    },
   });
 
   const kurumlar = useMemo(() => trSirala(kurumlarHam, sortKey, sortDir), [kurumlarHam, sortKey, sortDir]);
@@ -247,6 +304,7 @@ function KurumEkleSlideOver({ open, ulkeId, onClose }: { open: boolean; ulkeId: 
       toast.success('Kurum eklendi');
       onClose();
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const kaydet = () => form.name && kurumOlusturMutation.mutate();
@@ -308,11 +366,13 @@ export function UlkeKitaplarPanel({ ulkeId }: { ulkeId: number }) {
   const kaldirMutation = useMutation({
     mutationFn: (kitapId: string) => api.delete(`/api/super-admin/ulke/${ulkeId}/kitap/${kitapId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sa-ulke-kitaplar', ulkeId] }),
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
   const defaultMutation = useMutation({
     mutationFn: ({ id, isDefault }: { id: string; isDefault: boolean }) =>
       api.post(`/api/super-admin/ulke/${ulkeId}/kitap`, { dersKitabiId: id, isDefault }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sa-ulke-kitaplar', ulkeId] }),
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const atanamaz = new Set(mevcutKitaplarHam.map((k) => k.dersKitabiId));
@@ -390,6 +450,7 @@ function KitapAtaSlideOver({ open, ulkeId, atanamaz, onClose }: {
       toast.success('Kitap atandı');
       onClose();
     },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   return (
@@ -443,6 +504,7 @@ function KitapAtaSlideOver({ open, ulkeId, atanamaz, onClose }: {
 export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
   const qc = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<SinifSatir | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi' | 'dersKitabiId'>('name');
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
@@ -454,13 +516,27 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
   });
 
   const silMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/super-admin/sinif/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] }); setDeleteTarget(null); },
+    mutationFn: ({ id, zorla }: { id: number; zorla: boolean }) =>
+      api.delete(`/api/super-admin/sinif/${id}`, { params: zorla ? { zorla: true } : undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] }); setDeleteTarget(null); setDeleteImpact(null); },
+    onError: (err: unknown) => {
+      const impact = sinifSilImpact(err);
+      if (impact) { setDeleteImpact(impact); return; }
+      setDeleteImpact(null);
+      toast.error(apiHataMesaji(err));
+    },
   });
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: number[]) => topluSilParalel(ids, id => api.delete(`/api/super-admin/sinif/${id}`)),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] }); temizle(); setTopluOnay(false); },
+    onSuccess: (hataliSayisi) => {
+      qc.invalidateQueries({ queryKey: ['sa-ulke-siniflar', ulkeId] });
+      temizle();
+      setTopluOnay(false);
+      if (hataliSayisi > 0) {
+        toast.error(`${hataliSayisi} sınıf silinemedi (öğrenci içeriyor olabilir) — tekil silmeyi deneyin.`);
+      }
+    },
   });
 
   const siniflar = useMemo(() => trSirala(siniflarHam, sortKey, sortDir), [siniflarHam, sortKey, sortDir]);
@@ -494,7 +570,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
               <td className="px-5 py-2 text-center text-xs text-slate-600">{s.ogrenciSayisi}</td>
               <td className="px-5 py-2 text-xs text-slate-500 truncate max-w-[150px]">{s.dersKitabiId ?? '—'}</td>
               <td className="px-5 py-2 text-right">
-                <button onClick={() => setDeleteTarget(s)}
+                <button onClick={() => { setDeleteTarget(s); setDeleteImpact(null); }}
                   className="size-5 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition-colors ml-auto">
                   <Trash2 className="size-3" />
                 </button>
@@ -510,8 +586,9 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
       <DeleteConfirmModal
         open={!!deleteTarget}
         entityName={deleteTarget?.name ?? ''}
-        onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
-        onCancel={() => setDeleteTarget(null)}
+        impact={deleteImpact}
+        onConfirm={() => deleteTarget && silMutation.mutate({ id: deleteTarget.id, zorla: !!deleteImpact })}
+        onCancel={() => { setDeleteTarget(null); setDeleteImpact(null); }}
         loading={silMutation.isPending}
       />
 
@@ -537,6 +614,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
 export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
   const qc = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<KurumSinifSatir | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
 
   const { data: siniflar = [] } = useQuery<KurumSinifSatir[]>({
     queryKey: ['sa-siniflar', kurumId],
@@ -544,8 +622,15 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
   });
 
   const silMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/super-admin/sinif/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-siniflar', kurumId] }); setDeleteTarget(null); },
+    mutationFn: ({ id, zorla }: { id: number; zorla: boolean }) =>
+      api.delete(`/api/super-admin/sinif/${id}`, { params: zorla ? { zorla: true } : undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-siniflar', kurumId] }); setDeleteTarget(null); setDeleteImpact(null); },
+    onError: (err: unknown) => {
+      const impact = sinifSilImpact(err);
+      if (impact) { setDeleteImpact(impact); return; }
+      setDeleteImpact(null);
+      toast.error(apiHataMesaji(err));
+    },
   });
 
   return (
@@ -556,7 +641,7 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
             <div className="font-medium text-slate-800">{s.name}</div>
             <div className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci · {s.efektifKitapAdi ?? '—'}</div>
           </div>
-          <button onClick={() => setDeleteTarget(s)}
+          <button onClick={() => { setDeleteTarget(s); setDeleteImpact(null); }}
             className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
             <Trash2 className="size-3" />
           </button>
@@ -567,8 +652,9 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
       <DeleteConfirmModal
         open={!!deleteTarget}
         entityName={deleteTarget?.name ?? ''}
-        onConfirm={() => deleteTarget && silMutation.mutate(deleteTarget.id)}
-        onCancel={() => setDeleteTarget(null)}
+        impact={deleteImpact}
+        onConfirm={() => deleteTarget && silMutation.mutate({ id: deleteTarget.id, zorla: !!deleteImpact })}
+        onCancel={() => { setDeleteTarget(null); setDeleteImpact(null); }}
         loading={silMutation.isPending}
       />
     </div>

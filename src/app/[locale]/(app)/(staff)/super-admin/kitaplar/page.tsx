@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   BookOpen,
   Pencil, Trash2, Check, X, Plus, Eye, EyeOff,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/navigation';
 import { api } from '@/lib/api';
+import { apiHataMesaji } from '@/lib/utils';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import {
@@ -55,16 +57,19 @@ function KitaplarTab() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Kitap> }) =>
       api.put(`/api/super-admin/kitap/${id}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setEditKitap(null); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const silMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/api/super-admin/kitap/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); setDeleteTarget(null); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const topluSilMutation = useMutation({
     mutationFn: (ids: string[]) => api.post('/api/super-admin/kitaplar/toplu-sil', { ids }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kitaplar'] }); temizle(); setTopluOnay(false); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   return (

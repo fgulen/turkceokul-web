@@ -11,6 +11,7 @@ import {
 import { useRouter } from '@/navigation';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { apiHataMesaji } from '@/lib/utils';
 import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
 import { SlideOver } from '@/components/slide-over';
 import { useAuthStore, impersonation } from '@/stores/auth';
@@ -53,6 +54,7 @@ function KullanicilarTab() {
   const [arama, setArama] = useState('');
   const [rolFilter, setRolFilter] = useState('');
   const [durumFilter, setDurumFilter] = useState(() => searchParams?.get('durum') ?? '');
+  const [baglantisizFilter, setBaglantisizFilter] = useState(() => searchParams?.get('baglantisiz') === '1');
   const [sayfa, setSayfa] = useState(1);
   const [editUser, setEditUser] = useState<(KullaniciSatir & { ulkeler: UlkeOption[]; kurumlar: KurumOption[] }) | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<KullaniciSatir | null>(null);
@@ -64,9 +66,12 @@ function KullanicilarTab() {
   const isApproved = durumFilter === 'askida' ? false : durumFilter === 'aktif' ? true : undefined;
 
   const { data } = useQuery({
-    queryKey: ['sa-kullanicilar', rolFilter, durumFilter, arama, sayfa, sortKey, sortDir],
+    queryKey: ['sa-kullanicilar', rolFilter, durumFilter, baglantisizFilter, arama, sayfa, sortKey, sortDir],
     queryFn: () => api.get('/api/super-admin/kullanicilar', {
-      params: { rol: rolFilter || undefined, isApproved, arama: arama || undefined, sayfa, sayfaBoyutu: 50, sortKey, sortDir }
+      params: {
+        rol: rolFilter || undefined, isApproved, arama: arama || undefined, sayfa, sayfaBoyutu: 50, sortKey, sortDir,
+        baglantisiz: baglantisizFilter || undefined,
+      }
     }).then(r => r.data),
     placeholderData: keepPreviousData,
   });
@@ -94,11 +99,13 @@ function KullanicilarTab() {
   const guncelleMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: KullaniciGuncelleDto }) => api.put(`/api/super-admin/kullanici/${id}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setEditUser(null); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const silMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/super-admin/kullanici/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); setDeleteTarget(null); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const topluSilMutation = useMutation({
@@ -119,11 +126,13 @@ function KullanicilarTab() {
   const topluOnaylaMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-onayla', { ids }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const topluAskiyaAlMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/api/super-admin/kullanicilar/toplu-askiya-al', { ids }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }); temizle(); },
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const askiyaMutation = useMutation({
@@ -134,10 +143,12 @@ function KullanicilarTab() {
       });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sa-kullanicilar'] }),
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
   const impersonateMutation = useMutation({
     mutationFn: (id: number) => api.post(`/api/super-admin/impersonate/${id}`).then(r => r.data),
+    onError: (err: unknown) => toast.error(apiHataMesaji(err)),
     onSuccess: (data) => {
       if (!saUser || !useAuthStore.getState().accessToken) return;
       // Orijinal SuperAdmin refresh token'ı sunucu tarafında (httpOnly cookie) saklanıyor —
@@ -174,6 +185,14 @@ function KullanicilarTab() {
             <option value="aktif">Aktif</option>
             <option value="askida">Askıda</option>
           </select>
+          <button
+            onClick={() => { setBaglantisizFilter(v => !v); setSayfa(1); }}
+            title="Kurumu/ülkesi silinip boşta kalan öğretmen, kurum yöneticisi ve ülke temsilcileri — sınıfsız öğrenciler için Admin Paneli → Bekleme Listesi'ne bakın."
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              baglantisizFilter ? 'bg-amber-100 text-amber-800 border-amber-200' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}>
+            Bağlantısız
+          </button>
           <div className="flex items-center gap-2 ml-auto">
             {secili.size > 0 && (
               <>

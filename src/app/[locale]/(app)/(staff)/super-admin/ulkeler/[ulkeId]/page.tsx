@@ -6,13 +6,16 @@
 import { useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { ArrowLeft, Globe, Pencil, Trash2 } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { api } from '@/lib/api';
+import { apiHataMesaji } from '@/lib/utils';
 import { SlideOver } from '@/components/slide-over';
-import { DeleteConfirmModal } from '@/components/delete-confirm-modal';
+import { DeleteConfirmModal, type DeleteImpactSatir } from '@/components/delete-confirm-modal';
 import {
   TemsilcilerPanel, KurumlarPanel, UlkeKitaplarPanel, UlkeSiniflarPanel, KurumSiniflarDetail,
+  kurumSilImpact, ulkeSilImpact, ulkeTemsilciHatasi,
 } from '../panels';
 import { UlkeDuzenleSlideOver, type UlkeOzet } from '../ulke-duzenle';
 
@@ -45,6 +48,7 @@ export default function UlkeDetayPage() {
   const [editUlke, setEditUlke] = useState<UlkeOzet | null>(null);
   const editUlkeDirtyRef = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{ tip: 'ulke' | 'kurum'; id: number; name: string } | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
   const [seciliKurum, setSeciliKurum] = useState<{ id: number; name: string } | null>(null);
 
   function editUlkeAc(hedef: UlkeOzet) {
@@ -63,12 +67,22 @@ export default function UlkeDetayPage() {
   const ulke = (data?.liste ?? []).find((u: UlkeSatir) => u.id === ulkeId);
 
   const silMutation = useMutation({
-    mutationFn: ({ tip, id }: { tip: string; id: number }) => api.delete(`/api/super-admin/${tip}/${id}`),
+    mutationFn: ({ tip, id, zorla }: { tip: string; id: number; zorla: boolean }) =>
+      api.delete(`/api/super-admin/${tip}/${id}`, { params: zorla ? { zorla: true } : undefined }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['sa-ulkeler'] });
       qc.invalidateQueries({ queryKey: ['sa-kurumlar'] });
       setDeleteTarget(null);
+      setDeleteImpact(null);
       if (vars.tip === 'ulke') router.push('/super-admin/ulkeler');
+    },
+    onError: (err: unknown, vars) => {
+      const temsilciMesaji = ulkeTemsilciHatasi(err);
+      if (temsilciMesaji) { toast.error(temsilciMesaji); setDeleteImpact(null); return; }
+      const impact = vars.tip === 'kurum' ? kurumSilImpact(err) : ulkeSilImpact(err);
+      if (impact) { setDeleteImpact(impact); return; }
+      setDeleteImpact(null);
+      toast.error(apiHataMesaji(err));
     },
   });
 
@@ -111,7 +125,7 @@ export default function UlkeDetayPage() {
               Düzenle
             </button>
             <button
-              onClick={() => ulke && setDeleteTarget({ tip: 'ulke', id: ulke.id, name: ulke.name })}
+              onClick={() => { if (ulke) { setDeleteTarget({ tip: 'ulke', id: ulke.id, name: ulke.name }); setDeleteImpact(null); } }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
               <Trash2 className="size-3.5" />
               Sil
@@ -138,7 +152,7 @@ export default function UlkeDetayPage() {
           <KurumlarPanel
             ulkeId={ulkeId}
             onKurumClick={(id, name) => setSeciliKurum({ id, name })}
-            onDeleteKurum={(id, name) => setDeleteTarget({ tip: 'kurum', id, name })}
+            onDeleteKurum={(id, name) => { setDeleteTarget({ tip: 'kurum', id, name }); setDeleteImpact(null); }}
           />
         )}
         {bolum === 'kitaplar' && <UlkeKitaplarPanel ulkeId={ulkeId} />}
@@ -165,8 +179,9 @@ export default function UlkeDetayPage() {
       <DeleteConfirmModal
         open={!!deleteTarget}
         entityName={deleteTarget?.name ?? ''}
-        onConfirm={() => deleteTarget && silMutation.mutate({ tip: deleteTarget.tip, id: deleteTarget.id })}
-        onCancel={() => setDeleteTarget(null)}
+        impact={deleteImpact}
+        onConfirm={() => deleteTarget && silMutation.mutate({ tip: deleteTarget.tip, id: deleteTarget.id, zorla: !!deleteImpact })}
+        onCancel={() => { setDeleteTarget(null); setDeleteImpact(null); }}
         loading={silMutation.isPending}
       />
     </div>
