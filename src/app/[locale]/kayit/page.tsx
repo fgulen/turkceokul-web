@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, ArrowRight, ArrowLeft, Check,
   Building2, GraduationCap, KeyRound, Zap, Users, BookOpen, Brain,
-  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -105,24 +104,15 @@ function KayitForm() {
   const [tab, setTab] = useState<Tab | null>(initialTab);
   const [nativeLanguage, setNativeLanguage] = useState<NativeLangValue | null>(null);
   const [form, setForm] = useState({
-    name: "", surname: "", email: "", password: "", kurumAdi: "", kurumKodu: "",
+    name: "", surname: "", email: "", password: "",
     beklemeUlke: "", seviye: "" as SeviyeValue | "", yasGrubu: "" as YasGrubuValue | "",
   });
-  const [kurumOpen, setKurumOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const field = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  function formatKurumKodu(raw: string) {
-    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/[01IL]/g, "");
-    const p1 = clean.slice(0, 2);
-    const p2 = clean.slice(2, 6);
-    const p3 = clean.slice(6, 10);
-    return [p1, p2, p3].filter(Boolean).join("-");
-  }
 
   function goToStep(next: Step) {
     // Rol 1. adım ve zorunlu — seçilmeden dil (2) veya bilgi (3) adımına geçilemez.
@@ -169,8 +159,6 @@ function KayitForm() {
         email: form.email,
         password: form.password,
         role: tab === "kurumsal" ? "teacher" : "student",
-        ...(tab === "kurumsal" && form.kurumAdi ? { kurumAdi: form.kurumAdi } : {}),
-        ...(tab === "kurumsal" && form.kurumKodu ? { kurumKodu: form.kurumKodu.toUpperCase() } : {}),
         ...(nativeLanguage && nativeLanguage !== "none" ? { nativeLanguage } : {}),
         ...(form.beklemeUlke.trim() && form.seviye && form.yasGrubu
           ? { beklemeUlke: form.beklemeUlke.trim(), seviye: form.seviye, yasGrubu: form.yasGrubu }
@@ -309,11 +297,8 @@ function KayitForm() {
                     form={form}
                     field={field}
                     setForm={setForm}
-                    formatKurumKodu={formatKurumKodu}
                     showPass={showPass}
                     setShowPass={setShowPass}
-                    kurumOpen={kurumOpen}
-                    setKurumOpen={setKurumOpen}
                     error={error}
                     loading={loading}
                     sinifKatilRedirect={sinifKatilRedirect}
@@ -410,6 +395,7 @@ function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect:
             <button
               key={code}
               type="button"
+              dir={rtl ? "rtl" : "ltr"}
               onClick={() => onSelect(code)}
               className={cn(
                 "flex min-h-[56px] items-center justify-between rounded-xl border-2 px-5 py-3 transition-colors",
@@ -417,7 +403,6 @@ function StepDil({ value, onSelect }: { value: NativeLangValue | null; onSelect:
               )}
             >
               <span
-                dir={rtl ? "rtl" : "ltr"}
                 className={cn("text-base font-bold leading-tight", selected ? "text-primary" : "text-slate-800")}
               >
                 {nativeName}
@@ -494,24 +479,21 @@ function RolKart({ Icon, title, sub, selected, onClick }: {
 }
 
 type BilgiForm = {
-  name: string; surname: string; email: string; password: string; kurumAdi: string; kurumKodu: string;
+  name: string; surname: string; email: string; password: string;
   beklemeUlke: string; seviye: SeviyeValue | ""; yasGrubu: YasGrubuValue | "";
 };
 
 function StepBilgi({
-  tab, form, field, setForm, formatKurumKodu,
-  showPass, setShowPass, kurumOpen, setKurumOpen,
+  tab, form, field, setForm,
+  showPass, setShowPass,
   error, loading, sinifKatilRedirect, onSubmit,
 }: {
   tab: Tab;
   form: BilgiForm;
-  field: (k: "name" | "surname" | "email" | "password" | "kurumAdi" | "kurumKodu" | "beklemeUlke") => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  field: (k: "name" | "surname" | "email" | "password" | "beklemeUlke") => (e: React.ChangeEvent<HTMLInputElement>) => void;
   setForm: React.Dispatch<React.SetStateAction<BilgiForm>>;
-  formatKurumKodu: (raw: string) => string;
   showPass: boolean;
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>;
-  kurumOpen: boolean;
-  setKurumOpen: React.Dispatch<React.SetStateAction<boolean>>;
   error: string;
   loading: boolean;
   sinifKatilRedirect: boolean;
@@ -667,38 +649,14 @@ function StepBilgi({
         </div>
 
         {tab === "kurumsal" && (
-          <div className="rounded-xl border border-slate-200">
-            <button
-              type="button"
-              onClick={() => setKurumOpen((v) => !v)}
-              className="flex h-11 w-full items-center justify-between gap-2 px-4"
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3">
+            <span className="text-sm text-slate-500">{t("auth.register.institutionLabel")}</span>
+            <Link
+              href="/kurumsal-satis"
+              className="shrink-0 text-sm font-semibold text-primary hover:underline"
             >
-              <span className="text-sm font-semibold text-slate-600">
-                {t("auth.register.institutionLabel")} <span className="font-normal text-slate-400">{t("auth.register.institutionOptional")}</span>
-              </span>
-              {kurumOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
-            </button>
-            {kurumOpen && (
-              <div className="grid grid-cols-2 gap-3 px-4 pb-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-600">{t("auth.register.institutionNameLabel")}</label>
-                  <Input type="text" value={form.kurumAdi} onChange={field("kurumAdi")} placeholder={t("auth.register.institutionNamePlaceholder")} autoComplete="organization" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-600">
-                    {t("auth.register.institutionCodeLabel")} <span className="font-normal text-slate-400">{t("auth.register.institutionCodeHint")}</span>
-                  </label>
-                  <Input
-                    type="text"
-                    value={form.kurumKodu}
-                    onChange={(e) => setForm((f) => ({ ...f, kurumKodu: formatKurumKodu(e.target.value) }))}
-                    placeholder={t("auth.register.institutionCodePlaceholder")}
-                    maxLength={11}
-                    className="font-mono tracking-wider"
-                  />
-                </div>
-              </div>
-            )}
+              {t("auth.register.institutionCta")}
+            </Link>
           </div>
         )}
 
