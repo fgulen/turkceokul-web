@@ -14,6 +14,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TurkishLetterBackdrop } from "@/components/turkish-letter-backdrop";
+import { GlobeCanvas } from "@/components/globe-canvas";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/lib/api";
 import { safeRedirect } from "@/lib/safe-redirect";
@@ -200,13 +201,20 @@ function KayitForm() {
 
       {/* Sol panel — marka */}
       <div className="hidden lg:flex w-[42%] flex-col relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-primary to-[#0ea5e9] p-12">
-        <Link href="/" className="mb-14 inline-flex items-baseline select-none">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-28 -right-28 z-0 h-[440px] w-[440px]"
+        >
+          <GlobeCanvas />
+        </div>
+
+        <Link href="/" className="relative z-10 mb-14 inline-flex items-baseline select-none">
           <span className="text-[22px] font-black leading-none text-white/70">[</span>
           <span className="text-[17px] font-extrabold leading-none tracking-tight text-white">TÜRKÇEOKULU</span>
           <span className="text-[22px] font-black leading-none text-white/70">]</span>
         </Link>
 
-        <div className="flex-1">
+        <div className="relative z-10 flex-1">
           <div className="mb-3 text-xs font-bold tracking-widest text-white/55">
             {tab === "kurumsal" ? t("auth.register.badgeCorporate") : tab === "bireysel" ? t("auth.register.badgeIndividual") : t("auth.register.badgeDefault")}
           </div>
@@ -237,7 +245,7 @@ function KayitForm() {
           </div>
         </div>
 
-        <div className="flex gap-7 border-t border-white/10 pt-6">
+        <div className="relative z-10 flex gap-7 border-t border-white/10 pt-6">
           {[{ val: "53k+", labelKey: "auth.register.statsGraduates" }, { val: "30+", labelKey: "auth.register.statsCountries" }, { val: "A1–C1", label: "CEFR" }].map((s) => (
             <div key={s.labelKey ?? s.label}>
               <div className="text-[22px] font-black leading-none text-white">{s.val}</div>
