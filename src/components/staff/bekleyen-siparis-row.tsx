@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { apiHataMesaji } from '@/lib/utils';
+import { apiHataMesaji, waLink } from '@/lib/utils';
 
 export interface Siparis {
   id: number;
@@ -140,8 +140,8 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
       <dl className="px-4 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
         {alan('Yetkili', <>{s.yetkiliAdi ?? '—'}{s.yetkiliEmail ? <span className="text-slate-400"> · {s.yetkiliEmail}</span> : ''}</>)}
         {alan('Ülke', s.ulkeAdi)}
-        {alan('Telefon', s.telefon
-          ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
+        {alan('WhatsApp', s.telefon
+          ? <a href={waLink(s.telefon, s.kurumAdi ?? '')} target="_blank" rel="noreferrer" className="text-green-700 hover:underline">{s.telefon}</a>
           : '—')}
         {alan('Eğitim yılı', s.egitimYili)}
         {alan('Sınıf', s.sinifSayisi, 'Bu kurumda bu kitaba atanmış sınıf adedi')}

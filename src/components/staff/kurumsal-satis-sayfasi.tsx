@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { SlideOver } from '@/components/slide-over';
 import { ConfirmActionModal } from '@/components/confirm-action-modal';
 import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
-import { apiHataMesaji } from '@/lib/utils';
+import { apiHataMesaji, waLink } from '@/lib/utils';
 
 interface Siparis {
   id: number;
@@ -491,8 +491,8 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
             {bilgi('Ülke', s.ulkeAdi)}
             {bilgi('Yetkili', s.yetkiliAdi, 'Sipariş formuna girilen iletişim kişisi — sistemdeki bir kullanıcı hesabıyla otomatik bağlantılı değil')}
             {bilgi('E-posta', s.yetkiliEmail)}
-            {bilgi('Telefon', s.telefon
-              ? <a href={`tel:${s.telefon}`} className="text-purple-700 hover:underline">{s.telefon}</a>
+            {bilgi('WhatsApp', s.telefon
+              ? <a href={waLink(s.telefon, s.kurumAdi ?? '')} target="_blank" rel="noreferrer" className="text-green-700 hover:underline">{s.telefon}</a>
               : '—')}
             {!lead && bilgi('Kurum Yöneticisi', s.kurumYoneticisiEmail === s.yetkiliEmail
               ? <span className="text-slate-400 italic">Yetkili ile aynı</span>

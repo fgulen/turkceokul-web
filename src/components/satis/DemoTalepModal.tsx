@@ -24,7 +24,7 @@ const C = {
     kurumAdi: 'Kurum adı',
     yetkiliAdi: 'Yetkili adı soyadı',
     yetkiliEmail: 'E-posta',
-    telefon: 'Telefon (opsiyonel)',
+    telefon: 'WhatsApp numarası (opsiyonel)',
     ulke: 'Ülke',
     submit: 'Gönder',
     submitting: 'Gönderiliyor...',
@@ -40,7 +40,7 @@ const C = {
     kurumAdi: 'Institution name',
     yetkiliAdi: 'Contact name',
     yetkiliEmail: 'Email',
-    telefon: 'Phone (optional)',
+    telefon: 'WhatsApp number (optional)',
     ulke: 'Country',
     submit: 'Send',
     submitting: 'Sending...',
@@ -184,6 +184,7 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
               <input
                 type="tel"
                 maxLength={30}
+                placeholder="+964 7XX XXX XXXX"
                 value={telefon}
                 onChange={(e) => setTelefon(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b75bc]/30"

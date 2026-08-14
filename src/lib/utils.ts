@@ -15,6 +15,14 @@ export function apiHataMesaji(err: unknown): string {
   return (data as { hata?: string } | undefined)?.hata ?? 'İşlem başarısız. Lütfen tekrar deneyin.';
 }
 
+// wa.me yalnızca rakam kabul eder — boşluk/+/tire/parantez temizlenir. Staff panelindeki
+// sipariş satırlarında (bekleyen-siparis-row.tsx, kurumsal-satis-sayfasi.tsx) ortak.
+export function waLink(telefon: string, kurumAdi: string): string {
+  const digits = telefon.replace(/\D/g, '');
+  const mesaj = `Merhaba, Türkçe Okulu ekibinden yazıyoruz. ${kurumAdi} için siparişiniz hakkında sizinle iletişime geçmek istiyoruz.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(mesaj)}`;
+}
+
 // İsim/soyisim alanları: script/URI enjeksiyonunu (örn. "javascript:alert(...)")
 // engellemek için yalnızca harf (her dilden — Arapça/Kürtçe/Rusça/Kazakça kullanıcı
 // tabanı var, \p{L} bunu kapsar), boşluk, kesme işareti, nokta ve tire kabul edilir.
