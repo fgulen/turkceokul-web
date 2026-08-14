@@ -41,7 +41,9 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   const [seciliUlkeId, setSeciliUlkeId] = useState<string>('');
   const [seciliKurumId, setSeciliKurumId] = useState<string>('');
   const [kurumlarByUlke, setKurumlarByUlke] = useState<{ id: number; name: string }[]>([]);
+  const [hedefEmail, setHedefEmail] = useState('');
   const [davetUrl, setDavetUrl] = useState<string | null>(null);
+  const [davetSonuc, setDavetSonuc] = useState<{ email: string; mailGonderildi: boolean } | null>(null);
 
   const { data: scope, isLoading: scopeYukleniyor, isError: scopeHatali } = useQuery<SinifFormData>({
     queryKey: ['sinif-form-data'],
@@ -75,9 +77,11 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
       hedefRol,
       kurumId: kurumSabit?.id ?? (seciliKurumId ? Number(seciliKurumId) : undefined),
       ulkeId: hedefRol === 'UlkeTemsilcisi' ? (sabitUlke?.id ?? (seciliUlkeId ? Number(seciliUlkeId) : undefined)) : undefined,
+      hedefEmail: hedefEmail.trim() || undefined,
     }),
     onSuccess: (res) => {
       setDavetUrl(res.data.url);
+      if (hedefEmail.trim()) setDavetSonuc({ email: hedefEmail.trim(), mailGonderildi: res.data.mailGonderildi });
       onOlusturuldu?.();
     },
   });
@@ -170,12 +174,26 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
             <p className="text-xs text-slate-500">Kurum: <strong>{kurumSabit.name}</strong> (sabit)</p>
           )}
 
+          <div>
+            <label className="block text-xs font-medium mb-1">E-posta (opsiyonel)</label>
+            <input
+              type="email"
+              value={hedefEmail}
+              onChange={(e) => setHedefEmail(e.target.value)}
+              placeholder="davet@ornek.com"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              {hedefEmail.trim() ? 'Davet bu adrese sistem tarafından gönderilecek.' : 'Boş bırakırsanız linki kendiniz paylaşırsınız.'}
+            </p>
+          </div>
+
           <button
             onClick={davetGonder}
             disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId) || (kurumZorunlu && !seciliKurumId)}
             className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
           >
-            {davetMutation.isPending ? 'Oluşturuluyor...' : 'Davet Linki Oluştur'}
+            {davetMutation.isPending ? 'Oluşturuluyor...' : hedefEmail.trim() ? 'Davet Et' : 'Davet Linki Oluştur'}
           </button>
           {davetMutation.isError && (
             <p className="text-xs text-red-500">
@@ -186,6 +204,15 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
         </div>
       ) : (
         <div className="space-y-3">
+          {davetSonuc && (
+            davetSonuc.mailGonderildi ? (
+              <p className="text-xs text-emerald-600 font-medium">✓ {davetSonuc.email} adresine gönderildi.</p>
+            ) : (
+              <p className="text-xs text-amber-600 font-medium">
+                {davetSonuc.email} adresine gönderilemedi — linki aşağıdan manuel paylaşın.
+              </p>
+            )
+          )}
           <div className="px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 break-all font-mono border border-slate-200">
             {davetUrl}
           </div>
@@ -199,15 +226,17 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
               <Share2 className="size-3.5" />
               WhatsApp
             </a>
-            <a
-              href={`mailto:?subject=Davet&body=${encodeURIComponent(`Merhaba!\n\n${rolEtiketi} olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
-            >
-              <Mail className="size-3.5" />
-              E-posta
-            </a>
+            {(!davetSonuc || !davetSonuc.mailGonderildi) && (
+              <a
+                href={`mailto:?subject=Davet&body=${encodeURIComponent(`Merhaba!\n\n${rolEtiketi} olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
+              >
+                <Mail className="size-3.5" />
+                E-posta
+              </a>
+            )}
             <button
-              onClick={() => setDavetUrl(null)}
+              onClick={() => { setDavetUrl(null); setDavetSonuc(null); setHedefEmail(''); }}
               className="px-3 py-2 text-xs text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
             >
               Yeni

@@ -551,7 +551,9 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
   const [showDropdown, setShowDropdown] = useState(false);
   const [seciliOgretmen, setSeciliOgretmen] = useState<{ id: number; ad: string } | null>(null);
   const [asama, setAsama] = useState<'form' | 'davet-hazir'>('form');
+  const [davetEmail, setDavetEmail] = useState('');
   const [davetUrl, setDavetUrl] = useState<string | null>(null);
+  const [davetMailGonderildi, setDavetMailGonderildi] = useState(false);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -563,7 +565,9 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
     setShowDropdown(false);
     setSeciliOgretmen(null);
     setAsama('form');
+    setDavetEmail('');
     setDavetUrl(null);
+    setDavetMailGonderildi(false);
     setGonderiliyor(false);
     setHata(null);
   }, [open]);
@@ -611,9 +615,14 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
         return;
       }
 
-      const davetRes = await api.post('/api/davet/olustur', { hedefRol: 'UlkeTemsilcisi', ulkeId });
+      const davetRes = await api.post('/api/davet/olustur', {
+        hedefRol: 'UlkeTemsilcisi',
+        ulkeId,
+        hedefEmail: davetEmail.trim() || undefined,
+      });
       setGonderiliyor(false);
       setDavetUrl(davetRes.data.url);
+      setDavetMailGonderildi(!!davetEmail.trim() && davetRes.data.mailGonderildi);
       setAsama('davet-hazir');
     } catch (err) {
       setGonderiliyor(false);
@@ -652,6 +661,15 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
     >
       {asama === 'davet-hazir' && davetUrl ? (
         <div className="space-y-3">
+          {davetEmail.trim() && (
+            davetMailGonderildi ? (
+              <p className="text-xs text-emerald-600 font-medium">✓ {davetEmail.trim()} adresine gönderildi.</p>
+            ) : (
+              <p className="text-xs text-amber-600 font-medium">
+                {davetEmail.trim()} adresine gönderilemedi — linki aşağıdan manuel paylaşın.
+              </p>
+            )
+          )}
           <div className="px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 break-all font-mono border border-slate-200">
             {davetUrl}
           </div>
@@ -665,13 +683,15 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
               <Share2 className="size-3.5" />
               WhatsApp
             </a>
-            <a
-              href={`mailto:?subject=Davet&body=${encodeURIComponent(`Merhaba!\n\nÜlke temsilcisi olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
-            >
-              <Mail className="size-3.5" />
-              E-posta
-            </a>
+            {!davetMailGonderildi && (
+              <a
+                href={`mailto:?subject=Davet&body=${encodeURIComponent(`Merhaba!\n\nÜlke temsilcisi olarak davet edildiniz.\n\nKayıt linkiniz: ${davetUrl}`)}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-600 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition-colors"
+              >
+                <Mail className="size-3.5" />
+                E-posta
+              </a>
+            )}
           </div>
         </div>
       ) : (
@@ -763,9 +783,20 @@ function UlkeOlusturSlideOver({ open, onClose, onOlusturuldu, ogretmenler }: {
             )}
 
             {temsilciMod === 'davet' && (
-              <p className="text-xs text-slate-400">
-                Oluştur&apos;a bastığınızda WhatsApp/e-posta ile paylaşılabilir bir davet linki üretilir.
-              </p>
+              <div>
+                <input
+                  type="email"
+                  value={davetEmail}
+                  onChange={e => setDavetEmail(e.target.value)}
+                  placeholder="temsilci@ornek.com (opsiyonel)"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  {davetEmail.trim()
+                    ? 'Oluştur\'a bastığınızda davet sistem tarafından bu adrese gönderilir.'
+                    : 'Boş bırakırsanız Oluştur\'a bastığınızda WhatsApp/e-posta ile kendiniz paylaşabileceğiniz bir link üretilir.'}
+                </p>
+              </div>
             )}
 
             {temsilciMod === 'yok' && (
