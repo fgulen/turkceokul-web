@@ -159,10 +159,11 @@ export default function DavetPage({ params }: { params: Promise<{ token: string 
                   <input
                     type="email"
                     required={!bilgi.hedefEmail}
-                    value={form.email || bilgi.hedefEmail || ''}
+                    readOnly={!!bilgi.hedefEmail}
+                    value={bilgi.hedefEmail || form.email}
                     onChange={field('email')}
                     placeholder={bilgi.hedefEmail ?? 'ornek@email.com'}
-                    className="w-full px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                    className={`w-full px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background ${bilgi.hedefEmail ? 'opacity-70 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
