@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SlideOver } from '@/components/slide-over';
+import { KapakSecici } from '@/components/media/kapak-secici';
 
 interface KitapForm {
   baslik: string;
@@ -200,10 +201,7 @@ export function KitapDuzenleSlideOver({ kitapId, onClose }: Props) {
             <input type="text" value={form.url} onChange={e => set('url', e.target.value)} className={inputCls} />
           </div>
 
-          <div>
-            <label className={labelCls}>Kapak Görseli URL</label>
-            <input type="text" value={form.kapakUrl} onChange={e => set('kapakUrl', e.target.value)} className={inputCls} />
-          </div>
+          <KapakSecici value={form.kapakUrl} onChange={v => set('kapakUrl', v)} />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

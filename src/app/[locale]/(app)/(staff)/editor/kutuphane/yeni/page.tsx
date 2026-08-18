@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, X } from 'lucide-react';
 import { Link, useRouter } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
+import { KapakSecici } from '@/components/media/kapak-secici';
 
 interface KitapEkleForm {
   id: string;
@@ -142,10 +143,7 @@ export default function EditorKitapEklePage() {
             <input type="text" value={form.url} onChange={e => set('url', e.target.value)} placeholder="/books/cirkin-ordek-yavrusu.pdf" className={inputCls} />
           </div>
 
-          <div>
-            <label className={labelCls}>Kapak Görseli URL</label>
-            <input type="text" value={form.kapakUrl} onChange={e => set('kapakUrl', e.target.value)} placeholder="https://... veya /images/..." className={inputCls} />
-          </div>
+          <KapakSecici value={form.kapakUrl} onChange={v => set('kapakUrl', v)} />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

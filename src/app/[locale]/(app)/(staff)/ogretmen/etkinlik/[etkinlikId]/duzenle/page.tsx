@@ -10,6 +10,7 @@ import {
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { toMediaUrl } from '@/lib/utils';
+import { MediaPicker } from '@/components/media/media-picker';
 import { type EtkinlikData, type EtkinlikDetay } from '@/types/etkinlik';
 
 const KELIME_KEYS = [
@@ -54,19 +55,30 @@ function MediaPreview({ url }: { url: string }) {
   return null;
 }
 
-function UrlField({ label, value, onChange, placeholder = '/Medya/...' }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+function UrlField({ label, value, onChange, placeholder = '/Medya/...', onSecAc }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; onSecAc?: () => void;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
-        placeholder={placeholder}
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+          placeholder={placeholder}
+        />
+        {onSecAc && (
+          <button
+            type="button"
+            onClick={onSecAc}
+            className="shrink-0 px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            Seç
+          </button>
+        )}
+      </div>
       <MediaPreview url={value} />
     </div>
   );
@@ -121,6 +133,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
   const [pendingKelime, setPendingKelime] = useState<Record<string, string>>({});
   const [perdeAcik, setPerdeAcik] = useState(true);
   const [hata, setHata] = useState('');
+  const [medyaSecici, setMedyaSecici] = useState<{ tip: 'resim' | 'ses'; hedef: (key: string) => void } | null>(null);
 
   const { data: etkinlik, isLoading } = useQuery<EtkinlikData>({
     queryKey: ['etkinlik-duzenle', etkinlikId],
@@ -346,8 +359,18 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                 />
               </div>
 
-              <UrlField label="Resim Linki" value={perdeAlanlar.resimLink} onChange={(v) => handlePerdeChange('resimLink', v)} />
-              <UrlField label="Ses Linki" value={perdeAlanlar.sesLink} onChange={(v) => handlePerdeChange('sesLink', v)} />
+              <UrlField
+                label="Resim Linki"
+                value={perdeAlanlar.resimLink}
+                onChange={(v) => handlePerdeChange('resimLink', v)}
+                onSecAc={() => setMedyaSecici({ tip: 'resim', hedef: (key) => handlePerdeChange('resimLink', key) })}
+              />
+              <UrlField
+                label="Ses Linki"
+                value={perdeAlanlar.sesLink}
+                onChange={(v) => handlePerdeChange('sesLink', v)}
+                onSecAc={() => setMedyaSecici({ tip: 'ses', hedef: (key) => handlePerdeChange('sesLink', key) })}
+              />
               <UrlField label="Video Linki" value={perdeAlanlar.videoLink} onChange={(v) => handlePerdeChange('videoLink', v)} />
             </div>
           )}
@@ -505,11 +528,13 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                         label="Resim"
                         value={detay.resimLink || ''}
                         onChange={(v) => handleDetayChange(detay.id, 'resimLink', v || null)}
+                        onSecAc={() => setMedyaSecici({ tip: 'resim', hedef: (key) => handleDetayChange(detay.id, 'resimLink', key) })}
                       />
                       <UrlField
                         label="Ses"
                         value={detay.sesLink || ''}
                         onChange={(v) => handleDetayChange(detay.id, 'sesLink', v || null)}
+                        onSecAc={() => setMedyaSecici({ tip: 'ses', hedef: (key) => handleDetayChange(detay.id, 'sesLink', key) })}
                       />
                     </div>
 
@@ -642,6 +667,13 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
         </div>
 
       </main>
+
+      <MediaPicker
+        open={!!medyaSecici}
+        tip={medyaSecici?.tip ?? 'resim'}
+        onClose={() => setMedyaSecici(null)}
+        onSelect={(key) => { medyaSecici?.hedef(key); setMedyaSecici(null); }}
+      />
     </div>
   );
 }
