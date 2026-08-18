@@ -96,7 +96,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
 
   return (
     <div className="bg-[#F3F4F6]">
-      <main className="px-4 py-8 max-w-[1000px] mx-auto">
+      <main className="px-4 py-8 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-3 mb-2">
           <Link
             href="/ulke-temsilcisi?tab=kurumlar"
@@ -124,16 +124,16 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
           />
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-900">Lisans Durumu</h2>
+        <div className="grid xl:grid-cols-3 gap-6 items-start">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="font-semibold text-slate-900">Lisans Durumu</h2>
+            </div>
+            <div className="px-2 py-2">
+              <KurumLisansDurumu kurumId={id} />
+            </div>
           </div>
-          <div className="px-2 py-2">
-            <KurumLisansDurumu kurumId={id} />
-          </div>
-        </div>
 
-        <div className="grid xl:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
               <GraduationCap className="size-4 text-slate-400" />
