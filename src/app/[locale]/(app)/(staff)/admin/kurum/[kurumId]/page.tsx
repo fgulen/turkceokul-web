@@ -11,7 +11,7 @@ import { ArrowLeft, Building2, Users, GraduationCap, BookOpen, CheckCircle, Save
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, apiHataMesaji } from '@/lib/utils';
 import { LisansKart, type LisansKarti } from '@/components/lisans-kart';
 
 interface KurumOgretmen {
@@ -34,7 +34,7 @@ interface KurumDetay {
   sehir: string | null;
   ulkeId: number | null;
   ogretmenler: KurumOgretmen[];
-  siniflar: KurumSinif[];
+  siniflar?: KurumSinif[];
   ogrenciSayisi: number;
 }
 
@@ -44,7 +44,7 @@ interface KurumDetay {
 const BUTON_ROZET_METIN: Record<LisansKarti['buton'], string> = {
   SatinAl: 'Satın alınmadı',
   Inceleniyor: 'Talep inceleniyor',
-  EkLisans: 'Ek lisans gerekli',
+  EkLisans: 'Lisanslı',
   UcretsizDene: 'Denenmedi',
 };
 
@@ -64,7 +64,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
     enabled: !!user,
   });
 
-  const { data: lisanslar, isLoading: lisanslarYukleniyor } = useQuery<LisansKarti[]>({
+  const { data: lisanslar, isLoading: lisanslarYukleniyor, error: lisanslarHata } = useQuery<LisansKarti[]>({
     queryKey: ['admin-kurum-lisanslar', id],
     queryFn: () => api.get(`/api/admin/kurum/${id}/lisanslar`).then(r => r.data),
     enabled: !!user,
@@ -198,6 +198,8 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                 </div>
                 {lisanslarYukleniyor ? (
                   <div className="p-6 space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+                ) : lisanslarHata ? (
+                  <p className="text-slate-500 text-sm text-center py-12">{apiHataMesaji(lisanslarHata)}</p>
                 ) : !lisanslar?.length ? (
                   <p className="text-slate-400 text-sm text-center py-12">Kitap bulunamadı.</p>
                 ) : (
@@ -256,9 +258,9 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
                   <BookOpen className="size-4 text-slate-400" />
                   <h2 className="font-semibold text-slate-900">Sınıflar</h2>
-                  <span className="ml-auto text-xs text-slate-400 tabular-nums">{kurum.siniflar.length}</span>
+                  <span className="ml-auto text-xs text-slate-400 tabular-nums">{(kurum.siniflar ?? []).length}</span>
                 </div>
-                {!kurum.siniflar.length ? (
+                {!kurum.siniflar?.length ? (
                   <p className="text-slate-400 text-sm text-center py-12">Bu kurumda sınıf yok.</p>
                 ) : (
                   <div className="divide-y divide-slate-50">
