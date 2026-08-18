@@ -96,7 +96,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
 
   return (
     <div className="bg-[#F3F4F6]">
-      <main className="px-4 py-8 max-w-3xl mx-auto">
+      <main className="px-4 py-8 max-w-[1000px] mx-auto">
         <div className="flex items-center gap-3 mb-2">
           <Link
             href="/ulke-temsilcisi?tab=kurumlar"
@@ -133,51 +133,53 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-            <GraduationCap className="size-4 text-slate-400" />
-            <h2 className="font-semibold text-slate-900">Öğretmenler</h2>
-            <span className="ml-auto text-xs text-slate-400 tabular-nums">{ogretmenler.length}</span>
-          </div>
-          {ogretmenlerYukleniyor ? (
-            <div className="p-6 space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
-          ) : !ogretmenler.length ? (
-            <p className="text-slate-400 text-sm text-center py-12">Bu kurumda öğretmen yok.</p>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {ogretmenler.map(o => (
-                <div key={o.id} className="flex items-center justify-between px-6 py-3">
-                  <div className="min-w-0">
-                    <div className="font-medium text-sm text-slate-800 truncate">{o.name} {o.surname ?? ''}</div>
-                    <div className="text-xs text-slate-400 truncate">{o.email}</div>
+        <div className="grid xl:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <GraduationCap className="size-4 text-slate-400" />
+              <h2 className="font-semibold text-slate-900">Öğretmenler</h2>
+              <span className="ml-auto text-xs text-slate-400 tabular-nums">{ogretmenler.length}</span>
+            </div>
+            {ogretmenlerYukleniyor ? (
+              <div className="p-6 space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+            ) : !ogretmenler.length ? (
+              <p className="text-slate-400 text-sm text-center py-12">Bu kurumda öğretmen yok.</p>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {ogretmenler.map(o => (
+                  <div key={o.id} className="flex items-center justify-between px-6 py-3">
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm text-slate-800 truncate">{o.name} {o.surname ?? ''}</div>
+                      <div className="text-xs text-slate-400 truncate">{o.email}</div>
+                    </div>
+                    <div className="shrink-0 text-xs text-slate-400 text-right">{sonGirisMetni(o.lastLoginDate)}</div>
                   </div>
-                  <div className="shrink-0 text-xs text-slate-400 text-right">{sonGirisMetni(o.lastLoginDate)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mt-6">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-            <BookOpen className="size-4 text-slate-400" />
-            <h2 className="font-semibold text-slate-900">Sınıflar</h2>
-            <span className="ml-auto text-xs text-slate-400 tabular-nums">{siniflar.length}</span>
+                ))}
+              </div>
+            )}
           </div>
-          {siniflarYukleniyor ? (
-            <div className="p-6 space-y-3">{[1, 2].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
-          ) : !siniflar.length ? (
-            <p className="text-slate-400 text-sm text-center py-12">Bu kurumda sınıf yok.</p>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {siniflar.map(s => (
-                <div key={s.id} className="flex items-center justify-between px-6 py-3">
-                  <div className="font-medium text-sm text-slate-800">{s.name}</div>
-                  <div className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci</div>
-                </div>
-              ))}
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <BookOpen className="size-4 text-slate-400" />
+              <h2 className="font-semibold text-slate-900">Sınıflar</h2>
+              <span className="ml-auto text-xs text-slate-400 tabular-nums">{siniflar.length}</span>
             </div>
-          )}
+            {siniflarYukleniyor ? (
+              <div className="p-6 space-y-3">{[1, 2].map(i => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+            ) : !siniflar.length ? (
+              <p className="text-slate-400 text-sm text-center py-12">Bu kurumda sınıf yok.</p>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {siniflar.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-6 py-3">
+                    <div className="font-medium text-sm text-slate-800">{s.name}</div>
+                    <div className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

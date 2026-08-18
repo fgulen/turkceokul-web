@@ -131,7 +131,8 @@ export function bolumIconName(bolum: string): string {
 }
 
 // Medya URL'i çöz: R2 varsa R2, yoksa API'den serve et
-// DB'de /Medya/... (büyük M), R2'de medya/... (küçük m) — normalize et
+// DB'deki path (örn. /Medya/...) R2 key'iyle birebir aynı casing'i kullanır —
+// normalize edilmiyor, edilmemeli
 // Dosya isimlerinde boşluk + Türkçe karakter olabilir — encodeURI ile encode et
 const R2 = process.env.NEXT_PUBLIC_R2_URL ?? '';
 
