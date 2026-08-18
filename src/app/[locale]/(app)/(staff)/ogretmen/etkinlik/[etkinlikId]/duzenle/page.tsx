@@ -133,7 +133,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
   const [pendingKelime, setPendingKelime] = useState<Record<string, string>>({});
   const [perdeAcik, setPerdeAcik] = useState(true);
   const [hata, setHata] = useState('');
-  const [medyaSecici, setMedyaSecici] = useState<{ tip: 'resim' | 'ses'; hedef: (key: string) => void } | null>(null);
+  const [medyaSecici, setMedyaSecici] = useState<{ tip: 'resim' | 'ses'; deger: string; hedef: (key: string) => void } | null>(null);
 
   const { data: etkinlik, isLoading } = useQuery<EtkinlikData>({
     queryKey: ['etkinlik-duzenle', etkinlikId],
@@ -363,13 +363,13 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                 label="Resim Linki"
                 value={perdeAlanlar.resimLink}
                 onChange={(v) => handlePerdeChange('resimLink', v)}
-                onSecAc={() => setMedyaSecici({ tip: 'resim', hedef: (key) => handlePerdeChange('resimLink', key) })}
+                onSecAc={() => setMedyaSecici({ tip: 'resim', deger: perdeAlanlar.resimLink, hedef: (key) => handlePerdeChange('resimLink', key) })}
               />
               <UrlField
                 label="Ses Linki"
                 value={perdeAlanlar.sesLink}
                 onChange={(v) => handlePerdeChange('sesLink', v)}
-                onSecAc={() => setMedyaSecici({ tip: 'ses', hedef: (key) => handlePerdeChange('sesLink', key) })}
+                onSecAc={() => setMedyaSecici({ tip: 'ses', deger: perdeAlanlar.sesLink, hedef: (key) => handlePerdeChange('sesLink', key) })}
               />
               <UrlField label="Video Linki" value={perdeAlanlar.videoLink} onChange={(v) => handlePerdeChange('videoLink', v)} />
             </div>
@@ -528,13 +528,13 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
                         label="Resim"
                         value={detay.resimLink || ''}
                         onChange={(v) => handleDetayChange(detay.id, 'resimLink', v || null)}
-                        onSecAc={() => setMedyaSecici({ tip: 'resim', hedef: (key) => handleDetayChange(detay.id, 'resimLink', key) })}
+                        onSecAc={() => setMedyaSecici({ tip: 'resim', deger: detay.resimLink || '', hedef: (key) => handleDetayChange(detay.id, 'resimLink', key) })}
                       />
                       <UrlField
                         label="Ses"
                         value={detay.sesLink || ''}
                         onChange={(v) => handleDetayChange(detay.id, 'sesLink', v || null)}
-                        onSecAc={() => setMedyaSecici({ tip: 'ses', hedef: (key) => handleDetayChange(detay.id, 'sesLink', key) })}
+                        onSecAc={() => setMedyaSecici({ tip: 'ses', deger: detay.sesLink || '', hedef: (key) => handleDetayChange(detay.id, 'sesLink', key) })}
                       />
                     </div>
 
@@ -671,6 +671,7 @@ function EtkinlikDuzenlePageContent({ etkinlikId }: { etkinlikId: string }) {
       <MediaPicker
         open={!!medyaSecici}
         tip={medyaSecici?.tip ?? 'resim'}
+        mevcutDeger={medyaSecici?.deger}
         onClose={() => setMedyaSecici(null)}
         onSelect={(key) => { medyaSecici?.hedef(key); setMedyaSecici(null); }}
       />

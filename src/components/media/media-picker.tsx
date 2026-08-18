@@ -44,21 +44,34 @@ function klasorAdi(prefix: string): string {
   return trimmed.slice(trimmed.lastIndexOf('/') + 1);
 }
 
+// Mevcut seçili değerin bulunduğu klasörü çıkarır — picker'ı sıfırdan Medya/ kökü yerine
+// doğrudan seçili dosyanın yanında açmak için. Medya/ dışı veya boş değerlerde köke düşer.
+function baslangicPrefix(deger: string | null | undefined): string {
+  if (!deger) return KOK_PREFIX;
+  const normalized = deger.startsWith('/') ? deger.slice(1) : deger;
+  if (!normalized.toLocaleLowerCase('tr').startsWith(KOK_PREFIX.toLocaleLowerCase('tr'))) return KOK_PREFIX;
+  const sonSlash = normalized.lastIndexOf('/');
+  return sonSlash === -1 ? KOK_PREFIX : normalized.slice(0, sonSlash + 1);
+}
+
 interface Props {
   open: boolean;
   tip: MediaTip;
+  mevcutDeger?: string | null;
   onClose: () => void;
   onSelect: (key: string) => void;
 }
 
-export function MediaPicker({ open, tip, onClose, onSelect }: Props) {
+export function MediaPicker({ open, tip, mevcutDeger, onClose, onSelect }: Props) {
   const [prefix, setPrefix] = useState(KOK_PREFIX);
   const [arama, setArama] = useState('');
   const [calanKey, setCalanKey] = useState<string | null>(null);
   const howlRef = useRef<Howl | null>(null);
+  const mevcutDegerRef = useRef(mevcutDeger);
+  mevcutDegerRef.current = mevcutDeger;
 
   useEffect(() => {
-    if (open) { setPrefix(KOK_PREFIX); setArama(''); }
+    if (open) { setPrefix(baslangicPrefix(mevcutDegerRef.current)); setArama(''); }
   }, [open]);
 
   const sesDurdur = () => {
@@ -221,10 +234,11 @@ export function MediaPicker({ open, tip, onClose, onSelect }: Props) {
                   {gorunurDosyalar.map(item => {
                     const itemTip = dosyaTipi(item.key);
                     const uygunTip = itemTip === tip;
+                    const secili = !!mevcutDeger && (mevcutDeger.startsWith('/') ? mevcutDeger : '/' + mevcutDeger) === item.key;
                     return (
                       <div
                         key={item.key}
-                        className={`group relative rounded-xl border ${uygunTip ? 'border-slate-200' : 'border-slate-100 opacity-40'}`}
+                        className={`group relative rounded-xl border ${secili ? 'border-primary ring-2 ring-primary/30' : uygunTip ? 'border-slate-200' : 'border-slate-100 opacity-40'}`}
                       >
                         {itemTip === 'resim' ? (
                           <button

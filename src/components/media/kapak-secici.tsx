@@ -54,7 +54,7 @@ export function KapakSecici({ value, onChange }: Props) {
           </button>
         </div>
       </div>
-      <MediaPicker open={secOpen} tip="resim" onClose={() => setSecOpen(false)} onSelect={onChange} />
+      <MediaPicker open={secOpen} tip="resim" mevcutDeger={value} onClose={() => setSecOpen(false)} onSelect={onChange} />
     </div>
   );
 }
