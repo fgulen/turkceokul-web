@@ -42,7 +42,7 @@ interface KurumDetay {
 // aksiyon alanına durum rozeti verilir (bkz. kurum-lisans-durumu.tsx'teki
 // SALT_OKUNUR_BUTON_METIN deseni).
 const BUTON_ROZET_METIN: Record<LisansKarti['buton'], string> = {
-  SatinAl: 'Lisans yok',
+  SatinAl: 'Satın alınmadı',
   Inceleniyor: 'Talep inceleniyor',
   EkLisans: 'Ek lisans gerekli',
   UcretsizDene: 'Denenmedi',
