@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Share2, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ConfirmActionModal } from '@/components/confirm-action-modal';
 
 interface HedefRolSecenegi {
   value: string;
@@ -44,6 +45,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   const [hedefEmail, setHedefEmail] = useState('');
   const [davetUrl, setDavetUrl] = useState<string | null>(null);
   const [davetSonuc, setDavetSonuc] = useState<{ email: string; mailGonderildi: boolean } | null>(null);
+  const [kurumsuzOnayAcik, setKurumsuzOnayAcik] = useState(false);
 
   const { data: scope, isLoading: scopeYukleniyor, isError: scopeHatali } = useQuery<SinifFormData>({
     queryKey: ['sinif-form-data'],
@@ -94,10 +96,8 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   // farkinda olunmadan secilmesini onlemek adina onay istenir.
   function davetGonder() {
     if (hedefRol === 'KurumYoneticisi' && kurumAlaniGorunsun && !kurumSabit && !seciliKurumId) {
-      const onay = window.confirm(
-        'Kurum seçmediniz — davet edilen kişi kayıt olurken kendi kurumunu kendisi oluşturacak. Emin misiniz?',
-      );
-      if (!onay) return;
+      setKurumsuzOnayAcik(true);
+      return;
     }
     davetMutation.mutate();
   }
@@ -191,7 +191,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
           <button
             onClick={davetGonder}
             disabled={davetMutation.isPending || !scope || (ulkeZorunlu && !seciliUlkeId) || (kurumZorunlu && !seciliKurumId)}
-            className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
+            className="w-full py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:bg-slate-100 disabled:text-slate-400"
           >
             {davetMutation.isPending ? 'Oluşturuluyor...' : hedefEmail.trim() ? 'Davet Et' : 'Davet Linki Oluştur'}
           </button>
@@ -247,7 +247,19 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
     </>
   );
 
-  if (bare) return icerik;
+  const onayModal = (
+    <ConfirmActionModal
+      open={kurumsuzOnayAcik}
+      tone="primary"
+      title="Kurum seçilmedi"
+      message="Kurum seçmediniz — davet edilen kişi kayıt olurken kendi kurumunu kendisi oluşturacak. Devam edilsin mi?"
+      confirmLabel="Evet, devam et"
+      onConfirm={() => { setKurumsuzOnayAcik(false); davetMutation.mutate(); }}
+      onCancel={() => setKurumsuzOnayAcik(false)}
+    />
+  );
+
+  if (bare) return <>{icerik}{onayModal}</>;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -257,6 +269,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
       </h2>
       <p className="text-xs text-slate-400 mb-4">{aciklama}</p>
       {icerik}
+      {onayModal}
     </div>
   );
 }
