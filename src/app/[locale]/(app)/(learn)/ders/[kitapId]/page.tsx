@@ -72,6 +72,7 @@ function getZigzagPosition(index: number): 'left' | 'center' | 'right' {
 
 function ZigzagNode({
   etkinlik,
+  index,
   uniteId,
   kitapId,
   isSiradaki,
@@ -80,6 +81,7 @@ function ZigzagNode({
   isLastCompleted,
 }: {
   etkinlik: Etkinlik;
+  index: number;
   uniteId: string;
   kitapId: string;
   isSiradaki: boolean;
@@ -108,18 +110,25 @@ function ZigzagNode({
   }
 
   const alignmentClass =
-    position === 'left'   ? 'justify-start pl-4 sm:pl-12 lg:pl-20' :
-    position === 'right'  ? 'justify-end pr-4 sm:pr-12 lg:pr-20' :
+    position === 'left'   ? 'justify-start pl-[16%]' :
+    position === 'right'  ? 'justify-end pr-[16%]' :
     'justify-center';
+
+  const indexBadge = (
+    <span aria-hidden="true" className="absolute -top-1 -left-1 z-20 min-w-5 h-5 px-1 rounded-full bg-white border border-border text-[10px] font-bold text-slate-500 flex items-center justify-center shadow-sm">
+      {index}
+    </span>
+  );
 
   return (
     <div id={`node-${etkinlik.id}`} className={cn('flex w-full', alignmentClass)}>
       <div className="flex flex-col items-center relative">
         {isLocked ? (
           <div className={cn(
-            'w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border-4 shrink-0',
+            'w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border-4 shrink-0 relative',
             nodeStyle,
           )}>
+            {indexBadge}
             <NodeIcon />
           </div>
         ) : (
@@ -132,6 +141,7 @@ function ZigzagNode({
               state === 'none' && !isSiradaki && 'hover:border-primary/40 cursor-pointer hover:bg-primary/5',
             )}
           >
+            {indexBadge}
             {isSiradaki ? (
               <Play className="size-5 sm:size-6 fill-current" />
             ) : (
@@ -253,6 +263,7 @@ function AdventurePath({
             <div key={e.id} className="flex flex-col items-center w-full">
               <ZigzagNode
                 etkinlik={e}
+                index={idx + 1}
                 uniteId={uniteId}
                 kitapId={kitapId}
                 isSiradaki={e.id === firstUncompleted?.id}
@@ -304,7 +315,7 @@ function UniteSidebarItem({
       )}
     >
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-2.5">
         {/* Icon */}
         <div className={cn(
           'flex items-center justify-center w-8 h-8 rounded-lg shrink-0',
@@ -322,7 +333,7 @@ function UniteSidebarItem({
         {/* Text */}
         <div className="min-w-0 flex-1">
           <span className={cn(
-            'text-sm font-medium block truncate',
+            'text-sm font-medium block leading-snug',
             isActive && 'text-primary',
             isCompleted && 'text-slate-600',
             isLocked && 'text-slate-300',
@@ -334,7 +345,7 @@ function UniteSidebarItem({
 
         {/* Status indicator */}
         {isCompleted && (
-          <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="size-4 text-emerald-400 shrink-0 mt-0.5" />
         )}
       </div>
     </button>
@@ -358,9 +369,9 @@ function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string; kit
           <span className="truncate max-w-[200px]">{kitapName ?? 'Kitaplar'}</span>
         </Link>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-slate-900 leading-snug">{unite.name}</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-primary leading-snug">{unite.name}</h2>
           {hasCount && !unite.kilitli && (
-            <span className={cn('shrink-0 text-sm font-bold tabular-nums', allDone ? 'text-emerald-600' : 'text-primary')}>
+            <span className={cn('shrink-0 text-sm font-medium tabular-nums', allDone ? 'text-emerald-600' : 'text-muted-foreground')}>
               %{pct}
             </span>
           )}
@@ -376,38 +387,28 @@ function UniteHero({ unite, kitapName }: { unite: Unite; kitapName?: string; kit
       </div>
 
       {/* Desktop: hero card */}
-      <div className="hidden sm:block bg-gradient-to-br from-transparent to-primary/[0.04] p-5 relative border-b border-border/30">
-        <div className="absolute -top-4 -right-4 opacity-[0.16] pointer-events-none select-none">
-          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 140L70 30L120 140H20Z" fill="currentColor" className="text-primary" />
-            <path d="M60 140L90 60L120 140H60Z" fill="currentColor" className="text-primary/60" />
-            <circle cx="110" cy="30" r="18" fill="currentColor" className="text-amber-400" />
-            <path d="M30 140L45 100L60 140H30Z" fill="currentColor" className="text-emerald-500" />
-            <path d="M80 140L95 110L110 140H80Z" fill="currentColor" className="text-emerald-400" />
-            <ellipse cx="50" cy="50" rx="28" ry="12" fill="currentColor" className="text-sky-300" />
-          </svg>
-        </div>
-        <div className="flex items-start justify-between gap-3 relative z-10">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-slate-900">{unite.name}</h2>
-          </div>
+      <div className="hidden sm:block px-5 py-4 border-b border-border/30">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="min-w-0 text-2xl font-semibold tracking-tight text-primary">{unite.name}</h2>
           {hasCount && !unite.kilitli && (
             <div className="text-right shrink-0">
-              <div className={cn('text-xl font-extrabold tabular-nums leading-none', allDone ? 'text-emerald-600' : 'text-slate-900')}>
+              <div className={cn('text-lg font-semibold tabular-nums leading-none', allDone ? 'text-emerald-600' : 'text-muted-foreground')}>
                 %{pct}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {unite.tamamlananEtkinlik}/{unite.toplamEtkinlik}
               </div>
-              <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden w-32">
-                <div
-                  className={cn('h-full rounded-full transition-all duration-700', allDone ? 'bg-emerald-500' : 'progress-shimmer')}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
             </div>
           )}
         </div>
+        {hasCount && !unite.kilitli && (
+          <div className="h-1.5 bg-muted rounded-full mt-3 overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all duration-700', allDone ? 'bg-emerald-500' : 'progress-shimmer')}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
       </div>
     </>
   );
@@ -525,7 +526,7 @@ export default function DersPage({
             {isLoading ? (
               <div className="space-y-2 flex-1 overflow-hidden">
                 {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-14 rounded-xl bg-white/60 animate-pulse" />
+                  <div key={i} className="h-16 rounded-xl bg-white/60 animate-pulse" />
                 ))}
               </div>
             ) : (
@@ -568,14 +569,6 @@ export default function DersPage({
                     <span className="text-muted-foreground animate-pulse">...</span>
                   )}
                 </li>
-                {selectedUnite && (
-                  <>
-                    <li className="text-muted-foreground/40">/</li>
-                    <li className="text-foreground font-medium truncate max-w-[100px] sm:max-w-[180px]">
-                      {selectedUnite.name}
-                    </li>
-                  </>
-                )}
               </ol>
             </nav>
 
@@ -603,7 +596,7 @@ export default function DersPage({
                   ) : (
                     <>
                       {/* Skill Tabs - Footer row with light grey background */}
-                      <div className="bg-[#F8FAFC] rounded-xl p-1 mb-4 mx-5 mt-3">
+                      <div className="bg-muted rounded-xl p-1 mb-4 mx-5 mt-3">
                         <nav className="flex gap-1">
                           {availableTabs.map(tab => {
                             const Icon = BOLUM_ICONS[tab];
@@ -616,7 +609,7 @@ export default function DersPage({
                                 className={cn(
                                   'flex-1 flex items-center justify-center gap-1.5 py-3 px-1.5 sm:px-4 rounded-lg text-sm transition-all',
                                   activeTab === tab
-                                    ? cn(tabColors.active, 'text-white shadow-md font-semibold scale-[1.02]')
+                                    ? cn('bg-white shadow-sm font-semibold', tabColors.activeLabel)
                                     : 'text-muted-foreground hover:bg-white/70 hover:text-foreground font-medium',
                                 )}
                               >
