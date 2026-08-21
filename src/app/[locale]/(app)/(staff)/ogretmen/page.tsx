@@ -128,7 +128,7 @@ export default function OgretmenDashboard() {
                     {sinif.odevSayisi} ödev
                   </span>
                 </div>
-                <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-4 flex items-center justify-between opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                   <div className="flex items-center gap-1 text-xs text-primary font-semibold">
                     Sınıfa git <ArrowRight className="size-3.5" />
                   </div>

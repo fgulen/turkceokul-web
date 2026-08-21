@@ -589,7 +589,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                             if (confirm('Öğrenciyi sınıftan çıkarmak istediğinizden emin misiniz?\n\nNot: Lisans kotası iade edilmez. Yanlış sildiyseniz yönetici ile iletişime geçin.'))
                               ogrenciSilMutation.mutate(o.userId);
                           }}
-                          className="size-7 flex items-center justify-center rounded-lg text-slate-200 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -810,7 +810,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                             if (confirm('Bu duyuruyu silmek istediğinizden emin misiniz?'))
                               duyuruSilMutation.mutate(d.id);
                           }}
-                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
                           title="Duyuruyu Sil"
                         >
                           <Trash2 className="size-3.5" />

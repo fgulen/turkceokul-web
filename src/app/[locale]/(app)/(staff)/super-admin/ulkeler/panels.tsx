@@ -264,7 +264,7 @@ export function KurumlarPanel({ ulkeId, onKurumClick, onDeleteKurum }: {
               <td className="px-5 py-2 text-center text-xs text-slate-600">{k.ogrenciSayisi}</td>
               <td className="px-5 py-2 text-right">
                 <button onClick={e => { e.stopPropagation(); onDeleteKurum(k.id, k.name); }}
-                  className="size-5 flex items-center justify-center rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all ml-auto">
+                  className="size-5 flex items-center justify-center rounded text-slate-400 hover:text-red-500 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-all ml-auto">
                   <Trash2 className="size-3" />
                 </button>
               </td>
@@ -642,7 +642,7 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
             <div className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci · {s.efektifKitapAdi ?? '—'}</div>
           </div>
           <button onClick={() => { setDeleteTarget(s); setDeleteImpact(null); }}
-            className="size-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+            className="size-6 flex items-center justify-center rounded text-slate-400 hover:text-red-500 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-all">
             <Trash2 className="size-3" />
           </button>
         </div>

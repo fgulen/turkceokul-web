@@ -148,7 +148,7 @@ export default function EditorKutuphaneListPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                       {isSuperAdmin && (
                         <Link
                           href={`/okuma/${k.id}`}

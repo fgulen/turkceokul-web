@@ -263,7 +263,7 @@ export default function UlkelerListePage() {
                   </span>
                 </td>
                 <td className="px-4 py-2.5">
-                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <button
                       onClick={e => {
                         e.stopPropagation();

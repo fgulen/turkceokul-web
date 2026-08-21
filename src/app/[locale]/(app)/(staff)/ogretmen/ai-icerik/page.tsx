@@ -1314,7 +1314,7 @@ function SoruDuzenleyiciKart({
         <button
           onClick={onSil}
           title="Bu soruyu sil"
-          className="p-1.5 rounded-lg text-slate-200 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 mt-1 opacity-0 group-hover:opacity-100"
+          className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 mt-1 opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <Trash2 className="size-4" />
         </button>
