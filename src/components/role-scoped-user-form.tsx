@@ -22,12 +22,18 @@ interface RoleScopedUserFormProps {
   bare?: boolean;
 }
 
+interface KurumSecenegi {
+  id: number;
+  name: string;
+  kitapVarMi: boolean;
+}
+
 interface SinifFormData {
   rol: string;
   ulke?: { id: number; name: string } | null;
   ulkeler?: { id: number; name: string }[];
-  kurum?: { id: number; name: string } | null;
-  kurumlar?: { id: number; name: string }[];
+  kurum?: KurumSecenegi | null;
+  kurumlar?: KurumSecenegi[];
 }
 
 const DAVET_MESAJI: Record<string, string> = {
@@ -41,7 +47,7 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   const [hedefRol, setHedefRol] = useState(hedefRolSecenekleri[0]?.value ?? '');
   const [seciliUlkeId, setSeciliUlkeId] = useState<string>('');
   const [seciliKurumId, setSeciliKurumId] = useState<string>('');
-  const [kurumlarByUlke, setKurumlarByUlke] = useState<{ id: number; name: string }[]>([]);
+  const [kurumlarByUlke, setKurumlarByUlke] = useState<KurumSecenegi[]>([]);
   const [hedefEmail, setHedefEmail] = useState('');
   const [davetUrl, setDavetUrl] = useState<string | null>(null);
   const [davetSonuc, setDavetSonuc] = useState<{ email: string; mailGonderildi: boolean } | null>(null);
@@ -66,6 +72,11 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
   // UlkeTemsilcisi'nin kurumu olmaz — hedef rol bu ise Kurum alanı hiç gösterilmez.
   const kurumAlaniGorunsun = (scopeSuz || scope?.rol === 'UlkeTemsilcisi') && hedefRol !== 'UlkeTemsilcisi';
   const kurumSabit = scope?.rol === 'KurumYoneticisi' ? scope.kurum : null;
+  // Öğretmen daveti gönderilmeden önce erken uyarı — sınıf oluşturma anına kadar
+  // beklemeden temsilciyi/yöneticiyi bilgilendirir (bkz. sinif-form-slideover.tsx'teki
+  // aynı sorunun geç ortaya çıkması).
+  const seciliKurum = kurumSabit ?? kurumSecenekleri.find(k => String(k.id) === seciliKurumId);
+  const kitapUyarisiGoster = hedefRol === 'Ogretmen' && !!seciliKurum && !seciliKurum.kitapVarMi;
   // Ülke temsilcisi ülke-scope'lu çalışır: ülkesiz temsilci kendi paneline bile giremez (403).
   // Diğer roller (Koordinator scope'suz, Ogretmen/KurumYoneticisi sonradan tamamlanabilir) için ülke opsiyonel kalır.
   const ulkeZorunlu = hedefRol === 'UlkeTemsilcisi' && !sabitUlke;
@@ -172,6 +183,12 @@ export function RoleScopedUserForm({ baslik, aciklama, hedefRolSecenekleri, onOl
 
           {kurumSabit && (
             <p className="text-xs text-slate-500">Kurum: <strong>{kurumSabit.name}</strong> (sabit)</p>
+          )}
+
+          {kitapUyarisiGoster && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              Bu kuruma henüz kitap/lisans atanmadı — davet kabul edilse bile öğretmen sınıf oluşturamayacak. Daveti göndermeden önce kitap ataması yapmanız önerilir.
+            </p>
           )}
 
           <div>

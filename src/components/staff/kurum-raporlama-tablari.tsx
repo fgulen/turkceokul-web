@@ -7,7 +7,7 @@
 // (örn. ülke temsilcisi: `/ulke-temsilcisi/kurum/${id}`, admin: `/admin/kurum/${id}`).
 
 import { useMemo, useState } from 'react';
-import { UserPlus, ChevronRight, CheckCircle, XCircle, Building2, KeyRound, Pencil } from 'lucide-react';
+import { UserPlus, ChevronRight, CheckCircle, XCircle, Building2, BookOpen, Pencil } from 'lucide-react';
 import { Link } from '@/navigation';
 import { cn } from '@/lib/utils';
 import { LISANS_TIPI_METIN, LISANS_TIPI_ROZET, type LisansKarti } from '@/components/lisans-kart';
@@ -237,6 +237,7 @@ export interface KurumSatiri {
   ogretmenSayisi: number;
   ogrenciSayisi: number;
   kurumYoneticisiAdi: string | null;
+  kitapVarMi: boolean;
 }
 
 // Kurumlar tablosu — admin (tüm ülkeler) ve ülke-temsilcisi (kendi ülkesi) panelinde
@@ -300,11 +301,31 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
               <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Henüz kurum yok.</td></tr>
             ) : (
               sayfalik.map(k => (
-                <tr key={k.id} className="odd:bg-white even:bg-slate-50/40 group">
+                <tr key={k.id} className="odd:bg-white even:bg-slate-50/40">
                   <td className="px-4 py-2">
-                    <Link href={kurumHref(k.id)} className="font-medium text-slate-900 hover:text-primary transition-colors">
-                      {k.name}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={kurumHref(k.id)} className="font-medium text-slate-900 hover:text-primary transition-colors">
+                        {k.name}
+                      </Link>
+                      {!k.kitapVarMi && (
+                        onLisans ? (
+                          <button
+                            onClick={() => onLisans(k)}
+                            className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium whitespace-nowrap hover:bg-amber-100 transition-colors"
+                            title="Kitap atamak için tıklayın — aksi halde öğretmenler sınıf oluşturamaz."
+                          >
+                            Kitap Atanmamış
+                          </button>
+                        ) : (
+                          <span
+                            className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium whitespace-nowrap"
+                            title="Bu kuruma henüz kitap/lisans atanmadı — öğretmenler sınıf oluşturamaz."
+                          >
+                            Kitap Atanmamış
+                          </span>
+                        )
+                      )}
+                    </div>
                     {k.sehir && <div className="text-xs text-slate-400">{k.sehir}</div>}
                   </td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{k.ulkeAdi ?? '—'}</td>
@@ -312,20 +333,20 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{k.ogretmenSayisi}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{k.ogrenciSayisi}</td>
                   <td className="px-4 py-2">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1.5">
                       {onLisans && (
                         <button onClick={() => onLisans(k)}
-                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-all"
-                          title="Lisans Durumu">
-                          <KeyRound className="size-3.5" />
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Kitaplar">
+                          <BookOpen className="size-3.5" /> Kitaplar
                         </button>
                       )}
                       <button onClick={() => onDuzenle(k)}
-                        className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-all"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
                         title="Düzenle">
-                        <Pencil className="size-3.5" />
+                        <Pencil className="size-3.5" /> Düzenle
                       </button>
-                      <Link href={kurumHref(k.id)} className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-all">
+                      <Link href={kurumHref(k.id)} className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
                         <ChevronRight className="size-3.5" />
                       </Link>
                     </div>

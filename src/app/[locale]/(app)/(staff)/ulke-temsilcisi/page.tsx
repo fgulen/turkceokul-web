@@ -356,7 +356,7 @@ export default function UlkeTemsilcisiPage() {
       <SlideOver
         open={!!lisansKurumu}
         onClose={() => setLisansKurumu(null)}
-        title="Lisans Durumu"
+        title="Kitaplar"
         subtitle={lisansKurumu?.name}
         width="md"
       >
