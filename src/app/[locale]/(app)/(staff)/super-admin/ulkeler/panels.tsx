@@ -97,7 +97,7 @@ export function ulkeSilImpact(err: unknown): DeleteImpactSatir[] | null {
   const rows: DeleteImpactSatir[] = [];
   if (d.kurumSayisi) rows.push({ label: 'kurum ülkesiz kalacak', count: d.kurumSayisi });
   if (d.ogretmenSayisi) rows.push({ label: 'öğretmen ülkesiz kalacak', count: d.ogretmenSayisi });
-  if (d.siparisSayisi) rows.push({ label: 'sipariş ülkesiz kalacak', count: d.siparisSayisi });
+  if (d.siparisSayisi) rows.push({ label: 'sipariş kalıcı silinecek', count: d.siparisSayisi });
   return rows.length ? rows : null;
 }
 
