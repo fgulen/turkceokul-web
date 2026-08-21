@@ -265,6 +265,11 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const [isimler, setIsimler] = useState('');
   const [topluSonuclar, setTopluSonuclar] = useState<TopluEkleSonuc[]>([]);
   const [kapasiteHatasi, setKapasiteHatasi] = useState<string | null>(null);
+  // null = kapasite hatası değil (buton yok), true/false = kurum/ülke sorumlusuna
+  // bildirim daha önce gönderildi mi (backend 402 body'sindeki kapasiteTalebiGonderildiMi)
+  const [kapasiteTalebiDurumu, setKapasiteTalebiDurumu] = useState<boolean | null>(null);
+  const [tekliHata, setTekliHata] = useState<string | null>(null);
+  const [tekliKapasiteTalebiDurumu, setTekliKapasiteTalebiDurumu] = useState<boolean | null>(null);
 
   const odevMutation = useMutation({
     mutationFn: () => api.post(`/api/ogretmen/sinif/${id}/odev`, {
@@ -292,6 +297,30 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
       qc.invalidateQueries({ queryKey: ['sinif', id] });
       setOgrenciEmail('');
+      setTekliHata(null);
+      setTekliKapasiteTalebiDurumu(null);
+    },
+    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean } | string } }) => {
+      const data = err.response?.data;
+      const mesaj = typeof data === 'string' ? data : data?.mesaj;
+      setTekliHata(mesaj ?? 'Bir hata oluştu.');
+      setTekliKapasiteTalebiDurumu(
+        typeof data === 'object' && typeof data?.kapasiteTalebiGonderildiMi === 'boolean'
+          ? data.kapasiteTalebiGonderildiMi
+          : null
+      );
+    },
+  });
+
+  const lisansArtirTalebiMutation = useMutation({
+    mutationFn: () => api.post(`/api/ogretmen/sinif/${id}/lisans-artir-talebi`),
+    onSuccess: () => {
+      toast.success('Kurum/ülke sorumlusuna bildirildi.');
+      setKapasiteTalebiDurumu(true);
+      setTekliKapasiteTalebiDurumu(true);
+    },
+    onError: (err: { response?: { data?: string } }) => {
+      toast.error(typeof err.response?.data === 'string' ? err.response.data : 'Bildirim gönderilemedi.');
     },
   });
 
@@ -324,12 +353,14 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setTopluSonuclar(res.data.eklenenler ?? []);
       setIsimler('');
       setKapasiteHatasi(null);
+      setKapasiteTalebiDurumu(null);
       qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
       qc.invalidateQueries({ queryKey: ['sinif', id] });
     },
-    onError: (err: { response?: { data?: { mesaj?: string } } }) => {
-      const mesaj = err.response?.data?.mesaj;
-      setKapasiteHatasi(mesaj ?? 'Bir hata oluştu.');
+    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean } } }) => {
+      const data = err.response?.data;
+      setKapasiteHatasi(data?.mesaj ?? 'Bir hata oluştu.');
+      setKapasiteTalebiDurumu(typeof data?.kapasiteTalebiGonderildiMi === 'boolean' ? data.kapasiteTalebiGonderildiMi : null);
     },
   });
 
@@ -387,6 +418,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     const liste = isimler.split('\n').map(s => s.trim()).filter(Boolean);
     if (!liste.length) return;
     setKapasiteHatasi(null);
+    setKapasiteTalebiDurumu(null);
     setTopluSonuclar([]);
     topluEkleMutation.mutate(liste);
   }
@@ -530,7 +562,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                     <Download className="size-3.5" /> Badge PDF
                   </button>
                   <button
-                    onClick={() => { setTopluModalAcik(true); setTopluSonuclar([]); setKapasiteHatasi(null); }}
+                    onClick={() => { setTopluModalAcik(true); setTopluSonuclar([]); setKapasiteHatasi(null); setKapasiteTalebiDurumu(null); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 transition-colors"
                   >
                     <UserPlus className="size-3.5" /> Toplu Ekle
@@ -555,8 +587,21 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                   <Plus className="size-4" /> Ekle
                 </button>
               </div>
-              {ogrenciEkleMutation.isError && (
-                <p className="text-red-500 text-sm mb-3">{(ogrenciEkleMutation.error as Error).message}</p>
+              {tekliHata && (
+                <div className="flex flex-col items-start gap-2 mb-3">
+                  <p className="text-red-500 text-sm">{tekliHata}</p>
+                  {tekliKapasiteTalebiDurumu !== null && (
+                    <button
+                      onClick={() => lisansArtirTalebiMutation.mutate()}
+                      disabled={tekliKapasiteTalebiDurumu || lisansArtirTalebiMutation.isPending}
+                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold disabled:opacity-50 disabled:bg-slate-400 transition-colors"
+                    >
+                      {tekliKapasiteTalebiDurumu
+                        ? 'Gönderildi ✓'
+                        : lisansArtirTalebiMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
+                    </button>
+                  )}
+                </div>
               )}
 
               {!ogrenciler?.length ? (
@@ -877,9 +922,22 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                   />
 
                   {kapasiteHatasi && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
-                      <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-                      <span>{kapasiteHatasi}</span>
+                    <div className="flex flex-col gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+                        <span>{kapasiteHatasi}</span>
+                      </div>
+                      {kapasiteTalebiDurumu !== null && (
+                        <button
+                          onClick={() => lisansArtirTalebiMutation.mutate()}
+                          disabled={kapasiteTalebiDurumu || lisansArtirTalebiMutation.isPending}
+                          className="self-start px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold disabled:opacity-50 disabled:bg-slate-400 transition-colors"
+                        >
+                          {kapasiteTalebiDurumu
+                            ? 'Gönderildi ✓'
+                            : lisansArtirTalebiMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
+                        </button>
+                      )}
                     </div>
                   )}
 
