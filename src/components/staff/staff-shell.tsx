@@ -10,6 +10,7 @@ import { UserMenu } from '@/components/app-nav';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 import { Breadcrumb } from '@/components/staff/breadcrumb';
 import { CommandPalette } from '@/components/staff/command-palette';
+import { SiparisBildirimZili } from '@/components/staff/siparis-bildirim-zili';
 import { cn } from '@/lib/utils';
 import { homePathForRole } from '@/lib/role-home';
 
@@ -142,6 +143,7 @@ export function StaffShell({ children, defaultCollapsed }: { children: React.Rea
               <kbd className="px-1 py-0.5 text-[10px] border border-slate-200 rounded">Ctrl K</kbd>
             </button>
           )}
+          {ready && user.role === 'SuperAdmin' && <SiparisBildirimZili />}
           {ready && <UserMenu user={user} onLogout={logout} />}
         </div>
         <ImpersonationBanner />

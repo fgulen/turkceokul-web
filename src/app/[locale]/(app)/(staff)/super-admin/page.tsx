@@ -1,11 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Package } from 'lucide-react';
 import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { ROL_RENKLERI } from './shared';
-import { BekleyenSiparisRow, type Siparis } from '@/components/staff/bekleyen-siparis-row';
 
 function sonGirisZamanMetni(tarih: string) {
   return new Date(tarih).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -15,10 +13,6 @@ function GenelBakis() {
   const { data: stats } = useQuery({
     queryKey: ['sa-istatistikler'],
     queryFn: () => api.get('/api/super-admin/istatistikler').then(r => r.data),
-  });
-  const { data: bekleyenSiparisler = [] } = useQuery({
-    queryKey: ['sa-siparisler-bekleyen'],
-    queryFn: () => api.get('/api/super-admin/siparisler?durum=Beklemede').then(r => r.data),
   });
   const { data: sonGirisler } = useQuery({
     queryKey: ['sa-son-girisler'],
@@ -83,27 +77,6 @@ function GenelBakis() {
                 </span>
                 <span className="text-xs text-slate-500 tabular-nums">{sonGirisZamanMetni(u.lastLoginDate)}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bekleyen siparişler */}
-      {(bekleyenSiparisler as Siparis[]).length > 0 && (
-        <div className="bg-white border border-amber-200 rounded-xl">
-          <div className="px-5 py-4 border-b border-amber-100 flex items-center gap-2">
-            <Package className="size-4 text-amber-600" />
-            <h3 className="text-sm font-semibold text-amber-700 flex-1">Bekleyen Siparişler ({(bekleyenSiparisler as Siparis[]).length})</h3>
-            <Link href="/super-admin/kurumsal" className="text-xs font-medium text-amber-700 hover:text-amber-900">
-              Tüm siparişler →
-            </Link>
-          </div>
-          <div className="p-3 space-y-3">
-            {(bekleyenSiparisler as Siparis[]).map((s: Siparis) => (
-              <BekleyenSiparisRow key={s.id} siparis={s}
-                siparisEndpoint="/api/super-admin"
-                bekleyenQueryKey={['sa-siparisler-bekleyen']}
-                extraInvalidateKeys={[['sa-istatistikler']]} />
             ))}
           </div>
         </div>

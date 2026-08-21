@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Package } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 import { SlideOver } from '@/components/slide-over';
 import { ConfirmActionModal } from '@/components/confirm-action-modal';
 import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
@@ -42,8 +43,14 @@ interface Siparis {
 
 const SAYFA_BOYUTU = 20;
 
-type Durum = 'Tumu' | 'Beklemede' | 'Onaylandi' | 'Iptal' | 'Donusturuldu';
+// "Tümü" varsayılan iken Beklemede/Onaylandı arasına eski (İptal/Dönüştürüldü) siparişler
+// karışıp listeyi kalabalıklaştırıyordu. Varsayılan artık yalnızca aktif (eylem
+// gerektirebilecek) siparişleri gösteren "Aktif" — arşiv görmek için ek tık gerekiyor.
+type DurumFiltre = 'Aktif' | 'Beklemede' | 'Onaylandi' | 'Arsiv';
 type SortKey = 'kurumAdi' | 'ulkeAdi' | 'yetkiliAdi' | 'ogrenciKapasite' | 'toplamTutar' | 'tarih' | 'durum';
+
+const AKTIF_DURUMLAR: Siparis['durum'][] = ['Beklemede', 'Onaylandi'];
+const ARSIV_DURUMLAR: Siparis['durum'][] = ['Iptal', 'Donusturuldu'];
 
 const DURUM_ETIKET: Record<string, string> = {
   Beklemede: 'Beklemede',
@@ -75,7 +82,7 @@ interface Props {
 
 export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKeys }: Props) {
 
-  const [durum, setDurum] = useState<Durum>('Tumu');
+  const [durum, setDurum] = useState<DurumFiltre>('Aktif');
   const [sadeceUlkesiEksik, setSadeceUlkesiEksik] = useState(false);
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
@@ -88,14 +95,21 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
   });
 
   const durumSayilari = useMemo(() => {
-    const s: Record<string, number> = { Tumu: siparisler.length };
-    for (const sp of siparisler as Siparis[]) s[sp.durum] = (s[sp.durum] ?? 0) + 1;
+    const s: Record<string, number> = { Aktif: 0, Arsiv: 0 };
+    for (const sp of siparisler as Siparis[]) {
+      s[sp.durum] = (s[sp.durum] ?? 0) + 1;
+      s[AKTIF_DURUMLAR.includes(sp.durum) ? 'Aktif' : 'Arsiv']++;
+    }
     return s;
   }, [siparisler]);
 
   const gorunen = useMemo(() => {
     const q = arama.trim().toLocaleLowerCase('tr');
-    let liste = (siparisler as Siparis[]).filter(s => durum === 'Tumu' || s.durum === durum);
+    let liste = (siparisler as Siparis[]).filter(s => {
+      if (durum === 'Aktif') return AKTIF_DURUMLAR.includes(s.durum);
+      if (durum === 'Arsiv') return ARSIV_DURUMLAR.includes(s.durum);
+      return s.durum === durum;
+    });
     if (sadeceUlkesiEksik) liste = liste.filter(s => !s.ulkeAdi && s.yeniUlkeAdi);
     if (q) {
       liste = liste.filter(s =>
@@ -145,13 +159,13 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
 
       {/* Durum filtreleri */}
       <div className="px-4 py-2 border-b border-slate-100 flex flex-wrap gap-1.5">
-        {(['Tumu', 'Beklemede', 'Onaylandi', 'Iptal', 'Donusturuldu'] as Durum[]).map(d => (
+        {(['Aktif', 'Beklemede', 'Onaylandi', 'Arsiv'] as DurumFiltre[]).map(d => (
           <button key={d}
             onClick={() => { setDurum(d); setSayfa(1); }}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${
               durum === d ? 'bg-purple-100 text-purple-700' : 'text-slate-500 hover:bg-slate-100'
             }`}>
-            {d === 'Tumu' ? 'Tümü' : DURUM_ETIKET[d]}
+            {d === 'Aktif' ? 'Aktif' : d === 'Arsiv' ? 'Arşiv' : DURUM_ETIKET[d]}
             <span className="tabular-nums text-[11px] opacity-70">{durumSayilari[d] ?? 0}</span>
           </button>
         ))}
@@ -213,7 +227,7 @@ export function KurumsalSatisSayfasi({ apiBase, listQueryKey, extraInvalidateKey
             {!isLoading && sayfadakiler.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-xs text-slate-400">
-                  {arama || durum !== 'Tumu' ? 'Filtreye uyan sipariş yok' : 'Henüz sipariş yok'}
+                  {arama || durum !== 'Aktif' ? 'Filtreye uyan sipariş yok' : 'Henüz aktif sipariş yok'}
                 </td>
               </tr>
             )}
@@ -253,10 +267,13 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const [duzenleAcik, setDuzenleAcik] = useState(false);
   const [kapasiteDebounced, setKapasiteDebounced] = useState('');
   const [iptalOnayAcik, setIptalOnayAcik] = useState(false);
+  const [silOnayAcik, setSilOnayAcik] = useState(false);
+  const isSuperAdmin = useAuthStore(st => st.user?.role === 'SuperAdmin');
 
   const lead = s?.kurumId == null;
   const beklemede = s?.durum === 'Beklemede';
   const iptalEdilmis = s?.durum === 'Iptal';
+  const donusturulmus = s?.durum === 'Donusturuldu';
   const ulkesiEksik = lead && beklemede && !s?.ulkeAdi && !!s?.yeniUlkeAdi;
   const [baglaAcik, setBaglaAcik] = useState(false);
   const [seciliUlkeId, setSeciliUlkeId] = useState('');
@@ -343,6 +360,12 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     onSuccess: () => { invalidate(); onClose(); },
     onError: (err: unknown) => setHata(apiHataMesaji(err)),
   });
+  const silMutation = useMutation({
+    mutationFn: () => api.delete(`${apiBase}/siparis/${s!.id}`),
+    onMutate: () => setHata(null),
+    onSuccess: () => { setSilOnayAcik(false); invalidate(); onClose(); },
+    onError: (err: unknown) => { setSilOnayAcik(false); setHata(apiHataMesaji(err)); },
+  });
   const kaydetMutation = useMutation({
     mutationFn: () => api.put(`${apiBase}/siparis/${s!.id}`, {
       ogrenciKapasite: Number(kapasite),
@@ -413,10 +436,23 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
             )}
           </div>
         ) : iptalEdilmis ? (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {isSuperAdmin && (
+              <button onClick={() => setSilOnayAcik(true)} disabled={silMutation.isPending}
+                className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors">
+                Sil
+              </button>
+            )}
             <button onClick={() => geriAlMutation.mutate()} disabled={geriAlMutation.isPending}
               className="px-3 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors">
               {geriAlMutation.isPending ? 'Geri alınıyor…' : "Geri Al (Beklemede'ye döndür)"}
+            </button>
+          </div>
+        ) : donusturulmus && isSuperAdmin ? (
+          <div className="flex justify-end">
+            <button onClick={() => setSilOnayAcik(true)} disabled={silMutation.isPending}
+              className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors">
+              Sil
             </button>
           </div>
         ) : undefined
@@ -574,6 +610,22 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
       onConfirm={() => iptalMutation.mutate()}
       onCancel={() => setIptalOnayAcik(false)}
       loading={iptalMutation.isPending}
+    />
+
+    <ConfirmActionModal
+      open={silOnayAcik}
+      tone="danger"
+      title="Siparişi kalıcı sil"
+      message={
+        <>
+          <strong>{s?.kurumAdi}</strong> için {DURUM_ETIKET[s?.durum ?? ''] ?? s?.durum} durumundaki bu sipariş
+          {' '}kalıcı olarak silinecek. Bu işlem geri alınamaz.
+        </>
+      }
+      confirmLabel={silMutation.isPending ? 'Siliniyor…' : 'Evet, kalıcı sil'}
+      onConfirm={() => silMutation.mutate()}
+      onCancel={() => setSilOnayAcik(false)}
+      loading={silMutation.isPending}
     />
     </>
   );
