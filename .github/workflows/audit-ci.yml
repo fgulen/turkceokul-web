@@ -147,7 +147,12 @@ jobs:
           # seferlik calistiriyoruz — bu komut launchSettings'i hic gormüyor, sadece
           # verilen connection string'i kullaniyor (ayni CLAUDE.md gotcha'sinin onerdigi
           # cozum). API sonra bu ONCEDEN TAMAMEN MIGRATE EDILMIS semaya karsi baslar.
-          dotnet tool install --global dotnet-ef
+          #
+          # 2026-08-22 dotnet tool install fix: CLI tool install komutu "successfully
+          # installed" yazdiktan sonra exit code 1 donuyor (stderr'de "dotnet tool restore"
+          # mesaji var). Tool aslinda kurulu oluyor — sadece exit kodu yanlis. Migrasyon
+          # komutunun calismasini engellemeden devam etmek icin `|| true` ile ignore ediyoruz.
+          dotnet tool install --global dotnet-ef || true
           export PATH="$PATH:/home/runner/.dotnet/tools"
           dotnet ef database update --connection "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
         working-directory: api
