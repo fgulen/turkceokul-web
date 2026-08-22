@@ -10,6 +10,13 @@ const STUDENT_PASS      = process.env.TEST_STUDENT_PASS      ?? 'Ogrenci123!';
 async function login(page: Page, email: string, password: string, expectedUrlPattern: RegExp) {
   await page.goto('/tr/giris');
   await page.waitForSelector('input[type="email"]', { timeout: 10_000 });
+  // Çerez onayı ilk ziyarette görünür — banner kendisi butonu kaplamasa da bazı
+  // tarayıcı/overlay kombinasyonlarında pointer event'leri yutabiliyor, güvenli tarafta
+  // kalmak için varsa kapatılır.
+  const cerezKabul = page.getByRole('button', { name: 'Kabul Et' });
+  if (await cerezKabul.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await cerezKabul.click();
+  }
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
@@ -26,6 +33,17 @@ export async function loginAsTeacher(page: Page) {
 
 export async function loginAsStudent(page: Page) {
   await login(page, STUDENT_EMAIL, STUDENT_PASS, /\/(tr|en)\/pano/);
+}
+
+// Davet kabulüyle dinamik oluşturulan hesaplar (ülke/kurum temsilcisi, öğretmen) için —
+// sabit test hesaplarının aksine e-posta/şifre çalışma zamanında bilinir, hedef URL
+// rolüne göre değişebileceğinden pattern gevşek tutulur. DİKKAT: /\/(tr|en)\// gibi bir
+// pattern /tr/giris'in KENDİSİYLE de eşleşir — waitForURL submit'ten önce anında çözülür,
+// login hiç tamamlanmadan sonraki adıma geçilir (bu bug canlıda bulundu: sonraki page.goto
+// auth guard'a takılıp sessizce giriş sayfasına geri döner). Negatif lookahead ile /giris
+// dışına çıkışı zorunlu kılıyoruz.
+export async function loginAs(page: Page, email: string, password: string) {
+  await login(page, email, password, /\/(tr|en)\/(?!giris)/);
 }
 
 export async function goToSuperAdminUlkeler(page: Page) {
