@@ -4,7 +4,7 @@ import { use, useState } from 'react';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { CheckCircle2, Lock, Unlock, AlertTriangle, ChevronLeft, BookOpen, X, Plus } from 'lucide-react';
 import { Link } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -106,8 +106,8 @@ function KitapAtaModal({
                 )}>
                   {secili && <CheckCircle2 className="size-3.5 text-white" />}
                 </div>
-                {k.thumbnailPicture ? (
-                  <Image src={k.thumbnailPicture} alt={k.name} width={48} height={48} className="size-12 rounded-lg object-cover shrink-0" />
+                {toMediaUrl(k.thumbnailPicture) ? (
+                  <Image src={toMediaUrl(k.thumbnailPicture)!} alt={k.name} width={48} height={48} className="size-12 rounded-lg object-cover shrink-0" />
                 ) : (
                   <div className="size-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                     <BookOpen className="size-6 text-slate-400" />
