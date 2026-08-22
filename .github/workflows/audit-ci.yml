@@ -148,12 +148,17 @@ jobs:
           # verilen connection string'i kullaniyor (ayni CLAUDE.md gotcha'sinin onerdigi
           # cozum). API sonra bu ONCEDEN TAMAMEN MIGRATE EDILMIS semaya karsi baslar.
           #
-          # 2026-08-22 dotnet tool install fix: CLI tool install komutu "successfully
-          # installed" yazdiktan sonra exit code 1 donuyor (stderr'de "dotnet tool restore"
-          # mesaji var). Tool aslinda kurulu oluyor — sadece exit kodu yanlis. Migrasyon
-          # komutunun calismasini engellemeden devam etmek icin `|| true` ile ignore ediyoruz.
-          dotnet tool install --global dotnet-ef || true
-          export PATH="$PATH:/home/runner/.dotnet/tools"
+          # 2026-08-22 duzeltme: `dotnet tool install --global dotnet-ef` bu dizinde
+          # api/.config/dotnet-tools.json (local tool manifest, dotnet-ef 8.0.13 pinned)
+          # var oldugu icin CLI'nin kendisi global kurulumu reddedip "Run 'dotnet tool
+          # restore' to make the 'dotnet-ef' command available" mesajiyla exit code 1
+          # donuyordu (`|| true` ile denendi, olmadi — komut set -e'yi bir sekilde yine
+          # tetikliyordu, muhtemelen dotnet CLI ic surecinin kendi hata yayilimi).
+          # Dogru cozum zaten CLI'nin kendi onerdigi: local manifest'i restore et — hem
+          # PATH hack'ine gerek kalmiyor (`dotnet ef` local tool'u otomatik buluyor) hem
+          # de versiyon projeyle (Microsoft.EntityFrameworkCore.Design 8.0.13) kesin
+          # eslesiyor (bkz. CLAUDE.md "dotnet-ef Tool Versiyon Uyuşmazlığı").
+          dotnet tool restore
           dotnet ef database update --connection "Server=127.0.0.1;Port=3306;Database=turkceokulunew;Uid=root;Pwd=testpass;CharSet=utf8mb4;"
         working-directory: api
 
