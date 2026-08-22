@@ -55,7 +55,7 @@ interface SinifSatir {
   name: string;
   kurumAdi: string | null;
   ogrenciSayisi: number;
-  dersKitabiId: string | null;
+  efektifKitapAdi: string | null;
 }
 
 interface KurumSinifSatir {
@@ -507,7 +507,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
   const [deleteTarget, setDeleteTarget] = useState<SinifSatir | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi' | 'dersKitabiId'>('name');
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi' | 'efektifKitapAdi'>('name');
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
 
@@ -558,7 +558,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
             <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
             <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
             <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Öğrenci</SortTh>
-            <SortTh colKey="dersKitabiId" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
+            <SortTh colKey="efektifKitapAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
             <th className="px-5 py-2.5"></th>
           </tr>
         </thead>
@@ -569,7 +569,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
               <td className="px-5 py-2 font-medium text-slate-800">{s.name}</td>
               <td className="px-5 py-2 text-xs text-slate-500">{s.kurumAdi ?? '—'}</td>
               <td className="px-5 py-2 text-center text-xs text-slate-600">{s.ogrenciSayisi}</td>
-              <td className="px-5 py-2 text-xs text-slate-500 truncate max-w-[150px]">{s.dersKitabiId ?? '—'}</td>
+              <td className="px-5 py-2 text-xs text-slate-500 truncate max-w-[150px]">{s.efektifKitapAdi ?? '—'}</td>
               <td className="px-5 py-2 text-right">
                 <button onClick={() => { setDeleteTarget(s); setDeleteImpact(null); }}
                   className="size-5 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition-colors ml-auto">
