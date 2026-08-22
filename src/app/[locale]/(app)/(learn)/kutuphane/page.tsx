@@ -14,6 +14,7 @@ interface DersKitabi {
   id: string;
   name: string;
   kitapSeti: string;
+  kitapTuru?: string | null;
   seviye: string;
   orderNo: number;
   thumbnailPicture?: string | null;
@@ -40,7 +41,10 @@ const KNOWN_LABELS: Record<string, string> = {
 };
 
 // kitapSeti null ise kitap adının ilk kelimesinden seri çıkar
-function getSeriKey(k: { kitapSeti?: string | null; name: string }): string {
+function getSeriKey(k: { kitapSeti?: string | null; kitapTuru?: string | null; name: string }): string {
+  // 0. Okuma kitapları seri değil — hepsi tek "Okuma Kitapları" grubunda
+  if (k.kitapTuru === 'OkumaKitabi') return '__okuma';
+
   // 1. kitapSeti varsa normalize et (Can/Yağmur/Harmoni)
   const normalized = normalizeSeriesName(k.kitapSeti);
   if (normalized) return normalized;
@@ -59,6 +63,7 @@ function getSeriKey(k: { kitapSeti?: string | null; name: string }): string {
 }
 
 function getSeriLabel(key: string): string {
+  if (key === '__okuma') return 'Okuma Kitapları';
   if (KNOWN_LABELS[key]) return KNOWN_LABELS[key];
   if (key === '__diger') return 'Diğer';
   return `${key} Serisi`;
@@ -70,6 +75,8 @@ function seriSort(a: string, b: string): number {
   if (ai !== -1 && bi !== -1) return ai - bi;
   if (ai !== -1) return -1;
   if (bi !== -1) return 1;
+  if (a === '__okuma') return 1;
+  if (b === '__okuma') return -1;
   if (a === '__diger') return 1;
   if (b === '__diger') return -1;
   return a.localeCompare(b, 'tr');
@@ -132,7 +139,9 @@ export default function KutuphanePage() {
                 .sort((a, b) => {
                   const ai = SEVIYE_ORDER.indexOf(a.seviye);
                   const bi = SEVIYE_ORDER.indexOf(b.seviye);
-                  return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+                  return ((ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi))
+                    || (a.orderNo - b.orderNo)
+                    || a.name.localeCompare(b.name, 'tr');
                 });
 
               return (
