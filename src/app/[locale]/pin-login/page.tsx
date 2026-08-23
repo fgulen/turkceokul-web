@@ -26,6 +26,14 @@ function PinLoginContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setHata('');
+    // Cookie/localStorage tarayıcı genelinde paylaşıldığı için (tab-scoped değil),
+    // bu giriş öğretmenin kendi sekmesi dahil TÜM sekmelerdeki oturumu değiştirir —
+    // öğretmen PIN'i "test etmek" için başka bir sekmede denerse kendi oturumundan
+    // habersizce atılmış olur. Devam etmeden önce bilinçli onay iste.
+    const mevcutKullanici = useAuthStore.getState().user;
+    if (mevcutKullanici && mevcutKullanici.role !== 'Ogrenci' && !confirm(t('pinLogin.staffSwitchWarning'))) {
+      return;
+    }
     setYukleniyor(true);
     try {
       const { data } = await api.post('/api/auth/pin-login', { kullaniciAdi, pin });

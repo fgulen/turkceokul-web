@@ -40,7 +40,8 @@
     "qrWelcomeTitle": "Bunu not al!",
     "qrWelcomeBody": "Kullanıcı adın:",
     "qrWelcomeHint": "Bir dahaki sefere QR kodunu tekrar okut ya da bu kullanıcı adı + öğretmeninin verdiği PIN ile giriş sayfasından gir.",
-    "qrWelcomeContinue": "Panoya Git"
+    "qrWelcomeContinue": "Panoya Git",
+    "staffSwitchWarning": "Şu anda bir öğretmen/yönetici hesabıyla giriş yapmışsınız. Bu PIN/QR ile devam ederseniz bu tarayıcının TÜM sekmelerindeki oturumunuz öğrenci hesabına geçer. Devam edilsin mi?"
   },
   "error": {
     "title": "Bir şeyler ters gitti",

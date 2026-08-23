@@ -40,7 +40,8 @@
     "qrWelcomeTitle": "Write this down!",
     "qrWelcomeBody": "Your username:",
     "qrWelcomeHint": "Next time, scan your QR code again, or log in from the sign-in page with this username and the PIN your teacher gave you.",
-    "qrWelcomeContinue": "Go to Dashboard"
+    "qrWelcomeContinue": "Go to Dashboard",
+    "staffSwitchWarning": "You're currently signed in with a teacher/admin account. Continuing with this PIN/QR will switch the session in ALL tabs of this browser to the student account. Continue?"
   },
   "error": {
     "title": "Something went wrong",

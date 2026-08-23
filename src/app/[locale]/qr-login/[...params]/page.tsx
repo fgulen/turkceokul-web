@@ -8,6 +8,7 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
+import { homePathForRole } from '@/lib/role-home';
 
 // Route: /qr-login/[userId]/[qrToken]
 // QR badge'lerinden gelen deep link handler
@@ -28,6 +29,16 @@ export default function QrLoginPage({ params }: { params: Promise<{ params: stri
   useEffect(() => {
     if (!userId || !qrToken) {
       setHata('Geçersiz QR kodu.');
+      return;
+    }
+
+    // Cookie/localStorage tarayıcı genelinde paylaşıldığı için (tab-scoped değil),
+    // bu link öğretmenin/adminin kendi sekmesi dahil TÜM sekmelerdeki oturumu
+    // değiştirir — badge önizlemesinde QR linkini "test etmek" için tıklarsa kendi
+    // oturumundan habersizce atılmış olur. Devam etmeden önce bilinçli onay iste.
+    const mevcutKullanici = useAuthStore.getState().user;
+    if (mevcutKullanici && mevcutKullanici.role !== 'Ogrenci' && !confirm(t('staffSwitchWarning'))) {
+      router.replace(homePathForRole(mevcutKullanici.role), { locale });
       return;
     }
 
