@@ -27,35 +27,27 @@ function SinifKatilContent() {
   const [kod, setKod] = useState('');
   const [joined, setJoined] = useState<KatilResponse | null>(null);
   const autoFiredRef = useRef(false);
-  const autoRetriedRef = useRef(false);
-  const [autoRetrying, setAutoRetrying] = useState(false);
 
   const katilMutation = useMutation({
     mutationFn: (k: string) =>
       api.post<KatilResponse>(`/api/sinif/katil?kod=${encodeURIComponent(k)}`).then((r) => r.data),
-    onSuccess: (data) => {
-      setAutoRetrying(false);
-      setJoined(data);
-    },
-    onError: () => {
-      // Kayıt/giriş sonrası otomatik katılım denemesi (autoFiredRef), token'ın henüz
-      // taze oturumla senkron olmadığı anlık bir yarış durumunda 401 ile başarısız
-      // olabilir. Kullanıcıya korkutucu bir hata göstermek yerine sessizce bir kez
-      // tekrar dene — elle kod girilen denemede (autoFiredRef=false) bu geçerli değil,
-      // orada hata anında ve doğrudan gösterilir.
-      if (autoFiredRef.current && !autoRetriedRef.current) {
-        autoRetriedRef.current = true;
-        setAutoRetrying(true);
-        const urlKod = searchParams.get('kod');
-        if (urlKod) {
-          setTimeout(() => katilMutation.mutate(urlKod.toUpperCase()), 700);
-        } else {
-          setAutoRetrying(false);
-        }
-      } else {
-        setAutoRetrying(false);
-      }
-    },
+    onSuccess: (data) => setJoined(data),
+  });
+
+  // Kayıt/giriş sonrası otomatik katılım denemesi ayrı bir mutation: token'ın henüz
+  // taze oturumla senkron olmadığı anlık bir 401 yarışına düşerse sessizce bir kez
+  // tekrar dener. react-query'nin yerleşik retry'ı boyunca isPending true kalır ve
+  // error sadece TÜM denemeler tükenince set edilir — kullanıcıya korkutucu bir hata
+  // yanıp sönmeden gösterilir. Sadece 401'de retry (`error.response.status`) — geçersiz/
+  // süresi dolmuş/dolu kod gibi kalıcı hatalar hemen gösterilir, gizlenmez. Elle kod
+  // girilen manuel denemede (katilMutation, retry yok) hata her zaman anında gösterilir.
+  const autoKatilMutation = useMutation({
+    mutationFn: (k: string) =>
+      api.post<KatilResponse>(`/api/sinif/katil?kod=${encodeURIComponent(k)}`).then((r) => r.data),
+    onSuccess: (data) => setJoined(data),
+    retry: (failureCount, error) =>
+      failureCount < 1 && (error as { response?: { status?: number } }).response?.status === 401,
+    retryDelay: 700,
   });
 
   // Giriş yapılmamış ziyaretçi kayıt formuna gönderilmeden önce kodun gerçekten var
@@ -88,7 +80,7 @@ function SinifKatilContent() {
     const urlKod = searchParams.get('kod');
     if (urlKod && _hasHydrated && user && !joined && !autoFiredRef.current) {
       autoFiredRef.current = true;
-      katilMutation.mutate(urlKod.toUpperCase());
+      autoKatilMutation.mutate(urlKod.toUpperCase());
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_hasHydrated, user]);
@@ -125,10 +117,7 @@ function SinifKatilContent() {
   }
 
   const errorMsg = (() => {
-    // Otomatik yeniden deneme sürerken (bkz. katilMutation.onError) hata anlık
-    // ve kendi kendine çözülebilir — kullanıcıya göstermeden önce sonucu bekle.
-    if (autoRetrying) return null;
-    const error = katilMutation.error ?? dogrulaMutation.error;
+    const error = katilMutation.error ?? autoKatilMutation.error ?? dogrulaMutation.error;
     if (!error) return null;
     const d = (error as { response?: { data?: unknown } }).response?.data;
     if (typeof d === 'string') return d;
@@ -171,10 +160,10 @@ function SinifKatilContent() {
 
           <Button
             type="submit"
-            disabled={kod.trim().length < 4 || katilMutation.isPending || dogrulaMutation.isPending || autoRetrying}
+            disabled={kod.trim().length < 4 || katilMutation.isPending || autoKatilMutation.isPending || dogrulaMutation.isPending}
             className="w-full h-14 text-lg font-semibold"
           >
-            {katilMutation.isPending || dogrulaMutation.isPending || autoRetrying ? t('joining') : t('joinButton')}
+            {katilMutation.isPending || autoKatilMutation.isPending || dogrulaMutation.isPending ? t('joining') : t('joinButton')}
           </Button>
         </form>
 
