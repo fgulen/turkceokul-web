@@ -266,6 +266,9 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const [qrModalAcik, setQrModalAcik] = useState(false);
   const [duzenleOdevId, setDuzenleOdevId] = useState<number | null>(null);
   const [duzenleOdevForm, setDuzenleOdevForm] = useState({ baslik: '', aciklama: '', teslimTarihi: '' });
+  const [duzenleOgrenciId, setDuzenleOgrenciId] = useState<number | null>(null);
+  const [duzenleOgrenciForm, setDuzenleOgrenciForm] = useState({ ad: '', soyad: '', kullaniciAdi: '' });
+  const [duzenleOgrenciHata, setDuzenleOgrenciHata] = useState<string | null>(null);
 
   // Toplu öğrenci ekleme
   const [topluModalAcik, setTopluModalAcik] = useState(false);
@@ -400,6 +403,22 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     },
   });
 
+  const ogrenciDuzenleMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.put(`/api/ogretmen/ogrenci/${ogrenciId}/duzenle`, {
+      ad: duzenleOgrenciForm.ad,
+      soyad: duzenleOgrenciForm.soyad || null,
+      kullaniciAdi: duzenleOgrenciForm.kullaniciAdi || null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
+      setDuzenleOgrenciId(null);
+      setDuzenleOgrenciHata(null);
+    },
+    onError: (err: { response?: { data?: string } }) => {
+      setDuzenleOgrenciHata(typeof err.response?.data === 'string' ? err.response.data : 'Kaydedilemedi.');
+    },
+  });
+
   // PIN/QR sıfırlama — sonuç (yeni PIN) tek seferlik bir modalda gösterilir, plaintext
   // hiçbir yerde saklanmadığı için bu modal kapanınca bir daha görüntülenemez.
   const [pinSifirlaSonuc, setPinSifirlaSonuc] = useState<{ userId: number; ad: string; pin: string } | null>(null);
@@ -458,6 +477,13 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       aciklama: odev.aciklama ?? '',
       teslimTarihi: odev.teslimTarihi ? odev.teslimTarihi.slice(0, 10) : '',
     });
+  }
+
+  function startOgrenciDuzenle(o: OgrenciOzet) {
+    const [ad, ...soyadParcalari] = o.ad.split(' ');
+    setDuzenleOgrenciId(o.userId);
+    setDuzenleOgrenciForm({ ad, soyad: soyadParcalari.join(' '), kullaniciAdi: o.kullaniciAdi ?? '' });
+    setDuzenleOgrenciHata(null);
   }
 
   function topluEkleGonder() {
@@ -659,6 +685,51 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                       ? Math.round((Date.now() - new Date(o.sonGirisTarihi).getTime()) / 86400000)
                       : null;
                     return (
+                    duzenleOgrenciId === o.userId ? (
+                      <div key={o.userId} className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2 my-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={duzenleOgrenciForm.ad}
+                            onChange={e => setDuzenleOgrenciForm(p => ({ ...p, ad: e.target.value }))}
+                            placeholder="Ad *"
+                            className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                          />
+                          <input
+                            type="text"
+                            value={duzenleOgrenciForm.soyad}
+                            onChange={e => setDuzenleOgrenciForm(p => ({ ...p, soyad: e.target.value }))}
+                            placeholder="Soyad"
+                            className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                          />
+                        </div>
+                        {o.pinKullanici && (
+                          <input
+                            type="text"
+                            value={duzenleOgrenciForm.kullaniciAdi}
+                            onChange={e => setDuzenleOgrenciForm(p => ({ ...p, kullaniciAdi: e.target.value }))}
+                            placeholder="Kullanıcı adı"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                          />
+                        )}
+                        {duzenleOgrenciHata && <p className="text-xs text-red-500">{duzenleOgrenciHata}</p>}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => ogrenciDuzenleMutation.mutate(o.userId)}
+                            disabled={!duzenleOgrenciForm.ad || ogrenciDuzenleMutation.isPending}
+                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            onClick={() => { setDuzenleOgrenciId(null); setDuzenleOgrenciHata(null); }}
+                            className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                          >
+                            İptal
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
                     <div key={o.userId} className={cn('flex items-center justify-between py-3 group', !o.isActive && 'opacity-60')}>
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
@@ -697,6 +768,15 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                           </button>
                         ) : (
                           <>
+                            {o.isActive && (
+                              <button
+                                title="Düzenle"
+                                onClick={() => startOgrenciDuzenle(o)}
+                                className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
+                              >
+                                <Pencil className="size-3.5" />
+                              </button>
+                            )}
                             {o.pinKullanici && (
                               <button
                                 title="PIN'i sıfırla"
@@ -735,6 +815,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                         )}
                       </div>
                     </div>
+                    )
                     );
                   })}
                 </div>
