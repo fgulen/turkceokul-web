@@ -27,11 +27,35 @@ function SinifKatilContent() {
   const [kod, setKod] = useState('');
   const [joined, setJoined] = useState<KatilResponse | null>(null);
   const autoFiredRef = useRef(false);
+  const autoRetriedRef = useRef(false);
+  const [autoRetrying, setAutoRetrying] = useState(false);
 
   const katilMutation = useMutation({
     mutationFn: (k: string) =>
       api.post<KatilResponse>(`/api/sinif/katil?kod=${encodeURIComponent(k)}`).then((r) => r.data),
-    onSuccess: (data) => setJoined(data),
+    onSuccess: (data) => {
+      setAutoRetrying(false);
+      setJoined(data);
+    },
+    onError: () => {
+      // Kayıt/giriş sonrası otomatik katılım denemesi (autoFiredRef), token'ın henüz
+      // taze oturumla senkron olmadığı anlık bir yarış durumunda 401 ile başarısız
+      // olabilir. Kullanıcıya korkutucu bir hata göstermek yerine sessizce bir kez
+      // tekrar dene — elle kod girilen denemede (autoFiredRef=false) bu geçerli değil,
+      // orada hata anında ve doğrudan gösterilir.
+      if (autoFiredRef.current && !autoRetriedRef.current) {
+        autoRetriedRef.current = true;
+        setAutoRetrying(true);
+        const urlKod = searchParams.get('kod');
+        if (urlKod) {
+          setTimeout(() => katilMutation.mutate(urlKod.toUpperCase()), 700);
+        } else {
+          setAutoRetrying(false);
+        }
+      } else {
+        setAutoRetrying(false);
+      }
+    },
   });
 
   // Giriş yapılmamış ziyaretçi kayıt formuna gönderilmeden önce kodun gerçekten var
@@ -40,8 +64,15 @@ function SinifKatilContent() {
   // hesap oluşturulduktan sonra arka planda yapılıyordu).
   const dogrulaMutation = useMutation({
     mutationFn: (k: string) => api.get(`/api/sinif/dogrula?kod=${encodeURIComponent(k)}`),
-    onSuccess: (_data, k) => {
-      useAuthStore.getState().logout();
+    onSuccess: async (_data, k) => {
+      // await şart: logout() sunucuda hasSession/refreshToken cookie'lerini siler.
+      // Await edilmeden kayıt sayfasına geçilirse, kayıt formu gönderildiğinde
+      // /api/auth/register YENİ bu cookie'leri set eder — ama gecikmeli dönen
+      // logout yanıtı register'dan SONRA gelirse taze oturumu siler (aynı cookie
+      // adı/path'i). Sonuç: kayıt sonrası sinif/katil'e dönüşte oturum geçersiz
+      // görünüp otomatik katılım 401 ile patlıyordu (kısa süreli "bir şeyler ters
+      // gitti" hatası, ardından bazen ikinci denemede başarı).
+      await useAuthStore.getState().logout();
       const returnTo = encodeURIComponent(`${window.location.pathname}?kod=${encodeURIComponent(k)}`);
       router.push(`/kayit?tip=bireysel&redirect=${returnTo}` as Parameters<typeof router.push>[0]);
     },
@@ -94,6 +125,9 @@ function SinifKatilContent() {
   }
 
   const errorMsg = (() => {
+    // Otomatik yeniden deneme sürerken (bkz. katilMutation.onError) hata anlık
+    // ve kendi kendine çözülebilir — kullanıcıya göstermeden önce sonucu bekle.
+    if (autoRetrying) return null;
     const error = katilMutation.error ?? dogrulaMutation.error;
     if (!error) return null;
     const d = (error as { response?: { data?: unknown } }).response?.data;
@@ -137,10 +171,10 @@ function SinifKatilContent() {
 
           <Button
             type="submit"
-            disabled={kod.trim().length < 4 || katilMutation.isPending || dogrulaMutation.isPending}
+            disabled={kod.trim().length < 4 || katilMutation.isPending || dogrulaMutation.isPending || autoRetrying}
             className="w-full h-14 text-lg font-semibold"
           >
-            {katilMutation.isPending || dogrulaMutation.isPending ? t('joining') : t('joinButton')}
+            {katilMutation.isPending || dogrulaMutation.isPending || autoRetrying ? t('joining') : t('joinButton')}
           </Button>
         </form>
 

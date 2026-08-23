@@ -23,7 +23,7 @@ interface AuthState {
   setAuth: (user: AuthUser, accessToken: string) => void;
   setTokens: (accessToken: string) => void;
   updateUser: (patch: Partial<AuthUser>) => void;
-  logout: () => void;
+  logout: () => Promise<void | Response>;
   setHasHydrated: (v: boolean) => void;
 }
 
@@ -48,19 +48,25 @@ export const useAuthStore = create<AuthState>()(
         // refreshToken artık httpOnly cookie'de — aynı-origin istek onu otomatik taşır,
         // JS'in okuyup göndermesine gerek yok. keepalive: hemen ardından yönlendirme
         // olsa bile istek tamamlanır. Plain fetch (api.ts değil) → circular import yok.
-        if (typeof window !== 'undefined') {
-          fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: '{}',
-            keepalive: true,
-          }).catch(() => {});
-        }
+        // Promise döner: çoğu çağıran (logout butonu) fire-and-forget kullanır, ama
+        // hemen ardından yeni bir oturum açacak çağıranlar (bkz. sinif/katil dogrula
+        // akışı) bunu await edip ClearSession cookie'sinin SetSession'dan SONRA
+        // gelmesini garanti eder — aksi halde iki yanıt hangi sırayla dönerse aynı
+        // cookie'yi (hasSession/refreshToken) yazdığı için taze oturum silinebilir.
+        const logoutRequest = typeof window !== 'undefined'
+          ? fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: '{}',
+              keepalive: true,
+            }).catch(() => {})
+          : Promise.resolve();
         // Farklı kullanıcıların verisi aynı sekmede React Query cache'inde
         // (global key'ler: okuma-atamalar, siniflarim, vb.) kalıp bir sonraki
         // hesaba (ör. impersonation) sızmasın diye çıkışta tamamen temizle.
         queryClient.clear();
         set({ user: null, accessToken: null });
+        return logoutRequest;
       },
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
