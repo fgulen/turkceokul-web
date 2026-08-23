@@ -26,6 +26,7 @@ interface Sinif {
   kurumAdi: string | null;
   ulkeAdi: string | null;
   okumaKitabiVarMi: boolean;
+  kaliciSilmeSerbestMi: boolean;
 }
 
 interface OgrenciOzet {
@@ -39,6 +40,8 @@ interface OgrenciOzet {
   pinKullanici: boolean;
   email: string | null;
   kullaniciAdi: string | null;
+  isActive: boolean;
+  etkinlikYaptiMi: boolean;
 }
 
 interface TopluEkleSonuc {
@@ -376,6 +379,15 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     },
   });
 
+  const yenidenAktifMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.put(`/api/ogretmen/sinif/${id}/ogrenci/${ogrenciId}/yeniden-aktif`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
+      toast.success('Öğrenci yeniden aktif edildi.');
+    },
+    onError: () => toast.error('Öğrenci yeniden aktif edilemedi.'),
+  });
+
   // PIN/QR sıfırlama — sonuç (yeni PIN) tek seferlik bir modalda gösterilir, plaintext
   // hiçbir yerde saklanmadığı için bu modal kapanınca bir daha görüntülenemez.
   const [pinSifirlaSonuc, setPinSifirlaSonuc] = useState<{ userId: number; ad: string; pin: string } | null>(null);
@@ -635,13 +647,20 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                       ? Math.round((Date.now() - new Date(o.sonGirisTarihi).getTime()) / 86400000)
                       : null;
                     return (
-                    <div key={o.userId} className="flex items-center justify-between py-3 group">
+                    <div key={o.userId} className={cn('flex items-center justify-between py-3 group', !o.isActive && 'opacity-60')}>
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                           {o.ad.charAt(0)}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-medium text-sm text-slate-800">{o.ad}</div>
+                          <div className="font-medium text-sm text-slate-800 flex items-center gap-2">
+                            {o.ad}
+                            {!o.isActive && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                                Dondu
+                              </span>
+                            )}
+                          </div>
                           {(o.pinKullanici ? o.kullaniciAdi : o.email) && (
                             <div className="text-xs text-slate-400 font-mono truncate" title={o.pinKullanici ? o.kullaniciAdi! : o.email!}>
                               {o.pinKullanici ? o.kullaniciAdi : o.email}
@@ -656,27 +675,40 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                         <div className="text-xs text-slate-400">
                           {gunOnce === null ? 'Hiç girmedi' : gunOnce === 0 ? 'Bugün' : `${gunOnce} gün önce`}
                         </div>
-                        {o.pinKullanici && (
+                        {!o.isActive ? (
                           <button
-                            title="PIN'i sıfırla"
-                            onClick={() => {
-                              if (confirm(`${o.ad} için yeni bir PIN üretilecek, eski PIN geçersiz olacak. Devam edilsin mi?`))
-                                pinYenileMutation.mutate(o.userId);
-                            }}
+                            title="Yeniden Aktif Et"
+                            onClick={() => yenidenAktifMutation.mutate(o.userId)}
                             className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
                           >
-                            <KeyRound className="size-3.5" />
+                            <RotateCw className="size-3.5" />
                           </button>
+                        ) : (
+                          <>
+                            {o.pinKullanici && (
+                              <button
+                                title="PIN'i sıfırla"
+                                onClick={() => {
+                                  if (confirm(`${o.ad} için yeni bir PIN üretilecek, eski PIN geçersiz olacak. Devam edilsin mi?`))
+                                    pinYenileMutation.mutate(o.userId);
+                                }}
+                                className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
+                              >
+                                <KeyRound className="size-3.5" />
+                              </button>
+                            )}
+                            <button
+                              title="Dondur"
+                              onClick={() => {
+                                if (confirm('Öğrenci dondurulacak, listede soluk görünecek ve derslere giremeyecek.\n\nNot: Lisans kotası iade edilmez. "Yeniden Aktif Et" ile geri alabilirsiniz.'))
+                                  ogrenciSilMutation.mutate(o.userId);
+                              }}
+                              className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-amber-600 hover:bg-amber-50 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => {
-                            if (confirm('Öğrenciyi sınıftan çıkarmak istediğinizden emin misiniz?\n\nNot: Lisans kotası iade edilmez. Yanlış sildiyseniz yönetici ile iletişime geçin.'))
-                              ogrenciSilMutation.mutate(o.userId);
-                          }}
-                          className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
                       </div>
                     </div>
                     );
