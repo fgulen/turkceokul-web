@@ -37,6 +37,8 @@ interface OgrenciOzet {
   sonAktivite: string | null;
   sonGirisTarihi: string | null;
   pinKullanici: boolean;
+  email: string | null;
+  kullaniciAdi: string | null;
 }
 
 interface TopluEkleSonuc {
@@ -634,12 +636,17 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                       : null;
                     return (
                     <div key={o.userId} className="flex items-center justify-between py-3 group">
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                           {o.ad.charAt(0)}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-medium text-sm text-slate-800">{o.ad}</div>
+                          {(o.pinKullanici ? o.kullaniciAdi : o.email) && (
+                            <div className="text-xs text-slate-400 font-mono truncate" title={o.pinKullanici ? o.kullaniciAdi! : o.email!}>
+                              {o.pinKullanici ? o.kullaniciAdi : o.email}
+                            </div>
+                          )}
                           <div className="text-xs text-slate-400">
                             {o.tamamlananUnite} ünite tamamlandı · {o.toplamPuan} XP
                           </div>
