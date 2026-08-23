@@ -398,8 +398,10 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       qc.invalidateQueries({ queryKey: ['sinif', id] });
       toast.success('Öğrenci kalıcı olarak silindi.');
     },
-    onError: (err: { response?: { data?: string } }) => {
-      toast.error(typeof err.response?.data === 'string' ? err.response.data : 'Öğrenci silinemedi.');
+    onError: (err: { response?: { data?: string | { hata?: string } } }) => {
+      const data = err.response?.data;
+      const mesaj = typeof data === 'string' ? data : data?.hata;
+      toast.error(mesaj ?? 'Öğrenci silinemedi.');
     },
   });
 
@@ -414,8 +416,10 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setDuzenleOgrenciId(null);
       setDuzenleOgrenciHata(null);
     },
-    onError: (err: { response?: { data?: string } }) => {
-      setDuzenleOgrenciHata(typeof err.response?.data === 'string' ? err.response.data : 'Kaydedilemedi.');
+    onError: (err: { response?: { data?: string | { hata?: string } } }) => {
+      const data = err.response?.data;
+      const mesaj = typeof data === 'string' ? data : data?.hata;
+      setDuzenleOgrenciHata(mesaj ?? 'Kaydedilemedi.');
     },
   });
 
