@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
   Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info, Gift,
-  KeyRound, RotateCw,
+  KeyRound, RotateCw, UserX,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
@@ -388,6 +388,18 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     onError: () => toast.error('Öğrenci yeniden aktif edilemedi.'),
   });
 
+  const kaliciSilMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.delete(`/api/ogretmen/sinif/${id}/ogrenci/${ogrenciId}/kalici`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
+      qc.invalidateQueries({ queryKey: ['sinif', id] });
+      toast.success('Öğrenci kalıcı olarak silindi.');
+    },
+    onError: (err: { response?: { data?: string } }) => {
+      toast.error(typeof err.response?.data === 'string' ? err.response.data : 'Öğrenci silinemedi.');
+    },
+  });
+
   // PIN/QR sıfırlama — sonuç (yeni PIN) tek seferlik bir modalda gösterilir, plaintext
   // hiçbir yerde saklanmadığı için bu modal kapanınca bir daha görüntülenemez.
   const [pinSifirlaSonuc, setPinSifirlaSonuc] = useState<{ userId: number; ad: string; pin: string } | null>(null);
@@ -708,6 +720,18 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                               <Trash2 className="size-3.5" />
                             </button>
                           </>
+                        )}
+                        {((sinif?.kaliciSilmeSerbestMi ?? false) || !o.etkinlikYaptiMi) && (
+                          <button
+                            title="Kalıcı Sil"
+                            onClick={() => {
+                              if (confirm(`${o.ad} kalıcı olarak silinecek. Bu işlem GERİ ALINAMAZ. Devam edilsin mi?`))
+                                kaliciSilMutation.mutate(o.userId);
+                            }}
+                            className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
+                          >
+                            <UserX className="size-3.5" />
+                          </button>
                         )}
                       </div>
                     </div>
