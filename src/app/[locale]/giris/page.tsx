@@ -132,6 +132,13 @@ export default function GirisPage() {
             {t('auth.login.registerLink')}
           </Link>
         </p>
+
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          {t('pinLogin.hasCodeLead')}{' '}
+          <Link href="/pin-login" className="text-primary font-medium hover:underline">
+            {t('pinLogin.hasCodeCta')}
+          </Link>
+        </p>
       </div>
     </div>
   );

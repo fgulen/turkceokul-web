@@ -14,6 +14,9 @@ export interface AuthUser {
   streakCount: number;
   role: UserRole;
   nativeLanguage?: string;
+  // PinKullanici hesaplarda (öğretmenin toplu eklediği öğrenciler) dolu — QR
+  // girişi sonrası "bir dahaki sefere nasıl gireceğin" hatırlatmasında kullanılır.
+  kullaniciAdi?: string;
 }
 
 interface AuthState {

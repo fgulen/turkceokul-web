@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import {
   ArrowLeft, BookOpen, Users, ClipboardList, Megaphone,
   Trophy, Copy, Check, Trash2, Plus, Wifi, UserPlus, Download, X, AlertTriangle, Pencil, QrCode, Info, Gift,
+  KeyRound, RotateCw,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/stores/auth';
@@ -35,6 +36,7 @@ interface OgrenciOzet {
   tamamlananUnite: number;
   sonAktivite: string | null;
   sonGirisTarihi: string | null;
+  pinKullanici: boolean;
 }
 
 interface TopluEkleSonuc {
@@ -372,6 +374,24 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     },
   });
 
+  // PIN/QR sıfırlama — sonuç (yeni PIN) tek seferlik bir modalda gösterilir, plaintext
+  // hiçbir yerde saklanmadığı için bu modal kapanınca bir daha görüntülenemez.
+  const [pinSifirlaSonuc, setPinSifirlaSonuc] = useState<{ userId: number; ad: string; pin: string } | null>(null);
+  const pinYenileMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.put<{ pin: string }>(`/api/ogretmen/ogrenci/${ogrenciId}/pin-yenile`),
+    onSuccess: (res, ogrenciId) => {
+      const ad = ogrenciler?.find(o => o.userId === ogrenciId)?.ad ?? '';
+      setPinSifirlaSonuc({ userId: ogrenciId, ad, pin: res.data.pin });
+    },
+    onError: (err: { response?: { data?: unknown } }) => {
+      toast.error(typeof err.response?.data === 'string' ? err.response.data : 'PIN sıfırlanamadı.');
+    },
+  });
+  const qrYenileMutation = useMutation({
+    mutationFn: (ogrenciId: number) => api.put(`/api/ogretmen/ogrenci/${ogrenciId}/qr-yenile`),
+    onError: () => toast.error('QR kodu yenilenemedi.'),
+  });
+
   async function badgePdfIndir() {
     const base = getClientApiUrl();
     try {
@@ -629,6 +649,18 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                         <div className="text-xs text-slate-400">
                           {gunOnce === null ? 'Hiç girmedi' : gunOnce === 0 ? 'Bugün' : `${gunOnce} gün önce`}
                         </div>
+                        {o.pinKullanici && (
+                          <button
+                            title="PIN'i sıfırla"
+                            onClick={() => {
+                              if (confirm(`${o.ad} için yeni bir PIN üretilecek, eski PIN geçersiz olacak. Devam edilsin mi?`))
+                                pinYenileMutation.mutate(o.userId);
+                            }}
+                            className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-primary hover:bg-primary/10 transition-colors opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
+                          >
+                            <KeyRound className="size-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             if (confirm('Öğrenciyi sınıftan çıkarmak istediğinizden emin misiniz?\n\nNot: Lisans kotası iade edilmez. Yanlış sildiyseniz yönetici ile iletişime geçin.'))
@@ -886,6 +918,62 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
             </div>
             <div className="p-6">
               <KatilimKoduDavet katilimKodu={sinif.katilimKodu} locale={locale} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PIN Sıfırlama Sonucu Modalı */}
+      {pinSifirlaSonuc && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h2 className="font-bold text-slate-900">Yeni PIN Üretildi</h2>
+              <button
+                onClick={() => { setPinSifirlaSonuc(null); qrYenileMutation.reset(); }}
+                className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">{pinSifirlaSonuc.ad} için yeni PIN — sadece şimdi görünür, bir daha gösterilemez.</p>
+              <div className="text-center py-4 bg-slate-50 rounded-xl">
+                <span className="font-mono font-bold text-3xl text-primary tracking-[0.3em]">{pinSifirlaSonuc.pin}</span>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                <span>Eski PIN artık geçersiz. Öğrenciye sözlü/yazılı iletin. Badge&apos;de PIN yazmaz, sadece QR — QR de kaybolduysa aşağıdan yenileyin.</span>
+              </div>
+              {/* qrYenileMutation.isSuccess: PDF sadece QR gerçekten yenilendiyse anlamlı —
+                  aksi halde badge zaten geçerli, gereksiz class-genelinde bir indirme tetiklenmesin. */}
+              {!qrYenileMutation.isSuccess && (
+                <button
+                  onClick={() => {
+                    if (confirm('Badge de mi kayboldu? Bu öğrencinin QR kodu da yenilenecek, eski badge çalışmaz olacak.'))
+                      qrYenileMutation.mutate(pinSifirlaSonuc.userId);
+                  }}
+                  disabled={qrYenileMutation.isPending}
+                  className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  <RotateCw className="size-3.5" /> Badge de kayboldu, QR&apos;yu da yenile
+                </button>
+              )}
+              {qrYenileMutation.isSuccess ? (
+                <button
+                  onClick={() => { setPinSifirlaSonuc(null); qrYenileMutation.reset(); badgePdfIndir(); }}
+                  className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  <Download className="size-4" /> Yeni QR için Badge PDF İndir (Sınıfın Tamamı)
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setPinSifirlaSonuc(null); qrYenileMutation.reset(); }}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Kapat
+                </button>
+              )}
             </div>
           </div>
         </div>

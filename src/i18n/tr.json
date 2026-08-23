@@ -33,7 +33,13 @@
     "usernameLabel": "Kullanıcı Adı",
     "pinLabel": "PIN",
     "error": "Kullanıcı adı veya PIN hatalı.",
-    "submit": "Giriş Yap"
+    "submit": "Giriş Yap",
+    "hasCodeLead": "Kullanıcı adın ve PIN'in mi var?",
+    "hasCodeCta": "PIN ile giriş yap",
+    "qrWelcomeTitle": "Bunu not al!",
+    "qrWelcomeBody": "Kullanıcı adın:",
+    "qrWelcomeHint": "Bir dahaki sefere QR kodunu tekrar okut ya da bu kullanıcı adı + öğretmeninin verdiği PIN ile giriş sayfasından gir.",
+    "qrWelcomeContinue": "Panoya Git"
   },
   "error": {
     "title": "Bir şeyler ters gitti",
