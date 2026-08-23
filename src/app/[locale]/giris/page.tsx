@@ -20,6 +20,7 @@ export default function GirisPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [kullaniciAdiIpucu, setKullaniciAdiIpucu] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
@@ -29,9 +30,20 @@ export default function GirisPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const emailTrimmed = form.email.trim();
+    // "@" içermeyen bir değer (öğretmenin toplu eklediği öğrencinin kullanıcı adı,
+    // ör. "ali.veli.4823") — form noValidate olduğu için tarayıcı bunu artık
+    // otomatik engellemiyor (type="email" e2e seçicisi ve mobilde email klavyesi
+    // için korundu), ama API'ye boşuna 401 attırıp genel "hatalı" mesajı göstermek
+    // yerine doğrudan doğru yere (PIN girişi) yönlendiriyoruz.
+    if (emailTrimmed && !emailTrimmed.includes('@')) {
+      setKullaniciAdiIpucu(true);
+      return;
+    }
+    setKullaniciAdiIpucu(false);
     setLoading(true);
     try {
-      const { data } = await api.post('/api/auth/login', form);
+      const { data } = await api.post('/api/auth/login', { ...form, email: emailTrimmed });
       setAuth(data.user, data.accessToken);
       // Redirect param'ı kontrol et (QR tarama, korumalı sayfa yönlendirmesi için)
       const params = new URLSearchParams(window.location.search);
@@ -64,17 +76,28 @@ export default function GirisPage() {
             {t('auth.login.subtitle')}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1.5">{t('auth.login.emailLabel')}</label>
               <Input
                 type="email"
                 value={form.email}
-                onChange={field('email')}
+                onChange={(e) => { field('email')(e); setKullaniciAdiIpucu(false); }}
                 required
                 placeholder={t('auth.login.emailPlaceholder')}
                 autoComplete="email"
               />
+              {kullaniciAdiIpucu && (
+                <p className="text-sm text-muted-foreground mt-1.5">
+                  {t('pinLogin.looksLikeUsername')}{' '}
+                  <Link
+                    href={`/pin-login?kullaniciAdi=${encodeURIComponent(form.email.trim())}`}
+                    className="text-primary font-medium hover:underline"
+                  >
+                    {t('pinLogin.hasCodeCta')}
+                  </Link>
+                </p>
+              )}
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">

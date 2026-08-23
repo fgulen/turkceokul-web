@@ -36,6 +36,7 @@
     "submit": "Log In",
     "hasCodeLead": "Have a username and PIN?",
     "hasCodeCta": "Log in with PIN",
+    "looksLikeUsername": "That doesn't look like an email — is it your username?",
     "qrWelcomeTitle": "Write this down!",
     "qrWelcomeBody": "Your username:",
     "qrWelcomeHint": "Next time, scan your QR code again, or log in from the sign-in page with this username and the PIN your teacher gave you.",

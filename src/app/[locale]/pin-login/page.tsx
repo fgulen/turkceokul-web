@@ -1,6 +1,7 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRouter, useLocale } from '@/navigation';
 import { Loader2 } from 'lucide-react';
@@ -8,13 +9,16 @@ import { Logo } from '@/components/logo';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
-export default function PinLoginPage() {
+function PinLoginContent() {
   const t = useTranslations();
   const router = useRouter();
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const [kullaniciAdi, setKullaniciAdi] = useState('');
+  // /giris'te "@" içermeyen bir değer girilip buraya yönlendirildiyse (bkz.
+  // sinifKatilRedirect deseninin benzeri) kullanıcı adını tekrar yazdırmayalım.
+  const [kullaniciAdi, setKullaniciAdi] = useState(() => searchParams.get('kullaniciAdi') ?? '');
   const [pin, setPin] = useState('');
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -87,5 +91,13 @@ export default function PinLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PinLoginPage() {
+  return (
+    <Suspense>
+      <PinLoginContent />
+    </Suspense>
   );
 }
