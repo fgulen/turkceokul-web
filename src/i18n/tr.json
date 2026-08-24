@@ -221,6 +221,19 @@
       "kodLabel": "Ya da sınıf kodunla hemen başla",
       "kodPlaceholder": "Örn: TR-ANKA-X4K9",
       "kodCta": "Sınıfa Katıl →"
+    },
+    "odevler": {
+      "title": "Ödevler",
+      "empty": "Henüz ödev yok.",
+      "overdue": "Gecikti",
+      "dueDate": "Son teslim: {date}"
+    },
+    "duyurular": {
+      "title": "Duyurular",
+      "empty": "Henüz duyuru yok.",
+      "commentPlaceholder": "Yorum yaz...",
+      "send": "Gönder",
+      "sending": "Gönderiliyor…"
     }
   },
   "seviyeTesti": {

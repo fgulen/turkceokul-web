@@ -221,6 +221,19 @@
       "kodLabel": "Or jump right in with a class code",
       "kodPlaceholder": "e.g. TR-ANKA-X4K9",
       "kodCta": "Join Class →"
+    },
+    "odevler": {
+      "title": "Homework",
+      "empty": "No homework yet.",
+      "overdue": "Overdue",
+      "dueDate": "Due: {date}"
+    },
+    "duyurular": {
+      "title": "Announcements",
+      "empty": "No announcements yet.",
+      "commentPlaceholder": "Write a comment...",
+      "send": "Send",
+      "sending": "Sending…"
     }
   },
   "seviyeTesti": {

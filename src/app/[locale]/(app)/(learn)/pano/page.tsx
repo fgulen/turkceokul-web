@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { PlusBanner } from '@/components/plus-banner';
+import { OdevlerKarti } from '@/components/pano/odevler-karti';
+import { DuyurularKarti } from '@/components/pano/duyurular-karti';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { Link, useRouter, useLocale } from '@/navigation';
 
@@ -202,6 +204,12 @@ export default function PanoPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Ödevler + Duyurular */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <OdevlerKarti />
+          <DuyurularKarti />
         </div>
 
         {/* Okuma Kitapları */}
