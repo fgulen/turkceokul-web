@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { HelpChat } from '@/components/ogretmen/HelpChat';
 import { MdImport } from '@/components/ogretmen/md-import';
 import { KaynakSecici, type KaynakSecim } from '@/components/ogretmen/ai-studio/KaynakSecici';
-import { YakindaKart } from '@/components/ogretmen/ai-studio/YakindaKart';
 import { KahootBaslatModal } from '@/components/ogretmen/ai-studio/KahootBaslatModal';
 import { KahootHavuz } from '@/components/ogretmen/ai-studio/KahootHavuz';
 import { ProUpgradeModal } from '@/components/ogretmen/ai-studio/ProUpgradeModal';
@@ -16,13 +15,13 @@ import {
   ListChecks, Shuffle, PenLine, Newspaper, Zap,
   Loader2, AlertTriangle, X, Save,
   Trash2, Plus, History, ShieldCheck, ChevronDown, ChevronUp, FileUp,
-  Lock, FileText, MessageSquare,
+  Lock,
 } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api, aiApi } from '@/lib/api';
 import { cn, toMediaUrl } from '@/lib/utils';
 
-const SORU_SAYILARI = [5, 8, 10, 15, 20];
+const SORU_SAYILARI = [5, 10, 15, 20];
 
 type TabId = 'quiz' | 'kahoot' | 'eslestir' | 'bosluk_doldur' | 'bulten' | 'pdf_import';
 
@@ -488,20 +487,6 @@ export default function AIIcerikPage() {
             </button>
           </div>
         )}
-
-        {/* Yakında kartları — tanıtım amaçlı, tıklanamaz */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-          <YakindaKart
-            icon={FileText}
-            baslik="Çalışma Kağıdı"
-            aciklama="Karma sorular — Word (.docx) export destekli"
-          />
-          <YakindaKart
-            icon={MessageSquare}
-            baslik="Konuşma Egzersizi"
-            aciklama="Diyalog, kelimeler ve anlama soruları"
-          />
-        </div>
 
         {/* Kredi göstergesi */}
         {krediData && (
