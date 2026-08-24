@@ -25,7 +25,9 @@ interface MikroQuizProps {
 const DESTEKLENEN_TIPLER = ['CoktanSecmeli', 'DogruYanlis', 'BoslukDoldurma'] as const;
 
 function renderPlayer(etkinlik: EtkinlikData, onComplete: (cevaplar: Cevap[]) => void) {
-  const props = { etkinlik, onComplete };
+  // Bu bölümün kendi "1/2 — Etkinlik Adı" ilerleme çubuğu üstte zaten gösteriliyor —
+  // player kendi çubuğunu tekrar çizmesin (kalp/soru sayacı kalır).
+  const props = { etkinlik, onComplete, hideProgress: true };
   switch (etkinlik.etkinlikTuru) {
     case 'CoktanSecmeli':
       return <CoktanSecmeliPlayer {...props} />;

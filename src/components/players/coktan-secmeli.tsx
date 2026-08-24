@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 
-export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
+export function CoktanSecmeliPlayer({ etkinlik, onComplete, hideProgress }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
   const { play } = useGameSound();
@@ -76,7 +76,8 @@ export function CoktanSecmeliPlayer({ etkinlik, onComplete }: PlayerProps) {
         toplamSoru={detaylar.length}
         kalp={localKalp}
         combo={combo}
-        etiket="Boşluk Doldurma"
+        etiket="Çoktan Seçmeli"
+        hideProgress={hideProgress}
       />
 
 

@@ -57,6 +57,9 @@ export interface PlayerProps {
   onComplete: (cevaplar: Cevap[]) => void;
   kitapId?: string | null;
   uniteId?: string | null;
+  // Okuma modülünde MikroQuiz kendi üst-seviye ilerleme çubuğunu gösteriyor —
+  // player kendi çubuğunu tekrar çizmesin diye true geçilir (kalp/sayaç kalır).
+  hideProgress?: boolean;
 }
 
 export function getKelimeler(d: EtkinlikDetay): string[] {

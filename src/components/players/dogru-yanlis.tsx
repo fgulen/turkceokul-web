@@ -13,7 +13,7 @@ import { PlayingBars } from './ui';
 // olduğu için ogretmenTier dışına sızdırılmaz). Bu yüzden anlık doğru/yanlış geri
 // bildirimi İMKANSIZ — KelimeleriEslestir gibi "toplu" modda cevaplar biriktirilip tek
 // seferde onComplete ile gönderilir, kalp/puan sonucu yalnızca sunucu yanıtından gelir.
-export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
+export function DogruYanlisPlayer({ etkinlik, onComplete, hideProgress }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const { playing: audioPlaying, play: playWord } = usePlayerAudio();
 
@@ -44,14 +44,18 @@ export function DogruYanlisPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   return (
     <div className="max-w-sm md:max-w-lg mx-auto">
-      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-        <span>Soru {index + 1} / {detaylar.length}</span>
-      </div>
-      <div className="h-1.5 bg-muted rounded-full mb-5">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
+      <div className="mb-5">
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+          <span>Soru {index + 1} / {detaylar.length}</span>
+        </div>
+        {!hideProgress && (
+          <div className="h-1.5 bg-muted rounded-full">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {imgUrl && (

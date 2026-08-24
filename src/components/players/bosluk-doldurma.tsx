@@ -23,7 +23,7 @@ function getCorrectAnswers(d: EtkinlikDetay): string[] {
   ].filter(Boolean) as string[];
 }
 
-export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
+export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
   const { play } = useGameSound();
@@ -135,6 +135,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete }: PlayerProps) {
         kalp={localKalp}
         combo={combo}
         etiket="Boşluk Doldurma"
+        hideProgress={hideProgress}
       />
 
       {/* Cümle önizleme */}
