@@ -179,6 +179,9 @@ const nextConfig: NextConfig = {
     // worker'ını bundle'a dahil etmek yerine cdn.jsdelivr.net'ten dinamik yüklüyor —
     // script-src ve worker-src bu YÜZDEN bu origin'i içermeli, yoksa CSP tarayıcıda
     // sessizce engelliyor ve kullanıcıya "PDF yüklenemedi." hatası dönüyor.
+    // pdf.js worker'ı fetch edip blob: URL'den başlatıyor (module worker cross-origin
+    // kısıtlaması yüzden) — worker-src'de PDFJS_CDN yeterli değil, blob: de şart, yoksa
+    // "Creating a worker from 'blob:...' violates ... worker-src" hatasıyla sessizce takılır.
     const PDFJS_CDN = 'https://cdn.jsdelivr.net';
     const scriptSrc = process.env.NODE_ENV === 'development'
       ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${PDFJS_CDN}`
@@ -186,7 +189,7 @@ const nextConfig: NextConfig = {
     const csp = [
       "default-src 'self'",
       scriptSrc,
-      `worker-src 'self' ${PDFJS_CDN}`,
+      `worker-src 'self' blob: ${PDFJS_CDN}`,
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: ${r2Origin}`,
       `media-src 'self' ${r2Origin}`,
