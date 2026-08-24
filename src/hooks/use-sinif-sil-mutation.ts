@@ -13,5 +13,9 @@ export function useSinifSilMutation(invalidateKey: QueryKey) {
 }
 
 export function sinifSilOnayi(name: string): boolean {
-  return confirm(`"${name}" sınıfını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`);
+  return confirm(
+    `"${name}" sınıfını silmek istediğinizden emin misiniz?\n\n` +
+    'Bu işlem geri alınamaz. Bu sınıftaki öğrencilerin tükettiği lisans koltukları ' +
+    'da kalıcı olarak tüketilmiş sayılmaya devam eder (kurumun kotasından düşmez).'
+  );
 }
