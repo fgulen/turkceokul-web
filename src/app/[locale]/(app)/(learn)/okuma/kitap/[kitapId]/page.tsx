@@ -61,7 +61,7 @@ export default function KitapDetayPage({
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="h-4 w-32 bg-muted rounded animate-pulse" />
         <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-          <div className="w-40 h-56 md:w-56 md:h-80 bg-muted rounded-xl animate-pulse shrink-0 mx-auto md:mx-0" />
+          <div className="w-40 md:w-56 aspect-[5/7] bg-muted rounded-xl animate-pulse shrink-0 mx-auto md:mx-0" />
           <div className="flex-1 space-y-3">
             <div className="h-4 w-16 bg-muted rounded animate-pulse" />
             <div className="h-7 w-64 bg-muted rounded animate-pulse" />
@@ -134,7 +134,7 @@ export default function KitapDetayPage({
               className="w-40 md:w-56 aspect-[5/7] object-cover rounded-xl shadow-md"
             />
           ) : (
-            <div className="w-40 h-56 md:w-56 md:h-80 bg-muted rounded-xl flex items-center justify-center">
+            <div className="w-40 md:w-56 aspect-[5/7] bg-muted rounded-xl flex items-center justify-center">
               <BookOpen className="size-10 text-muted-foreground" />
             </div>
           )}

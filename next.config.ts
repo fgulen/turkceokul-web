@@ -194,7 +194,12 @@ const nextConfig: NextConfig = {
       `img-src 'self' data: ${r2Origin}`,
       `media-src 'self' ${r2Origin}`,
       "font-src 'self' data:",
-      `connect-src 'self' ${apiOrigin} ${apiWsOrigin} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io`,
+      // ${r2Origin}: pdf.js kütüphane okuyucusu (pdf-flipbook.tsx) PDF byte'larını getDocument(url)
+      // ile fetch/XHR üzerinden çekiyor — bugünkü seed veri /books/*.pdf (same-origin) kullandığı
+      // için fark etmiyor, ama editör "yeni kütüphane kitabı" formuna (editor/kutuphane/yeni) R2
+      // barındırmalı bir URL girerse connect-src bu isteği sessizce engelleyip "PDF yüklenemedi."
+      // hatasını yeniden üretir — worker-src fix'i bu senaryoyu kapsamaz.
+      `connect-src 'self' ${apiOrigin} ${apiWsOrigin} ${r2Origin} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io`,
       // İletişim sayfasındaki Google Maps embed'i için — default-src bunu kapsamaz, frame-src ayrı belirtilmeli.
       "frame-src https://www.google.com",
       "frame-ancestors 'none'",
