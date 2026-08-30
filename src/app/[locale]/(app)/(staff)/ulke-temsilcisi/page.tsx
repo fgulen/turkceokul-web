@@ -166,16 +166,8 @@ export default function UlkeTemsilcisiPage() {
 
   const kurumOlusturMutation = useMutation({
     mutationFn: (form: { name: string; sehir: string }) =>
-      api.post('/api/ulke-temsilcisi/kurum', { name: form.name, sehir: form.sehir || null }),
-    onSuccess: () => {
-      toast.success('Kurum oluşturuldu. Şimdi kurum yöneticisi davet edebilir veya deneme başlatabilirsiniz.');
-      // sinif-form-data: RoleScopedUserForm'un (Yeni Kurum Yöneticisi daveti) ve
-      // SinifFormSlideOver'ın Kurum dropdown'u bu query'den besleniyor — invalidate
-      // edilmezse yeni kurum orada görünmeye başlaması sayfa yenilenene kadar gecikir.
-      queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
-      queryClient.invalidateQueries({ queryKey: ['sinif-form-data'] });
-      setKurumOlusturAcik(false);
-    },
+      api.post('/api/ulke-temsilcisi/kurum', { name: form.name, sehir: form.sehir || null })
+        .then(r => r.data as { id: number; name: string }),
     onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
@@ -346,9 +338,20 @@ export default function UlkeTemsilcisiPage() {
       <KurumOlusturSlideOver
         open={kurumOlusturAcik}
         onClose={() => setKurumOlusturAcik(false)}
-        onOlustur={form => kurumOlusturMutation.mutate(form)}
+        onOlustur={form => kurumOlusturMutation.mutateAsync(form)}
         olusturuluyor={kurumOlusturMutation.isPending}
+        onTamamlandi={() => {
+          toast.success('Kurum oluşturuldu.');
+          // sinif-form-data: RoleScopedUserForm'un (Yeni Kurum Yöneticisi daveti) ve
+          // SinifFormSlideOver'ın Kurum dropdown'u bu query'den besleniyor — invalidate
+          // edilmezse yeni kurum orada görünmeye başlaması sayfa yenilenene kadar gecikir.
+          queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-panel'] });
+          queryClient.invalidateQueries({ queryKey: ['ulke-temsilcisi-ogretmenler'] });
+          queryClient.invalidateQueries({ queryKey: ['sinif-form-data'] });
+        }}
         ulkeAdi={panel?.name}
+        ogretmenler={ogretmenler}
+        yoneticiApiBase="/api/ulke-temsilcisi"
       />
 
       {/* Kurum satırından tek tıkla lisans onayı — tam kurum detay sayfasına gitmeye

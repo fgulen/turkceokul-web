@@ -125,11 +125,7 @@ export default function AdminPage() {
       name: form.name,
       sehir: form.sehir || undefined,
       ulkeId: form.ulkeId ? Number(form.ulkeId) : undefined,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
-      setKurumOlusturAcik(false);
-    },
+    }).then(r => r.data as { id: number; name: string }),
     onError: (err: unknown) => toast.error(apiHataMesaji(err)),
   });
 
@@ -350,9 +346,16 @@ export default function AdminPage() {
       <KurumOlusturSlideOver
         open={kurumOlusturAcik}
         onClose={() => setKurumOlusturAcik(false)}
-        onOlustur={form => kurumOlusturMutation.mutate(form)}
+        onOlustur={form => kurumOlusturMutation.mutateAsync(form)}
         olusturuluyor={kurumOlusturMutation.isPending}
+        onTamamlandi={() => {
+          toast.success('Kurum oluşturuldu.');
+          qc.invalidateQueries({ queryKey: ['admin-kurumlar'] });
+          qc.invalidateQueries({ queryKey: ['admin-ogretmenler-hepsi'] });
+        }}
         ulkeSecenekleri={davetUlkeler}
+        ogretmenler={ogretmenler}
+        yoneticiApiBase="/api/admin"
       />
 
       <KurumDuzenleSlideOver

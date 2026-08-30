@@ -59,6 +59,10 @@ export interface OgretmenSatiri {
   kurumAdi: string;
   isApproved?: boolean;
   ulkeAdi: string | null;
+  /** Koordinator panelinde ulke-bazli filtreleme icin (ulke-temsilcisi listesinde her zaman kendi ulkesi). */
+  ulkeId?: number | null;
+  /** Kurum yoneticisi atama akisinda "bosta degilse uyar" kontrolu icin. */
+  sinifSayisi?: number;
 }
 
 export interface OgrenciSatiri {
