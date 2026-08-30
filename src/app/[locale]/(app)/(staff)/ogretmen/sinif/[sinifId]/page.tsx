@@ -275,11 +275,16 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
   const [isimler, setIsimler] = useState('');
   const [topluSonuclar, setTopluSonuclar] = useState<TopluEkleSonuc[]>([]);
   const [kapasiteHatasi, setKapasiteHatasi] = useState<string | null>(null);
-  // null = kapasite hatası değil (buton yok), true/false = kurum/ülke sorumlusuna
-  // bildirim daha önce gönderildi mi (backend 402 body'sindeki kapasiteTalebiGonderildiMi)
+  // null = lisans hatası değil (buton yok), true/false = kurum/ülke sorumlusuna
+  // bildirim daha önce gönderildi mi (backend 402 body'sindeki kapasiteTalebiGonderildiMi
+  // VEYA talebiGonderildiMi). talebiTipi hangi uç noktanın çağrılacağını ayırt eder —
+  // kapasite dolu (Ücretli/Sponsorlu) ile deneme süresi doldu (Deneme) farklı
+  // backend endpoint'leri kullanır (bkz. OgretmenController.LisansArtirTalebi/LisansSuresiTalebi).
   const [kapasiteTalebiDurumu, setKapasiteTalebiDurumu] = useState<boolean | null>(null);
+  const [topluTalebiTipi, setTopluTalebiTipi] = useState<'kapasite' | 'sure' | null>(null);
   const [tekliHata, setTekliHata] = useState<string | null>(null);
   const [tekliKapasiteTalebiDurumu, setTekliKapasiteTalebiDurumu] = useState<boolean | null>(null);
+  const [tekliTalebiTipi, setTekliTalebiTipi] = useState<'kapasite' | 'sure' | null>(null);
 
   const odevMutation = useMutation({
     mutationFn: () => api.post(`/api/ogretmen/sinif/${id}/odev`, {
@@ -309,21 +314,31 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setOgrenciEmail('');
       setTekliHata(null);
       setTekliKapasiteTalebiDurumu(null);
+      setTekliTalebiTipi(null);
     },
-    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean } | string } }) => {
+    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean; talebiGonderildiMi?: boolean } | string } }) => {
       const data = err.response?.data;
       const mesaj = typeof data === 'string' ? data : data?.mesaj;
       setTekliHata(mesaj ?? 'Bir hata oluştu.');
-      setTekliKapasiteTalebiDurumu(
-        typeof data === 'object' && typeof data?.kapasiteTalebiGonderildiMi === 'boolean'
-          ? data.kapasiteTalebiGonderildiMi
-          : null
-      );
+      if (typeof data === 'object' && typeof data?.kapasiteTalebiGonderildiMi === 'boolean') {
+        setTekliKapasiteTalebiDurumu(data.kapasiteTalebiGonderildiMi);
+        setTekliTalebiTipi('kapasite');
+      } else if (typeof data === 'object' && typeof data?.talebiGonderildiMi === 'boolean') {
+        setTekliKapasiteTalebiDurumu(data.talebiGonderildiMi);
+        setTekliTalebiTipi('sure');
+      } else {
+        setTekliKapasiteTalebiDurumu(null);
+        setTekliTalebiTipi(null);
+      }
     },
   });
 
-  const lisansArtirTalebiMutation = useMutation({
-    mutationFn: () => api.post(`/api/ogretmen/sinif/${id}/lisans-artir-talebi`),
+  // Tek mutation, iki backend endpoint'i — kapasite dolu (Ücretli/Sponsorlu) ile
+  // lisans süresi doldu (Deneme veya yenilenmemiş Ücretli/Sponsorlu) 402'leri farklı
+  // uç noktalara gider, ama "kurum/ülke sorumlusuna bildir" davranışı aynı.
+  const kurumSorumlusunaBildirMutation = useMutation({
+    mutationFn: (tip: 'kapasite' | 'sure') =>
+      api.post(`/api/ogretmen/sinif/${id}/${tip === 'sure' ? 'lisans-suresi-talebi' : 'lisans-artir-talebi'}`),
     onSuccess: () => {
       toast.success('Kurum/ülke sorumlusuna bildirildi.');
       setKapasiteTalebiDurumu(true);
@@ -364,13 +379,23 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
       setIsimler('');
       setKapasiteHatasi(null);
       setKapasiteTalebiDurumu(null);
+      setTopluTalebiTipi(null);
       qc.invalidateQueries({ queryKey: ['sinif-ogrenciler', id] });
       qc.invalidateQueries({ queryKey: ['sinif', id] });
     },
-    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean } } }) => {
+    onError: (err: { response?: { data?: { mesaj?: string; kapasiteTalebiGonderildiMi?: boolean; talebiGonderildiMi?: boolean } } }) => {
       const data = err.response?.data;
       setKapasiteHatasi(data?.mesaj ?? 'Bir hata oluştu.');
-      setKapasiteTalebiDurumu(typeof data?.kapasiteTalebiGonderildiMi === 'boolean' ? data.kapasiteTalebiGonderildiMi : null);
+      if (typeof data?.kapasiteTalebiGonderildiMi === 'boolean') {
+        setKapasiteTalebiDurumu(data.kapasiteTalebiGonderildiMi);
+        setTopluTalebiTipi('kapasite');
+      } else if (typeof data?.talebiGonderildiMi === 'boolean') {
+        setKapasiteTalebiDurumu(data.talebiGonderildiMi);
+        setTopluTalebiTipi('sure');
+      } else {
+        setKapasiteTalebiDurumu(null);
+        setTopluTalebiTipi(null);
+      }
     },
   });
 
@@ -495,6 +520,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
     if (!liste.length) return;
     setKapasiteHatasi(null);
     setKapasiteTalebiDurumu(null);
+    setTopluTalebiTipi(null);
     setTopluSonuclar([]);
     topluEkleMutation.mutate(liste);
   }
@@ -638,7 +664,7 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                     <Download className="size-3.5" /> Badge PDF
                   </button>
                   <button
-                    onClick={() => { setTopluModalAcik(true); setTopluSonuclar([]); setKapasiteHatasi(null); setKapasiteTalebiDurumu(null); }}
+                    onClick={() => { setTopluModalAcik(true); setTopluSonuclar([]); setKapasiteHatasi(null); setKapasiteTalebiDurumu(null); setTopluTalebiTipi(null); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 transition-colors"
                   >
                     <UserPlus className="size-3.5" /> Toplu Ekle
@@ -668,13 +694,13 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                   <p className="text-red-500 text-sm">{tekliHata}</p>
                   {tekliKapasiteTalebiDurumu !== null && (
                     <button
-                      onClick={() => lisansArtirTalebiMutation.mutate()}
-                      disabled={tekliKapasiteTalebiDurumu || lisansArtirTalebiMutation.isPending}
+                      onClick={() => kurumSorumlusunaBildirMutation.mutate(tekliTalebiTipi === 'sure' ? 'sure' : 'kapasite')}
+                      disabled={tekliKapasiteTalebiDurumu || kurumSorumlusunaBildirMutation.isPending}
                       className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold disabled:opacity-50 disabled:bg-slate-400 transition-colors"
                     >
                       {tekliKapasiteTalebiDurumu
                         ? 'Gönderildi ✓'
-                        : lisansArtirTalebiMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
+                        : kurumSorumlusunaBildirMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
                     </button>
                   )}
                 </div>
@@ -1165,13 +1191,13 @@ export default function SinifDetayPage({ params }: { params: Promise<{ sinifId: 
                       </div>
                       {kapasiteTalebiDurumu !== null && (
                         <button
-                          onClick={() => lisansArtirTalebiMutation.mutate()}
-                          disabled={kapasiteTalebiDurumu || lisansArtirTalebiMutation.isPending}
+                          onClick={() => kurumSorumlusunaBildirMutation.mutate(topluTalebiTipi === 'sure' ? 'sure' : 'kapasite')}
+                          disabled={kapasiteTalebiDurumu || kurumSorumlusunaBildirMutation.isPending}
                           className="self-start px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold disabled:opacity-50 disabled:bg-slate-400 transition-colors"
                         >
                           {kapasiteTalebiDurumu
                             ? 'Gönderildi ✓'
-                            : lisansArtirTalebiMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
+                            : kurumSorumlusunaBildirMutation.isPending ? 'Gönderiliyor...' : 'Kurum/Ülke sorumlusuna bildir'}
                         </button>
                       )}
                     </div>
