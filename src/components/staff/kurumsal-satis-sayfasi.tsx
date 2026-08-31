@@ -15,6 +15,7 @@ import { SlideOver } from '@/components/slide-over';
 import { ConfirmActionModal } from '@/components/confirm-action-modal';
 import { AramaInput, SortTh, Sayfalama, trSirala, csvIndir, useSiralama } from '@/components/staff/table-kit';
 import { apiHataMesaji, waLink } from '@/lib/utils';
+import { useSiparisOnayHazirlik } from './use-siparis-onay-hazirlik';
 
 interface Siparis {
   id: number;
@@ -342,6 +343,11 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     extraInvalidateKeys?.forEach(k => qc.invalidateQueries({ queryKey: k }));
   }
 
+  const onayHazirlik = useSiparisOnayHazirlik({
+    siparisId: s?.id ?? 0, dersKitabiId: s?.dersKitabiId, ogrenciKapasite: s?.ogrenciKapasite,
+    toplamTutar: s?.toplamTutar, siparisEndpoint: apiBase, invalidate, setHata, onBasarili: onClose,
+  });
+
   const onaylaMutation = useMutation({
     mutationFn: () => api.put(`${apiBase}/siparis/${s!.id}/onayla`),
     onMutate: () => setHata(null),
@@ -388,11 +394,25 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     setKapasiteBaslangic(baslangic);
     setKapasiteDebounced(baslangic);
     setTutar(String((s.toplamTutar ?? 0) / 100));
+    onayHazirlik.kapat();
     setDuzenleAcik(v => !v);
+  }
+
+  function onaylaTiklandi() {
+    if (!s) return;
+    if (onayHazirlik.acik) { onayHazirlik.kapat(); return; }
+    if (onayHazirlik.tutarBelirsiz) {
+      if (!onayHazirlik.hesaplanabilir) { acDuzenle(); return; } // Paket siparisi: otomatik hesap yok, Duzenle'de manuel tutar var
+      setDuzenleAcik(false);
+      onayHazirlik.ac();
+    } else {
+      onaylaMutation.mutate();
+    }
   }
 
   function kapat() {
     setDuzenleAcik(false);
+    onayHazirlik.kapat();
     setHata(null);
     setSonucMesaji(null);
     onClose();
@@ -429,9 +449,9 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
               İptal Et
             </button>
             {!lead && (
-              <button onClick={() => onaylaMutation.mutate()} disabled={onaylaMutation.isPending}
-                className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors">
-                {onaylaMutation.isPending ? 'Onaylanıyor…' : 'Onayla'}
+              <button onClick={onaylaTiklandi} disabled={onaylaMutation.isPending || onayHazirlik.onaylaMutation.isPending}
+                className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${onayHazirlik.acik ? 'border border-green-300 bg-green-50 text-green-700' : 'bg-green-600 text-white hover:bg-green-700'}`}>
+                {(onaylaMutation.isPending || onayHazirlik.onaylaMutation.isPending) ? 'Onaylanıyor…' : onayHazirlik.acik ? 'Onay Panelini Kapat' : 'Onayla'}
               </button>
             )}
           </div>
@@ -565,6 +585,38 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   Otomatik: {fiyatOnerisi.toplamGosterim} ({fiyatOnerisi.ogrenciSayisi} öğrenci × €{(fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
                   {fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${fiyatOnerisi.hacimIndirimiOrani}` : ''}
                   {fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${fiyatOnerisi.kampanyaIndirimOrani}` : ''}) — üzerine elle yazılabilir
+                </span>
+              )}
+            </div>
+          )}
+
+          {onayHazirlik.acik && (
+            <div className="flex flex-wrap items-end gap-3 bg-green-50 border border-green-100 rounded-lg px-3 py-2.5">
+              <div className="w-full text-[11px] text-slate-600">
+                İleride kayıt olacak öğrenciler için şimdiden ek koltuk eklemek ister misiniz?
+                İstemiyorsanız kapasiteyi değiştirmeden onaylayabilirsiniz.
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Öğrenci Kapasitesi</label>
+                <input type="number" min={1} value={onayHazirlik.kapasite} onChange={e => onayHazirlik.setKapasite(e.target.value)}
+                  className="w-28 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-300" />
+              </div>
+              <button
+                onClick={() => onayHazirlik.onaylaMutation.mutate()}
+                disabled={onayHazirlik.onaylaMutation.isPending || onayHazirlik.hesaplaniyor || onayHazirlik.kapasiteSayi <= 0 || !onayHazirlik.fiyatOnerisi}
+                className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors">
+                {onayHazirlik.onaylaMutation.isPending ? 'Onaylanıyor…' : 'Onayla'}
+              </button>
+              <button onClick={onayHazirlik.kapat}
+                className="px-3 py-1.5 text-slate-600 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                Vazgeç
+              </button>
+              {onayHazirlik.hesaplaniyor && <span className="text-[11px] text-slate-400 w-full">Tutar hesaplanıyor…</span>}
+              {!onayHazirlik.hesaplaniyor && onayHazirlik.fiyatOnerisi && (
+                <span className="text-[11px] text-slate-500 w-full">
+                  Otomatik hesaplanan tutar: {onayHazirlik.fiyatOnerisi.toplamGosterim} ({onayHazirlik.fiyatOnerisi.ogrenciSayisi} öğrenci × €{(onayHazirlik.fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
+                  {onayHazirlik.fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${onayHazirlik.fiyatOnerisi.hacimIndirimiOrani}` : ''}
+                  {onayHazirlik.fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${onayHazirlik.fiyatOnerisi.kampanyaIndirimOrani}` : ''})
                 </span>
               )}
             </div>

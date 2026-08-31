@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { apiHataMesaji, waLink } from '@/lib/utils';
+import { useSiparisOnayHazirlik } from './use-siparis-onay-hazirlik';
 
 export interface Siparis {
   id: number;
@@ -75,6 +76,11 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
     extraInvalidateKeys?.forEach(k => qc.invalidateQueries({ queryKey: k }));
   }
 
+  const onayHazirlik = useSiparisOnayHazirlik({
+    siparisId: s.id, dersKitabiId: s.dersKitabiId, ogrenciKapasite: s.ogrenciKapasite,
+    toplamTutar: s.toplamTutar, siparisEndpoint, invalidate, setHata,
+  });
+
   const onaylaMutation = useMutation({
     mutationFn: () => api.put(`${siparisEndpoint}/siparis/${s.id}/onayla`),
     onMutate: () => setHata(null),
@@ -104,8 +110,20 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
       setKapasiteBaslangic(baslangic);
       setKapasiteDebounced(baslangic);
       setTutar(String((s.toplamTutar ?? 0) / 100));
+      onayHazirlik.kapat();
     }
     setDuzenle(v => !v);
+  }
+
+  function onaylaTiklandi() {
+    if (onayHazirlik.acik) { onayHazirlik.kapat(); return; }
+    if (onayHazirlik.tutarBelirsiz) {
+      if (!onayHazirlik.hesaplanabilir) { toggleDuzenle(); return; } // Paket siparisi: otomatik hesap yok, Duzenle'de manuel tutar var
+      setDuzenle(false);
+      onayHazirlik.ac();
+    } else {
+      onaylaMutation.mutate();
+    }
   }
 
   const alan = (etiket: string, deger: React.ReactNode, aciklama?: string) => (
@@ -178,6 +196,38 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
         </div>
       )}
 
+      {onayHazirlik.acik && (
+        <div className="mx-4 mb-2.5 flex flex-wrap items-end gap-3 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+          <div className="w-full text-[11px] text-slate-600">
+            İleride kayıt olacak öğrenciler için şimdiden ek koltuk eklemek ister misiniz?
+            İstemiyorsanız kapasiteyi değiştirmeden onaylayabilirsiniz.
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Öğrenci Kapasitesi</label>
+            <input type="number" min={1} value={onayHazirlik.kapasite} onChange={e => onayHazirlik.setKapasite(e.target.value)}
+              className="w-28 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-green-300" />
+          </div>
+          <button
+            onClick={() => onayHazirlik.onaylaMutation.mutate()}
+            disabled={onayHazirlik.onaylaMutation.isPending || onayHazirlik.hesaplaniyor || onayHazirlik.kapasiteSayi <= 0 || !onayHazirlik.fiyatOnerisi}
+            className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+            {onayHazirlik.onaylaMutation.isPending ? 'Onaylanıyor…' : 'Onayla'}
+          </button>
+          <button onClick={onayHazirlik.kapat}
+            className="px-3 py-1.5 text-slate-600 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+            Vazgeç
+          </button>
+          {onayHazirlik.hesaplaniyor && <span className="text-[11px] text-slate-400">Tutar hesaplanıyor…</span>}
+          {!onayHazirlik.hesaplaniyor && onayHazirlik.fiyatOnerisi && (
+            <span className="text-[11px] text-slate-500">
+              Otomatik hesaplanan tutar: {onayHazirlik.fiyatOnerisi.toplamGosterim} ({onayHazirlik.fiyatOnerisi.ogrenciSayisi} öğrenci × €{(onayHazirlik.fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
+              {onayHazirlik.fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${onayHazirlik.fiyatOnerisi.hacimIndirimiOrani}` : ''}
+              {onayHazirlik.fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${onayHazirlik.fiyatOnerisi.kampanyaIndirimOrani}` : ''})
+            </span>
+          )}
+        </div>
+      )}
+
       {hata && (
         <p role="alert" className="px-4 pb-2 text-xs text-red-600">{hata}</p>
       )}
@@ -197,9 +247,9 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
           İptal
         </button>
         {!lead && (
-          <button onClick={() => onaylaMutation.mutate()} disabled={onaylaMutation.isPending}
-            className="px-2.5 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
-            {onaylaMutation.isPending ? 'Onaylanıyor…' : 'Onayla'}
+          <button onClick={onaylaTiklandi} disabled={onaylaMutation.isPending || onayHazirlik.onaylaMutation.isPending}
+            className={`px-2.5 py-1 text-xs rounded-lg transition-colors disabled:opacity-50 ${onayHazirlik.acik ? 'border border-green-300 bg-green-50 text-green-700' : 'bg-green-600 text-white hover:bg-green-700'}`}>
+            {(onaylaMutation.isPending || onayHazirlik.onaylaMutation.isPending) ? 'Onaylanıyor…' : onayHazirlik.acik ? 'Kapat' : 'Onayla'}
           </button>
         )}
       </div>
