@@ -51,6 +51,11 @@ async function getToken(): Promise<string> {
 
 export function useKahoot() {
   const hubRef = useRef<signalR.HubConnection | null>(null);
+  // Son JoinGame/JoinAsTeacher çağrısı — otomatik reconnect sonrası tekrar gönderilir.
+  // SignalR reconnect YENİ bir ConnectionId alır; sunucudaki Group üyeliği ve (öğretmen
+  // için) KahootHub'ın bağlantı takibi eski Id'ye bağlıydı, aksi halde reconnect sonrası
+  // yayınlar sessizce kaybolur / öğretmen "ayrılmış" sayılır.
+  const sonKatilimRef = useRef<{ oyunKodu: string; rol: 'ogretmen' | 'ogrenci' } | null>(null);
 
   const [connected, setConnected] = useState(false);
   const [oyuncuSayisi, setOyuncuSayisi] = useState(0);
@@ -86,9 +91,11 @@ export function useKahoot() {
       setHata(null); // Başarılı JoinAsTeacher → eski hatayı temizle
     });
 
-    conn.on('OyunBasladi', (data: { soruId: string; toplamSoru: number; soru?: string; secA?: string; secB?: string; secC?: string; secD?: string; turuAdi?: string; resimUrl?: string; sesUrl?: string }) => {
+    conn.on('OyunBasladi', (data: { soruId: string; soruNo?: number; toplamSoru: number; soru?: string; secA?: string; secB?: string; secC?: string; secD?: string; turuAdi?: string; resimUrl?: string; sesUrl?: string }) => {
       setOyunBasladi(true);
-      setSoruBilgisi({ soruId: data.soruId, soruNo: 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD, turuAdi: data.turuAdi, resimUrl: data.resimUrl, sesUrl: data.sesUrl });
+      // soruNo: reconnect sonrası yeniden gönderimde sunucu mevcut soru numarasını verir
+      // (StartGame'de her zaman 1) — yoksa 1 varsayılır (eski sunucu sürümüyle uyumluluk).
+      setSoruBilgisi({ soruId: data.soruId, soruNo: data.soruNo ?? 1, toplamSoru: data.toplamSoru, soru: data.soru, secA: data.secA, secB: data.secB, secC: data.secC, secD: data.secD, turuAdi: data.turuAdi, resimUrl: data.resimUrl, sesUrl: data.sesUrl });
       setCevapAlindi(false);
       setCevapDogru(null);
     });
@@ -114,7 +121,13 @@ export function useKahoot() {
 
     conn.on('Hata', (msg: string) => setHata(msg));
 
-    conn.onreconnected(() => setConnected(true));
+    conn.onreconnected(() => {
+      setConnected(true);
+      const info = sonKatilimRef.current;
+      if (!info) return;
+      const method = info.rol === 'ogretmen' ? 'JoinAsTeacher' : 'JoinGame';
+      conn.invoke(method, info.oyunKodu).catch(() => {});
+    });
     conn.onreconnecting(() => setConnected(false));
     conn.onclose(() => setConnected(false));
 
@@ -130,16 +143,19 @@ export function useKahoot() {
   }, []);
 
   const disconnect = useCallback(async () => {
+    sonKatilimRef.current = null;
     await hubRef.current?.stop();
     hubRef.current = null;
     setConnected(false);
   }, []);
 
   const joinGame = useCallback(async (oyunKodu: string) => {
+    sonKatilimRef.current = { oyunKodu, rol: 'ogrenci' };
     await hubRef.current?.invoke('JoinGame', oyunKodu);
   }, []);
 
   const joinAsTeacher = useCallback(async (oyunKodu: string) => {
+    sonKatilimRef.current = { oyunKodu, rol: 'ogretmen' };
     await hubRef.current?.invoke('JoinAsTeacher', oyunKodu);
   }, []);
 

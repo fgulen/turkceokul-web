@@ -290,7 +290,8 @@
     "nextQuestion": "Next question coming...",
     "gameOver": "Game Over!",
     "backToDashboard": "Back to Dashboard",
-    "errorCode": "Game code not found or game has ended."
+    "errorCode": "Game code not found or game has ended.",
+    "leaveGame": "Leave game"
   },
   "okuma": {
     "title": "Reading",

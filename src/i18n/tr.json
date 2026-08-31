@@ -290,7 +290,8 @@
     "nextQuestion": "Sıradaki soru geliyor...",
     "gameOver": "Oyun Bitti!",
     "backToDashboard": "Panoya Dön",
-    "errorCode": "Oyun kodu bulunamadı veya oyun sona erdi."
+    "errorCode": "Oyun kodu bulunamadı veya oyun sona erdi.",
+    "leaveGame": "Oyundan çık"
   },
   "okuma": {
     "title": "Okuma",

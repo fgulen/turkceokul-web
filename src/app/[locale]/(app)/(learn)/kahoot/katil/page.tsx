@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle, Volume2 } from 'lucide-react';
-import { Link } from '@/navigation';
+import { Wifi, Users, Trophy, CheckCircle, XCircle, AlertCircle, Volume2, LogOut } from 'lucide-react';
+import { Link, useRouter } from '@/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { api } from '@/lib/api';
 import { useKahoot, type LeaderboardSatir } from '@/hooks/use-kahoot';
@@ -25,6 +25,7 @@ export default function KahootKatilPage() {
   const t = useTranslations();
   const { user, ready } = useAuthGuard();
   const kahoot = useKahoot();
+  const router = useRouter();
 
   const [asama, setAsama] = useState<Asama>('kod-giris');
   const [kod, setKod] = useState('');
@@ -124,6 +125,14 @@ export default function KahootKatilPage() {
     if (asama !== 'soru') return;
     const sureMs = Date.now() - baslangicRef.current;
     await kahoot.submitAnswer(aktifKod, harf, sureMs);
+  }
+
+  // Öğretmen oyunu sonlandırmadan ayrılırsa (kapatma/çıkış) sunucu ~1dk içinde oyunu otomatik
+  // bitirir, ama öğrenci o süreyi beklemeden de kendi isteğiyle çıkabilmeli.
+  async function oyundanCik() {
+    sessionStorage.removeItem(SESSION_KEY);
+    await kahoot.disconnect();
+    router.push('/pano');
   }
 
   if (!ready) return (
@@ -434,6 +443,16 @@ export default function KahootKatilPage() {
         )}
 
       </AnimatePresence>
+
+      {asama !== 'kod-giris' && asama !== 'bitti' && (
+        <button
+          onClick={oyundanCik}
+          className="fixed top-3 right-3 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 bg-card/90 backdrop-blur border border-border rounded-full text-xs font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors shadow-sm"
+        >
+          <LogOut className="size-3.5" />
+          {t('kahoot.leaveGame')}
+        </button>
+      )}
 
       {kahoot.hata && (
         <div className="max-w-[480px] mx-auto px-4 mt-4">
