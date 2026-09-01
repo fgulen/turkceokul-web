@@ -160,16 +160,25 @@ export default function AdminPage() {
   if (!ready) return <div className="py-24 flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return null;
 
-  const tabs: { key: Sekme; label: string; icon: React.ReactNode; badge?: number }[] = [
+  // Sıralama kullanıcı isteğiyle sabitlendi: Ülkeler → Kurumlar → Öğretmenler → Sınıflar
+  // → Öğrenciler → Raporlar → Ders Kitapları. "Bekleyen Onay" ve "Bekleme Listesi" ne
+  // olduğu ilk bakışta anlaşılmadığı için sona alındı ve title tooltip'i eklendi.
+  const tabs: { key: Sekme; label: string; icon: React.ReactNode; badge?: number; title?: string }[] = [
     { key: 'ulkeler', label: 'Ülkeler', icon: <Globe className="size-4" />, badge: ulkelerListe.length },
     { key: 'kurumlar', label: 'Kurumlar', icon: <Building2 className="size-4" />, badge: kurumlar?.length },
     { key: 'ogretmenler', label: 'Öğretmenler', icon: <GraduationCap className="size-4" />, badge: ogretmenler?.length },
-    { key: 'bekleyen', label: 'Bekleyen Onay', icon: <Clock className="size-4" />, badge: bekleyenler?.length },
-    { key: 'ogrenciler', label: 'Öğrenciler', icon: <Users className="size-4" />, badge: ogrenciler?.length },
     { key: 'siniflar', label: 'Sınıflar', icon: <BookOpen className="size-4" />, badge: siniflar?.length },
-    { key: 'lisanslar', label: 'Ders Kitapları', icon: <KeyRound className="size-4" /> },
+    { key: 'ogrenciler', label: 'Öğrenciler', icon: <Users className="size-4" />, badge: ogrenciler?.length },
     { key: 'raporlar', label: 'Raporlar', icon: <BarChart3 className="size-4" /> },
-    { key: 'bekleme-listesi', label: 'Bekleme Listesi', icon: <Hourglass className="size-4" /> },
+    { key: 'lisanslar', label: 'Ders Kitapları', icon: <KeyRound className="size-4" /> },
+    {
+      key: 'bekleyen', label: 'Bekleyen Onay', icon: <Clock className="size-4" />, badge: bekleyenler?.length,
+      title: 'Kayıt olmuş, henüz onaylanmamış öğretmenler — onaylanana kadar giriş yapamazlar.',
+    },
+    {
+      key: 'bekleme-listesi', label: 'Bekleme Listesi', icon: <Hourglass className="size-4" />,
+      title: 'Sınıfına bağlı olmayan bireysel öğrenciler.',
+    },
   ];
 
   const siparisSayisi = bekleyenSiparisler?.length ?? 0;
@@ -211,6 +220,7 @@ export default function AdminPage() {
             <button
               key={t.key}
               onClick={() => setSekme(t.key)}
+              title={t.title}
               className={cn(
                 'flex-1 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-4 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
                 sekme === t.key
@@ -275,6 +285,7 @@ export default function AdminPage() {
         {sekme === 'bekleyen' && (
           <PersonelListesi
             baslik="Bekleyen Onay"
+            aciklama="Kayıt olmuş, henüz onaylanmamış öğretmenler"
             veri={bekleyenler}
             yukleniyor={bekleyenlerYukleniyor}
             bosMesaj="Bekleyen öğretmen yok."
