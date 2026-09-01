@@ -51,13 +51,15 @@ interface KatalogKitapAd {
 
 type Tab = 'kurumlar' | 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
 
+// Sıra admin/page.tsx'teki tabs dizisiyle aynı (kullanıcı isteğiyle hizalandı):
+// Kurumlar → Öğretmenler → Sınıflar → Öğrenciler → Raporlar → Ders Kitapları.
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'kurumlar', label: 'Kurumlar', icon: Building2 },
   { key: 'ogretmenler', label: 'Öğretmenler', icon: GraduationCap },
-  { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'siniflar', label: 'Sınıflar', icon: BookOpen },
-  { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
+  { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'raporlar', label: 'Raporlar', icon: BarChart3 },
+  { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
 ];
 
 export default function UlkeTemsilcisiPage() {

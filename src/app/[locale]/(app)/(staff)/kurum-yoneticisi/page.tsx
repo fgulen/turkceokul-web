@@ -92,12 +92,14 @@ const BUTON_METIN: Record<string, string> = {
 
 type Tab = 'ogretmenler' | 'ogrenciler' | 'siniflar' | 'lisanslar' | 'raporlar';
 
+// Sıra admin/page.tsx'teki tabs dizisiyle aynı (kullanıcı isteğiyle hizalandı):
+// Öğretmenler → Sınıflar → Öğrenciler → Raporlar → Ders Kitapları.
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'ogretmenler', label: 'Öğretmenler', icon: GraduationCap },
-  { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'siniflar', label: 'Sınıflar', icon: BookOpen },
-  { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
+  { key: 'ogrenciler', label: 'Öğrenciler', icon: Users },
   { key: 'raporlar', label: 'Raporlar', icon: BarChart3 },
+  { key: 'lisanslar', label: 'Ders Kitapları', icon: KeyRound },
 ];
 
 const SAYFA_BOYUTU = 20;

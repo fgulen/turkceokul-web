@@ -449,7 +449,8 @@ export function DersKitaplariTab({ gruplar, yukleniyor, kurumHref }: {
   kurumHref: (kurumId: number) => string;
 }) {
   const [arama, setArama] = useState('');
-  const { sortKey, sortDir, toggleSort } = useSiralama<'kurumAdi' | 'kitapAdi'>('kurumAdi');
+  const [sayfa, setSayfa] = useState(1);
+  const { sortKey, sortDir, toggleSort } = useSiralama<'kurumAdi' | 'kitapAdi'>('kurumAdi', () => setSayfa(1));
 
   const satirlar: (LisansSatiri & { kitapAdi: string })[] = useMemo(() =>
     (gruplar ?? []).flatMap(g => g.kitaplar.map(k => ({ kurumId: g.kurumId, kurumAdi: g.kurumAdi, kitap: k, kitapAdi: k.name }))),
@@ -460,51 +461,60 @@ export function DersKitaplariTab({ gruplar, yukleniyor, kurumHref }: {
     return satirlar.filter(s => metinEslesiyorMu([s.kurumAdi, s.kitapAdi], arama));
   }, [satirlar, arama]);
   const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
+  const toplam = sirali.length;
+  // Kurum sayısı arttıkça kurum×kitap çarpımı büyür (flatMap) — Sayfalama diğer
+  // sekmelerdeki desenle (client-side, veri zaten tek seferde çekiliyor) aynı.
+  const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
+  const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-slate-800">Ders Kitapları</h2>
-        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{sirali.length}</span>
-        <AramaInput value={arama} onChange={setArama} placeholder="Kurum, kitap ara..." />
-        <span className="ml-auto text-xs text-slate-400">Aksiyon için kurum sayfasına gidin</span>
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">Ders Kitapları</h2>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Kurum, kitap ara..." />
+          <span className="ml-auto text-xs text-slate-400">Aksiyon için kurum sayfasına gidin</span>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
+              <SortTh colKey="kitapAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
+              <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {yukleniyor ? (
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+            ) : sayfalik.length === 0 ? (
+              <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
+            ) : (
+              sayfalik.map(s => (
+                <tr key={`${s.kurumId}-${s.kitap.id}`} className="odd:bg-white even:bg-slate-50/40">
+                  <td className="px-4 py-2">
+                    <Link href={kurumHref(s.kurumId)} className="text-slate-900 hover:text-primary transition-colors">
+                      {s.kurumAdi}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2 text-slate-700">{s.kitapAdi} <span className="text-xs text-slate-400">{s.kitap.seviye}</span></td>
+                  <td className="px-4 py-2 text-right">
+                    {s.kitap.lisansTipi ? (
+                      <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', LISANS_TIPI_ROZET[s.kitap.lisansTipi])}>
+                        {LISANS_TIPI_METIN[s.kitap.lisansTipi]}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Lisans Yok</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
-            <SortTh colKey="kitapAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
-            <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {yukleniyor ? (
-            [1, 2, 3].map(i => <tr key={i}><td colSpan={3} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
-          ) : sirali.length === 0 ? (
-            <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
-          ) : (
-            sirali.map(s => (
-              <tr key={`${s.kurumId}-${s.kitap.id}`} className="odd:bg-white even:bg-slate-50/40">
-                <td className="px-4 py-2">
-                  <Link href={kurumHref(s.kurumId)} className="text-slate-900 hover:text-primary transition-colors">
-                    {s.kurumAdi}
-                  </Link>
-                </td>
-                <td className="px-4 py-2 text-slate-700">{s.kitapAdi} <span className="text-xs text-slate-400">{s.kitap.seviye}</span></td>
-                <td className="px-4 py-2 text-right">
-                  {s.kitap.lisansTipi ? (
-                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', LISANS_TIPI_ROZET[s.kitap.lisansTipi])}>
-                      {LISANS_TIPI_METIN[s.kitap.lisansTipi]}
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Lisans Yok</span>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+
+      <Sayfalama sayfa={sayfa} totalPages={totalPages} toplam={toplam} sayfaBoyutu={SAYFA_BOYUTU} onSayfa={setSayfa} />
     </div>
   );
 }
