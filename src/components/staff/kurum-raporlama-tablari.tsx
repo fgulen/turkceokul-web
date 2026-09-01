@@ -183,7 +183,7 @@ export function PersonelListesi({
         <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
           <h2 className="text-sm font-semibold text-slate-800">{baslik}</h2>
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
-          {aciklama && <p className="text-xs text-slate-400">{aciklama}</p>}
+          {aciklama && <p className="text-xs font-medium text-amber-700">{aciklama}</p>}
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
           {ekleButonu && (
             <button onClick={ekleButonu.onClick}

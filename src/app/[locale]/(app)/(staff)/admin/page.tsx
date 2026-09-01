@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -192,7 +192,11 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-slate-900">Admin Paneli</h1>
             <p className="text-slate-500 text-sm mt-1">Öğretmen ve kurum yönetimi</p>
           </div>
-          {!siparislerYukleniyor && siparisSayisi > 0 && (
+          {/* SuperAdmin için bu zaten global header'da var (SiparisBildirimZili, staff-shell.tsx)
+              — burada da göstermek aynı bildirimi iki kez sayı+zil olarak tekrarlardı (kullanıcı
+              geri bildirimi). Koordinator'ün global zili yok (SuperAdmin'e özel), bu yüzden
+              Koordinator için burada kalmalı. */}
+          {user.role !== 'SuperAdmin' && !siparislerYukleniyor && siparisSayisi > 0 && (
             <motion.button
               onClick={() => setSiparisPanelAcik(true)}
               title="Bekleyen Siparişler"
@@ -233,7 +237,7 @@ export default function AdminPage() {
               {(t.badge ?? 0) > 0 && (
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-full text-xs font-bold',
-                  sekme === t.key ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'
+                  sekme === t.key ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
                 )}>
                   {t.badge}
                 </span>
@@ -493,13 +497,15 @@ const YAS_ETIKET: Record<string, string> = { Cocuk: 'Çocuk (6-12)', Genc: 'Gen�
 // yaş bilgisiyle, bireysel plan açıldığında iletişim için. Diğer admin sekmelerinin
 // aksine server-side sayfalanır (liste büyüyecek, fetch-all + client-sort ölçeklenmez).
 function BeklemeListesiTab({ enabled }: { enabled: boolean }) {
+  const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
   const SAYFA_BOYUTU = 50;
 
   const { data, isLoading } = useQuery<{ toplam: number; liste: BeklemeSatiri[] }>({
-    queryKey: ['admin-bekleme-listesi', sayfa],
-    queryFn: () => api.get('/api/admin/bekleme-listesi', { params: { sayfa, sayfaBoyutu: SAYFA_BOYUTU } }).then(r => r.data),
+    queryKey: ['admin-bekleme-listesi', sayfa, arama],
+    queryFn: () => api.get('/api/admin/bekleme-listesi', { params: { sayfa, sayfaBoyutu: SAYFA_BOYUTU, arama: arama || undefined } }).then(r => r.data),
     enabled,
+    placeholderData: keepPreviousData,
   });
 
   const toplam = data?.toplam ?? 0;
@@ -508,10 +514,13 @@ function BeklemeListesiTab({ enabled }: { enabled: boolean }) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+        {/* PersonelListesi (kurum-raporlama-tablari.tsx) ile aynı sıra: başlık, sayı, açıklama, arama —
+            Bekleyen Onay/Bekleme Listesi tutarlı görünsün diye. */}
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
           <h2 className="text-sm font-semibold text-slate-800">Bekleme Listesi</h2>
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs tabular-nums">{toplam}</span>
-          <p className="ml-auto text-xs text-slate-400">Sınıfına bağlı olmayan bireysel öğrenciler</p>
+          <p className="text-xs font-medium text-amber-700">Sınıfına bağlı olmayan bireysel öğrenciler</p>
+          <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Ad, e-posta ara..." />
         </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
