@@ -286,7 +286,7 @@ export default function UlkeTemsilcisiPage() {
         )}
 
         {tab === 'siniflar' && (
-          <SiniflarTab veri={siniflar} yukleniyor={siniflarYukleniyor} />
+          <SiniflarTab veri={siniflar} yukleniyor={siniflarYukleniyor} ulkeGoster={false} />
         )}
 
         {tab === 'lisanslar' && (

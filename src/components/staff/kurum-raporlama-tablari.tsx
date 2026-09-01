@@ -150,7 +150,7 @@ export function PersonelListesi({
   /** Opsiyonel 5. kolon (örn. "Durum": onayla/reddet aksiyonu) — yalnız ikisi birlikte verilirse render edilir. */
   sonKolonBaslik?: string;
   sonKolonRender?: (satir: PersonelSatir) => React.ReactNode;
-  /** Opsiyonel 3. kolon (örn. "Ülke") — ikincil kolon ile Kayıt Tarihi arasına eklenir. */
+  /** Opsiyonel 3. kolon (örn. "Ülke") — Ad Soyad'dan hemen sonra, ikincil kolondan (örn. "Kurum") ÖNCE render edilir. */
   ucuncuKolonBaslik?: string;
   ucuncuKolonRender?: (satir: PersonelSatir) => string;
 }) {
@@ -172,6 +172,10 @@ export function PersonelListesi({
   const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
   const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
   const kolonSayisi = 4 + (ucuncuKolonBaslik && ucuncuKolonRender ? 1 : 0) + (sonKolonBaslik && sonKolonRender ? 1 : 0);
+  // Ülke kolonu (ucuncuKolon) yoksa Kurum onun "sm" yerini alır — aksi halde sadece
+  // Ülke'nin de gösterildiği çağıranlarda (admin) doğru olan "lg" kuralı, Ülke'nin hiç
+  // geçilmediği çağıranlarda (ülke-temsilcisi) Kurum'u tablet'te tamamen kaybettirirdi.
+  const ikincilKolonSinifi = ucuncuKolonBaslik && ucuncuKolonRender ? 'hidden lg:table-cell' : 'hidden sm:table-cell';
 
   return (
     <div className="space-y-4">
@@ -192,10 +196,10 @@ export function PersonelListesi({
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ad Soyad</SortTh>
-              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">{ikincilKolonBaslik}</SortTh>
               {ucuncuKolonBaslik && ucuncuKolonRender && (
-                <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell">{ucuncuKolonBaslik}</SortTh>
+                <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">{ucuncuKolonBaslik}</SortTh>
               )}
+              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className={ikincilKolonSinifi}>{ikincilKolonBaslik}</SortTh>
               <SortTh colKey="insertDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kayıt Tarihi</SortTh>
               <SortTh colKey="lastLoginDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Son Giriş</SortTh>
               {sonKolonBaslik && sonKolonRender && <th className="px-4 py-2.5 text-right font-medium text-slate-600">{sonKolonBaslik}</th>}
@@ -215,12 +219,12 @@ export function PersonelListesi({
                     <div className="font-medium text-slate-900 truncate">{o.name} {o.surname ?? ''}</div>
                     <div className="text-xs text-slate-400 truncate">{o.email}</div>
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">
+                  {ucuncuKolonBaslik && ucuncuKolonRender && (
+                    <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{ucuncuKolonRender(o)}</td>
+                  )}
+                  <td className={cn('px-4 py-2 text-xs text-slate-500', ikincilKolonSinifi)}>
                     {ikincilKolonRender(o)}
                   </td>
-                  {ucuncuKolonBaslik && ucuncuKolonRender && (
-                    <td className="px-4 py-2 text-xs text-slate-500 hidden lg:table-cell">{ucuncuKolonRender(o)}</td>
-                  )}
                   <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">{kayitTarihiMetni(o.insertDate)}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 text-right">{sonGirisMetni(o.lastLoginDate)}</td>
                   {sonKolonBaslik && sonKolonRender && <td className="px-4 py-2 text-right">{sonKolonRender(o)}</td>}
@@ -370,7 +374,12 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
   );
 }
 
-export function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefined; yukleniyor: boolean }) {
+export function SiniflarTab({ veri, yukleniyor, ulkeGoster = true }: {
+  veri: SinifSatiri[] | undefined;
+  yukleniyor: boolean;
+  /** Ülke-scope'lu panellerde (ör. ülke temsilcisi) her satırda aynı değeri tekrarlayacağı için kapatılır. */
+  ulkeGoster?: boolean;
+}) {
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
   const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ulkeAdi' | 'ogretmenAdi' | 'ogrenciSayisi'>('name', () => setSayfa(1));
@@ -384,6 +393,8 @@ export function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefi
   const toplam = sirali.length;
   const totalPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
   const sayfalik = sirali.slice((sayfa - 1) * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU);
+  // Ülke kolonu kapalıysa (ulke-temsilcisi) Kurum onun "sm" yerini alır — bkz. PersonelListesi'ndeki aynı desen.
+  const kurumSinifi = ulkeGoster ? 'hidden lg:table-cell' : 'hidden sm:table-cell';
 
   return (
     <div className="space-y-4">
@@ -397,23 +408,27 @@ export function SiniflarTab({ veri, yukleniyor }: { veri: SinifSatiri[] | undefi
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
-              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Kurum</SortTh>
-              <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell">Ülke</SortTh>
+              {ulkeGoster && (
+                <SortTh colKey="ulkeAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Ülke</SortTh>
+              )}
+              <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className={kurumSinifi}>Kurum</SortTh>
               <SortTh colKey="ogretmenAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Öğretmen</SortTh>
               <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={ulkeGoster ? 5 : 4} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Sınıf yok.</td></tr>
+              <tr><td colSpan={ulkeGoster ? 5 : 4} className="px-4 py-8 text-center text-slate-400 text-sm">Sınıf yok.</td></tr>
             ) : (
               sayfalik.map(s => (
                 <tr key={s.id} className="odd:bg-white even:bg-slate-50/40">
                   <td className="px-4 py-2 font-medium text-slate-900">{s.name}</td>
-                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{s.kurumAdi}</td>
-                  <td className="px-4 py-2 text-xs text-slate-500 hidden lg:table-cell">{s.ulkeAdi ?? '—'}</td>
+                  {ulkeGoster && (
+                    <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{s.ulkeAdi ?? '—'}</td>
+                  )}
+                  <td className={cn('px-4 py-2 text-xs text-slate-500', kurumSinifi)}>{s.kurumAdi}</td>
                   <td className="px-4 py-2 text-xs text-slate-600">{s.ogretmenAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{s.ogrenciSayisi}</td>
                 </tr>
