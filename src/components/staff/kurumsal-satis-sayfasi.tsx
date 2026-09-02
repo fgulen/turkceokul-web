@@ -276,6 +276,10 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const iptalEdilmis = s?.durum === 'Iptal';
   const donusturulmus = s?.durum === 'Donusturuldu';
   const ulkesiEksik = lead && beklemede && !s?.ulkeAdi && !!s?.yeniUlkeAdi;
+  // Ulke eslesmis olsa bile (Kazakistan gibi) o ulkenin henuz temsilcisi olmayabilir —
+  // ulkesiEksik'ten BAGIMSIZ, "temsilci ata/davet et" kutusunu ikisinde de gosterir
+  // (2026-09-02 siparis #13 sorusu: ulke dogru eslesti ama Kazakistan'in temsilcisi yoktu).
+  const temsilcisiYok = lead && beklemede && !s?.ulkeTemsilcisiAdi;
   const [baglaAcik, setBaglaAcik] = useState(false);
   const [seciliUlkeId, setSeciliUlkeId] = useState('');
 
@@ -309,13 +313,20 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     mutationFn: () => api.post(`${apiBase}/siparis/${s!.id}/yeni-ulke-ve-temsilci`, { ulkeAdi: yeniUlkeAdi }),
     onMutate: () => setHata(null),
     onSuccess: (res) => {
-      const { ulkeAdi: acilanUlke, davetUrl, baglanmisLeadSayisi, mailGonderildi } = res.data;
+      // Endpoint resolve-or-create: girilen ulke adi MEVCUT bir ulkeyle eslesirse
+      // (ornek: Kazakistan zaten vardi, sadece temsilcisi eksikti) yeni satir acilmaz —
+      // ulkeOlusturuldu=false doner, mesaj metni buna gore degisir ("açıldı" yerine
+      // "eşleşti/temsilci davet edildi").
+      const { ulkeAdi: hedefUlke, ulkeOlusturuldu, davetUrl, baglanmisLeadSayisi, mailGonderildi } = res.data;
       setYeniUlkeAcikMi(false);
       invalidate();
+      const ulkeOzeti = ulkeOlusturuldu
+        ? `${hedefUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı`
+        : `${hedefUlke} için temsilci daveti oluşturuldu, ${baglanmisLeadSayisi} talep bağlandı`;
       if (mailGonderildi) {
-        setSonucMesaji({ mesaj: `${acilanUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı, davet ${s!.yetkiliEmail} adresine gönderildi.` });
+        setSonucMesaji({ mesaj: `${ulkeOzeti}, davet ${s!.yetkiliEmail} adresine gönderildi.` });
       } else {
-        setSonucMesaji({ mesaj: `${acilanUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı. Mail gönderilemedi — linki kopyalayıp manuel paylaşın:`, davetUrl });
+        setSonucMesaji({ mesaj: `${ulkeOzeti}. Mail gönderilemedi — linki kopyalayıp manuel paylaşın:`, davetUrl });
       }
     },
     onError: (err: unknown) => setHata(apiHataMesaji(err)),
@@ -491,16 +502,10 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
               <p className="text-xs text-orange-700">
                 Bu talebin ülkesi eşleşmedi: <strong>{s!.yeniUlkeAdi}</strong>
               </p>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => setBaglaAcik(v => !v)}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
-                  Mevcut Ülkeye Bağla
-                </button>
-                <button type="button" onClick={() => { setYeniUlkeAcikMi(v => !v); setYeniUlkeAdi(s!.yeniUlkeAdi ?? ''); }}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
-                  Yeni Ülke Aç + Temsilci Yap
-                </button>
-              </div>
+              <button type="button" onClick={() => setBaglaAcik(v => !v)}
+                className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
+                Mevcut Ülkeye Bağla
+              </button>
               {baglaAcik && (
                 <div className="flex items-center gap-2 pt-1">
                   <select value={seciliUlkeId} onChange={e => setSeciliUlkeId(e.target.value)}
@@ -517,12 +522,29 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {temsilcisiYok && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2.5 space-y-2">
+              <p className="text-xs text-orange-700">
+                {s!.ulkeAdi
+                  ? <>{s!.ulkeAdi} ülkesinin henüz temsilcisi yok.</>
+                  : 'Bu talebin ülkesinin henüz temsilcisi yok.'}
+              </p>
+              <button type="button" onClick={() => { setYeniUlkeAcikMi(v => !v); setYeniUlkeAdi(s!.ulkeAdi ?? s!.yeniUlkeAdi ?? ''); }}
+                className="px-2.5 py-1.5 text-xs rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors">
+                Temsilci Davet Et
+              </button>
               {yeniUlkeAcikMi && (
                 <div className="space-y-2 pt-1 border-t border-orange-200 mt-2">
                   <div>
                     <label className="block text-[11px] font-medium text-orange-700 mb-0.5">Ülke Adı</label>
                     <input type="text" value={yeniUlkeAdi} onChange={e => setYeniUlkeAdi(e.target.value)}
                       className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs" />
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Mevcut bir ülkeyle eşleşirse ona bağlanır, eşleşmezse yeni ülke açılır — gerekirse üzerine yazabilirsiniz.
+                    </p>
                   </div>
                   <p className="text-[11px] text-slate-500">
                     Temsilci daveti şu adrese gönderilecek: <strong>{s!.yetkiliEmail}</strong>
@@ -530,7 +552,7 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   <button type="button" onClick={() => yeniUlkeMutation.mutate()}
                     disabled={!yeniUlkeAdi.trim() || yeniUlkeMutation.isPending}
                     className="px-2.5 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors">
-                    {yeniUlkeMutation.isPending ? 'Oluşturuluyor…' : 'Ülkeyi Aç ve Daveti Gönder'}
+                    {yeniUlkeMutation.isPending ? 'Gönderiliyor…' : 'Daveti Gönder'}
                   </button>
                 </div>
               )}
