@@ -26,7 +26,7 @@ const C = {
     kurumAdi: 'Kurum adı',
     yetkiliAdi: 'Yetkili adı soyadı',
     yetkiliEmail: 'E-posta',
-    telefon: 'WhatsApp numarası (opsiyonel)',
+    telefon: 'WhatsApp numarası',
     ulke: 'Ülke',
     submit: 'Gönder',
     submitting: 'Gönderiliyor...',
