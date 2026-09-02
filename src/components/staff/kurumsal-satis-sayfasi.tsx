@@ -23,6 +23,9 @@ interface Siparis {
   kurumAdi: string;
   dersKitabiId: number;
   urunAdi: string | null;
+  /** Birden fazla/hiç kitap seçilmeden gönderilen demo talepleri için — urunAdi boşsa burada
+   * "İlgilenilen kitaplar: ..." ya da "Genel katalog talebi" metni olur (bkz. KatalogController.DemoTalep). */
+  notlar: string | null;
   ogrenciKapasite: number | null;
   toplamTutar: number | null;
   tarih: string;
@@ -565,7 +568,7 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
 
           <div>
             {bilgi('Durum', <span className={`px-2 py-0.5 rounded-full text-xs ${DURUM_RENK[s.durum] ?? ''}`}>{DURUM_ETIKET[s.durum] ?? s.durum}</span>)}
-            {bilgi('Kitap', s.urunAdi ?? s.dersKitabiId)}
+            {bilgi('Kitap', s.urunAdi ?? s.notlar ?? s.dersKitabiId)}
             {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`, 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
             {bilgi('Tutar', euro(s.toplamTutar))}
             {bilgi('Eğitim Yılı', s.egitimYili)}

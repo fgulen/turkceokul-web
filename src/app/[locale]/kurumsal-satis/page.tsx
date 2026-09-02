@@ -114,7 +114,7 @@ export default async function KurumsalSatisPage(
         alternateHref={isEn ? '/tr/kurumsal-satis' : '/en/kurumsal-satis'}
         links={audienceNavLinks(locale, 'institutional')}
         ctaLabel={isEn ? 'Get a Quote' : 'Teklif Al'}
-        ctaHref="/kayit?tip=kurumsal-pro"
+        ctaHref="/kurumsal-satis#teklif"
       />
 
       {/* Hero */}

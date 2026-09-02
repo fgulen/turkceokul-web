@@ -42,6 +42,9 @@ interface BekleyenTalep {
   yetkiliEmail: string | null;
   telefon: string | null;
   tarih: string;
+  /** Birden fazla/hiç kitap seçilmeden gönderilen demo talepleri için — dersKitabiId boşsa
+   * burada "İlgilenilen kitaplar: ..." ya da "Genel katalog talebi" metni olur. */
+  notlar: string | null;
 }
 
 interface KatalogKitapAd {
@@ -417,7 +420,7 @@ function BekleyenTaleplerPanel({ talepler, kitapAdi, donusturuluyorId, onDonustu
               {t.yetkiliAdi ?? '—'} · {t.yetkiliEmail ?? '—'}{t.telefon ? ` · ${t.telefon}` : ''}
             </div>
             <div className="text-xs text-slate-400 mt-0.5">
-              {kitapAdi(t.dersKitabiId)} · {new Date(t.tarih).toLocaleDateString('tr-TR')}
+              {(t.dersKitabiId ? kitapAdi(t.dersKitabiId) : t.notlar) ?? '—'} · {new Date(t.tarih).toLocaleDateString('tr-TR')}
             </div>
           </div>
           <div className="shrink-0">

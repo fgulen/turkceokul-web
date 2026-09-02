@@ -1,18 +1,19 @@
 // web/src/components/satis/DemoTalepModal.tsx
-// Public lead formu — /kurumsal-satis kitap kartından açılır. Auth'suz düz `fetch`
-// kullanır (bu sayfa server component + public ziyaretçi; api.ts'deki axios istemcisi
-// yalnızca client'ta window varken relative URL'e düşüyor, aynı Next.js rewrite proxy'sini
-// (next.config.ts: /api/:path* -> API_URL) plain fetch de kullanabiliyor — ekstra bağımlılık
-// gerekmiyor). Yalnızca kullanıcı karttaki CTA'ya tıklayınca DOM'a girer; kapalıyken hiçbir
-// öge render edilmez, bu yüzden sayfanın CLS'ine etkisi yok.
+// Public lead formu — /kurumsal-satis üzerindeki tek, konsolide "Teklif Al" CTA'sından
+// açılır (nav + alt banner). Auth'suz düz `fetch` kullanır (bu sayfa server component +
+// public ziyaretçi; api.ts'deki axios istemcisi yalnızca client'ta window varken relative
+// URL'e düşüyor, aynı Next.js rewrite proxy'sini (next.config.ts: /api/:path* -> API_URL)
+// plain fetch de kullanabiliyor — ekstra bağımlılık gerekmiyor). Yalnızca kullanıcı CTA'ya
+// tıklayınca DOM'a girer; kapalıyken hiçbir öge render edilmez, bu yüzden sayfanın CLS'ine
+// etkisi yok.
 'use client';
 
 import { useState } from 'react';
 import { X, Loader2, CheckCircle2 } from 'lucide-react';
+import type { KatalogKitap } from '@/lib/katalog-api';
 
 interface Props {
-  kitapId: string;
-  kitapAdi: string;
+  kitaplar: KatalogKitap[];
   locale: string;
   onClose: () => void;
 }
@@ -20,7 +21,8 @@ interface Props {
 const C = {
   tr: {
     title: 'Demo / Teklif Talep Et',
-    kitapLabel: 'Kitap',
+    kitapLabel: 'İlgilendiğiniz kitaplar (opsiyonel)',
+    kitapHint: 'Hiçbirini seçmezseniz genel/tüm katalog teklifi olarak iletilir.',
     kurumAdi: 'Kurum adı',
     yetkiliAdi: 'Yetkili adı soyadı',
     yetkiliEmail: 'E-posta',
@@ -36,7 +38,8 @@ const C = {
   },
   en: {
     title: 'Request a Demo / Quote',
-    kitapLabel: 'Book',
+    kitapLabel: 'Books you are interested in (optional)',
+    kitapHint: 'Leave all unchecked to request a quote for the whole catalogue.',
     kurumAdi: 'Institution name',
     yetkiliAdi: 'Contact name',
     yetkiliEmail: 'Email',
@@ -52,7 +55,7 @@ const C = {
   },
 };
 
-export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
+export function DemoTalepModal({ kitaplar, locale, onClose }: Props) {
   const isEn = locale === 'en';
   const c = isEn ? C.en : C.tr;
 
@@ -61,11 +64,18 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
   const [yetkiliEmail, setYetkiliEmail] = useState('');
   const [telefon, setTelefon] = useState('');
   const [ulkeAdi, setUlkeAdi] = useState('');
+  const [secilenKitapIdleri, setSecilenKitapIdleri] = useState<string[]>([]);
   const [website, setWebsite] = useState(''); // honeypot
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  function toggleKitap(id: string) {
+    setSecilenKitapIdleri((prev) =>
+      prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,7 +91,7 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
           yetkiliEmail,
           telefon: telefon || undefined,
           ulkeAdi,
-          dersKitabiId: kitapId,
+          ilgiliKitapIdleri: secilenKitapIdleri,
           website,
         }),
       });
@@ -115,9 +125,6 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-base font-bold text-[#1e1b1c]">{c.title}</h2>
-            <p className="text-xs text-[#9ca3af] mt-0.5">
-              {c.kitapLabel}: <strong>{kitapAdi}</strong>
-            </p>
           </div>
           <button
             type="button"
@@ -202,6 +209,29 @@ export function DemoTalepModal({ kitapId, kitapAdi, locale, onClose }: Props) {
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b75bc]/30"
               />
             </div>
+
+            {kitaplar.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium mb-1 text-[#414751]">{c.kitapLabel}</label>
+                <p className="text-[11px] text-[#9ca3af] mb-1.5">{c.kitapHint}</p>
+                <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 p-2 space-y-1">
+                  {kitaplar.map((k) => (
+                    <label
+                      key={k.id}
+                      className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-[13px] text-[#414751] hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={secilenKitapIdleri.includes(k.id)}
+                        onChange={() => toggleKitap(k.id)}
+                        className="rounded border-slate-300 text-[#1b75bc] focus:ring-[#1b75bc]/30"
+                      />
+                      {k.ad}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Honeypot — görsel olarak gizli, botlar doldurur. Autocomplete kapalı. */}
             <input

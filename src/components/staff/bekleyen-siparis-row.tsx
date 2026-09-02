@@ -17,6 +17,9 @@ export interface Siparis {
   kurumAdi: string;
   dersKitabiId: number;
   urunAdi: string | null;
+  /** Birden fazla/hiç kitap seçilmeden gönderilen demo talepleri için — urunAdi boşsa burada
+   * "İlgilenilen kitaplar: ..." ya da "Genel katalog talebi" metni olur (bkz. KatalogController.DemoTalep). */
+  notlar: string | null;
   ogrenciKapasite: number | null;
   toplamTutar: number | null;
   tarih: string;
@@ -143,7 +146,7 @@ export function BekleyenSiparisRow({ siparis: s, siparisEndpoint, bekleyenQueryK
         <div className="min-w-0">
           <p className="font-semibold text-slate-800 truncate">{s.kurumAdi}</p>
           <p className="text-xs text-slate-500 truncate">
-            {s.urunAdi ?? s.dersKitabiId ?? '—'} ·{' '}
+            {s.urunAdi ?? s.notlar ?? s.dersKitabiId ?? '—'} ·{' '}
             <span
               className="cursor-help border-b border-dotted border-slate-300"
               title="Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil">

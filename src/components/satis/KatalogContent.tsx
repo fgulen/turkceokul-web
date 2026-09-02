@@ -2,12 +2,12 @@
 // Server Component — veri `/kurumsal-satis` sayfasında server-side getKatalog() ile
 // çekilip prop olarak buraya geçiriliyor (SEO: içerik ilk HTML'de hazır olmalı).
 // Bu bileşende client-side interaktivite (useState/onClick) yok; 'use client' gerekmiyor.
-import { ArrowRight, TrendingDown } from 'lucide-react';
-import { Link } from '@/navigation';
+import { TrendingDown } from 'lucide-react';
 import type { Katalog, KatalogKitap } from '@/lib/katalog-api';
 import { KampanyaBanner } from '@/components/satis/KampanyaBanner';
 import { KitapKarti } from '@/components/satis/KitapKarti';
 import { PaketKarti } from '@/components/satis/PaketKarti';
+import { KurumsalTeklifCta } from '@/components/satis/KurumsalTeklifCta';
 
 // Raf sıralaması — kullanıcı tarafından belirlenen sabit vitrin sırası. Listede
 // olmayan seriler (yeni eklenirse) sona, tr locale alfabetik sırayla eklenir.
@@ -26,9 +26,6 @@ const C = {
     okumaKitaplariTitle: 'Okuma Kitapları',
     okumaKitaplariHediyeBadge: 'Hediye',
     okumaKitaplariHediyeNot: 'PDF versiyonları hediye · 1 kitap etkileşimli ücretsiz',
-    ctaTitle: 'Kurumunuz için teklif alın',
-    ctaSub: 'Satış ekibimiz 48 saat içinde sizinle iletişime geçer. Ödeme: havale.',
-    ctaButton: 'Teklif Al',
   },
   en: {
     error: 'The catalogue could not be loaded right now. Please try again later.',
@@ -42,9 +39,6 @@ const C = {
     okumaKitaplariTitle: 'Reading Books',
     okumaKitaplariHediyeBadge: 'Free',
     okumaKitaplariHediyeNot: 'PDF versions are a gift · 1 interactive book free',
-    ctaTitle: 'Get a quote for your institution',
-    ctaSub: 'Our sales team will reach out within 48 hours. Payment: bank transfer.',
-    ctaButton: 'Request a Quote',
   },
 };
 
@@ -213,17 +207,10 @@ export function KatalogContent({ locale, katalog }: { locale: string; katalog: K
         </>
       )}
 
-      {/* CTA — Faz 2'de sepet/sipariş formuna bağlanacak */}
-      <div className="mt-4 rounded-[20px] bg-gradient-to-br from-[#1e3a5f] via-primary to-sky-500 px-6 py-12 text-center">
-        <h2 className="mb-2.5 text-2xl font-extrabold tracking-tight text-white">{c.ctaTitle}</h2>
-        <p className="mb-6 text-sm text-white/75">{c.ctaSub}</p>
-        <Link
-          href="/kayit?tip=kurumsal-pro"
-          className="inline-flex items-center gap-2 rounded-[10px] bg-white px-7 py-3.5 text-[15px] font-bold text-primary no-underline"
-        >
-          {c.ctaButton} <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
+      {/* Tek konsolide "Teklif Al" CTA'sı — nav CTA'sı da `#teklif` ile buraya ankor edilir.
+          Okuma kitapları (dahil/ücretsiz) seçim listesine girmiyor — ayrı fiyatlandırılmıyorlar,
+          bkz. KitapKarti "dahil" rozeti. */}
+      <KurumsalTeklifCta locale={locale} kitaplar={dersKitaplari} />
     </div>
   );
 }
