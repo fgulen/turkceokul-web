@@ -139,6 +139,15 @@ src={toMediaUrl(x) ?? ''}
 {imgUrl ? <img ... /> : <div className="...bg-muted"><ImageOff .../></div>}
 ```
 
+**Köşe yuvarlaklığı — istisna:** Varsayılan hâlâ `rounded-2xl` (yukarıdaki örnekler ve
+quiz/coktan-secmeli/dogru-yanlis/metin-checkbox bunu kullanıyor, DEĞİŞMEDİ). Ama diyalog
+tipi (konuşma balonu/afiş) görsellerde — bkz. bosluk-doldurma, coktan-secmeli-bosluk-doldurma
+— görselin kendisi genelde kenara kadar dolu (öğretmen elinde tuttuğu kağıt/tabela) ve
+`rounded-2xl` bu kenar detayını kırpıyor; bu iki player'da bilinçli olarak `rounded-md`
+kullanılıyor. Yeni bir player eklerken kaynak görsel tipine bak: ortada boşluklu/ikon
+tarzıysa `rounded-2xl`, kenara kadar dolu/afiş tarzıysa `rounded-md`
+(2026-09-02, bkz. memory `project_bosluk_doldurma_resim_eksik_2026_09_02`).
+
 ---
 
 ## 8. Hint Sistemi
@@ -262,8 +271,8 @@ her zaman geçir.
 | coktan-secmeli | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
 | dogru-yanlis | sm→lg ✅ | X/Y bar (cevap gizli, GameHUD yok) | yok (bilinemez) | ✅ | 2026-07-05: toplu moda çevrildi, resim+ses eklendi |
 | metin-checkbox | sm→lg ✅ | X/Y bar (cevap gizli, GameHUD yok) | yok (bilinemez) | ✅ | 2026-07-10: yeni — çoklu-seçim, kelime1-9 pozisyonel mask ile |
-| bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | scrollIntoView eklendi |
-| coktan-secmeli-bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | |
+| bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | scrollIntoView eklendi; 2026-09-02: resimLink hiç render edilmiyordu (366 detay etkilendi), §7 deseniyle eklendi |
+| coktan-secmeli-bosluk-doldurma | sm→lg ✅ | GameHUD ✅ | ✅ | ✅ | 2026-09-02: bosluk-doldurma ile aynı resim eksikliği, aynı fix |
 | kelimeleri-eslestir | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |
 | kelimeleri-sirala | lg→2xl ✅ | GameHUD ✅ | ✅ | ✅ | |
 | resim-ses-eslestirme | lg→2xl ✅ | X/Y bar ✅ | ✅ | ✅ | |

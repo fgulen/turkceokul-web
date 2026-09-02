@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
@@ -48,6 +48,7 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
   const parts = useMemo(() => splitByBlanks(sentence), [sentence]);
   const blankCount = Math.max(1, parts.length - 1);
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
+  const imgUrl = toMediaUrl(current.resimLink);
 
   useEffect(() => {
     setValues(Array(blankCount).fill(''));
@@ -137,6 +138,15 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
         etiket="Boşluk Doldurma"
         hideProgress={hideProgress}
       />
+
+      {imgUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgUrl}
+          alt=""
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-md mb-4 block"
+        />
+      )}
 
       {/* Cümle önizleme */}
       <motion.div

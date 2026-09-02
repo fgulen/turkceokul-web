@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
@@ -48,6 +48,7 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
   const blankCount = parts.length - 1;
 
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
+  const imgUrl = toMediaUrl(current.resimLink);
 
   // Seçenekleri her soru değişiminde yeniden karıştır
   const allOptions = useMemo(() => {
@@ -126,6 +127,14 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
         etiket="Boşluk Doldurma"
       />
 
+      {imgUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgUrl}
+          alt=""
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-md mb-4 block"
+        />
+      )}
 
       {/* Cümle ve boşluk slotları */}
       <motion.div
