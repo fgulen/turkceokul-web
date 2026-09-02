@@ -307,7 +307,7 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
 
   const [yeniUlkeAcikMi, setYeniUlkeAcikMi] = useState(false);
   const [yeniUlkeAdi, setYeniUlkeAdi] = useState('');
-  const [sonucMesaji, setSonucMesaji] = useState<{ mesaj: string; davetUrl?: string; tone?: 'success' | 'warning' } | null>(null);
+  const [sonucMesaji, setSonucMesaji] = useState<{ mesaj: string; davetUrl?: string; waMesaj?: string; tone?: 'success' | 'warning' } | null>(null);
 
   const yeniUlkeMutation = useMutation({
     mutationFn: () => api.post(`${apiBase}/siparis/${s!.id}/yeni-ulke-ve-temsilci`, { ulkeAdi: yeniUlkeAdi }),
@@ -323,10 +323,14 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
       const ulkeOzeti = ulkeOlusturuldu
         ? `${hedefUlke} açıldı, ${baglanmisLeadSayisi} talep bağlandı`
         : `${hedefUlke} için temsilci daveti oluşturuldu, ${baglanmisLeadSayisi} talep bağlandı`;
+      // davetUrl HER ZAMAN saklanir (mail basarili olsa da) — Irak/Kazakistan agirlikli
+      // kullanici tabani icin WhatsApp genelde mailden daha guvenilir (bkz. CLAUDE.md
+      // kritik kisit #1); alternatif kanal olarak mail basarisina bagli olmadan sunulur.
+      const waMesaj = `Merhaba, Türkçe Okulu ekibinden yazıyoruz. ${hedefUlke} için ülke temsilciliği davetiniz hazır — kabul etmek için: ${davetUrl}`;
       if (mailGonderildi) {
-        setSonucMesaji({ mesaj: `${ulkeOzeti}, davet ${s!.yetkiliEmail} adresine gönderildi.` });
+        setSonucMesaji({ mesaj: `${ulkeOzeti}, davet ${s!.yetkiliEmail} adresine gönderildi.`, davetUrl, waMesaj });
       } else {
-        setSonucMesaji({ mesaj: `${ulkeOzeti}. Mail gönderilemedi — linki kopyalayıp manuel paylaşın:`, davetUrl });
+        setSonucMesaji({ mesaj: `${ulkeOzeti}. Mail gönderilemedi — linki kopyalayıp manuel paylaşın:`, davetUrl, waMesaj });
       }
     },
     onError: (err: unknown) => setHata(apiHataMesaji(err)),
@@ -660,6 +664,12 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                     Kopyala
                   </button>
                 </div>
+              )}
+              {sonucMesaji.davetUrl && s.telefon && (
+                <a href={waLink(s.telefon, s.kurumAdi ?? '', sonucMesaji.waMesaj)} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                  WhatsApp ile Gönder
+                </a>
               )}
             </div>
           )}

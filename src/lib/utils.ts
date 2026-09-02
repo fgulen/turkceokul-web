@@ -17,10 +17,12 @@ export function apiHataMesaji(err: unknown): string {
 
 // wa.me yalnızca rakam kabul eder — boşluk/+/tire/parantez temizlenir. Staff panelindeki
 // sipariş satırlarında (bekleyen-siparis-row.tsx, kurumsal-satis-sayfasi.tsx) ortak.
-export function waLink(telefon: string, kurumAdi: string): string {
+// mesaj opsiyonel: verilmezse genel "siparişiniz hakkında" metni, davet linki gibi
+// özel bir metin gerektiğinde çağıran kendi mesajını geçer.
+export function waLink(telefon: string, kurumAdi: string, mesaj?: string): string {
   const digits = telefon.replace(/\D/g, '');
-  const mesaj = `Merhaba, Türkçe Okulu ekibinden yazıyoruz. ${kurumAdi} için siparişiniz hakkında sizinle iletişime geçmek istiyoruz.`;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(mesaj)}`;
+  const govde = mesaj ?? `Merhaba, Türkçe Okulu ekibinden yazıyoruz. ${kurumAdi} için siparişiniz hakkında sizinle iletişime geçmek istiyoruz.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(govde)}`;
 }
 
 // İsim/soyisim alanları: script/URI enjeksiyonunu (örn. "javascript:alert(...)")
