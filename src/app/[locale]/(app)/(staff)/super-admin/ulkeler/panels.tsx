@@ -55,6 +55,7 @@ interface SinifSatir {
   name: string;
   kurumAdi: string | null;
   ogrenciSayisi: number;
+  ogretmenAdi: string | null;
   efektifKitapAdi: string | null;
 }
 
@@ -62,6 +63,7 @@ interface KurumSinifSatir {
   id: number;
   name: string;
   ogrenciSayisi: number;
+  ogretmenAdi: string | null;
   efektifKitapAdi: string | null;
 }
 
@@ -507,7 +509,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
   const [deleteTarget, setDeleteTarget] = useState<SinifSatir | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<DeleteImpactSatir[] | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogrenciSayisi' | 'efektifKitapAdi'>('name');
+  const { sortKey, sortDir, toggleSort } = useSiralama<'name' | 'kurumAdi' | 'ogretmenAdi' | 'ogrenciSayisi' | 'efektifKitapAdi'>('name');
   const { secili, toggleBir, toggleHepsi, temizle } = useTopluSecim<number>();
   const [topluOnay, setTopluOnay] = useState(false);
 
@@ -557,6 +559,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
             <TopluSecimTh gorunenIdler={siniflar.map((s) => s.id)} secili={secili} onToggleHepsi={toggleHepsi} />
             <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Sınıf</SortTh>
             <SortTh colKey="kurumAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kurum</SortTh>
+            <SortTh colKey="ogretmenAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Öğretmen</SortTh>
             <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="center">Öğrenci</SortTh>
             <SortTh colKey="efektifKitapAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Kitap</SortTh>
             <th className="px-5 py-2.5"></th>
@@ -568,6 +571,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
               <TopluSecimTd id={s.id} secili={secili} onToggle={toggleBir} />
               <td className="px-5 py-2 font-medium text-slate-800">{s.name}</td>
               <td className="px-5 py-2 text-xs text-slate-500">{s.kurumAdi ?? '—'}</td>
+              <td className="px-5 py-2 text-xs text-slate-500">{s.ogretmenAdi ?? '—'}</td>
               <td className="px-5 py-2 text-center text-xs text-slate-600">{s.ogrenciSayisi}</td>
               <td className="px-5 py-2 text-xs text-slate-500 truncate max-w-[150px]">{s.efektifKitapAdi ?? '—'}</td>
               <td className="px-5 py-2 text-right">
@@ -579,7 +583,7 @@ export function UlkeSiniflarPanel({ ulkeId }: { ulkeId: number }) {
             </tr>
           ))}
           {siniflar.length === 0 && (
-            <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">Bu ülkede sınıf yok</td></tr>
+            <tr><td colSpan={7} className="px-5 py-8 text-center text-slate-400 text-sm">Bu ülkede sınıf yok</td></tr>
           )}
         </tbody>
       </table>
@@ -640,7 +644,7 @@ export function KurumSiniflarDetail({ kurumId }: { kurumId: number }) {
         <div key={s.id} className="flex items-center gap-3 py-2 border-b border-slate-100 text-sm group">
           <div className="flex-1 min-w-0">
             <div className="font-medium text-slate-800">{s.name}</div>
-            <div className="text-xs text-slate-400">{s.ogrenciSayisi} öğrenci · {s.efektifKitapAdi ?? '—'}</div>
+            <div className="text-xs text-slate-400">{s.ogretmenAdi ?? '—'} · {s.ogrenciSayisi} öğrenci · {s.efektifKitapAdi ?? '—'}</div>
           </div>
           <button onClick={() => { setDeleteTarget(s); setDeleteImpact(null); }}
             className="size-6 flex items-center justify-center rounded text-slate-400 hover:text-red-500 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-all">

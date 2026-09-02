@@ -285,8 +285,8 @@ export default function UlkeTemsilcisiPage() {
             veri={ogrenciler}
             yukleniyor={ogrencilerYukleniyor}
             bosMesaj="Henüz öğrenci yok."
-            ikincilKolonBaslik="Kurum · Sınıf"
-            ikincilKolonRender={o => `${o.kurumAdi} · ${(o as OgrenciSatiri).sinifAdi}`}
+            ikincilKolonBaslik="Kurum · Sınıf · Öğretmen"
+            ikincilKolonRender={o => `${o.kurumAdi ?? '—'} · ${(o as OgrenciSatiri).sinifAdi ?? '—'} · ${(o as OgrenciSatiri).ogretmenAdi ?? '—'}`}
           />
         )}
 

@@ -74,6 +74,7 @@ export interface OgrenciSatiri {
   insertDate: string;
   kurumAdi: string;
   sinifAdi: string;
+  ogretmenAdi?: string | null;
   ulkeAdi: string | null;
 }
 

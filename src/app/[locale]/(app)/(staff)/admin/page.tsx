@@ -315,8 +315,8 @@ export default function AdminPage() {
             veri={ogrenciler}
             yukleniyor={ogrencilerYukleniyor}
             bosMesaj="Henüz öğrenci yok."
-            ikincilKolonBaslik="Kurum · Sınıf"
-            ikincilKolonRender={o => `${o.kurumAdi} · ${(o as OgrenciSatiri).sinifAdi}`}
+            ikincilKolonBaslik="Kurum · Sınıf · Öğretmen"
+            ikincilKolonRender={o => `${o.kurumAdi ?? '—'} · ${(o as OgrenciSatiri).sinifAdi ?? '—'} · ${(o as OgrenciSatiri).ogretmenAdi ?? '—'}`}
             ucuncuKolonBaslik="Ülke"
             ucuncuKolonRender={o => (o as OgrenciSatiri).ulkeAdi ?? '—'}
           />

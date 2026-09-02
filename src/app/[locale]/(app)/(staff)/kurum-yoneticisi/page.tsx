@@ -80,6 +80,7 @@ interface OgrenciSatiri {
   lastLoginDate: string | null;
   insertDate: string;
   sinifAdi: string;
+  ogretmenAdi: string | null;
 }
 
 // buton degeri API'den gelir: SatinAl | Inceleniyor | EkLisans | UcretsizDene
@@ -462,7 +463,7 @@ function OgrenciTab({ veri, yukleniyor }: { veri: OgrenciSatiri[] | undefined; y
   const filtreli = useMemo(() => {
     const ham = veri ?? [];
     if (!arama) return ham;
-    return ham.filter(o => metinEslesiyorMu([o.name, o.surname, o.email, o.sinifAdi], arama));
+    return ham.filter(o => metinEslesiyorMu([o.name, o.surname, o.email, o.sinifAdi, o.ogretmenAdi], arama));
   }, [veri, arama]);
 
   const sirali = useMemo(() => trSirala(filtreli, sortKey, sortDir), [filtreli, sortKey, sortDir]);
@@ -482,7 +483,7 @@ function OgrenciTab({ veri, yukleniyor }: { veri: OgrenciSatiri[] | undefined; y
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <SortTh colKey="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort}>Ad Soyad</SortTh>
-              <SortTh colKey="sinifAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Sınıf</SortTh>
+              <SortTh colKey="sinifAdi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden sm:table-cell">Sınıf · Öğretmen</SortTh>
               <SortTh colKey="insertDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell">Kayıt Tarihi</SortTh>
               <SortTh colKey="lastLoginDate" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Son Giriş</SortTh>
             </tr>
@@ -501,7 +502,7 @@ function OgrenciTab({ veri, yukleniyor }: { veri: OgrenciSatiri[] | undefined; y
                     <div className="font-medium text-slate-900 truncate">{o.name} {o.surname ?? ''}</div>
                     <div className="text-xs text-slate-400 truncate">{o.email}</div>
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{o.sinifAdi}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{o.sinifAdi} · {o.ogretmenAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden md:table-cell">{kayitTarihiMetni(o.insertDate)}</td>
                   <td className="px-4 py-2 text-xs text-slate-500 text-right">{sonGirisMetni(o.lastLoginDate)}</td>
                 </tr>
