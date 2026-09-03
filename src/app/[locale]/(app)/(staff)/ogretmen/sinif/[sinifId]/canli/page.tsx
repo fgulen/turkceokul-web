@@ -26,16 +26,46 @@ interface KahootEtkinlik {
 }
 
 // ── Etkinlik Seçim Ekranı ─────────────────────────────────────────────────────
+interface KahootHak {
+  durum: 'Yok' | 'SuresiDolmus' | 'Deneme' | 'Ucretli';
+  kalan: number | null;
+  toplam: number | null;
+}
+
 function EtkinlikSecimEkrani({
+  sinifId,
+  sinifKitapId,
   onBaslat,
 }: {
   sinifId: number;
-  onBaslat: (etkinlikIdleri: string[]) => void;
+  sinifKitapId: string | null;
+  onBaslat: (etkinlikIdleri: string[]) => Promise<void>;
 }) {
   const [secili, setSecili] = useState<Set<string>>(new Set());
   const [arama, setArama] = useState('');
-  const [kitapFiltre, setKitapFiltre] = useState('');
+  const [kitapFiltre, setKitapFiltre] = useState(sinifKitapId ?? '');
   const [uniteFiltre, setUniteFiltre] = useState('');
+  const [hata, setHata] = useState<string | null>(null);
+
+  // Sınıfın kurum lisansı (Deneme aylık limiti / süresi dolmuş kilidi) — hızlı oyunda
+  // (sinifId=0, kurum/kitap bağlamı yok) sorgu hiç çalışmaz, kısıt da yok.
+  const { data: hak } = useQuery<KahootHak>({
+    queryKey: ['kahoot-hak', sinifId],
+    queryFn: () => api.get(`/api/kahoot/hak/${sinifId}`).then(r => r.data),
+    enabled: sinifId > 0,
+  });
+  const kilitli = hak?.durum === 'SuresiDolmus';
+  const limitDoldu = hak?.durum === 'Deneme' && hak.kalan === 0;
+
+  // Sınıfın kitabı sonradan gelirse (ilk render'da sinif sorgusu henüz dönmemiş
+  // olabilir) filtreyi bir kez o kitaba senkronize et — öğretmen elle değiştirmediyse.
+  const [kitapOtoUygulandi, setKitapOtoUygulandi] = useState(!!sinifKitapId);
+  useEffect(() => {
+    if (!kitapOtoUygulandi && sinifKitapId) {
+      setKitapFiltre(sinifKitapId);
+      setKitapOtoUygulandi(true);
+    }
+  }, [sinifKitapId, kitapOtoUygulandi]);
   const [loading, setLoading] = useState(false);
 
   const { data: etkinlikler = [], isLoading } = useQuery<KahootEtkinlik[]>({
@@ -73,8 +103,12 @@ function EtkinlikSecimEkrani({
 
   async function handleBaslat(demo: boolean) {
     setLoading(true);
+    setHata(null);
     try {
-      onBaslat(demo ? [] : [...secili]);
+      await onBaslat(demo ? [] : [...secili]);
+    } catch (err) {
+      const resp = (err as { response?: { data?: { mesaj?: string } } }).response;
+      setHata(resp?.data?.mesaj ?? 'Oyun oluşturulamadı, lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
@@ -100,6 +134,25 @@ function EtkinlikSecimEkrani({
           </div>
         )}
       </div>
+
+      {/* Lisans/limit durumu */}
+      {kilitli && (
+        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
+          <AlertCircle className="size-4 shrink-0" />
+          Bu sınıfın deneme süresi doldu. Kahoot oynatmak için lisans satın alınması gerekiyor.
+        </div>
+      )}
+      {!kilitli && limitDoldu && (
+        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
+          <AlertCircle className="size-4 shrink-0" />
+          Bu ay için Kahoot oynama hakkın doldu (deneme lisansında {hak?.toplam} oyun/ay). Hak her ayın başında yenilenir.
+        </div>
+      )}
+      {!kilitli && !limitDoldu && hak?.durum === 'Deneme' && (
+        <div className="text-xs text-muted-foreground">
+          Deneme lisansında bu ay <strong className="text-foreground">{hak.kalan}/{hak.toplam}</strong> Kahoot hakkın kaldı.
+        </div>
+      )}
 
       {/* Filtreler */}
       <div className="space-y-2">
@@ -199,7 +252,7 @@ function EtkinlikSecimEkrani({
       <div className="flex gap-3 pt-2">
         <button
           onClick={() => handleBaslat(false)}
-          disabled={secili.size === 0 || loading}
+          disabled={secili.size === 0 || loading || kilitli || limitDoldu}
           className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary-dark transition-colors disabled:opacity-40"
         >
           <Play className="size-4 fill-current" />
@@ -207,12 +260,19 @@ function EtkinlikSecimEkrani({
         </button>
         <button
           onClick={() => handleBaslat(true)}
-          disabled={loading}
+          disabled={loading || kilitli || limitDoldu}
           className="px-4 py-3 bg-muted text-muted-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-40"
         >
           Demo
         </button>
       </div>
+
+      {hata && (
+        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
+          <AlertCircle className="size-4 shrink-0" />
+          {hata}
+        </div>
+      )}
     </div>
   );
 }
@@ -376,7 +436,7 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
         <div className="bg-card rounded-2xl border border-border shadow-sm p-4 sm:p-6">
           {!oyunKodu ? (
             // ── Etkinlik Seçim ───────────────────────────────────────────────
-            <EtkinlikSecimEkrani sinifId={id} onBaslat={oyunOlustur} />
+            <EtkinlikSecimEkrani sinifId={id} sinifKitapId={sinif?.dersKitabiId ?? null} onBaslat={oyunOlustur} />
           ) : (
             // ── Oyun Ekranı: sol sütun + sağ sütun (leaderboard) ─────────────
             <div className="lg:grid lg:grid-cols-[1fr_272px] lg:gap-5">
