@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Play, Users, Trophy, Wifi, ChevronRight,
@@ -23,6 +23,17 @@ interface KahootEtkinlik {
   kitapAdi: string;
   uniteId: string;
   uniteAdi: string;
+}
+
+// Kilit/limit/hata uyarıları için ortak stil — üç yerde (kilitli, limitDoldu, hata)
+// tekrar edilen destructive banner işaretlemesini tek yere topluyor.
+function UyariBaneri({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
+      <AlertCircle className="size-4 shrink-0" />
+      {children}
+    </div>
+  );
 }
 
 // ── Etkinlik Seçim Ekranı ─────────────────────────────────────────────────────
@@ -107,8 +118,11 @@ function EtkinlikSecimEkrani({
     try {
       await onBaslat(demo ? [] : [...secili]);
     } catch (err) {
-      const resp = (err as { response?: { data?: { mesaj?: string } } }).response;
-      setHata(resp?.data?.mesaj ?? 'Oyun oluşturulamadı, lütfen tekrar deneyin.');
+      // Backend hata gövdesi ya düz string (NotFound/BadRequest) ya da { mesaj } (402) —
+      // ikisini de kapsa, aksi halde "Sınıf bulunamadı." gibi asıl mesaj sessizce kaybolur.
+      const data = (err as { response?: { data?: unknown } }).response?.data;
+      const mesaj = typeof data === 'string' ? data : (data as { mesaj?: string } | undefined)?.mesaj;
+      setHata(mesaj ?? 'Oyun oluşturulamadı, lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
@@ -137,16 +151,12 @@ function EtkinlikSecimEkrani({
 
       {/* Lisans/limit durumu */}
       {kilitli && (
-        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
-          <AlertCircle className="size-4 shrink-0" />
-          Bu sınıfın deneme süresi doldu. Kahoot oynatmak için lisans satın alınması gerekiyor.
-        </div>
+        <UyariBaneri>Bu sınıfın deneme süresi doldu. Kahoot oynatmak için lisans satın alınması gerekiyor.</UyariBaneri>
       )}
       {!kilitli && limitDoldu && (
-        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
-          <AlertCircle className="size-4 shrink-0" />
+        <UyariBaneri>
           Bu ay için Kahoot oynama hakkın doldu (deneme lisansında {hak?.toplam} oyun/ay). Hak her ayın başında yenilenir.
-        </div>
+        </UyariBaneri>
       )}
       {!kilitli && !limitDoldu && hak?.durum === 'Deneme' && (
         <div className="text-xs text-muted-foreground">
@@ -159,7 +169,7 @@ function EtkinlikSecimEkrani({
         <div className="flex gap-2">
           <select
             value={kitapFiltre}
-            onChange={e => { setKitapFiltre(e.target.value); setUniteFiltre(''); }}
+            onChange={e => { setKitapFiltre(e.target.value); setUniteFiltre(''); setKitapOtoUygulandi(true); }}
             className="flex-1 px-3 py-2 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="">Tüm kitaplar</option>
@@ -267,12 +277,7 @@ function EtkinlikSecimEkrani({
         </button>
       </div>
 
-      {hata && (
-        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-4 py-3">
-          <AlertCircle className="size-4 shrink-0" />
-          {hata}
-        </div>
-      )}
+      {hata && <UyariBaneri>{hata}</UyariBaneri>}
     </div>
   );
 }
@@ -436,7 +441,10 @@ export default function CanliKahootPage({ params }: { params: Promise<{ sinifId:
         <div className="bg-card rounded-2xl border border-border shadow-sm p-4 sm:p-6">
           {!oyunKodu ? (
             // ── Etkinlik Seçim ───────────────────────────────────────────────
-            <EtkinlikSecimEkrani sinifId={id} sinifKitapId={sinif?.dersKitabiId ?? null} onBaslat={oyunOlustur} />
+            // key={id}: aynı route şablonu (Next.js App Router) farklı bir sınıfa geçilince
+            // bileşeni yeniden mount etmez — kitapOtoUygulandi/secili/hata gibi state
+            // önceki sınıftan sızıp kalırdı (code review bulgusu).
+            <EtkinlikSecimEkrani key={id} sinifId={id} sinifKitapId={sinif?.dersKitabiId ?? null} onBaslat={oyunOlustur} />
           ) : (
             // ── Oyun Ekranı: sol sütun + sağ sütun (leaderboard) ─────────────
             <div className="lg:grid lg:grid-cols-[1fr_272px] lg:gap-5">
