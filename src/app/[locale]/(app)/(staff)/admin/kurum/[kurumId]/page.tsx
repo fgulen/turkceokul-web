@@ -2,12 +2,14 @@
 
 // Kurum detayı — "Kurum Detay şablonu" (dışardan-bakan roller: admin, ülke-temsilcisi)
 // ulke-temsilcisi/kurum/[kurumId] ile aynı 3-sütun kart yapısını paylaşır (Lisans
-// Durumu/Öğretmenler/Sınıflar). Koordinator aksiyon tetikleyemez — Lisans Durumu
-// salt-okunur (LisansKart'a badge veriliyor, buton değil).
+// Durumu/Öğretmenler/Sınıflar). Lisans Durumu'ndaki tek yazma aksiyonu kapasite
+// düzeltmesi (onaylanan siparişte sayı yanlış girildiyse); satın alma/deneme başlatma
+// gibi akışlar bu yüzeyde yok, LisansKart'a rozet veriliyor.
 
 import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, Users, GraduationCap, BookOpen, CheckCircle, Save } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, Building2, Users, GraduationCap, BookOpen, CheckCircle, Save, Pencil } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Link } from '@/navigation';
 import { api } from '@/lib/api';
@@ -38,15 +40,21 @@ interface KurumDetay {
   ogrenciSayisi: number;
 }
 
-// Koordinator salt-okunur görüntüler — hiçbir buton tetiklenmez, LisansKart'ın
-// aksiyon alanına durum rozeti verilir (bkz. kurum-lisans-durumu.tsx'teki
-// SALT_OKUNUR_BUTON_METIN deseni).
+// Kapasite düzenleme dışında salt-okunur — LisansKart'ın aksiyon alanına durum rozeti
+// verilir (bkz. kurum-lisans-durumu.tsx'teki SALT_OKUNUR_BUTON_METIN deseni).
 const BUTON_ROZET_METIN: Record<LisansKarti['buton'], string> = {
   SatinAl: 'Satın alınmadı',
   Inceleniyor: 'Talep inceleniyor',
   EkLisans: 'Lisanslı',
   UcretsizDene: 'Denenmedi',
 };
+
+// Kapasite yalnızca hiç koltuk tüketilmemiş ücretli/sponsorlu lisansta düzeltilebilir —
+// API'deki SuperAdminService.GuncelleLisansKapasite guard'ının aynısı. Bir öğrenci bile
+// koltuk aldıysa düzenleme kapalı; artırım normal sipariş akışından geçer.
+function kapasiteDuzenlenebilir(k: LisansKarti) {
+  return (k.lisansTipi === 'Ucretli' || k.lisansTipi === 'Sponsorlu') && k.kullanilanLisans === 0;
+}
 
 export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: string }> }) {
   const { kurumId } = use(params);
@@ -57,6 +65,9 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
   const [duzenleme, setDuzenleme] = useState(false);
   const [form, setForm] = useState({ name: '', sehir: '' });
   const [kaydedildi, setKaydedildi] = useState(false);
+  // Aynı anda tek kart düzenlenir: hangi kitabın kapasitesi ve o input'un ham değeri.
+  const [kapasiteForm, setKapasiteForm] = useState<{ id: string; deger: string } | null>(null);
+  const [kapasiteMesaj, setKapasiteMesaj] = useState<{ id: string; mesaj: string } | null>(null);
 
   const { data: kurum, isLoading } = useQuery<KurumDetay>({
     queryKey: ['admin-kurum', id],
@@ -85,6 +96,19 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
       setKaydedildi(true);
       setTimeout(() => setKaydedildi(false), 3000);
     },
+  });
+
+  const kapasiteM = useMutation({
+    mutationFn: ({ dersKitabiId, toplamLisans }: { dersKitabiId: string; toplamLisans: number }) =>
+      api.put(`/api/admin/kurum/${id}/lisans/${dersKitabiId}/kapasite`, { toplamLisans }),
+    onMutate: () => setKapasiteMesaj(null),
+    onSuccess: (res) => {
+      toast.success(res.data?.mesaj ?? 'Kapasite güncellendi.');
+      qc.invalidateQueries({ queryKey: ['admin-kurum-lisanslar', id] });
+      setKapasiteForm(null);
+    },
+    onError: (err, degiskenler) =>
+      setKapasiteMesaj({ id: degiskenler.dersKitabiId, mesaj: apiHataMesaji(err) }),
   });
 
   if (!ready) return <div className="py-24 flex items-center justify-center"><div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
@@ -204,17 +228,82 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                   <p className="text-slate-400 text-sm text-center py-12">Kitap bulunamadı.</p>
                 ) : (
                   <div className="divide-y divide-slate-50">
-                    {lisanslar.map(k => (
-                      <LisansKart
-                        key={k.id}
-                        kitap={k}
-                        aksiyon={
-                          <span className="shrink-0 text-xs text-slate-400 italic text-right">
-                            {BUTON_ROZET_METIN[k.buton]}
-                          </span>
-                        }
-                      />
-                    ))}
+                    {lisanslar.map(k => {
+                      const duzenlenebilir = kapasiteDuzenlenebilir(k);
+                      const acik = kapasiteForm?.id === k.id;
+                      const gonderiliyor = kapasiteM.isPending && kapasiteM.variables?.dersKitabiId === k.id;
+
+                      return (
+                        <LisansKart
+                          key={k.id}
+                          kitap={k}
+                          mesaj={kapasiteMesaj?.id === k.id
+                            ? { tip: 'hata' as const, metin: kapasiteMesaj.mesaj }
+                            : null}
+                          aksiyon={acik ? (
+                            <form
+                              className="shrink-0 flex items-center gap-1.5"
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const deger = parseInt(kapasiteForm.deger, 10);
+                                if (!Number.isFinite(deger) || deger <= 0) {
+                                  setKapasiteMesaj({ id: k.id, mesaj: 'Kapasite 0’dan büyük bir sayı olmalı.' });
+                                  return;
+                                }
+                                kapasiteM.mutate({ dersKitabiId: k.id, toplamLisans: deger });
+                              }}
+                            >
+                              <input
+                                type="number"
+                                min={1}
+                                autoFocus
+                                value={kapasiteForm.deger}
+                                onChange={(e) => setKapasiteForm({ id: k.id, deger: e.target.value })}
+                                className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                aria-label={`${k.name} lisans kapasitesi`}
+                              />
+                              <button
+                                type="submit"
+                                disabled={gonderiliyor}
+                                className={cn(
+                                  'px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors',
+                                  gonderiliyor && 'opacity-60 cursor-wait',
+                                )}
+                              >
+                                {gonderiliyor ? '…' : 'Kaydet'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setKapasiteForm(null); setKapasiteMesaj(null); }}
+                                className="px-2 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-700"
+                              >
+                                İptal
+                              </button>
+                            </form>
+                          ) : (
+                            <div className="shrink-0 flex items-center gap-2">
+                              <span className="text-xs text-slate-400 italic text-right">
+                                {BUTON_ROZET_METIN[k.buton]}
+                              </span>
+                              {duzenlenebilir && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setKapasiteMesaj(null);
+                                    setKapasiteForm({ id: k.id, deger: String(k.toplamLisans) });
+                                  }}
+                                  title="Lisans kapasitesini düzelt"
+                                  aria-label={`${k.name} lisans kapasitesini düzelt`}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
