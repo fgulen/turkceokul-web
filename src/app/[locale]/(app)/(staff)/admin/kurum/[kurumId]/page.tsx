@@ -57,11 +57,12 @@ interface KapasiteBilgi {
   duzenlenebilir: boolean;
   kaynakSiparisId: number | null;
   siparisKapasite: number | null;
-  siparisTutar: number | null;
+  siparisTutarCent: number | null;
   siparisTarihi: string | null;
 }
 
-const euro = (kurus: number) => `€${(kurus / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+// Sunucu ham cent doner (Siparis.ToplamTutar EUR cent) — alan adi da bunu tasiyor.
+const euro = (cent: number) => `€${(cent / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
 // Kapasite yalnızca hiç koltuk tüketilmemiş ücretli/sponsorlu lisansta düzeltilebilir —
 // API'deki SuperAdminService.GuncelleLisansKapasite guard'ının aynısı. Bir öğrenci bile
@@ -128,6 +129,9 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
     onSuccess: (res) => {
       toast.success(res.data?.mesaj ?? 'Kapasite güncellendi.');
       qc.invalidateQueries({ queryKey: ['admin-kurum-lisanslar', id] });
+      // Bağlam sorgusu da tazelensin: faturalanan değerler değişmez ama satırın
+      // toplamLisans/kullanilanLisans alanları bayat kalmasın (kart yeniden açılırsa).
+      qc.invalidateQueries({ queryKey: ['admin-lisans-kapasite', id] });
       setKapasiteForm(null);
     },
     onError: (err, degiskenler) =>
@@ -349,7 +353,7 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                                 )}>
                                   Sipariş #{kapasiteBilgi.kaynakSiparisId} ·{' '}
                                   {kapasiteBilgi.siparisKapasite} koltuk faturalandı
-                                  {kapasiteBilgi.siparisTutar != null && ` · ${euro(kapasiteBilgi.siparisTutar)}`}
+                                  {kapasiteBilgi.siparisTutarCent != null && ` · ${euro(kapasiteBilgi.siparisTutarCent)}`}
                                   {faturadanFarkli && ' — girdiğin sayı faturadan farklı.'}
                                 </p>
                               )}
