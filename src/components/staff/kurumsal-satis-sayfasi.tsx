@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Package } from 'lucide-react';
+import { Link } from '@/navigation';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { SlideOver } from '@/components/slide-over';
@@ -569,7 +570,12 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
           <div>
             {bilgi('Durum', <span className={`px-2 py-0.5 rounded-full text-xs ${DURUM_RENK[s.durum] ?? ''}`}>{DURUM_ETIKET[s.durum] ?? s.durum}</span>)}
             {bilgi('Kitap', s.urunAdi ?? s.notlar ?? s.dersKitabiId)}
-            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`, 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
+            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`,
+              s.durum === 'Onaylandi'
+                ? 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil. '
+                  + 'Onaylanan sipariş artık düzenlenemez (fatura kaydı): lisans sayısını değiştirmek için '
+                  + 'kuruma tıklayıp ilgili kitabın kapasitesini güncelleyin.'
+                : 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
             {bilgi('Tutar', euro(s.toplamTutar))}
             {bilgi('Eğitim Yılı', s.egitimYili)}
             {bilgi('Tarih', new Date(s.tarih).toLocaleString('tr-TR'))}
@@ -589,6 +595,21 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
             {bilgi('Aktif Öğrenci', s.aktifOgrenci, 'O sınıflardaki, sisteme şu an aktif olarak eklenmiş öğrenci sayısı')}
             {bilgi('Mevcut Lisans', s.mevcutLisansTipi, 'Onay öncesi kurumun bu kitap için halihazırda sahip olduğu lisans tipi (Deneme / Ücretli)')}
           </div>
+
+          {/* Onaylanan sipariş bir fatura kaydıdır, değiştirilmez — ama personelin
+              yanlış girilen lisans sayısını nereden düzelteceğini bilmesi gerekir.
+              Tooltip tek başına kolayca gözden kaçtığı için görünür bir yol da var. */}
+          {s.durum === 'Onaylandi' && s.kurumId != null && (
+            <p className="text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+              Onaylanan sipariş düzenlenemez. Lisans sayısını değiştirmek için{' '}
+              <Link href={`/admin/kurum/${s.kurumId}`} className="text-purple-700 font-medium hover:underline">
+                {s.kurumAdi ? `${s.kurumAdi} sayfasına` : 'kurum sayfasına'}
+              </Link>{' '}
+              gidip ilgili kitabın kapasitesini güncelleyin. (Koltuk kullanılmaya
+              başlandıysa düzenleme kapanır; o durumda doğru rakamla yeni bir sipariş
+              onaylayın.)
+            </p>
+          )}
 
           {duzenleAcik && (
             <div className="flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5">

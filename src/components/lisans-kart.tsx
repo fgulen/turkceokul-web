@@ -36,9 +36,14 @@ interface LisansKartProps {
   // (yalniz UcretsizDene aktif, digerleri salt-okunur rozet) kullaniyor.
   aksiyon: React.ReactNode;
   mesaj?: { tip: 'hata' | 'basari'; metin: string } | null;
+  // Kartın ALTINDA tam genişlik render edilen isteğe bağlı alan. Aksiyon slotu kitap
+  // adıyla aynı satırı paylaşır ve dar sütunlarda (admin kurum detayı 3'lü grid)
+  // birkaç kontrolden fazlasını taşıyamaz — inline düzenleme formu gibi geniş
+  // içerikler buraya verilir, başlık ezilmez.
+  altSatir?: React.ReactNode;
 }
 
-export function LisansKart({ kitap: k, aksiyon, mesaj }: LisansKartProps) {
+export function LisansKart({ kitap: k, aksiyon, mesaj, altSatir }: LisansKartProps) {
   return (
     <div className="px-6 py-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -81,6 +86,7 @@ export function LisansKart({ kitap: k, aksiyon, mesaj }: LisansKartProps) {
         </div>
         {aksiyon}
       </div>
+      {altSatir && <div className="mt-3">{altSatir}</div>}
       {mesaj && (
         <p className={cn('text-xs mt-2', mesaj.tip === 'hata' ? 'text-red-500' : 'text-emerald-600')}>
           {mesaj.metin}

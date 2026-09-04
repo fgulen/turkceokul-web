@@ -49,6 +49,20 @@ const BUTON_ROZET_METIN: Record<LisansKarti['buton'], string> = {
   UcretsizDene: 'Denenmedi',
 };
 
+interface KapasiteBilgi {
+  lisansId: number;
+  lisansTipi: string;
+  toplamLisans: number;
+  kullanilanLisans: number;
+  duzenlenebilir: boolean;
+  kaynakSiparisId: number | null;
+  siparisKapasite: number | null;
+  siparisTutar: number | null;
+  siparisTarihi: string | null;
+}
+
+const euro = (kurus: number) => `€${(kurus / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+
 // Kapasite yalnızca hiç koltuk tüketilmemiş ücretli/sponsorlu lisansta düzeltilebilir —
 // API'deki SuperAdminService.GuncelleLisansKapasite guard'ının aynısı. Bir öğrenci bile
 // koltuk aldıysa düzenleme kapalı; artırım normal sipariş akışından geçer.
@@ -96,6 +110,15 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
       setKaydedildi(true);
       setTimeout(() => setKaydedildi(false), 3000);
     },
+  });
+
+  // Düzenleme açıkken kapasitenin geldiği onaylanmış siparişin faturalanan değerleri
+  // çekilir. Sipariş satırı onaydan sonra değişmez (fatura kaydı yeniden yazılmaz), bu
+  // yüzden lisans kapasitesi ondan farklılaşabilir — personel farkı görerek karar versin.
+  const { data: kapasiteBilgi } = useQuery<KapasiteBilgi>({
+    queryKey: ['admin-lisans-kapasite', id, kapasiteForm?.id],
+    queryFn: () => api.get(`/api/admin/kurum/${id}/lisans/${kapasiteForm!.id}/kapasite`).then(r => r.data),
+    enabled: !!kapasiteForm,
   });
 
   const kapasiteM = useMutation({
@@ -232,6 +255,13 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                       const duzenlenebilir = kapasiteDuzenlenebilir(k);
                       const acik = kapasiteForm?.id === k.id;
                       const gonderiliyor = kapasiteM.isPending && kapasiteM.variables?.dersKitabiId === k.id;
+                      // Girilen sayı faturalanan koltuk sayısından farklıysa buton
+                      // "Farkı onayla ve kaydet"e döner — kaza eseri düşürme/artırma
+                      // tek tıkla geçmesin (ödeme kaydıyla ayrışma yaratıyor).
+                      const faturadanFarkli = acik
+                        && kapasiteBilgi?.kaynakSiparisId != null
+                        && kapasiteBilgi.siparisKapasite != null
+                        && parseInt(kapasiteForm!.deger, 10) !== kapasiteBilgi.siparisKapasite;
 
                       return (
                         <LisansKart
@@ -240,52 +270,12 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                           mesaj={kapasiteMesaj?.id === k.id
                             ? { tip: 'hata' as const, metin: kapasiteMesaj.mesaj }
                             : null}
-                          aksiyon={acik ? (
-                            <form
-                              className="shrink-0 flex items-center gap-1.5"
-                              onSubmit={(e) => {
-                                e.preventDefault();
-                                const deger = parseInt(kapasiteForm.deger, 10);
-                                if (!Number.isFinite(deger) || deger <= 0) {
-                                  setKapasiteMesaj({ id: k.id, mesaj: 'Kapasite 0’dan büyük bir sayı olmalı.' });
-                                  return;
-                                }
-                                kapasiteM.mutate({ dersKitabiId: k.id, toplamLisans: deger });
-                              }}
-                            >
-                              <input
-                                type="number"
-                                min={1}
-                                autoFocus
-                                value={kapasiteForm.deger}
-                                onChange={(e) => setKapasiteForm({ id: k.id, deger: e.target.value })}
-                                className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                aria-label={`${k.name} lisans kapasitesi`}
-                              />
-                              <button
-                                type="submit"
-                                disabled={gonderiliyor}
-                                className={cn(
-                                  'px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors',
-                                  gonderiliyor && 'opacity-60 cursor-wait',
-                                )}
-                              >
-                                {gonderiliyor ? '…' : 'Kaydet'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setKapasiteForm(null); setKapasiteMesaj(null); }}
-                                className="px-2 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-700"
-                              >
-                                İptal
-                              </button>
-                            </form>
-                          ) : (
+                          aksiyon={
                             <div className="shrink-0 flex items-center gap-2">
                               <span className="text-xs text-slate-400 italic text-right">
                                 {BUTON_ROZET_METIN[k.buton]}
                               </span>
-                              {duzenlenebilir && (
+                              {duzenlenebilir && !acik && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -298,6 +288,70 @@ export default function KurumDetayPage({ params }: { params: Promise<{ kurumId: 
                                 >
                                   <Pencil className="size-3.5" />
                                 </button>
+                              )}
+                            </div>
+                          }
+                          altSatir={acik && (
+                            <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5 space-y-2">
+                              <form
+                                className="flex flex-wrap items-center gap-1.5"
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const deger = parseInt(kapasiteForm.deger, 10);
+                                  if (!Number.isFinite(deger) || deger <= 0) {
+                                    setKapasiteMesaj({ id: k.id, mesaj: 'Kapasite 0’dan büyük bir sayı olmalı.' });
+                                    return;
+                                  }
+                                  kapasiteM.mutate({ dersKitabiId: k.id, toplamLisans: deger });
+                                }}
+                              >
+                                <label className="text-xs text-slate-500" htmlFor={`kapasite-${k.id}`}>
+                                  Kapasite
+                                </label>
+                                <input
+                                  id={`kapasite-${k.id}`}
+                                  type="number"
+                                  min={1}
+                                  autoFocus
+                                  value={kapasiteForm.deger}
+                                  onChange={(e) => setKapasiteForm({ id: k.id, deger: e.target.value })}
+                                  className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  aria-label={`${k.name} lisans kapasitesi`}
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={gonderiliyor}
+                                  className={cn(
+                                    'px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors',
+                                    faturadanFarkli
+                                      ? 'bg-amber-600 hover:bg-amber-700'
+                                      : 'bg-primary hover:bg-primary/90',
+                                    gonderiliyor && 'opacity-60 cursor-wait',
+                                  )}
+                                >
+                                  {gonderiliyor ? '…' : faturadanFarkli ? 'Farkı onayla ve kaydet' : 'Kaydet'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setKapasiteForm(null); setKapasiteMesaj(null); }}
+                                  className="px-2 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-700"
+                                >
+                                  İptal
+                                </button>
+                              </form>
+
+                              {/* Faturalanan değerler: sipariş satırı onaydan sonra
+                                  değişmez, bu yüzden ayrışma sessiz kalmamalı. */}
+                              {kapasiteBilgi?.kaynakSiparisId != null && (
+                                <p className={cn(
+                                  'text-[11px]',
+                                  faturadanFarkli ? 'text-amber-700' : 'text-slate-400',
+                                )}>
+                                  Sipariş #{kapasiteBilgi.kaynakSiparisId} ·{' '}
+                                  {kapasiteBilgi.siparisKapasite} koltuk faturalandı
+                                  {kapasiteBilgi.siparisTutar != null && ` · ${euro(kapasiteBilgi.siparisTutar)}`}
+                                  {faturadanFarkli && ' — girdiğin sayı faturadan farklı.'}
+                                </p>
                               )}
                             </div>
                           )}
