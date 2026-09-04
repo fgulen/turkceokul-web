@@ -269,6 +269,7 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const [kapasite, setKapasite] = useState('');
   const [kapasiteBaslangic, setKapasiteBaslangic] = useState('');
   const [tutar, setTutar] = useState('');
+  const [tutarBaslangic, setTutarBaslangic] = useState('');
   const [duzenleAcik, setDuzenleAcik] = useState(false);
   const [kapasiteDebounced, setKapasiteDebounced] = useState('');
   const [iptalOnayAcik, setIptalOnayAcik] = useState(false);
@@ -341,6 +342,9 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   });
 
   // Kapasite değişince 400ms sonra tutarı otomatik hesapla (hacim indirimi/kampanya dahil).
+  // "Kaydet" bu debounce'ı bekler (bkz. buton disabled koşulu) — beklemezse kapasite
+  // güncel, tutar eski hesaptan kalma gönderilir (canlıda #25/#19'da yaşandı: kapasite
+  // düşürüldü, tutar bir önceki hesaplanan/eski değerde donuk kaldı).
   useEffect(() => {
     const t = setTimeout(() => setKapasiteDebounced(kapasite), 400);
     return () => clearTimeout(t);
@@ -349,13 +353,19 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
   const kapasiteSayi = Number(kapasiteDebounced);
   // Sadece kapasite AÇILIŞTAKİ değerden farklıysa hesapla — formu sadece görüntülemek/
   // tutarı elle değiştirmek isteyen admin'in mevcut tutarı sessizce ezilmesin.
-  const { data: fiyatOnerisi, isFetching: fiyatHesaplaniyor } = useQuery({
+  const { data: fiyatOnerisi, isFetching: fiyatHesaplaniyor, isError: fiyatHatali } = useQuery({
     queryKey: ['fiyat-hesapla', s?.dersKitabiId, kapasiteSayi],
     queryFn: () => api.get('/api/katalog/fiyat-hesapla', {
       params: { kitapIdler: s!.dersKitabiId, ogrenciSayisi: kapasiteSayi },
     }).then(r => r.data),
     enabled: duzenleAcik && !!s?.dersKitabiId && kapasiteSayi > 0 && kapasiteDebounced !== kapasiteBaslangic,
   });
+  // Kapasite acilistan farkli ama hesaplama hic basarili olmadiysa (agdan dustu, 500,
+  // retry tukendi) isFetching sessizce false'a doner — sadece bunu kontrol etmek Kaydet'i
+  // stale tutar'la yeniden acardi. Tutar acilistan beri elle degistirilmediyse (yani hala
+  // ESKİ kapasitenin tutari) bu durumda da kilitli kalir; admin tutari elle degistirirse
+  // (hesaplama basarisiz da olsa) bilincli override kabul edilir, kilit acilir.
+  const fiyatBelirsiz = kapasiteDebounced !== kapasiteBaslangic && !fiyatOnerisi && tutar === tutarBaslangic;
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: listQueryKey });
@@ -412,7 +422,9 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
     setKapasite(baslangic);
     setKapasiteBaslangic(baslangic);
     setKapasiteDebounced(baslangic);
-    setTutar(String((s.toplamTutar ?? 0) / 100));
+    const tutarBaslangicDeger = String((s.toplamTutar ?? 0) / 100);
+    setTutar(tutarBaslangicDeger);
+    setTutarBaslangic(tutarBaslangicDeger);
     onayHazirlik.kapat();
     setDuzenleAcik(v => !v);
   }
@@ -570,12 +582,12 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
           <div>
             {bilgi('Durum', <span className={`px-2 py-0.5 rounded-full text-xs ${DURUM_RENK[s.durum] ?? ''}`}>{DURUM_ETIKET[s.durum] ?? s.durum}</span>)}
             {bilgi('Kitap', s.urunAdi ?? s.notlar ?? s.dersKitabiId)}
-            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans`,
+            {bilgi('Kapasite', `${s.ogrenciKapasite} lisans · ${s.aktifOgrenci} kullanımda`,
               s.durum === 'Onaylandi'
-                ? 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil. '
+                ? 'Satın alınan / onaylanan lisans üst limiti, kullanımda olan ise o sınıflardaki aktif öğrenci sayısı. '
                   + 'Onaylanan sipariş artık düzenlenemez (fatura kaydı): lisans sayısını değiştirmek için '
                   + 'kuruma tıklayıp ilgili kitabın kapasitesini güncelleyin.'
-                : 'Satın alınan / onaylanan lisans üst limiti — sisteme şu an eklenmiş öğrenci sayısı değil')}
+                : 'Satın alınan / onaylanan lisans üst limiti, kullanımda olan ise o sınıflardaki aktif öğrenci sayısı')}
             {bilgi('Tutar', euro(s.toplamTutar))}
             {bilgi('Eğitim Yılı', s.egitimYili)}
             {bilgi('Tarih', new Date(s.tarih).toLocaleString('tr-TR'))}
@@ -625,7 +637,11 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
               </div>
               <button
                 onClick={() => kaydetMutation.mutate()}
-                disabled={kaydetMutation.isPending || kapasite === '' || tutar === ''}
+                disabled={kaydetMutation.isPending || kapasite === '' || tutar === ''
+                  || fiyatHesaplaniyor || kapasite !== kapasiteDebounced || fiyatBelirsiz}
+                title={fiyatHesaplaniyor || kapasite !== kapasiteDebounced
+                  ? 'Tutar yeni kapasiteye göre hesaplanıyor, birkaç saniye bekleyin'
+                  : fiyatBelirsiz ? 'Tutar hesaplanamadı — devam etmek için tutarı elle girin' : undefined}
                 className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
                 {kaydetMutation.isPending ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
@@ -635,6 +651,11 @@ function SiparisDetaySlideOver({ apiBase, siparis: s, onClose, listQueryKey, ext
                   Otomatik: {fiyatOnerisi.toplamGosterim} ({fiyatOnerisi.ogrenciSayisi} öğrenci × €{(fiyatOnerisi.birimFiyatEurCent / 100).toFixed(2)}
                   {fiyatOnerisi.hacimIndirimiOrani ? `, hacim indirimi %${fiyatOnerisi.hacimIndirimiOrani}` : ''}
                   {fiyatOnerisi.kampanyaIndirimOrani ? `, kampanya %${fiyatOnerisi.kampanyaIndirimOrani}` : ''}) — üzerine elle yazılabilir
+                </span>
+              )}
+              {!fiyatHesaplaniyor && fiyatHatali && (
+                <span className="text-[11px] text-amber-700 w-full">
+                  Tutar hesaplanamadı (bağlantı hatası) — kaydetmek için tutarı elle girin.
                 </span>
               )}
             </div>
