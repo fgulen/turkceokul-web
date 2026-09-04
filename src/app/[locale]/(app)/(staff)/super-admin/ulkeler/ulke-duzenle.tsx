@@ -124,11 +124,20 @@ export function UlkeDuzenleSlideOver({ ulke, onClose, onDirtyChange }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Sorumlu Öğretmen</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Ülke Temsilcisi</label>
+            {/* Bu alan eskiden yalnizca bir bilgi etiketiydi (Ulke.OgretmenId): secim
+                yapilinca kisinin rolu degismiyor, Temsilciler panelinde gorunmuyor ve
+                mail gitmiyordu. Artik gercek atama yapiyor — ne yaptigi acikca yaziyor
+                ki admin "atadim ama olmadi" durumuna dusmesin. */}
+            <p className="text-[11px] text-slate-500 mb-1.5">
+              Seçilen öğretmenin rolü <strong>Ülke Temsilcisi</strong>&apos;ne çevrilir, ülkesi
+              bu ülke olarak ayarlanır ve kendisine bilgilendirme e-postası gönderilir.
+            </p>
             {form.ogretmenId && form.ogretmenAdi && (
               <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-purple-50 border border-purple-100 rounded-lg">
                 <span className="text-xs font-medium text-purple-800 flex-1">{form.ogretmenAdi}</span>
                 <button
+                  title="Bu ülkeden kaldır — kullanıcının rolü Ülke Temsilcisi olarak KALIR, rolü düşürmek için Kullanıcılar sekmesini kullanın"
                   onClick={() => { setForm(f => f && { ...f, ogretmenId: null, ogretmenAdi: null }); setOgretmenQuery(''); setDirty(true); }}
                   className="text-purple-400 hover:text-purple-600">
                   <X className="size-3.5" />
@@ -141,7 +150,7 @@ export function UlkeDuzenleSlideOver({ ulke, onClose, onDirtyChange }: Props) {
                 onChange={e => { setOgretmenQuery(e.target.value); setShowDropdown(true); }}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                placeholder={form.ogretmenId ? 'Değiştirmek için ara…' : 'Öğretmen ara…'}
+                placeholder={form.ogretmenId ? 'Değiştirmek için ara…' : 'Öğretmen ara ve temsilci yap…'}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
               />
               {showDropdown && ogretmenler.length > 0 && (
