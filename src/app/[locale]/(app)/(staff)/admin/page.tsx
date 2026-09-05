@@ -7,11 +7,11 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   GraduationCap, Users, Building2, Clock, BookOpen, KeyRound, BarChart3, Globe, Bell, Plus, Hourglass,
-  Share2, Mail, X,
+  Share2, Mail, X, ChevronRight,
 } from 'lucide-react';
 import { RoleScopedUserForm } from '@/components/role-scoped-user-form';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { useRouter, usePathname } from '@/navigation';
+import { useRouter, usePathname, Link } from '@/navigation';
 import { TurkishLetterBackdrop } from '@/components/turkish-letter-backdrop';
 import { SlideOver } from '@/components/slide-over';
 import { api } from '@/lib/api';
@@ -24,7 +24,7 @@ import {
   type OgretmenSatiri, type OgrenciSatiri, type SinifSatiri, type KurumRaporOzeti, type KurumLisansGrubu, type KurumSatiri,
 } from '@/components/staff/kurum-raporlama-tablari';
 
-interface Ulke {
+export interface Ulke {
   id: number;
   name: string;
   visible: boolean;
@@ -447,17 +447,22 @@ function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor
               <SortTh colKey="ogretmenSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğretmen</SortTh>
               <SortTh colKey="ogrenciSayisi" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right">Öğrenci</SortTh>
               <th className="px-4 py-2.5 text-right font-medium text-slate-600">Durum</th>
+              <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {yukleniyor ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={7} className="px-4 py-3"><div className="h-5 rounded bg-slate-100 animate-pulse" /></td></tr>)
             ) : sayfalik.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td></tr>
             ) : (
               sayfalik.map(u => (
                 <tr key={u.id} className="odd:bg-white even:bg-slate-50/40">
-                  <td className="px-4 py-2 font-medium text-slate-900">{u.name}</td>
+                  <td className="px-4 py-2">
+                    <Link href={`/admin/ulke/${u.id}`} className="font-medium text-slate-900 hover:text-primary transition-colors">
+                      {u.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-xs text-slate-500 hidden sm:table-cell">{u.ogretmenAdi ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{u.kurumSayisi}</td>
                   <td className="px-4 py-2 text-right text-xs text-slate-600">{u.ogretmenSayisi}</td>
@@ -466,6 +471,11 @@ function UlkelerTab({ veri, yukleniyor, onYeniUlke }: { veri: Ulke[]; yukleniyor
                     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', u.visible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
                       {u.visible ? 'Aktif' : 'Pasif'}
                     </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Link href={`/admin/ulke/${u.id}`} className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                      <ChevronRight className="size-3.5" />
+                    </Link>
                   </td>
                 </tr>
               ))

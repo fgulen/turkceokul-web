@@ -246,6 +246,8 @@ export interface KurumSatiri {
   name: string;
   sehir: string | null;
   ulkeAdi: string | null;
+  /** Ülke bazlı filtreleme için (ör. admin/ulke/[id] detay sayfası). Tüm çağıranlar döndürmeyebilir. */
+  ulkeId?: number | null;
   ogretmenSayisi: number;
   ogrenciSayisi: number;
   kurumYoneticisiAdi: string | null;
@@ -259,8 +261,10 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
   veri: KurumSatiri[] | undefined;
   yukleniyor: boolean;
   kurumHref: (kurumId: number) => string;
-  onYeniKurum: () => void;
-  onDuzenle: (kurum: KurumSatiri) => void;
+  /** Verilmezse "Yeni Kurum" butonu gösterilmez (ör. salt-okunur ülke detay görünümü). */
+  onYeniKurum?: () => void;
+  /** Verilmezse Düzenle ikonu gösterilmez. */
+  onDuzenle?: (kurum: KurumSatiri) => void;
   /** Verilmezse Lisans ikonu gösterilmez (ör. admin'de henüz kurum-lisans SlideOver'ı yok). */
   onLisans?: (kurum: KurumSatiri) => void;
   /** "Yeni Kurum" butonundan önce, toolbar'a ek bir aksiyon (ör. ülke-temsilcisi: "Yeni Kurum Yöneticisi"). */
@@ -289,10 +293,12 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
           <AramaInput value={arama} onChange={v => { setArama(v); setSayfa(1); }} placeholder="Kurum, şehir ara..." />
           <div className="ml-auto flex items-center gap-2">
             {ekstraAksiyon}
-            <button onClick={onYeniKurum}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-              <Building2 className="size-3.5" /> Yeni Kurum
-            </button>
+            {onYeniKurum && (
+              <button onClick={onYeniKurum}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+                <Building2 className="size-3.5" /> Yeni Kurum
+              </button>
+            )}
           </div>
         </div>
         <table className="w-full text-sm">
@@ -353,11 +359,13 @@ export function KurumlarTab({ veri, yukleniyor, kurumHref, onYeniKurum, onDuzenl
                           <BookOpen className="size-3.5" /> Kitaplar
                         </button>
                       )}
-                      <button onClick={() => onDuzenle(k)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Düzenle">
-                        <Pencil className="size-3.5" /> Düzenle
-                      </button>
+                      {onDuzenle && (
+                        <button onClick={() => onDuzenle(k)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Düzenle">
+                          <Pencil className="size-3.5" /> Düzenle
+                        </button>
+                      )}
                       <Link href={kurumHref(k.id)} className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
                         <ChevronRight className="size-3.5" />
                       </Link>
