@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 interface Sinif {
   id: number;
   name: string;
+  dersKitabiId: string | null;
+  dersKitabiAdi: string | null;
 }
 
 interface OlusturResponse {
@@ -22,10 +24,22 @@ interface OlusturResponse {
 
 export function KahootBaslatModal({
   etkinlikId,
+  kitapId,
+  kitapAdi,
+  kitapTuru,
   acik,
   onKapat,
 }: {
   etkinlikId: string;
+  // İçeriğin ait olduğu kitap — sınıfın kendi kitabı dışındaki içerikle
+  // başlatılmasını önceden engellemek için (bkz. KahootController.OyunOlustur).
+  kitapId?: string | null;
+  kitapAdi?: string | null;
+  // Sınıf.dersKitabiId her zaman bir DersKitabi id'sidir — Okuma Kitabı kaynağında
+  // (kitapTuru==='OkumaKitabi') bu id karşılaştırması anlamsız olur (bkz.
+  // KahootController.OyunOlustur'daki aynı KitapTuru=="DersKitabi" şartı), o yüzden
+  // uyum kontrolü yalnızca DersKitabi kaynağında uygulanır.
+  kitapTuru?: string | null;
   acik: boolean;
   onKapat: () => void;
 }) {
@@ -37,6 +51,10 @@ export function KahootBaslatModal({
     queryFn: () => api.get('/api/ogretmen/siniflarim').then(r => r.data),
     enabled: acik,
   });
+
+  function sinifUyumsuz(sinif: Sinif) {
+    return kitapTuru === 'DersKitabi' && !!kitapId && !!sinif.dersKitabiId && sinif.dersKitabiId !== kitapId;
+  }
 
   const olusturMutation = useMutation({
     mutationFn: async (sinifId: number | null) => {
@@ -121,28 +139,42 @@ export function KahootBaslatModal({
               </button>
 
               {/* Sınıf listesi */}
-              {siniflar.map(sinif => (
-                <button
-                  key={sinif.id}
-                  onClick={() => setSeciliSinifId(sinif.id)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all',
-                    seciliSinifId === sinif.id
-                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
-                      : 'bg-card border-border hover:bg-muted/40',
-                  )}
-                >
-                  <div
+              {siniflar.map(sinif => {
+                const uyumsuz = sinifUyumsuz(sinif);
+                return (
+                  <button
+                    key={sinif.id}
+                    onClick={() => !uyumsuz && setSeciliSinifId(sinif.id)}
+                    disabled={uyumsuz}
+                    title={uyumsuz ? `Bu sınıfın kitabı: ${sinif.dersKitabiAdi} — "${kitapAdi}" farklı bir kitap olduğu için burada başlatılamaz.` : undefined}
                     className={cn(
-                      'size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors',
-                      seciliSinifId === sinif.id ? 'bg-primary border-primary' : 'border-border',
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all',
+                      uyumsuz
+                        ? 'bg-muted/30 border-border opacity-50 cursor-not-allowed'
+                        : seciliSinifId === sinif.id
+                          ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
+                          : 'bg-card border-border hover:bg-muted/40',
                     )}
                   >
-                    {seciliSinifId === sinif.id && <Check className="size-3 text-white" />}
-                  </div>
-                  <p className="text-sm font-medium text-foreground">{sinif.name}</p>
-                </button>
-              ))}
+                    <div
+                      className={cn(
+                        'size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors',
+                        !uyumsuz && seciliSinifId === sinif.id ? 'bg-primary border-primary' : 'border-border',
+                      )}
+                    >
+                      {!uyumsuz && seciliSinifId === sinif.id && <Check className="size-3 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{sinif.name}</p>
+                      {uyumsuz && (
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          Bu sınıfın kitabı: {sinif.dersKitabiAdi} — farklı kitap, başlatılamaz
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -164,7 +196,10 @@ export function KahootBaslatModal({
           {olusturMutation.isError && (
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
               <AlertCircle className="size-4 mt-0.5 shrink-0" />
-              <span>Oyun oluşturulamadı. Lütfen tekrar deneyin.</span>
+              <span>
+                {(olusturMutation.error as { response?: { data?: { mesaj?: string } } })?.response?.data?.mesaj
+                  ?? 'Oyun oluşturulamadı. Lütfen tekrar deneyin.'}
+              </span>
             </div>
           )}
         </div>

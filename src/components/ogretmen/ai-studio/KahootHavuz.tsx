@@ -14,7 +14,9 @@ interface HavuzItem {
   hazirlayan: string;
   insertDate: string;
   uniteAdi: string;
+  kitapId: string;
   kitapAdi: string;
+  kitapTuru: string;
   benimMi: boolean;
 }
 
@@ -29,7 +31,7 @@ interface HavuzListItemProps {
   item: HavuzItem;
   acik: boolean;
   onToggleDetay: (id: string) => void;
-  onBaslat: (etkinlikId: string) => void;
+  onBaslat: (etkinlikId: string, kitapId: string, kitapAdi: string, kitapTuru: string) => void;
 }
 
 function HavuzListItem({ item, acik, onToggleDetay, onBaslat }: HavuzListItemProps) {
@@ -70,7 +72,7 @@ function HavuzListItem({ item, acik, onToggleDetay, onBaslat }: HavuzListItemPro
             Önizle
           </button>
           <button
-            onClick={() => onBaslat(item.id)}
+            onClick={() => onBaslat(item.id, item.kitapId, item.kitapAdi, item.kitapTuru)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors"
           >
             <Play className="size-3.5 fill-current" />
@@ -140,7 +142,7 @@ function HavuzListItem({ item, acik, onToggleDetay, onBaslat }: HavuzListItemPro
 export function KahootHavuz({
   onBaslat,
 }: {
-  onBaslat: (etkinlikId: string) => void;
+  onBaslat: (etkinlikId: string, kitapId: string, kitapAdi: string, kitapTuru: string) => void;
 }) {
   const [kaynak, setKaynak] = useState<KaynakSecim | null>(null);
   const [aciliBayrak, setAciliBayrak] = useState<Record<string, boolean>>({});

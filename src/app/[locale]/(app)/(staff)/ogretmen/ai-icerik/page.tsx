@@ -132,6 +132,7 @@ export default function AIIcerikPage() {
   const [modalEtkinlikId, setModalEtkinlikId] = useState<string | null>(null);
   const [modalKitapId, setModalKitapId] = useState<string | null>(null);
   const [modalKitapAdi, setModalKitapAdi] = useState<string | null>(null);
+  const [modalKitapTuru, setModalKitapTuru] = useState<string | null>(null);
   const [proModalOzellik, setProModalOzellik] = useState<string | null>(null);
 
   const mdAktarGorunur = user?.role === 'SuperAdmin' || user?.role === 'Editor';
@@ -407,6 +408,7 @@ export default function AIIcerikPage() {
       setModalEtkinlikId(etkinlikId);
       setModalKitapId(kaynak?.kitapId ?? null);
       setModalKitapAdi(kaynak?.kitapAdi ?? null);
+      setModalKitapTuru(kaynak?.kitapTuru ?? null);
       setModalAcik(true);
     } catch (e) {
       setKaydetHata(e instanceof Error ? e.message : 'Bir hata oluştu');
@@ -556,10 +558,11 @@ export default function AIIcerikPage() {
         {aktifTab === 'kahoot' && kahootSubTab === 'havuz' && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <KahootHavuz
-              onBaslat={(etkinlikId, kitapId, kitapAdi) => {
+              onBaslat={(etkinlikId, kitapId, kitapAdi, kitapTuru) => {
                 setModalEtkinlikId(etkinlikId);
                 setModalKitapId(kitapId);
                 setModalKitapAdi(kitapAdi);
+                setModalKitapTuru(kitapTuru);
                 setModalAcik(true);
               }}
             />
@@ -797,12 +800,14 @@ export default function AIIcerikPage() {
             etkinlikId={modalEtkinlikId}
             kitapId={modalKitapId}
             kitapAdi={modalKitapAdi}
+            kitapTuru={modalKitapTuru}
             acik={modalAcik}
             onKapat={() => {
               setModalAcik(false);
               setModalEtkinlikId(null);
               setModalKitapId(null);
               setModalKitapAdi(null);
+              setModalKitapTuru(null);
             }}
           />
         )}
