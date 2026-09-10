@@ -104,7 +104,7 @@ interface IcerikSonuc {
 
 type TabSonuc = { icerik: IcerikSonuc | null; metin: string; resimUrls: string[] };
 
-interface Sinif       { id: number; name: string; }
+interface Sinif       { id: number; name: string; dersKitabiId?: string | null; }
 interface GecmisItem  {
   id: string; name: string; tip: string; unite: string;
   soruSayisi: number; insertDate: string; zorluk: number;
@@ -113,6 +113,8 @@ interface GecmisItem  {
   kitapAdi?: string;
   kitapId?: string;
   uniteId?: string;
+  sinifId: number | null;
+  sinifAdi: string | null;
 }
 
 interface GecmisDetay {
@@ -128,6 +130,8 @@ export default function AIIcerikPage() {
   const [kahootSubTab, setKahootSubTab] = useState<'uret' | 'havuz'>('uret');
   const [modalAcik, setModalAcik] = useState(false);
   const [modalEtkinlikId, setModalEtkinlikId] = useState<string | null>(null);
+  const [modalKitapId, setModalKitapId] = useState<string | null>(null);
+  const [modalKitapAdi, setModalKitapAdi] = useState<string | null>(null);
   const [proModalOzellik, setProModalOzellik] = useState<string | null>(null);
 
   const mdAktarGorunur = user?.role === 'SuperAdmin' || user?.role === 'Editor';
@@ -152,6 +156,7 @@ export default function AIIcerikPage() {
   // önceki sekmenin etkinlikId'sini kullanırdı.
   const [kaydedildi, setKaydedildi] = useState<Partial<Record<TabId, string>>>({});
   const [kaydetHata, setKaydetHata] = useState('');
+  const [kaydetSinifId, setKaydetSinifId] = useState<number | ''>('');
   const [hata, setHata] = useState('');
   const [duzenlemeModuAktif, setDuzenlemeModuAktif] = useState(false);
 
@@ -377,12 +382,14 @@ export default function AIIcerikPage() {
         uniteId: kaynak?.uniteId,
         duzey: kaynak?.seviye,
         baslik: sonuc.icerik.baslik ?? undefined,
+        sinifId: kaydetSinifId === '' ? undefined : kaydetSinifId,
         sorular,
       }).then(r => r.data);
     },
     onSuccess: (data: { etkinlikId: string }, tabId: TabId) => {
       setKaydedildi(prev => ({ ...prev, [tabId]: data.etkinlikId }));
       setKaydetHata('');
+      queryClient.invalidateQueries({ queryKey: ['ai-gecmis'] });
       setTimeout(() => setKaydedildi(prev => {
         const next = { ...prev };
         delete next[tabId];
@@ -398,6 +405,8 @@ export default function AIIcerikPage() {
       // Eğer bu sekme zaten kaydedildiyse, o etkinlikId'yi kullan
       const etkinlikId = kaydedildi[tab] ?? (await kaydetMutation.mutateAsync(tab)).etkinlikId;
       setModalEtkinlikId(etkinlikId);
+      setModalKitapId(kaynak?.kitapId ?? null);
+      setModalKitapAdi(kaynak?.kitapAdi ?? null);
       setModalAcik(true);
     } catch (e) {
       setKaydetHata(e instanceof Error ? e.message : 'Bir hata oluştu');
@@ -547,8 +556,10 @@ export default function AIIcerikPage() {
         {aktifTab === 'kahoot' && kahootSubTab === 'havuz' && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <KahootHavuz
-              onBaslat={(etkinlikId) => {
+              onBaslat={(etkinlikId, kitapId, kitapAdi) => {
                 setModalEtkinlikId(etkinlikId);
+                setModalKitapId(kitapId);
+                setModalKitapAdi(kitapAdi);
                 setModalAcik(true);
               }}
             />
@@ -703,6 +714,33 @@ export default function AIIcerikPage() {
                   </div>
                 </div>
 
+                {/* Kaydederken sınıf seçimi — boş bırakılırsa sınıfsız/herkese açık kaydedilir */}
+                {uretimTabAktif && mevcutSonuc?.icerik?.sorular?.length && !mevcutKaydedildi && siniflar.length > 0 && (
+                  <div className="flex items-center gap-2 mb-4 text-xs">
+                    <label className="text-slate-500 font-medium shrink-0">Kaydederken sınıfa ekle:</label>
+                    <select
+                      value={kaydetSinifId}
+                      onChange={e => setKaydetSinifId(e.target.value ? Number(e.target.value) : '')}
+                      className="flex-1 max-w-[240px] px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Sınıfsız (Herkese Açık)</option>
+                      {siniflar.map(s => {
+                        // Sınıf.dersKitabiId her zaman bir DersKitabi id'sidir (OgretmenService.AtanabilirKitapIdleriAsync
+                        // garantisi) — Okuma Kitabı kaynaklı üretimde kaynak.kitapId bir OkumaKitabi id'si olur ve bu
+                        // karşılaştırma TÜM sınıfları yanlış şekilde uyumsuz gösterir, o yüzden sadece DersKitabi
+                        // kaynağında uygulanır.
+                        const uyumsuz = kaynak?.kitapTuru === 'DersKitabi'
+                          && !!kaynak?.kitapId && !!s.dersKitabiId && s.dersKitabiId !== kaynak.kitapId;
+                        return (
+                          <option key={s.id} value={s.id} disabled={uyumsuz}>
+                            {s.name}{uyumsuz ? ' (farklı kitap)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 {/* AI uyarısı */}
                 <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 mb-4">
                   <AlertTriangle className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
@@ -713,7 +751,7 @@ export default function AIIcerikPage() {
                 {mevcutKaydedildi && (
                   <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 mb-4">
                     <Check className="size-3.5 text-emerald-600 shrink-0" />
-                    <span>İçerik kütüphaneye kaydedildi. Sınıf sayfanızdan atayabilir veya Kahoot havuzundan başlatabilirsiniz.</span>
+                    <span>İçerik kütüphaneye kaydedildi. Aşağıdaki Üretim Geçmişi&apos;nden istediğiniz zaman bir sınıfa atayabilir veya Kahoot havuzundan başlatabilirsiniz.</span>
                   </div>
                 )}
                 {kaydetHata && (
@@ -757,10 +795,14 @@ export default function AIIcerikPage() {
         {modalEtkinlikId && (
           <KahootBaslatModal
             etkinlikId={modalEtkinlikId}
+            kitapId={modalKitapId}
+            kitapAdi={modalKitapAdi}
             acik={modalAcik}
             onKapat={() => {
               setModalAcik(false);
               setModalEtkinlikId(null);
+              setModalKitapId(null);
+              setModalKitapAdi(null);
             }}
           />
         )}
@@ -796,6 +838,7 @@ export default function AIIcerikPage() {
                         <GecmisKart
                           key={item.id}
                           item={item}
+                          siniflar={siniflar}
                           onSil={() => silMutation.mutate(item.id)}
                           onOnayla={() => onaylaMutation.mutate(item.id)}
                           silIsPending={silMutation.isPending}
@@ -823,6 +866,7 @@ export default function AIIcerikPage() {
                         <GecmisKart
                           key={item.id}
                           item={item}
+                          siniflar={siniflar}
                           onSil={() => silMutation.mutate(item.id)}
                           onOnayla={() => onaylaMutation.mutate(item.id)}
                           silIsPending={silMutation.isPending}
@@ -1309,19 +1353,33 @@ function SoruDuzenleyiciKart({
 }
 
 function GecmisKart({
-  item, onSil, onOnayla, silIsPending, onaylaIsPending,
+  item, siniflar, onSil, onOnayla, silIsPending, onaylaIsPending,
 }: {
   item: GecmisItem;
+  siniflar: Sinif[];
   onSil: () => void;
   onOnayla: () => void;
   silIsPending: boolean;
   onaylaIsPending: boolean;
 }) {
   const [acik, setAcik] = useState(false);
+  const [sinifSeciliId, setSinifSeciliId] = useState<number | ''>(item.sinifId ?? '');
+  const queryClient = useQueryClient();
   const { data: detaylar, isLoading: detayYukleniyor } = useQuery<GecmisDetay[]>({
     queryKey: ['ai-detay', item.id],
     queryFn: () => api.get(`/api/ai/gecmis/${item.id}/detaylar`).then(r => r.data),
     enabled: acik,
+  });
+
+  const [sinifAtaHata, setSinifAtaHata] = useState('');
+  const sinifAtaMutation = useMutation({
+    mutationFn: (sinifId: number | '') =>
+      api.put(`/api/ai/gecmis/${item.id}/sinif-ata`, { sinifId: sinifId === '' ? null : sinifId }),
+    onSuccess: () => {
+      setSinifAtaHata('');
+      queryClient.invalidateQueries({ queryKey: ['ai-gecmis'] });
+    },
+    onError: (e: Error) => setSinifAtaHata(e.message || 'Sınıf ataması başarısız oldu.'),
   });
 
   const tarih = new Date(item.insertDate).toLocaleDateString('tr-TR', {
@@ -1350,6 +1408,13 @@ function GecmisKart({
           <span className="text-slate-600">{item.unite}</span>
           <span className="text-slate-400 mx-2">·</span>
           <span className="text-slate-500">{tarih}</span>
+          <span className="text-slate-400 mx-2">·</span>
+          <span className={cn(
+            'px-1.5 py-0.5 rounded text-[11px] font-medium',
+            item.sinifId ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500',
+          )}>
+            {item.sinifId ? `Sınıf: ${item.sinifAdi}` : 'Sınıfsız'}
+          </span>
         </div>
 
         {/* Sağ taraf butonlar: Onayla (if not onaylandi) + Sil */}
@@ -1394,6 +1459,34 @@ function GecmisKart({
       {/* Açılır detay paneli */}
       {acik && (
         <div className="border-t border-slate-100 px-4 py-4 bg-slate-50">
+          {/* Sınıfa ata/değiştir */}
+          <div className="flex items-center gap-2 mb-4 text-xs" onClick={e => e.stopPropagation()}>
+            <label className="text-slate-500 font-medium shrink-0">Sınıfa ata:</label>
+            <select
+              value={sinifSeciliId}
+              onChange={e => setSinifSeciliId(e.target.value ? Number(e.target.value) : '')}
+              className="flex-1 max-w-[220px] px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">Sınıfsız (Herkese Açık)</option>
+              {siniflar.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => sinifAtaMutation.mutate(sinifSeciliId)}
+              disabled={sinifAtaMutation.isPending || sinifSeciliId === (item.sinifId ?? '')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40"
+            >
+              {sinifAtaMutation.isPending
+                ? <><Loader2 className="size-3 animate-spin" />Kaydediliyor...</>
+                : sinifAtaMutation.isSuccess && sinifAtaMutation.variables === sinifSeciliId
+                  ? <><Check className="size-3" />Atandı</>
+                  : 'Uygula'}
+            </button>
+          </div>
+          {sinifAtaHata && (
+            <p className="text-xs text-red-600 mb-4 -mt-2">{sinifAtaHata}</p>
+          )}
           {detayYukleniyor ? (
             <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
               <Loader2 className="size-4 animate-spin" />
