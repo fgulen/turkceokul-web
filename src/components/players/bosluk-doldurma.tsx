@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
@@ -9,11 +10,36 @@ import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { TurkceKlavye, insertIntoInput, sadelestir, stripTurkce } from './turkce-klavye';
+import { PlayingBars } from './ui';
 
 const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
+const BLANK_TEST_RE = /\.{3,}|…|\[___\]|_{3,}/;
 
 function splitByBlanks(text: string): string[] {
   return text.split(BLANK_RE);
+}
+
+type TableCell = { html: string; isBlank: boolean };
+
+// İçerik bir <table> ise (ör. Ülke/Milliyet/Dil grid'i) hücreleri satır/sütun
+// yapısıyla parse et — ham HTML'i BLANK_RE ile bölmek tag'leri ortadan kesip
+// tabloyu bozardı (sanitizeHtml de zaten table/tr/td'yi allowlist dışı bırakıyor).
+function parseTableCells(html: string): TableCell[][] | null {
+  if (typeof window === 'undefined' || !/<table/i.test(html)) return null;
+  const table = new DOMParser().parseFromString(html, 'text/html').querySelector('table');
+  if (!table) return null;
+  const rows: TableCell[][] = [];
+  table.querySelectorAll('tr').forEach((tr) => {
+    const cells: TableCell[] = [];
+    tr.querySelectorAll('td, th').forEach((cell) => {
+      cells.push({
+        html: cell.innerHTML ?? '',
+        isBlank: BLANK_TEST_RE.test((cell.textContent ?? '').trim()),
+      });
+    });
+    if (cells.length) rows.push(cells);
+  });
+  return rows.length ? rows : null;
 }
 
 function getCorrectAnswers(d: EtkinlikDetay): string[] {
@@ -39,16 +65,44 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
   const [isAllPerfect, setIsAllPerfect] = useState(false);
   const [isAllCorrect, setIsAllCorrect] = useState(false);
   const [isAnyYakin, setIsAnyYakin] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioNeedsTap, setAudioNeedsTap] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const current = detaylar[index];
   const sentence = current.description ?? '';
 
   const parts = useMemo(() => splitByBlanks(sentence), [sentence]);
-  const blankCount = Math.max(1, parts.length - 1);
+  const tableRows = useMemo(() => parseTableCells(sentence), [sentence]);
+  const blankCount = Math.max(
+    1,
+    tableRows ? tableRows.flat().filter((c) => c.isBlank).length : parts.length - 1,
+  );
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
   const imgUrl = toMediaUrl(current.resimLink);
+  const sesUrl = toMediaUrl(current.sesLink);
+
+  function stopAudio() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setAudioPlaying(false);
+  }
+
+  function playAudio() {
+    if (!sesUrl) return;
+    stopAudio();
+    setAudioNeedsTap(false);
+    const a = new Audio(sesUrl);
+    audioRef.current = a;
+    setAudioPlaying(true);
+    a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
+    a.onerror = () => setAudioPlaying(false);
+    a.play().catch(() => setAudioPlaying(false));
+  }
 
   useEffect(() => {
     setValues(Array(blankCount).fill(''));
@@ -64,8 +118,58 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
     }, 150);
   }, [index, blankCount]);
 
+  // Soru değişince önceki sesi durdur, varsa yeni sesi otomatik çal
+  useEffect(() => {
+    stopAudio();
+    setAudioNeedsTap(false);
+    const url = toMediaUrl(detaylar[index]?.sesLink);
+    if (!url) return;
+    const t = setTimeout(() => {
+      const a = new Audio(url);
+      audioRef.current = a;
+      setAudioPlaying(true);
+      a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
+      a.onerror = () => setAudioPlaying(false);
+      a.play().catch(() => { setAudioPlaying(false); setAudioNeedsTap(true); });
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  // Unmount'ta çalan sesi durdur — aksi halde player'dan çıkınca ses arka planda devam eder.
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
   const safe = values.length === blankCount ? values : Array(blankCount).fill('');
   const allFilled = safe.every((v) => v.trim().length > 0);
+
+  function renderBlank(i: number) {
+    const val = safe[i];
+    const correct = submitted && sadelestir(val) === sadelestir(correctAnswers[i] ?? '');
+    const wrong = submitted && !correct;
+    const blankMinW = `${Math.max(3, (correctAnswers[i] ?? '___').length * 0.75)}em`;
+    return (
+      <span
+        key={i}
+        style={{ minWidth: blankMinW }}
+        className={cn(
+          'inline-block mx-1 px-2 py-0.5 border-b-2 text-center align-middle rounded-sm transition-all',
+          !val && 'border-primary/40 border-dashed text-transparent',
+          val && !submitted && 'border-primary text-primary font-bold',
+          correct && 'border-[--correct] text-[--correct] font-bold',
+          wrong && 'border-destructive text-destructive font-bold',
+        )}
+      >
+        {val || ' '}
+      </span>
+    );
+  }
 
   const insertChar = useCallback((ch: string) => {
     if (focusedIdx === null) return;
@@ -140,12 +244,52 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
       />
 
       {imgUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imgUrl}
-          alt=""
-          className="h-56 w-auto max-w-full mx-auto object-contain rounded-md mb-4 block"
-        />
+        <div className="relative w-fit max-w-full mx-auto mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgUrl}
+            alt=""
+            className="h-56 w-auto max-w-full object-contain rounded-md block"
+          />
+          {sesUrl && (
+            <div className="absolute bottom-2 right-2">
+              {audioNeedsTap && !audioPlaying && (
+                <span className="absolute inset-0 rounded-full bg-white/40 animate-ping" />
+              )}
+              <button
+                type="button"
+                onClick={audioPlaying ? stopAudio : playAudio}
+                className="relative size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
+                aria-label="Sesi dinle"
+              >
+                {audioPlaying
+                  ? <PlayingBars size="sm" color="bg-white" />
+                  : <Volume2 className="size-4 text-white" />
+                }
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {sesUrl && !imgUrl && (
+        <div className="flex items-center justify-center mb-4">
+          <span className="relative inline-flex">
+            {audioNeedsTap && !audioPlaying && (
+              <span className="absolute inset-0 rounded-lg bg-primary/30 animate-ping" />
+            )}
+            <button
+              type="button"
+              onClick={audioPlaying ? stopAudio : playAudio}
+              className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+            >
+              {audioPlaying
+                ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
+                : <><Volume2 className="size-3.5" /><span>Sesi Dinle</span></>
+              }
+            </button>
+          </span>
+        </div>
       )}
 
       {/* Cümle önizleme */}
@@ -155,33 +299,37 @@ export function BoslukDoldurmaPlayer({ etkinlik, onComplete, hideProgress }: Pla
         animate={{ opacity: 1, y: 0 }}
         className="bg-card border border-border rounded-2xl p-6 mb-5"
       >
-        <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
-          {parts.map((part, i) => (
-            <span key={i}>
-              <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
-              {i < blankCount && (() => {
-                const val = safe[i];
-                const correct = submitted && sadelestir(val) === sadelestir(correctAnswers[i] ?? '');
-                const wrong = submitted && !correct;
-                const blankMinW = `${Math.max(3, (correctAnswers[i] ?? '___').length * 0.75)}em`;
-                return (
-                  <span
-                    style={{ minWidth: blankMinW }}
-                    className={cn(
-                      'inline-block mx-1 px-2 py-0.5 border-b-2 text-center align-middle rounded-sm transition-all',
-                      !val && 'border-primary/40 border-dashed text-transparent',
-                      val && !submitted && 'border-primary text-primary font-bold',
-                      correct && 'border-[--correct] text-[--correct] font-bold',
-                      wrong && 'border-destructive text-destructive font-bold',
-                    )}
-                  >
-                    {val || ' '}
-                  </span>
-                );
-              })()}
-            </span>
-          ))}
-        </p>
+        {tableRows ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-base border-collapse">
+              <tbody>
+                {(() => {
+                  let blankIdx = 0;
+                  return tableRows.map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="border border-border px-3 py-2 text-center align-middle">
+                          {cell.isBlank
+                            ? renderBlank(blankIdx++)
+                            : <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(cell.html) }} />}
+                        </td>
+                      ))}
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
+            {parts.map((part, i) => (
+              <span key={i}>
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
+                {i < blankCount && renderBlank(i)}
+              </span>
+            ))}
+          </p>
+        )}
       </motion.div>
 
       {/* Geri bildirim */}

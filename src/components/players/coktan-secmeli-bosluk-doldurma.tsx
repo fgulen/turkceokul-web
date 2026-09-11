@@ -1,13 +1,15 @@
 ﻿'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
+import { PlayingBars } from './ui';
 
 // "...", "…", "[___]", "___" hepsini blank olarak tanı
 const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
@@ -40,6 +42,9 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
   const [submitted, setSubmitted] = useState(false);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioNeedsTap, setAudioNeedsTap] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const current = detaylar[index];
   const sentence = current.description ?? '';
@@ -49,6 +54,27 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
 
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
   const imgUrl = toMediaUrl(current.resimLink);
+  const sesUrl = toMediaUrl(current.sesLink);
+
+  function stopAudio() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setAudioPlaying(false);
+  }
+
+  function playAudio() {
+    if (!sesUrl) return;
+    stopAudio();
+    setAudioNeedsTap(false);
+    const a = new Audio(sesUrl);
+    audioRef.current = a;
+    setAudioPlaying(true);
+    a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
+    a.onerror = () => setAudioPlaying(false);
+    a.play().catch(() => setAudioPlaying(false));
+  }
 
   // Seçenekleri her soru değişiminde yeniden karıştır
   const allOptions = useMemo(() => {
@@ -62,6 +88,34 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
     setSelIdx(Array<number | null>(blankCount).fill(null));
     setSubmitted(false);
   }, [index, blankCount]);
+
+  // Soru değişince önceki sesi durdur, varsa yeni sesi otomatik çal
+  useEffect(() => {
+    stopAudio();
+    setAudioNeedsTap(false);
+    const url = toMediaUrl(detaylar[index]?.sesLink);
+    if (!url) return;
+    const t = setTimeout(() => {
+      const a = new Audio(url);
+      audioRef.current = a;
+      setAudioPlaying(true);
+      a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
+      a.onerror = () => setAudioPlaying(false);
+      a.play().catch(() => { setAudioPlaying(false); setAudioNeedsTap(true); });
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  // Unmount'ta çalan sesi durdur — aksi halde player'dan çıkınca ses arka planda devam eder.
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
 
   // selIdx uzunluğu henüz güncellenmemişse güvenli fallback
   const safe = selIdx.length === blankCount ? selIdx : Array<number | null>(blankCount).fill(null);
@@ -128,12 +182,52 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
       />
 
       {imgUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imgUrl}
-          alt=""
-          className="h-56 w-auto max-w-full mx-auto object-contain rounded-md mb-4 block"
-        />
+        <div className="relative w-fit max-w-full mx-auto mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgUrl}
+            alt=""
+            className="h-56 w-auto max-w-full object-contain rounded-md block"
+          />
+          {sesUrl && (
+            <div className="absolute bottom-2 right-2">
+              {audioNeedsTap && !audioPlaying && (
+                <span className="absolute inset-0 rounded-full bg-white/40 animate-ping" />
+              )}
+              <button
+                type="button"
+                onClick={audioPlaying ? stopAudio : playAudio}
+                className="relative size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
+                aria-label="Sesi dinle"
+              >
+                {audioPlaying
+                  ? <PlayingBars size="sm" color="bg-white" />
+                  : <Volume2 className="size-4 text-white" />
+                }
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {sesUrl && !imgUrl && (
+        <div className="flex items-center justify-center mb-4">
+          <span className="relative inline-flex">
+            {audioNeedsTap && !audioPlaying && (
+              <span className="absolute inset-0 rounded-lg bg-primary/30 animate-ping" />
+            )}
+            <button
+              type="button"
+              onClick={audioPlaying ? stopAudio : playAudio}
+              className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+            >
+              {audioPlaying
+                ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
+                : <><Volume2 className="size-3.5" /><span>Sesi Dinle</span></>
+              }
+            </button>
+          </span>
+        </div>
       )}
 
       {/* Cümle ve boşluk slotları */}
