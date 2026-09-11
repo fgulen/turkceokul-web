@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
@@ -15,6 +15,7 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
   const { play } = useGameSound();
 
   const [index, setIndex] = useState(0);
+  const [renderedIndex, setRenderedIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   // arranged: shuffled-array indeksleri, yerleştirme sırasına göre
   const [arranged, setArranged] = useState<number[]>([]);
@@ -33,16 +34,25 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  useEffect(() => {
+  // `arranged`/`submitted` still hold the previous question's values on the
+  // render where `index` just changed (the reset below only takes effect
+  // next render) — derive this render's values directly so we never index
+  // stale positions into the new, possibly shorter `shuffled` array.
+  const isStale = index !== renderedIndex;
+  const arrangedForRender = isStale ? [] : arranged;
+  const submittedForRender = isStale ? false : submitted;
+
+  if (isStale) {
+    setRenderedIndex(index);
     setArranged([]);
     setSubmitted(false);
-  }, [index]);
+  }
 
-  const usedSet = new Set(arranged);
-  const allPlaced = arranged.length === shuffled.length;
+  const usedSet = new Set(arrangedForRender);
+  const allPlaced = arrangedForRender.length === shuffled.length;
 
   function addWord(shuffledIdx: number) {
-    if (submitted || usedSet.has(shuffledIdx)) return;
+    if (submittedForRender || usedSet.has(shuffledIdx)) return;
     setArranged((prev) => [...prev, shuffledIdx]);
   }
 
@@ -112,16 +122,16 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
         animate={{ opacity: 1, y: 0 }}
         className="bg-card border-2 border-dashed border-border rounded-2xl p-3 mb-4 min-h-[80px] flex flex-col gap-2"
       >
-        {arranged.length === 0 ? (
+        {arrangedForRender.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-3 select-none">
             Aşağıdan cümle seç…
           </p>
         ) : (
           <AnimatePresence mode="popLayout">
-            {arranged.map((shuffledIdx, pos) => {
+            {arrangedForRender.map((shuffledIdx, pos) => {
               const word = shuffled[shuffledIdx].word;
-              const isCorrectPos = submitted && word === correctWords[pos];
-              const isWrongPos = submitted && !isCorrectPos;
+              const isCorrectPos = submittedForRender && word === correctWords[pos];
+              const isWrongPos = submittedForRender && !isCorrectPos;
               return (
                 <motion.div
                   key={`arr-${shuffledIdx}`}
@@ -132,7 +142,7 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
                   transition={{ duration: 0.15 }}
                   className={cn(
                     'flex items-center gap-1 rounded-xl border-2 font-medium text-sm leading-snug transition-all',
-                    !submitted && 'bg-primary/10 border-primary text-primary',
+                    !submittedForRender && 'bg-primary/10 border-primary text-primary',
                     isCorrectPos &&
                       'bg-[--correct]/15 border-[--correct] text-[--correct]',
                     isWrongPos &&
@@ -142,17 +152,17 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
                   <button
                     type="button"
                     onClick={() => removeWord(pos)}
-                    disabled={submitted}
+                    disabled={submittedForRender}
                     className={cn(
                       'flex-1 min-w-0 text-left px-4 py-3',
-                      !submitted && 'cursor-pointer hover:bg-primary/20 active:scale-[0.99]',
-                      submitted && 'cursor-default',
+                      !submittedForRender && 'cursor-pointer hover:bg-primary/20 active:scale-[0.99]',
+                      submittedForRender && 'cursor-default',
                     )}
                   >
                     <span className="opacity-40 text-xs mr-2">{pos + 1}.</span>
                     {word}
                   </button>
-                  {!submitted && (
+                  {!submittedForRender && (
                     <>
                       <button
                         type="button"
@@ -166,7 +176,7 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
                       <button
                         type="button"
                         onClick={() => moveWord(pos, 1)}
-                        disabled={pos === arranged.length - 1}
+                        disabled={pos === arrangedForRender.length - 1}
                         aria-label="Aşağı taşı"
                         className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg hover:bg-primary/20 disabled:opacity-30 disabled:hover:bg-transparent mr-1"
                       >
@@ -196,12 +206,12 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
                 transition={{ duration: 0.15 }}
                 type="button"
                 onClick={() => addWord(shuffledIdx)}
-                disabled={submitted}
+                disabled={submittedForRender}
                 className={cn(
                   'w-full text-left px-4 py-3 rounded-xl border-2 border-border bg-card font-medium text-sm leading-snug transition-all',
-                  !submitted &&
+                  !submittedForRender &&
                     'hover:border-primary hover:bg-primary/5 active:scale-[0.99]',
-                  submitted && 'opacity-40 cursor-not-allowed',
+                  submittedForRender && 'opacity-40 cursor-not-allowed',
                 )}
               >
                 {item.word}
@@ -214,10 +224,10 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!allPlaced || submitted}
+        disabled={!allPlaced || submittedForRender}
         className={cn(
           'w-full py-4 rounded-2xl font-semibold transition-all',
-          allPlaced && !submitted
+          allPlaced && !submittedForRender
             ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]'
             : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60',
         )}

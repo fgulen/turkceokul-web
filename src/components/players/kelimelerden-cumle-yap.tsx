@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { type PlayerProps, type Cevap } from '@/types/etkinlik';
@@ -15,6 +15,7 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
   const { play } = useGameSound();
 
   const [index, setIndex] = useState(0);
+  const [renderedIndex, setRenderedIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
   const [arranged, setArranged] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -34,16 +35,25 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
     [index],
   );
 
-  useEffect(() => {
+  // `arranged`/`submitted` still hold the previous question's values on the
+  // render where `index` just changed (the reset below only takes effect
+  // next render) — derive this render's values directly so we never index
+  // stale positions into the new, possibly shorter `shuffled` array.
+  const isStale = index !== renderedIndex;
+  const arrangedForRender = isStale ? [] : arranged;
+  const submittedForRender = isStale ? false : submitted;
+
+  if (isStale) {
+    setRenderedIndex(index);
     setArranged([]);
     setSubmitted(false);
-  }, [index]);
+  }
 
-  const usedSet = new Set(arranged);
-  const allPlaced = arranged.length === shuffled.length;
+  const usedSet = new Set(arrangedForRender);
+  const allPlaced = arrangedForRender.length === shuffled.length;
 
   function addWord(shuffledIdx: number) {
-    if (submitted || usedSet.has(shuffledIdx)) return;
+    if (submittedForRender || usedSet.has(shuffledIdx)) return;
     setArranged((prev) => [...prev, shuffledIdx]);
   }
 
@@ -102,16 +112,16 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
         animate={{ opacity: 1, y: 0 }}
         className="bg-card border-2 border-dashed border-border rounded-2xl p-3 mb-4 min-h-[56px] flex flex-wrap gap-2 content-start"
       >
-        {arranged.length === 0 ? (
+        {arrangedForRender.length === 0 ? (
           <p className="text-muted-foreground text-sm select-none py-1 w-full text-center">
             Kelime seç…
           </p>
         ) : (
           <AnimatePresence mode="popLayout">
-            {arranged.map((shuffledIdx, pos) => {
+            {arrangedForRender.map((shuffledIdx, pos) => {
               const word = shuffled[shuffledIdx].word;
-              const isCorrectPos = submitted && word === correctWords[pos];
-              const isWrongPos = submitted && !isCorrectPos;
+              const isCorrectPos = submittedForRender && word === correctWords[pos];
+              const isWrongPos = submittedForRender && !isCorrectPos;
               return (
                 <motion.button
                   key={`arr-${shuffledIdx}`}
@@ -122,10 +132,10 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
                   transition={{ duration: 0.12 }}
                   type="button"
                   onClick={() => removeWord(pos)}
-                  disabled={submitted}
+                  disabled={submittedForRender}
                   className={cn(
                     'px-3 py-2 rounded-xl border-2 font-medium text-sm transition-all min-h-[44px]',
-                    !submitted &&
+                    !submittedForRender &&
                       'bg-primary/10 border-primary text-primary cursor-pointer hover:bg-primary/20',
                     isCorrectPos &&
                       'bg-[--correct]/15 border-[--correct] text-[--correct] cursor-default',
@@ -156,11 +166,11 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
                 transition={{ duration: 0.12 }}
                 type="button"
                 onClick={() => addWord(shuffledIdx)}
-                disabled={submitted}
+                disabled={submittedForRender}
                 className={cn(
                   'px-3 py-2 rounded-xl border-2 border-border bg-card font-medium text-sm transition-all min-h-[44px]',
-                  !submitted && 'hover:border-primary hover:bg-primary/5 active:scale-[0.98]',
-                  submitted && 'opacity-40 cursor-not-allowed',
+                  !submittedForRender && 'hover:border-primary hover:bg-primary/5 active:scale-[0.98]',
+                  submittedForRender && 'opacity-40 cursor-not-allowed',
                 )}
               >
                 {item.word}
@@ -173,10 +183,10 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!allPlaced || submitted}
+        disabled={!allPlaced || submittedForRender}
         className={cn(
           'w-full py-4 rounded-2xl font-semibold transition-all',
-          allPlaced && !submitted
+          allPlaced && !submittedForRender
             ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]'
             : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60',
         )}
