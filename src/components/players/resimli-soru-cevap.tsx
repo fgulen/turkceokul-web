@@ -12,6 +12,16 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { TurkceKlavye, insertIntoInput, sadelestir } from './turkce-klavye';
 import { splitByBlanks, countBlanks } from './blank-utils';
 
+// writeCount=1/blankCount=0 satırlarında (278 satır) cevap tek kelime değil tam cümle
+// ("Sema resim kursuna gidecek.") — sadelestir() yalnızca trim+lowercase yapıyor,
+// cümle sonu noktalamasını (. ! ?) atmıyor. Öğrenci noktayı unutursa/eklerse (ikisi de
+// dilbilgisel olarak doğru) yanlış sayılırdı. Inline tek-kelime boşluklarda (description
+// içindeki "...." her zaman kendi sonunda ayrı bir "." taşıyor, bkz. DB) bu noktalama
+// zaten yok, o yüzden ek strip zararsız.
+function sadelestirCumle(s: string) {
+  return sadelestir(s).replace(/[.!?]+$/, '').trim();
+}
+
 export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
   const initKalp = useAuthStore((s) => s.user?.kalp ?? 5);
@@ -30,18 +40,18 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
   const sentence = current.description ?? '';
   const textParts = useMemo(() => splitByBlanks(sentence), [sentence]);
   const blankCount = countBlanks(sentence, null);
-  // SoruCevap içeriğinde doğru cevap Kelime1..10'da değil, Cevap alanında tutuluyor
-  // (DB'de doğrulandı: 603 satırın ~98'i — Kelime1 yalnızca birkaç legacy satırda dolu).
-  // getKelimeler() boş dönünce kelime/kontrol hedefi hiç bulunamıyor, cevap asla
-  // doğrulanamıyordu. Tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli
-  // tek cevaplar var ama virgülle ayrılan çoklu-boşluk deseni yok) — bu yüzden Cevap
-  // bölünmeden tek elemanlı dizi olarak kullanılıyor.
+  // SoruCevap içeriğinde doğru cevap Kelime1..10'da değil, çoğunlukla Cevap alanında
+  // tutuluyor (DB'de doğrulandı — Kelime1 yalnızca birkaç legacy/çok-boşluklu satırda
+  // dolu, o satırlarda öncelik onda kalıyor). getKelimeler() boş dönünce kelime/kontrol
+  // hedefi hiç bulunamıyor, cevap asla doğrulanamıyordu. Tek parça (DB'de doğrulandı:
+  // "üçü çeyrek geçe" gibi çok kelimeli tek cevaplar var ama virgülle ayrılan
+  // çoklu-boşluk deseni yok) — bu yüzden Cevap bölünmeden tek elemanlı dizi olarak
+  // kullanılıyor.
   const kelimeAnswers = useMemo(() => getKelimeler(current), [current]);
-  const answers = useMemo(() => {
-    if (kelimeAnswers.length > 0) return kelimeAnswers;
-    if (current.cevap?.trim()) return [current.cevap.trim()];
-    return kelimeAnswers;
-  }, [kelimeAnswers, current.cevap]);
+  const answers = useMemo(
+    () => (kelimeAnswers.length > 0 ? kelimeAnswers : current.cevap?.trim() ? [current.cevap.trim()] : []),
+    [kelimeAnswers, current.cevap],
+  );
 
   // Description'da "...." işareti olmayan satırlarda (278 satır — tüm cümleyi başka
   // zamanda/şekilde yeniden yazma görevi, örn. "gidiyor" → "gidecek") blankCount=0
@@ -58,7 +68,8 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
     setSubmitted(false);
     setFocusedIdx(null);
     inputRefs.current = Array(writeCount).fill(null);
-    setTimeout(() => inputRefs.current[0]?.focus(), 150);
+    const t = setTimeout(() => inputRefs.current[0]?.focus(), 150);
+    return () => clearTimeout(t);
   }, [current.id, writeCount]);
 
   const safe = values.length === writeCount ? values : Array(writeCount).fill('');
@@ -78,7 +89,7 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   function renderBlank(i: number) {
     const val = safe[i];
-    const correct = submitted && sadelestir(val) === sadelestir(answers[i] ?? '');
+    const correct = submitted && sadelestirCumle(val) === sadelestirCumle(answers[i] ?? '');
     const wrong = submitted && !correct;
     const blankMinW = `${Math.max(3, (answers[i] ?? '___').length * 0.75)}em`;
     return (
@@ -103,7 +114,7 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
     if (!allFilled || submitted) return;
     setSubmitted(true);
 
-    const isCorrect = safe.every((w, i) => sadelestir(w) === sadelestir(answers[i] ?? ''));
+    const isCorrect = safe.every((w, i) => sadelestirCumle(w) === sadelestirCumle(answers[i] ?? ''));
     play(isCorrect ? 'correct' : 'wrong');
     let newKalp = localKalp;
     if (isCorrect) {
@@ -202,9 +213,12 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
                 value={val}
                 disabled={submitted}
                 onChange={(e) => {
-                  const next = [...safe];
-                  next[i] = e.target.value;
-                  setValues(next);
+                  const val = e.target.value;
+                  setValues((prev) => {
+                    const next = prev.length === writeCount ? [...prev] : Array(writeCount).fill('');
+                    next[i] = val;
+                    return next;
+                  });
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && i < writeCount - 1) {
