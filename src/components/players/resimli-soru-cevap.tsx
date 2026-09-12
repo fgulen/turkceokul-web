@@ -28,9 +28,20 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [localKalp, setLocalKalp] = useState(initKalp);
 
   const current = detaylar[index];
-  const answers = useMemo(() => getKelimeler(current), [current]);
   const textParts = useMemo(() => splitBlanks(current.description ?? ''), [current]);
   const blankCount = textParts.length - 1;
+  // SoruCevap içeriğinde doğru cevap Kelime1..10'da değil, Cevap alanında tutuluyor
+  // (325/327 satır — Kelime1 yalnızca 2 legacy satırda dolu). getKelimeler() boş
+  // dönünce kelime bankası hiç dolmuyor, boşluk asla doldurulamıyordu. Blank her
+  // zaman tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli tek
+  // cevaplar var ama virgülle ayrılan çoklu-boşluk deseni yok) — bu yüzden Cevap
+  // bölünmeden tek elemanlı dizi olarak kullanılıyor.
+  const kelimeAnswers = useMemo(() => getKelimeler(current), [current]);
+  const answers = useMemo(() => {
+    if (kelimeAnswers.length > 0) return kelimeAnswers;
+    if (blankCount > 0 && current.cevap?.trim()) return [current.cevap.trim()];
+    return kelimeAnswers;
+  }, [kelimeAnswers, blankCount, current.cevap]);
 
   const shuffledChips = useMemo(
     () => answers.map((w, i) => ({ w, origIdx: i })).sort(() => Math.random() - 0.5),
