@@ -57,12 +57,12 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   function removeWord(pos: number) {
-    if (submitted) return;
+    if (submittedForRender) return;
     setArranged((prev) => prev.filter((_, i) => i !== pos));
   }
 
   function moveWord(pos: number, direction: -1 | 1) {
-    if (submitted) return;
+    if (submittedForRender) return;
     const target = pos + direction;
     setArranged((prev) => {
       if (target < 0 || target >= prev.length) return prev;
@@ -73,10 +73,10 @@ export function KelimeleriSiralaPlayer({ etkinlik, onComplete }: PlayerProps) {
   }
 
   function handleSubmit() {
-    if (!allPlaced || submitted) return;
+    if (!allPlaced || submittedForRender) return;
     setSubmitted(true);
 
-    const studentWords = arranged.map((i) => shuffled[i].word);
+    const studentWords = arrangedForRender.map((i) => shuffled[i].word);
     const answer = studentWords.join(',');
     const isCorrect =
       answer.toLowerCase().trim() === correctWords.join(',').toLowerCase().trim();

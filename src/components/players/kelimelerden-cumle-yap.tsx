@@ -58,15 +58,15 @@ export function KelimelerdenCumleYapPlayer({ etkinlik, onComplete }: PlayerProps
   }
 
   function removeWord(pos: number) {
-    if (submitted) return;
+    if (submittedForRender) return;
     setArranged((prev) => prev.filter((_, i) => i !== pos));
   }
 
   function handleSubmit() {
-    if (!allPlaced || submitted) return;
+    if (!allPlaced || submittedForRender) return;
     setSubmitted(true);
 
-    const studentWords = arranged.map((i) => shuffled[i].word);
+    const studentWords = arrangedForRender.map((i) => shuffled[i].word);
     const answer = studentWords.join(' ');
     const isCorrect =
       answer.toLowerCase().trim() === correctWords.join(' ').toLowerCase().trim();

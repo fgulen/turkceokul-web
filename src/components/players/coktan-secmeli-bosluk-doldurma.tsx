@@ -1,22 +1,16 @@
-﻿'use client';
+'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2 } from 'lucide-react';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { type PlayerProps, type Cevap, type EtkinlikDetay } from '@/types/etkinlik';
 import { useAuthStore } from '@/stores/auth';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { GameHUD } from '@/components/game/game-hud';
-import { PlayingBars } from './ui';
-
-// "...", "…", "[___]", "___" hepsini blank olarak tanı
-const BLANK_RE = /\.{3,}|…|\[___\]|_{3,}/g;
-
-function splitByBlanks(text: string): string[] {
-  return text.split(BLANK_RE);
-}
+import { AudioPlayButton } from './ui';
+import { splitByBlanks, parseTableCells, countBlanks, type TableCell } from './blank-utils';
 
 // CoktanSecmeliBoslukDoldurma: kelime1-5 = doğru cevaplar (sırayla), kelime6-10 = çeldirici
 function getCorrectAnswers(d: EtkinlikDetay): string[] {
@@ -42,39 +36,18 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
   const [submitted, setSubmitted] = useState(false);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
-  const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audioNeedsTap, setAudioNeedsTap] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { playing: audioPlaying, needsTap: audioNeedsTap, play: playAudio, reset: resetAudio } = usePlayerAudio();
 
   const current = detaylar[index];
   const sentence = current.description ?? '';
 
   const parts = useMemo(() => splitByBlanks(sentence), [sentence]);
-  const blankCount = parts.length - 1;
+  const tableRows = useMemo(() => parseTableCells(sentence), [sentence]);
+  const blankCount = countBlanks(sentence, tableRows);
 
   const correctAnswers = useMemo(() => getCorrectAnswers(current), [current]);
   const imgUrl = toMediaUrl(current.resimLink);
   const sesUrl = toMediaUrl(current.sesLink);
-
-  function stopAudio() {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setAudioPlaying(false);
-  }
-
-  function playAudio() {
-    if (!sesUrl) return;
-    stopAudio();
-    setAudioNeedsTap(false);
-    const a = new Audio(sesUrl);
-    audioRef.current = a;
-    setAudioPlaying(true);
-    a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
-    a.onerror = () => setAudioPlaying(false);
-    a.play().catch(() => setAudioPlaying(false));
-  }
 
   // Seçenekleri her soru değişiminde yeniden karıştır
   const allOptions = useMemo(() => {
@@ -91,37 +64,49 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
 
   // Soru değişince önceki sesi durdur, varsa yeni sesi otomatik çal
   useEffect(() => {
-    stopAudio();
-    setAudioNeedsTap(false);
+    resetAudio();
     const url = toMediaUrl(detaylar[index]?.sesLink);
     if (!url) return;
-    const t = setTimeout(() => {
-      const a = new Audio(url);
-      audioRef.current = a;
-      setAudioPlaying(true);
-      a.onended = () => { setAudioPlaying(false); setAudioNeedsTap(true); };
-      a.onerror = () => setAudioPlaying(false);
-      a.play().catch(() => { setAudioPlaying(false); setAudioNeedsTap(true); });
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
-  // Unmount'ta çalan sesi durdur — aksi halde player'dan çıkınca ses arka planda devam eder.
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, []);
+    const t = setTimeout(() => playAudio(url), 400);
+    return () => { clearTimeout(t); resetAudio(); };
+  }, [index, detaylar, playAudio, resetAudio]);
 
   // selIdx uzunluğu henüz güncellenmemişse güvenli fallback
   const safe = selIdx.length === blankCount ? selIdx : Array<number | null>(blankCount).fill(null);
 
   const usedSet = new Set(safe.filter((v): v is number => v !== null));
   const allFilled = blankCount > 0 && safe.every((v) => v !== null);
+
+  function renderBlank(i: number) {
+    const optIdx = safe[i];
+    const filled = optIdx !== null;
+    const word = filled ? allOptions[optIdx] : null;
+    const isCorrectBlank = submitted && filled &&
+      word!.toLowerCase().trim() === (correctAnswers[i] ?? '').toLowerCase().trim();
+    const isWrongBlank = submitted && filled && !isCorrectBlank;
+    // Boşluk genişliği doğru cevap uzunluğuna göre — doldurunca kayma olmaz
+    const blankMinW = `${Math.max(3, (correctAnswers[i] ?? '___').length * 0.75)}em`;
+
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => handleBlankClick(i)}
+        disabled={!filled || submitted}
+        aria-label={filled ? undefined : `Boşluk ${i + 1}, doldurulmadı`}
+        style={{ minWidth: blankMinW }}
+        className={cn(
+          'inline-block mx-1.5 px-2 py-0.5 rounded-lg border-b-2 align-middle text-center transition-all',
+          !filled && 'border-primary/50 border-dashed text-transparent select-none cursor-default',
+          filled && !submitted && 'bg-primary/10 border-primary text-primary font-bold cursor-pointer hover:bg-primary/20',
+          isCorrectBlank && 'bg-[--correct]/15 border-[--correct] text-[--correct] font-bold cursor-default',
+          isWrongBlank && 'bg-destructive/10 border-destructive text-destructive font-bold cursor-default',
+        )}
+      >
+        {word ?? ' '}
+      </button>
+    );
+  }
 
   function handleOptionClick(optIdx: number) {
     if (submitted || usedSet.has(optIdx)) return;
@@ -182,51 +167,17 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
       />
 
       {imgUrl && (
-        <div className="relative w-fit max-w-full mx-auto mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imgUrl}
-            alt=""
-            className="h-56 w-auto max-w-full object-contain rounded-md block"
-          />
-          {sesUrl && (
-            <div className="absolute bottom-2 right-2">
-              {audioNeedsTap && !audioPlaying && (
-                <span className="absolute inset-0 rounded-full bg-white/40 animate-ping" />
-              )}
-              <button
-                type="button"
-                onClick={audioPlaying ? stopAudio : playAudio}
-                className="relative size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
-                aria-label="Sesi dinle"
-              >
-                {audioPlaying
-                  ? <PlayingBars size="sm" color="bg-white" />
-                  : <Volume2 className="size-4 text-white" />
-                }
-              </button>
-            </div>
-          )}
-        </div>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgUrl}
+          alt=""
+          className="h-56 w-auto max-w-full mx-auto object-contain rounded-md mb-4 block"
+        />
       )}
 
-      {sesUrl && !imgUrl && (
+      {sesUrl && (
         <div className="flex items-center justify-center mb-4">
-          <span className="relative inline-flex">
-            {audioNeedsTap && !audioPlaying && (
-              <span className="absolute inset-0 rounded-lg bg-primary/30 animate-ping" />
-            )}
-            <button
-              type="button"
-              onClick={audioPlaying ? stopAudio : playAudio}
-              className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-            >
-              {audioPlaying
-                ? <><PlayingBars size="sm" color="bg-primary" /><span>Dinleniyor…</span></>
-                : <><Volume2 className="size-3.5" /><span>Sesi Dinle</span></>
-              }
-            </button>
-          </span>
+          <AudioPlayButton playing={audioPlaying} pulse={audioNeedsTap} onPlay={() => playAudio(sesUrl)} />
         </div>
       )}
 
@@ -237,43 +188,37 @@ export function CoktanSecmeliBoslukDoldurmaPlayer({ etkinlik, onComplete }: Play
         animate={{ opacity: 1, y: 0 }}
         className="bg-card border border-border rounded-2xl p-6 mb-6"
       >
-        <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
-          {parts.map((part, i) => (
-            <span key={i}>
-              <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
-              {i < blankCount && (() => {
-                const optIdx = safe[i];
-                const filled = optIdx !== null;
-                const word = filled ? allOptions[optIdx] : null;
-                const isCorrectBlank = submitted && filled &&
-                  word!.toLowerCase().trim() === (correctAnswers[i] ?? '').toLowerCase().trim();
-                const isWrongBlank = submitted && filled && !isCorrectBlank;
-                // Boşluk genişliği doğru cevap uzunluğuna göre — doldurunca kayma olmaz
-                const blankMinW = `${Math.max(3, (correctAnswers[i] ?? '___').length * 0.75)}em`;
-
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleBlankClick(i)}
-                    disabled={!filled || submitted}
-                    aria-label={filled ? undefined : `Boşluk ${i + 1}, doldurulmadı`}
-                    style={{ minWidth: blankMinW }}
-                    className={cn(
-                      'inline-block mx-1.5 px-2 py-0.5 rounded-lg border-b-2 align-middle text-center transition-all',
-                      !filled && 'border-primary/50 border-dashed text-transparent select-none cursor-default',
-                      filled && !submitted && 'bg-primary/10 border-primary text-primary font-bold cursor-pointer hover:bg-primary/20',
-                      isCorrectBlank && 'bg-[--correct]/15 border-[--correct] text-[--correct] font-bold cursor-default',
-                      isWrongBlank && 'bg-destructive/10 border-destructive text-destructive font-bold cursor-default',
-                    )}
-                  >
-                    {word ?? ' '}
-                  </button>
-                );
-              })()}
-            </span>
-          ))}
-        </p>
+        {tableRows ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-base border-collapse">
+              <tbody>
+                {(() => {
+                  let blankIdx = 0;
+                  return tableRows.map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell: TableCell, ci) => (
+                        <td key={ci} className="border border-border px-3 py-2 text-center align-middle">
+                          {cell.isBlank
+                            ? renderBlank(blankIdx++)
+                            : <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(cell.html) }} />}
+                        </td>
+                      ))}
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-lg font-semibold leading-loose text-left font-mono whitespace-pre-wrap">
+            {parts.map((part, i) => (
+              <span key={i}>
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
+                {i < blankCount && renderBlank(i)}
+              </span>
+            ))}
+          </p>
+        )}
       </motion.div>
 
       {/* Kelime bankası */}
