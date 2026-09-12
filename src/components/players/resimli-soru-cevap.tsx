@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { cn, toMediaUrl } from '@/lib/utils';
 import { type PlayerProps, type Cevap, getKelimeler } from '@/types/etkinlik';
@@ -9,11 +9,8 @@ import { useGameSound } from '@/hooks/use-game-sound';
 import { GameHUD } from '@/components/game/game-hud';
 import { ActivityHint } from './ui';
 import { sanitizeHtml } from '@/lib/sanitize';
-
-// Splits text on "..." markers; returns array where even indices are text, blanks sit between them
-function splitBlanks(text: string): string[] {
-  return text.split(/\.{3,}/);
-}
+import { TurkceKlavye, insertIntoInput, sadelestir } from './turkce-klavye';
+import { splitByBlanks, countBlanks } from './blank-utils';
 
 export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;
@@ -22,19 +19,22 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
 
   const [index, setIndex] = useState(0);
   const [cevaplar, setCevaplar] = useState<Cevap[]>([]);
-  const [filledBlanks, setFilledBlanks] = useState<string[]>([]);
-  const [checking, setChecking] = useState(false);
+  const [values, setValues] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [combo, setCombo] = useState(0);
   const [localKalp, setLocalKalp] = useState(initKalp);
+  const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const current = detaylar[index];
-  const textParts = useMemo(() => splitBlanks(current.description ?? ''), [current]);
-  const blankCount = textParts.length - 1;
+  const sentence = current.description ?? '';
+  const textParts = useMemo(() => splitByBlanks(sentence), [sentence]);
+  const blankCount = countBlanks(sentence, null);
   // SoruCevap içeriğinde doğru cevap Kelime1..10'da değil, Cevap alanında tutuluyor
-  // (325/327 satır — Kelime1 yalnızca 2 legacy satırda dolu). getKelimeler() boş
-  // dönünce kelime bankası hiç dolmuyor, boşluk asla doldurulamıyordu. Blank her
-  // zaman tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli tek
-  // cevaplar var ama virgülle ayrılan çoklu-boşluk deseni yok) — bu yüzden Cevap
+  // (327 satırın 325'i — Kelime1 yalnızca 2 legacy satırda dolu). getKelimeler() boş
+  // dönünce kelime/kontrol hedefi hiç bulunamıyor, boşluk asla doğrulanamıyordu.
+  // Blank her zaman tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli
+  // tek cevaplar var ama virgülle ayrılan çoklu-boşluk deseni yok) — bu yüzden Cevap
   // bölünmeden tek elemanlı dizi olarak kullanılıyor.
   const kelimeAnswers = useMemo(() => getKelimeler(current), [current]);
   const answers = useMemo(() => {
@@ -43,28 +43,60 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
     return kelimeAnswers;
   }, [kelimeAnswers, blankCount, current.cevap]);
 
-  const shuffledChips = useMemo(
-    () => answers.map((w, i) => ({ w, origIdx: i })).sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [index],
-  );
+  // Boşluk görünümü + yazma alanı BoslukDoldurma ile aynı desen (blank-utils.ts) —
+  // sistemde ayrık bir "chip'e tıkla" görünümü olmasın, aynı alt-çizgi + canlı
+  // yansıyan input kullanılsın.
+  useEffect(() => {
+    setValues(Array(blankCount).fill(''));
+    setSubmitted(false);
+    setFocusedIdx(null);
+    inputRefs.current = Array(blankCount).fill(null);
+    setTimeout(() => inputRefs.current[0]?.focus(), 150);
+  }, [current.id, blankCount]);
 
-  const allFilled = filledBlanks.length >= Math.max(blankCount, answers.length > 0 ? 1 : 0);
+  const safe = values.length === blankCount ? values : Array(blankCount).fill('');
+  const allFilled = blankCount > 0 && safe.every((v) => v.trim().length > 0);
 
-  function handleChip(word: string) {
-    if (checking || filledBlanks.length >= blankCount) return;
-    const next = [...filledBlanks, word];
-    setFilledBlanks(next);
-    if (next.length === blankCount && blankCount > 0) {
-      checkAnswer(next);
-    }
+  const insertChar = useCallback((ch: string) => {
+    if (focusedIdx === null) return;
+    const el = inputRefs.current[focusedIdx];
+    if (!el) return;
+    const next = insertIntoInput(el, safe[focusedIdx], ch);
+    setValues((prev) => {
+      const arr = [...prev];
+      arr[focusedIdx] = next;
+      return arr;
+    });
+  }, [focusedIdx, safe]);
+
+  function renderBlank(i: number) {
+    const val = safe[i];
+    const correct = submitted && sadelestir(val) === sadelestir(answers[i] ?? '');
+    const wrong = submitted && !correct;
+    const blankMinW = `${Math.max(3, (answers[i] ?? '___').length * 0.75)}em`;
+    return (
+      <span
+        key={i}
+        style={{ minWidth: blankMinW }}
+        className={cn(
+          'inline-block mx-1 px-2 py-0.5 border-b-2 text-center align-middle rounded-sm transition-all',
+          !val && 'border-primary/40 border-dashed text-transparent',
+          val && !submitted && 'border-primary text-primary font-bold',
+          correct && 'border-[--correct] text-[--correct] font-bold',
+          wrong && 'border-destructive text-destructive font-bold',
+        )}
+      >
+        {val || ' '}
+      </span>
+    );
   }
 
-  function checkAnswer(blanks: string[]) {
-    setChecking(true);
-    const isCorrect = blanks.every(
-      (w, i) => w.trim().toLowerCase() === (answers[i] ?? '').trim().toLowerCase(),
-    );
+  function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!allFilled || submitted) return;
+    setSubmitted(true);
+
+    const isCorrect = safe.every((w, i) => sadelestir(w) === sadelestir(answers[i] ?? ''));
     play(isCorrect ? 'correct' : 'wrong');
     let newKalp = localKalp;
     if (isCorrect) {
@@ -78,10 +110,13 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
     }
 
     setTimeout(() => {
-      const yeni = [...cevaplar, { id: current.id, cevap: blanks.join(',') }];
+      const yeni = [...cevaplar, { id: current.id, cevap: safe.join(',') }];
       setCevaplar(yeni);
-      setFilledBlanks([]);
-      setChecking(false);
+      // index ile AYNI batch'te sıfırla — aksi halde geçiş render'ında yeni sorunun
+      // answers'ı eski values/submitted ile eşleşip bir kare yanlış renk yanıp söner
+      // (useEffect'in reset'i bir sonraki passive-effect turuna kadar gecikir).
+      setValues([]);
+      setSubmitted(false);
       // 0 kalpte erken bitir — diğer player'larla (quiz/dogru-yanlis/bosluk-doldurma) tutarlı
       if (newKalp === 0 || index + 1 >= detaylar.length) {
         onComplete(yeni);
@@ -121,9 +156,9 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
         </div>
       )}
 
-      <ActivityHint>Boşlukları doğru kelimelerle doldurun</ActivityHint>
+      <ActivityHint>Boşlukları kendi cümlenle yazarak doldur</ActivityHint>
 
-      {/* Dialogue text with inline blanks */}
+      {/* Dialogue text with inline blanks — BoslukDoldurma ile aynı alt-çizgi stili */}
       <motion.div
         key={current.id}
         initial={{ opacity: 0, y: 8 }}
@@ -139,52 +174,71 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
           textParts.map((part, i) => (
             <span key={i}>
               <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
-              {i < blankCount && (
-                <span
-                  className={cn(
-                    'inline-flex items-center justify-center min-w-[90px] px-2 mx-1 rounded-lg border-2 text-sm font-semibold align-middle leading-normal',
-                    filledBlanks[i]
-                      ? checking
-                        ? filledBlanks[i].trim().toLowerCase() ===
-                          (answers[i] ?? '').trim().toLowerCase()
-                          ? 'bg-[--correct]/10 border-[--correct] text-[--correct]'
-                          : 'bg-destructive/10 border-destructive text-destructive'
-                        : 'bg-primary/10 border-primary text-primary'
-                      : 'border-dashed border-muted-foreground/40 text-muted-foreground/40 text-xs',
-                  )}
-                >
-                  {filledBlanks[i] ?? '___'}
-                </span>
-              )}
+              {i < blankCount && renderBlank(i)}
             </span>
           ))
         )}
       </motion.div>
 
-      {/* Answer chips — shown when there are blanks */}
+      {/* Input(lar) — her boşluk için ayrı, hepsi aynı anda görünür (BoslukDoldurma deseni) */}
       {blankCount > 0 && (
-        <div className="flex flex-wrap gap-2 justify-center">
-          {shuffledChips.map(({ w, origIdx }) => {
-            const usedCount = filledBlanks.filter((f) => f === w).length;
-            const totalCount = answers.filter((a) => a === w).length;
-            if (usedCount >= totalCount) return null;
-            return (
-              <button
-                key={`chip-${origIdx}`}
-                type="button"
-                onClick={() => handleChip(w)}
-                disabled={checking || allFilled}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {safe.map((val, i) => (
+            <div key={i}>
+              {blankCount > 1 && (
+                <label className="block text-xs font-medium text-muted-foreground mb-1 ml-1">
+                  {i + 1}. boşluk
+                </label>
+              )}
+              <input
+                ref={(el) => { inputRefs.current[i] = el; }}
+                value={val}
+                disabled={submitted}
+                onChange={(e) => {
+                  const next = [...safe];
+                  next[i] = e.target.value;
+                  setValues(next);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && i < blankCount - 1) {
+                    e.preventDefault();
+                    inputRefs.current[i + 1]?.focus();
+                  }
+                }}
+                onFocus={() => setFocusedIdx(i)}
+                onBlur={() => setFocusedIdx(null)}
+                onPaste={(e) => e.preventDefault()}
+                onCopy={(e) => e.preventDefault()}
+                onCut={(e) => e.preventDefault()}
+                onContextMenu={(e) => e.preventDefault()}
+                placeholder="Cevabını yaz…"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 className={cn(
-                  'px-4 py-2.5 rounded-xl border-2 border-border font-medium text-sm transition-all min-h-[44px]',
-                  !checking && !allFilled && 'hover:border-primary hover:bg-primary/5 active:scale-[0.98]',
-                  (checking || allFilled) && 'opacity-40 cursor-not-allowed',
+                  'w-full h-14 px-5 rounded-2xl border-2 border-input bg-background text-lg font-medium outline-none transition-all',
+                  'placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary',
+                  'disabled:opacity-70',
                 )}
-              >
-                {w}
-              </button>
-            );
-          })}
-        </div>
+              />
+              <TurkceKlavye onChar={insertChar} visible={focusedIdx === i && !submitted} disabled={submitted} />
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            disabled={!allFilled || submitted}
+            className={cn(
+              'w-full py-4 rounded-2xl font-semibold transition-all',
+              allFilled && !submitted
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]'
+                : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60',
+            )}
+          >
+            {index + 1 >= detaylar.length ? 'Tamamla' : 'Kontrol Et'}
+          </button>
+        </form>
       )}
 
       {/* No-blank mode: show answers as reference, then next button */}
