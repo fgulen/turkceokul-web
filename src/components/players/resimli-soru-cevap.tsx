@@ -31,31 +31,38 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
   const textParts = useMemo(() => splitByBlanks(sentence), [sentence]);
   const blankCount = countBlanks(sentence, null);
   // SoruCevap içeriğinde doğru cevap Kelime1..10'da değil, Cevap alanında tutuluyor
-  // (327 satırın 325'i — Kelime1 yalnızca 2 legacy satırda dolu). getKelimeler() boş
-  // dönünce kelime/kontrol hedefi hiç bulunamıyor, boşluk asla doğrulanamıyordu.
-  // Blank her zaman tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli
+  // (DB'de doğrulandı: 603 satırın ~98'i — Kelime1 yalnızca birkaç legacy satırda dolu).
+  // getKelimeler() boş dönünce kelime/kontrol hedefi hiç bulunamıyor, cevap asla
+  // doğrulanamıyordu. Tek parça (DB'de doğrulandı: "üçü çeyrek geçe" gibi çok kelimeli
   // tek cevaplar var ama virgülle ayrılan çoklu-boşluk deseni yok) — bu yüzden Cevap
   // bölünmeden tek elemanlı dizi olarak kullanılıyor.
   const kelimeAnswers = useMemo(() => getKelimeler(current), [current]);
   const answers = useMemo(() => {
     if (kelimeAnswers.length > 0) return kelimeAnswers;
-    if (blankCount > 0 && current.cevap?.trim()) return [current.cevap.trim()];
+    if (current.cevap?.trim()) return [current.cevap.trim()];
     return kelimeAnswers;
-  }, [kelimeAnswers, blankCount, current.cevap]);
+  }, [kelimeAnswers, current.cevap]);
+
+  // Description'da "...." işareti olmayan satırlarda (278 satır — tüm cümleyi başka
+  // zamanda/şekilde yeniden yazma görevi, örn. "gidiyor" → "gidecek") blankCount=0
+  // çıkıyor ama Cevap yine dolu — bu satırlar eskiden hiç yazı alanı göstermeden
+  // "İleri" ile atlanıyordu (cevap hiç sorulmuyordu). writeCount, gerçek yazılabilir
+  // alan sayısı: inline boşluk varsa blankCount, yoksa (tam cümle cevabı varsa) 1.
+  const writeCount = blankCount > 0 ? blankCount : (answers.length > 0 ? 1 : 0);
 
   // Boşluk görünümü + yazma alanı BoslukDoldurma ile aynı desen (blank-utils.ts) —
   // sistemde ayrık bir "chip'e tıkla" görünümü olmasın, aynı alt-çizgi + canlı
   // yansıyan input kullanılsın.
   useEffect(() => {
-    setValues(Array(blankCount).fill(''));
+    setValues(Array(writeCount).fill(''));
     setSubmitted(false);
     setFocusedIdx(null);
-    inputRefs.current = Array(blankCount).fill(null);
+    inputRefs.current = Array(writeCount).fill(null);
     setTimeout(() => inputRefs.current[0]?.focus(), 150);
-  }, [current.id, blankCount]);
+  }, [current.id, writeCount]);
 
-  const safe = values.length === blankCount ? values : Array(blankCount).fill('');
-  const allFilled = blankCount > 0 && safe.every((v) => v.trim().length > 0);
+  const safe = values.length === writeCount ? values : Array(writeCount).fill('');
+  const allFilled = writeCount > 0 && safe.every((v) => v.trim().length > 0);
 
   const insertChar = useCallback((ch: string) => {
     if (focusedIdx === null) return;
@@ -181,7 +188,7 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
       </motion.div>
 
       {/* Input(lar) — her boşluk için ayrı, hepsi aynı anda görünür (BoslukDoldurma deseni) */}
-      {blankCount > 0 && (
+      {writeCount > 0 && (
         <form onSubmit={handleSubmit} className="space-y-3">
           {safe.map((val, i) => (
             <div key={i}>
@@ -200,7 +207,7 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
                   setValues(next);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && i < blankCount - 1) {
+                  if (e.key === 'Enter' && i < writeCount - 1) {
                     e.preventDefault();
                     inputRefs.current[i + 1]?.focus();
                   }
@@ -241,8 +248,8 @@ export function ResimliSoruCevapPlayer({ etkinlik, onComplete }: PlayerProps) {
         </form>
       )}
 
-      {/* No-blank mode: show answers as reference, then next button */}
-      {blankCount === 0 && (
+      {/* Cevap datası hiç yoksa (teoride olmamalı, DB'de doğrulandı) son çare: referans göster + atla */}
+      {writeCount === 0 && (
         <div className="space-y-3">
           {answers.map((ans, i) => (
             <div
