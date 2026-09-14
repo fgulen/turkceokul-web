@@ -12,7 +12,7 @@ import { GameHUD } from '@/components/game/game-hud';
 import { ProgressDots, PlayingBars } from './ui';
 import { TurkceKlavye, insertIntoInput, scoreAnswer } from './turkce-klavye';
 
-const MAX_TEKRAR = 2;
+const MAX_TEKRAR = 5;
 
 export function SesiDinleveKelimeYazPlayer({ etkinlik, onComplete }: PlayerProps) {
   const detaylar = etkinlik.detaylar;

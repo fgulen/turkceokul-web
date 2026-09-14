@@ -74,6 +74,8 @@ const ETKINLIK_LABELS: Record<string, string> = {
   MetinDogruYanlis: 'Doğru / Yanlış',
   MetinCheckBox: 'Çoktan Seçmeli',
   ResimMetinEslestirmeDogruYanlis: 'Doğru / Yanlış',
+  ResimSesEslestirmeDogruYanlis: 'Doğru / Yanlış',
+  MetinSesEslestirmeDogruYanlis: 'Doğru / Yanlış',
   ResmeTiklaDinle: 'Resme Tıkla & Dinle',
   YaziyaTiklaDinle: 'Yazıya Tıkla & Dinle',
   ResimMetinEslestirme: 'Resim–Metin Eşleştirme',
@@ -84,9 +86,15 @@ const ETKINLIK_LABELS: Record<string, string> = {
   SesiDinleveKelimeYaz: 'Dinle & Yaz',
   KelimelerdenCumleYap: 'Cümle Kur',
   ResimKartliHafizaOyunu: 'Hafıza Oyunu',
+  KaristirilmisResimOyunu: 'Yap Boz',
   KelimeleriGrupla: 'Kelimeleri Grupla',
+  KelimeleriAyristir: 'Kelimeleri Ayır',
   ResmeKelimeYaz: 'Resme Kelime Yaz',
   DiyalogYap: 'Diyalog Yap',
+  CoktanSecmeli: 'Çoktan Seçmeli',
+  ResimliSoruCevap: 'Soru-Cevap',
+  SoruCevap: 'Soru-Cevap',
+  FlipBook: 'Kitap Oku',
 };
 
 export function etkinlikLabel(tur: string): string {
