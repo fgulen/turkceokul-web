@@ -2,12 +2,14 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap } from 'lucide-react';
+import { Zap, Volume2 } from 'lucide-react';
 import { cn, toMediaUrl, diyalogMetinClass, duzMetneCevir } from '@/lib/utils';
 import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
+import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { useAuthStore } from '@/stores/auth';
 import { GameHUD } from '@/components/game/game-hud';
+import { PlayingBars } from './ui';
 
 const XP_BASE = 10;
 
@@ -39,10 +41,12 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [burst, setBurst] = useState<BurstData | null>(null);
   const burstId = useRef(0);
   const { play } = useGameSound();
+  const { playing: audioPlaying, play: playWord } = usePlayerAudio();
 
   const current = detaylar[index];
   const options = current.secenekler ?? [];
   const imgUrl = toMediaUrl(current.resimLink);
+  const sesUrl = toMediaUrl(current.sesLink);
 
   async function handleSelect(opt: string) {
     if (selected !== null) return;
@@ -109,18 +113,32 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
         />
       )}
 
-      {/* Soru kartı — açıklama yoksa gösterme (resim tek başına soru görevi görür) */}
-      {current.description && (
+      {/* Soru kartı — açıklama/ses yoksa gösterme (resim tek başına soru görevi görür) */}
+      {(current.description || sesUrl) && (
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            className="bg-card border border-border rounded-2xl p-8 mb-5 text-center min-h-[120px] flex items-center justify-center"
+            className="bg-card border border-border rounded-2xl p-8 mb-5 min-h-[120px] flex items-center justify-center gap-4"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.22 }}
           >
-            <p className={cn('text-2xl font-bold w-full', diyalogMetinClass(current.description) ?? 'text-center')}>{duzMetneCevir(current.description)}</p>
+            {current.description && (
+              <p className={cn('text-2xl font-bold', sesUrl ? 'flex-1' : 'w-full', diyalogMetinClass(current.description) ?? 'text-center')}>{duzMetneCevir(current.description)}</p>
+            )}
+            {sesUrl && (
+              <button
+                onClick={() => playWord(sesUrl)}
+                className="shrink-0 size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+                aria-label="Sesi çal"
+              >
+                {audioPlaying
+                  ? <PlayingBars size="sm" color="bg-primary" />
+                  : <Volume2 className="size-4 text-primary" />
+                }
+              </button>
+            )}
           </motion.div>
         </AnimatePresence>
       )}
