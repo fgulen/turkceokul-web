@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Volume2 } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { cn, toMediaUrl, diyalogMetinClass, duzMetneCevir } from '@/lib/utils';
 import { type PlayerProps, type Cevap, kontrolEt } from '@/types/etkinlik';
 import { useGameSound } from '@/hooks/use-game-sound';
 import { usePlayerAudio } from '@/hooks/use-player-audio';
 import { useAuthStore } from '@/stores/auth';
 import { GameHUD } from '@/components/game/game-hud';
-import { PlayingBars } from './ui';
+import { AudioPlayButton } from './ui';
 
 const XP_BASE = 10;
 
@@ -41,12 +41,20 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
   const [burst, setBurst] = useState<BurstData | null>(null);
   const burstId = useRef(0);
   const { play } = useGameSound();
-  const { playing: audioPlaying, play: playWord } = usePlayerAudio();
+  const { playing: audioPlaying, play: playWord, reset: resetAudio } = usePlayerAudio();
 
   const current = detaylar[index];
   const options = current.secenekler ?? [];
   const imgUrl = toMediaUrl(current.resimLink);
   const sesUrl = toMediaUrl(current.sesLink);
+
+  // Soru değişince önceki sesi durdur — yoksa bir sonraki sorunun "Sesi çal" butonu
+  // audioPlaying=true görüp animasyonu gösterirken aslında önceki sorunun sesi
+  // arka planda çalmaya devam ediyordu (bkz. bosluk-doldurma.tsx aynı reset deseni).
+  useEffect(() => {
+    resetAudio();
+    return resetAudio;
+  }, [index, resetAudio]);
 
   async function handleSelect(opt: string) {
     if (selected !== null) return;
@@ -128,16 +136,7 @@ export function QuizPlayer({ etkinlik, onComplete }: PlayerProps) {
               <p className={cn('text-2xl font-bold', sesUrl ? 'flex-1' : 'w-full', diyalogMetinClass(current.description) ?? 'text-center')}>{duzMetneCevir(current.description)}</p>
             )}
             {sesUrl && (
-              <button
-                onClick={() => playWord(sesUrl)}
-                className="shrink-0 size-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                aria-label="Sesi çal"
-              >
-                {audioPlaying
-                  ? <PlayingBars size="sm" color="bg-primary" />
-                  : <Volume2 className="size-4 text-primary" />
-                }
-              </button>
+              <AudioPlayButton playing={audioPlaying} onPlay={() => playWord(sesUrl)} />
             )}
           </motion.div>
         </AnimatePresence>
