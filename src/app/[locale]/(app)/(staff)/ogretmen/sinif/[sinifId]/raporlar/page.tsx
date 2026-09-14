@@ -140,7 +140,8 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
                           title="Öğrencinin bu ünitede denediği etkinliklerin ortalama başarı yüzdesi (doğruluk). Ünitenin ne kadarının bitirildiğini göstermez — İlerleme sütununa bakın."
                         >
                           Ünite Puanı
-                          <Info className="size-3 text-slate-300" />
+                          <span className="normal-case font-normal text-slate-400">(doğruluk)</span>
+                          <Info className="size-3.5 text-slate-300" />
                         </span>
                       </th>
                     </>
@@ -161,7 +162,8 @@ export default function RaporlarPage({ params }: { params: Promise<{ sinifId: st
                       }
                     >
                       İlerleme
-                      <Info className="size-3 text-slate-300" />
+                      {uniteId && <span className="normal-case font-normal text-slate-400">(tamamlanma)</span>}
+                      <Info className="size-3.5 text-slate-300" />
                     </span>
                   </th>
                 </tr>
