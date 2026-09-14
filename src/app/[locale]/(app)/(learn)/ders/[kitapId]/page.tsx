@@ -90,6 +90,7 @@ function ZigzagNode({
 }) {
   const state = getCompletionState(etkinlik.maxPuan, etkinlik.denendi);
   const colors = getBolumZigzagColor(etkinlik.bolum);
+  const label = etkinlikLabel(etkinlik.etkinlikTuru);
 
   const nodeStyle = isLocked
     ? 'bg-slate-100 border-slate-200 text-slate-300'
@@ -148,11 +149,14 @@ function ZigzagNode({
             )}
           </Link>
         )}
-        <span className={cn(
-          'mt-2 text-xs sm:text-sm font-medium text-center max-w-[100px] sm:max-w-[120px] leading-tight',
-          isLocked && 'text-muted-foreground/50',
-        )}>
-          {etkinlikLabel(etkinlik.etkinlikTuru)}
+        <span
+          className={cn(
+            'mt-2 min-h-[2rem] sm:min-h-[2.5rem] text-xs sm:text-sm font-medium text-center max-w-[100px] sm:max-w-[120px] leading-4 sm:leading-5 line-clamp-2',
+            isLocked && 'text-muted-foreground/50',
+          )}
+          title={label}
+        >
+          {label}
         </span>
         {isSiradaki && !isLocked && (
           <span className={cn('mt-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full', colors.label)}>
