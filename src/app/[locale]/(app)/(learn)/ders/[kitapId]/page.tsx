@@ -51,15 +51,14 @@ const BOLUM_ICONS: Record<string, React.ReactNode> = {
   Dinleme: <Headphones className="size-5" />,
   Yazma: <PenLine className="size-5" />,
   DilBilgisi: <Languages className="size-5" />,
-  Degerlendirme: <Trophy className="size-5" />,
+  Değerlendirme: <Trophy className="size-5" />,
   'AI Generated': <Sparkles className="size-5" />,
 };
 
-const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'DilBilgisi', 'Degerlendirme', 'AI Generated', 'Okuma Kitabı'];
+const BOLUM_TABS = ['Kelime', 'Okuma', 'Dinleme', 'Yazma', 'DilBilgisi', 'Değerlendirme', 'AI Generated', 'Okuma Kitabı'];
 
 const BOLUM_LABEL: Record<string, string> = {
   DilBilgisi: 'Dil Bilgisi',
-  Degerlendirme: 'Değerlendirme',
 };
 
 function getZigzagPosition(index: number): 'left' | 'center' | 'right' {
